@@ -43,12 +43,19 @@ import (
 	"github.com/openshift/router/pkg/router/writerlease"
 )
 
-// defaultReloadInterval is how often to do reloads in seconds.
-const defaultReloadInterval = 5
+const (
+	// defaultReloadInterval is how often to do reloads in seconds.
+	defaultReloadInterval = 5
 
-// defaultCommitInterval is how often (in seconds) to commit the "in-memory"
-// router changes made using the dynamic configuration manager.
-const defaultCommitInterval = 60 * 60
+	// defaultCommitInterval is how often (in seconds) to commit the
+	// "in-memory" router changes made using the dynamic configuration
+	// manager.
+	defaultCommitInterval = 60 * 60
+
+	// defaultTicketKeyRotateInterval is how often (in seconds) to rotate
+	// the keys used with TLS session tickets.
+	defaultTicketKeyRotateInterval = 12 * 60 * 60
+)
 
 var routerLong = heredoc.Doc(`
 	Start a router
@@ -108,6 +115,7 @@ type TemplateRouter struct {
 	DefaultCertificatePath   string
 	DefaultCertificateDir    string
 	DefaultDestinationCAPath string
+	TicketKeyRotateInterval  time.Duration
 	RouterService            *ktypes.NamespacedName
 	BindPortsAfterSync       bool
 	MaxConnections           string
@@ -162,6 +170,7 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.MetricsType, "metrics-type", env("ROUTER_METRICS_TYPE", ""), "Specifies the type of metrics to gather. Supports 'haproxy'.")
 	flag.BoolVar(&o.UseHAProxyConfigManager, "haproxy-config-manager", isTrue(env("ROUTER_HAPROXY_CONFIG_MANAGER", "")), "Use the the haproxy config manager (and dynamic configuration API) to configure route and endpoint changes. Reduces the number of haproxy reloads needed on configuration changes.")
 	flag.DurationVar(&o.CommitInterval, "commit-interval", getIntervalFromEnv("COMMIT_INTERVAL", defaultCommitInterval), "Controls how often to commit (to the actual config) all the changes made using the router specific dynamic configuration manager.")
+	flag.DurationVar(&o.TicketKeyRotateInterval, "tls-ticket-key-rotate-interval", getIntervalFromEnv("TLS_TICKET_KEY_ROTATE_INTERVAL", defaultTicketKeyRotateInterval), "Controls how often to rotate the TLS session ticket keys. These keys are used with TLS session tickets for RFC5077 support - reuse TLS sessions.")
 	flag.StringVar(&o.BlueprintRouteNamespace, "blueprint-route-namespace", env("ROUTER_BLUEPRINT_ROUTE_NAMESPACE", ""), "Specifies the namespace which contains the routes that serve as blueprints for the dynamic configuration manager.")
 	flag.StringVar(&o.BlueprintRouteLabelSelector, "blueprint-route-labels", env("ROUTER_BLUEPRINT_ROUTE_LABELS", ""), "A label selector to apply to the routes in the blueprint route namespace. These selected routes will serve as blueprints for the dynamic dynamic configuration manager.")
 	flag.IntVar(&o.BlueprintRoutePoolSize, "blueprint-route-pool-size", int(envInt("ROUTER_BLUEPRINT_ROUTE_POOL_SIZE", 10, 1)), "Specifies the size of the pre-allocated pool for each route blueprint managed by the router specific dynamic configuration manager. This can be overriden by an annotation router.openshift.io/pool-size on an individual route.")
@@ -261,6 +270,10 @@ func (o *TemplateRouterOptions) Complete() error {
 
 	if nsecs := int(o.ReloadInterval.Seconds()); nsecs < 1 {
 		return fmt.Errorf("invalid reload interval: %v - must be a positive duration", nsecs)
+	}
+
+	if nsecs := int(o.TicketKeyRotateInterval.Seconds()); nsecs < 1 {
+		return fmt.Errorf("invalid TLS ticket key rotate interval: %v - must be a positive duration", nsecs)
 	}
 
 	if nsecs := int(o.CommitInterval.Seconds()); nsecs < 1 {
@@ -488,6 +501,7 @@ func (o *TemplateRouterOptions) Run() error {
 		DefaultCertificatePath:   o.DefaultCertificatePath,
 		DefaultCertificateDir:    o.DefaultCertificateDir,
 		DefaultDestinationCAPath: o.DefaultDestinationCAPath,
+		TicketKeyRotateInterval:  o.TicketKeyRotateInterval,
 		StatsPort:                statsPort,
 		StatsUsername:            o.StatsUsername,
 		StatsPassword:            o.StatsPassword,
