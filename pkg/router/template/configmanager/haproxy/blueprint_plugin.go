@@ -24,7 +24,7 @@ func NewBlueprintPlugin(cm templaterouter.ConfigManager) *BlueprintPlugin {
 func (p *BlueprintPlugin) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	switch eventType {
 	case watch.Added, watch.Modified:
-		p.manager.AddBlueprint(route)
+		return p.manager.AddBlueprint(route)
 	case watch.Deleted:
 		p.manager.RemoveBlueprint(route)
 	}
