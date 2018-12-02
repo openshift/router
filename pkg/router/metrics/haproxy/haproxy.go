@@ -690,8 +690,9 @@ func NewPrometheusCollector(opts PrometheusOptions) (*Exporter, error) {
 	// TODO: register a version collector?
 
 	if len(opts.PidFile) > 0 {
-		procExporter := prometheus.NewProcessCollectorPIDFn(
-			func() (int, error) {
+		procExporter := prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
+			Namespace: namespace,
+			PidFn: func() (int, error) {
 				content, err := ioutil.ReadFile(opts.PidFile)
 				if err != nil {
 					return 0, fmt.Errorf("can't read haproxy pid file: %s", err)
@@ -701,7 +702,8 @@ func NewPrometheusCollector(opts PrometheusOptions) (*Exporter, error) {
 					return 0, fmt.Errorf("can't parse haproxy pid file: %s", err)
 				}
 				return value, nil
-			}, namespace)
+			},
+		})
 		if err := prometheus.Register(procExporter); err != nil {
 			return nil, err
 		}
