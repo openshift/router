@@ -21,7 +21,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/client-go/route/clientset/versioned/fake"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
-	"github.com/openshift/origin/pkg/router/writerlease"
+	"github.com/openshift/router/pkg/router/writerlease"
 )
 
 type noopLease struct{}

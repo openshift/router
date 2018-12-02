@@ -33,14 +33,14 @@ import (
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
-	"github.com/openshift/origin/pkg/router"
-	"github.com/openshift/origin/pkg/router/controller"
-	"github.com/openshift/origin/pkg/router/metrics"
-	"github.com/openshift/origin/pkg/router/metrics/haproxy"
-	templateplugin "github.com/openshift/origin/pkg/router/template"
-	haproxyconfigmanager "github.com/openshift/origin/pkg/router/template/configmanager/haproxy"
-	"github.com/openshift/origin/pkg/router/writerlease"
-	"github.com/openshift/origin/pkg/util/proc"
+	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/controller"
+	"github.com/openshift/router/pkg/router/metrics"
+	"github.com/openshift/router/pkg/router/metrics/haproxy"
+	templateplugin "github.com/openshift/router/pkg/router/template"
+	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
+	"github.com/openshift/router/pkg/router/writerlease"
+	"github.com/openshift/router/pkg/util/proc"
 )
 
 // defaultReloadInterval is how often to do reloads in seconds.

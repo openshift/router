@@ -14,8 +14,8 @@ import (
 
 	"k8s.io/apiserver/pkg/server/healthz"
 
-	"github.com/openshift/origin/pkg/router/metrics/probehttp"
-	templateplugin "github.com/openshift/origin/pkg/router/template"
+	"github.com/openshift/router/pkg/router/metrics/probehttp"
+	templateplugin "github.com/openshift/router/pkg/router/template"
 )
 
 var errBackend = fmt.Errorf("backend reported failure")

@@ -8,7 +8,7 @@ import (
 	"github.com/golang/glog"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/origin/pkg/router/routeapihelpers"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
 )
 
 // GenerateRouteRegexp generates a regular expression to match route hosts (and paths if any).

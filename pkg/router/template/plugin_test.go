@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/origin/pkg/router/controller"
+	"github.com/openshift/router/pkg/router/controller"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	haproxytesting "github.com/openshift/origin/pkg/router/template/configmanager/haproxy/testing"
+	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
 
 // TestNewConverter tests a new converter.

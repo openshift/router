@@ -18,10 +18,10 @@ import (
 	projectclient "github.com/openshift/client-go/project/clientset/versioned"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
-	"github.com/openshift/origin/pkg/router"
-	"github.com/openshift/origin/pkg/router/controller"
-	f5plugin "github.com/openshift/origin/pkg/router/f5"
-	"github.com/openshift/origin/pkg/router/writerlease"
+	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/controller"
+	f5plugin "github.com/openshift/router/pkg/router/f5"
+	"github.com/openshift/router/pkg/router/writerlease"
 )
 
 var f5Long = heredoc.Doc(`

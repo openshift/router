@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
-	f5testing "github.com/openshift/origin/pkg/router/f5/testing"
+	f5testing "github.com/openshift/router/pkg/router/f5/testing"
 )
 
 type (

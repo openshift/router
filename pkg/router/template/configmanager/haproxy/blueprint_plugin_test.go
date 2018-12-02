@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
-	templaterouter "github.com/openshift/origin/pkg/router/template"
+	templaterouter "github.com/openshift/router/pkg/router/template"
 )
 
 type fakeConfigManager struct {

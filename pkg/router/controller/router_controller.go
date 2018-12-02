@@ -17,7 +17,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
-	"github.com/openshift/origin/pkg/router"
+	"github.com/openshift/router/pkg/router"
 )
 
 // RouterController abstracts the details of watching resources like Routes, Endpoints, etc.

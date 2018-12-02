@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	routev1 "github.com/openshift/api/route/v1"
-	templateutil "github.com/openshift/origin/pkg/router/template/util"
+	templateutil "github.com/openshift/router/pkg/router/template/util"
 )
 
 // mapEntryGeneratorFunc generates an haproxy config map entry.

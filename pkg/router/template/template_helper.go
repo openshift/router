@@ -15,9 +15,9 @@ import (
 	"github.com/golang/glog"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/origin/pkg/router/routeapihelpers"
-	templateutil "github.com/openshift/origin/pkg/router/template/util"
-	haproxyutil "github.com/openshift/origin/pkg/router/template/util/haproxy"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
+	templateutil "github.com/openshift/router/pkg/router/template/util"
+	haproxyutil "github.com/openshift/router/pkg/router/template/util/haproxy"
 )
 
 const (

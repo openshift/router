@@ -17,8 +17,8 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	client "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
-	"github.com/openshift/origin/pkg/router"
-	"github.com/openshift/origin/pkg/router/writerlease"
+	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/writerlease"
 )
 
 // RejectionRecorder is an object capable of recording why a route was rejected

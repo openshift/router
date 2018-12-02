@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/origin/pkg/router/template/limiter"
+	"github.com/openshift/router/pkg/router/template/limiter"
 )
 
 const (

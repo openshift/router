@@ -22,9 +22,9 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
-	"github.com/openshift/origin/pkg/router"
-	routercontroller "github.com/openshift/origin/pkg/router/controller"
-	"github.com/openshift/origin/pkg/router/routeapihelpers"
+	"github.com/openshift/router/pkg/router"
+	routercontroller "github.com/openshift/router/pkg/router/controller"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
 	informerfactory "k8s.io/client-go/informers"
 )
 

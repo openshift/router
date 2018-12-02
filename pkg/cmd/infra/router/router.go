@@ -22,8 +22,8 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
-	"github.com/openshift/origin/pkg/router/controller"
-	controllerfactory "github.com/openshift/origin/pkg/router/controller/factory"
+	"github.com/openshift/router/pkg/router/controller"
+	controllerfactory "github.com/openshift/router/pkg/router/controller/factory"
 )
 
 // RouterSelection controls what routes and resources on the server are considered
