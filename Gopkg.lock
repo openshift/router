@@ -45,6 +45,14 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:fed1f537c2f1269fe475a8556c393fe466641682d73ef8fd0491cd3aa1e47bad"
+  name = "github.com/certifi/gocertifi"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "deb3ae2ef2610fde3330947281941c562861188b"
+  version = "2018.01.18"
+
+[[projects]]
   branch = "master"
   digest = "1:6dd0478a59aee734b125e5b6be2a56f738f0d6882aa5f5b14709dbe1e417dd38"
   name = "github.com/cockroachdb/cmux"
@@ -58,6 +66,14 @@
   packages = ["spew"]
   pruneopts = "UT"
   revision = "782f4967f2dc4564575ca782fe2d04090b5faca8"
+
+[[projects]]
+  digest = "1:d18f6f088d7d8365df47f49dfa24b6ff6701a941118ffda30c589d1bd954074b"
+  name = "github.com/getsentry/raven-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f04e7487e9a6b9d9837d52743fb5f40576c56411"
+  version = "v0.2.0"
 
 [[projects]]
   digest = "1:c45cef8e0074ea2f8176a051df38553ba997a3616f1ec2d35222b1cf9864881e"
@@ -224,6 +240,14 @@
   version = "v1.1.5"
 
 [[projects]]
+  digest = "1:0a69a1c0db3591fcefb47f115b224592c8dfa4368b7ba9fae509d5e16cdc95c8"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   digest = "1:84a5a2b67486d5d67060ac393aa255d05d24ed5ee41daecd5635ec22657b6492"
   name = "github.com/mailru/easyjson"
@@ -291,9 +315,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a0f6732d0297608a9b2fd252e76dd7d56e66f73eadfcfa9e9e753b1de18ecfdd"
+  digest = "1:53e22373819c0f5135eb785d74835d6df9f3506f6b59a84897fce73b560c32b7"
   name = "github.com/openshift/library-go"
-  packages = ["pkg/crypto"]
+  packages = [
+    "pkg/crypto",
+    "pkg/proc",
+    "pkg/serviceability",
+  ]
   pruneopts = "UT"
   revision = "0e0992da7cdf435eeda85f96793e5f1c36c99744"
 
@@ -312,6 +340,22 @@
   pruneopts = "UT"
   revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
   version = "v2.0.1"
+
+[[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  digest = "1:cfa0d7741863a0e1d30e0ccdd4b48a96a471cdb47892303de8b92c3713af3e77"
+  name = "github.com/pkg/profile"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5b67d428864e92711fcbd2f8629456121a56d91f"
+  version = "v1.2.1"
 
 [[projects]]
   digest = "1:735956b5e94182229dfbdc5b401d7a71f20f54f1259dbc2969ec2b56bfbb34f2"
@@ -356,6 +400,14 @@
   ]
   pruneopts = "UT"
   revision = "aa55a523dc0a8297edf51bb75e8eec13eb3be45d"
+
+[[projects]]
+  digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bcd833dfe83d3cebad139e4a29ed79cb2318bf95"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -722,7 +774,6 @@
     "github.com/gocarina/gocsv",
     "github.com/golang/glog",
     "github.com/gorilla/mux",
-    "github.com/json-iterator/go",
     "github.com/openshift/api/route",
     "github.com/openshift/api/route/v1",
     "github.com/openshift/client-go/project/clientset/versioned",
@@ -732,6 +783,8 @@
     "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1",
     "github.com/openshift/client-go/route/listers/route/v1",
     "github.com/openshift/library-go/pkg/crypto",
+    "github.com/openshift/library-go/pkg/proc",
+    "github.com/openshift/library-go/pkg/serviceability",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
