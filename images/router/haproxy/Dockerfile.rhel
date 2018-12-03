@@ -1,4 +1,4 @@
-FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
+FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
 RUN INSTALL_PKGS="haproxy18 rsyslog" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
