@@ -294,4 +294,5 @@ var helperFunctions = template.FuncMap{
 	"generateHAProxyMap":           generateHAProxyMap,           //generates a haproxy map content
 	"validateHAProxyWhiteList":     validateHAProxyWhiteList,     //validates a haproxy whitelist (acl) content
 	"generateHAProxyWhiteListFile": generateHAProxyWhiteListFile, //generates a haproxy whitelist file for use in an acl
+	"split":                        strings.Split,                //split slices s into all substrings separated by sep and returns a slice of the substrings between those separators
 }
