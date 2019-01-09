@@ -147,6 +147,9 @@ type haproxyConfigManager struct {
 
 	// commitTimer indicates if a router config commit is pending.
 	commitTimer *time.Timer
+
+	// customAnnotations is a list of all extra annotations needed for HAProxy blueprint
+	customAnnotations []string
 }
 
 // NewHAProxyConfigManager returns a new haproxyConfigManager.
@@ -154,6 +157,16 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 	client := NewClient(options.ConnectionInfo, haproxyConnectionTimeout)
 
 	glog.V(4).Infof("%s: options = %+v\n", haproxyManagerName, options)
+
+	customAnnotations := []string{}
+	extraAnnotations := os.Getenv("ROUTER_BLUEPRINT_CUSTOM_ANNOTATIONS")
+	// allow adding list of extra annotations for HAProxy blueprint
+	for _, entry := range strings.Split(extraAnnotations, ",") {
+		if v := strings.Trim(entry, " "); len(v) > 0 {
+			glog.V(6).Infof("ROUTER_BLUEPRINT_CUSTOM_ANNOTATIONS has annotation %s", entry)
+			customAnnotations = append(customAnnotations, v)
+		}
+	}
 
 	return &haproxyConfigManager{
 		connectionInfo:         options.ConnectionInfo,
@@ -165,10 +178,11 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 		extendedValidation:     options.ExtendedValidation,
 		defaultCertificate:     "",
 
-		client:           client,
-		reloadInProgress: false,
-		backendEntries:   make(map[string]*routeBackendEntry),
-		poolUsage:        make(map[string]string),
+		client:            client,
+		reloadInProgress:  false,
+		backendEntries:    make(map[string]*routeBackendEntry),
+		poolUsage:         make(map[string]string),
+		customAnnotations: customAnnotations,
 	}
 }
 
@@ -811,7 +825,13 @@ func (cm *haproxyConfigManager) reset() {
 // as a "surrogate" for the route.
 func (cm *haproxyConfigManager) findMatchingBlueprint(route *routev1.Route) *routev1.Route {
 	termination := routeTerminationType(route)
-	routeModifiers := backendModAnnotations(route)
+	routeModifiers := backendModAnnotations(route, cm.customAnnotations)
+
+	// when route matches the annotation the configuration will be reloaded
+	if _, ok := route.Annotations["haproxy.router.openshift.io/skip-route-blueprint-match"]; ok {
+		return nil
+	}
+
 	for _, candidate := range cm.blueprintRoutes {
 		t2 := routeTerminationType(candidate)
 		if termination != t2 {
@@ -825,7 +845,7 @@ func (cm *haproxyConfigManager) findMatchingBlueprint(route *routev1.Route) *rou
 				continue
 			}
 
-			candidateModifiers := backendModAnnotations(candidate)
+			candidateModifiers := backendModAnnotations(candidate, cm.customAnnotations)
 			if !reflect.DeepEqual(routeModifiers, candidateModifiers) {
 				continue
 			}
@@ -1076,9 +1096,10 @@ func applyMapAssociations(m *HAProxyMap, associations map[string]string, add boo
 
 // backendModAnnotations return the annotations in a route that will
 // require custom (or modified) backend configuration in haproxy.
-func backendModAnnotations(route *routev1.Route) map[string]string {
+func backendModAnnotations(route *routev1.Route, customAnnotations []string) map[string]string {
 	termination := routeTerminationType(route)
 	backendModifiers := modAnnotationsList(termination)
+	backendModifiers = append(backendModifiers, customAnnotations...)
 
 	annotations := make(map[string]string)
 	for _, name := range backendModifiers {
