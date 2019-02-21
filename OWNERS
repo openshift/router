@@ -1,8 +1,14 @@
-reviewers:
-- ironcladlou
-- smarterclayton
-- knobunc
 approvers:
-- ironcladlou
-- smarterclayton
-- knobunc
+  - ironcladlou
+  - knobunc
+  - pravisankar
+  - ramr
+  - Miciah
+  - smarterclayton
+reviewers:
+  - ironcladlou
+  - knobunc
+  - pravisankar
+  - ramr
+  - Miciah
+  - smarterclayton
