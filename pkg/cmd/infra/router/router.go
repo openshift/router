@@ -94,6 +94,10 @@ func (o *RouterSelection) Bind(flag *pflag.FlagSet) {
 
 // RouteUpdate updates the route before it is seen by the cache.
 func (o *RouterSelection) RouteUpdate(route *routev1.Route) {
+	// if a subdomain default is observed and we have a canonical hostname, set the host field
+	if len(route.Spec.Subdomain) > 0 && len(route.Spec.Host) == 0 && len(o.RouterCanonicalHostname) {
+		route.Spec.Host = fmt.Sprintf("%s.%s", route.Spec.Subdomain, o.RouterCanonicalHostname)
+	}
 	if len(o.HostnameTemplate) == 0 {
 		return
 	}
