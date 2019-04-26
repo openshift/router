@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -276,6 +277,81 @@ func secretToPem(secPath, outName string) error {
 	return ioutil.WriteFile(outName, pemBlock, 0444)
 }
 
+// watchSecretDir adds a watcher on the input directory that updates the output
+// PEM file when a change is detected.
+func (r *templateRouter) watchSecretDir(secPath, outName string) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+
+	// We need to know when the content of tls.crt is updated, but tls.crt
+	// is really a symlink with a path that includes another symlink:
+	//
+	//     tls.crt -> ..data/tls.crt
+	//     ..data -> ..YY_mm_dd-HH_MM_SS.NN
+	//
+	// where YY_mm_dd-HH_MM_SS.NN is a timestamp for the current version of
+	// the secret that contains tls.crt.  When the secret is updated, the
+	// ..data symlink changes.  fsnotify may follow symlinks when the watch
+	// is added (see <https://github.com/fsnotify/fsnotify/issues/199>),
+	// which means that using the symlink when adding the watch would fail
+	// to tell us when the ..data symlink were changed to point to a new
+	// version of the secret.  Instead, we watch the directory that contains
+	// tls.crt and ..data, and when we get an event, we re-evaluate the
+	// symlink to see whether it has changed.
+	if err := watcher.Add(secPath); err != nil {
+		return err
+	}
+	glog.Infof("Watching %q for changes", secPath)
+
+	path := filepath.Join(secPath, "tls.crt")
+	currentRealPath, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return err
+	}
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					glog.Warningf("fsnotify channel closed")
+					return
+				}
+
+				newRealPath, err := filepath.EvalSymlinks(path)
+				if err != nil {
+					glog.Warningf("watchSecretDir: %v", err)
+					continue
+				}
+				if newRealPath == currentRealPath {
+					continue
+				}
+				currentRealPath = newRealPath
+
+				glog.Infof("Got watch event %v; updating %q", event, outName)
+				os.Remove(outName)
+				if err := secretToPem(secPath, outName); err != nil {
+					glog.Warningf("Failed to update %q: %v", outName, err)
+				}
+
+				r.lock.Lock()
+				r.stateChanged = true
+				r.dynamicallyConfigured = false
+				r.lock.Unlock()
+				r.Commit()
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					glog.Warningf("fsnotify channel closed")
+					return
+				}
+				glog.Warningf("Got error from fsnotify: %v", err)
+			}
+		}
+	}()
+	return nil
+}
+
 // writeDefaultCert ensures that the default certificate in pem format is in a file
 // and the file name is set in r.defaultCertificatePath
 func (r *templateRouter) writeDefaultCert() error {
@@ -287,10 +363,13 @@ func (r *templateRouter) writeDefaultCert() error {
 			// Just use the provided path
 			return nil
 		}
-		err := secretToPem(r.defaultCertificateDir, outPath)
-		if err != nil {
+		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
 			// no pem file, no default cert, use cert from container
-			glog.V(2).Infof("Router default cert from router container")
+			glog.Warningf("Router default cert from router container")
+			return nil
+		}
+		if err := r.watchSecretDir(r.defaultCertificateDir, outPath); err != nil {
+			glog.Warningf("Failed to establish watch on certificate directory: %v", err)
 			return nil
 		}
 		r.defaultCertificatePath = outPath
