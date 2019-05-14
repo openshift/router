@@ -1,0 +1,49 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# DRAIN_MARKER is the path to a file that indicates that proxies or load
+# balancers should be draining connections to the router.  The router's health
+# check for load balancers checks for this file, and if the file is present, the
+# health check fails in order to cause load balancers to drain connections to
+# the router.
+: ${DRAIN_MARKER:='/var/lib/haproxy/run/draining'}
+
+# DRAIN_PERIOD is the number of seconds that this script will wait for
+# connections to drain before it sends the SIGUSR1 signal to terminate HAProxy
+# processes.
+: ${DRAIN_PERIOD:=90}
+
+# TERMINATE_MARKER is the path to a file that indicates that this router is
+# terminating.  The reload-haproxy script exits immediately if this marker is
+# present.
+: ${TERMINATE_MARKER:='/var/lib/haproxy/run/terminating'}
+
+# GRACE_PERIOD is the number of seconds that this script will wait for HAProxy
+# processes to terminate after it sends the SIGUSR1 signal, before it sends
+# SIGTERM to any remaining HAProxy processes.
+: ${GRACE_PERIOD:=30}
+
+echo " - Setting drain marker..."
+: > "$DRAIN_MARKER"
+
+echo " - Sleeping $DRAIN_PERIOD seconds to let connections drain..."
+sleep "$DRAIN_PERIOD"
+
+echo " - Sending SIGUSR1 to HAProxy processes and waiting up to $GRACE_PERIOD seconds for processes to terminate..."
+stop=$((SECONDS + GRACE_PERIOD))
+while pkill -USR1 haproxy; rc=$?; [[ $rc -ne 1 ]] && ((SECONDS < stop)); do
+    sleep 1
+done
+
+if [[ "$rc" -eq 1 ]]; then
+    echo ' - Done.  All processes have exited.'
+    exit 0
+fi
+
+: > "$TERMINATE_MARKER"
+echo ' - Sending SIGTERM to HAProxy processes...'
+while pkill -TERM haproxy; [[ $? -ne 1 ]]; do
+    sleep 1
+done
+echo ' - Done.  All processes have been terminated.'

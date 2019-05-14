@@ -374,10 +374,16 @@ func (o *TemplateRouterOptions) Run() error {
 			return err
 		}
 		checkController := metrics.ControllerLive()
-		liveChecks := []healthz.HealthzChecker{checkController}
+		podLiveChecks := []healthz.HealthzChecker{checkController}
 		if !(isTrue(env("ROUTER_BIND_PORTS_BEFORE_SYNC", ""))) {
-			liveChecks = append(liveChecks, checkBackend)
+			podLiveChecks = append(podLiveChecks, checkBackend)
 		}
+		podReadyChecks := []healthz.HealthzChecker{
+			checkBackend,
+			checkSync,
+		}
+		checkDraining := metrics.IsDraining()
+		lbReadyChecks := append(podReadyChecks, checkDraining)
 
 		kubeconfig, _, err := o.Config.KubeConfig()
 		if err != nil {
@@ -420,8 +426,9 @@ func (o *TemplateRouterOptions) Run() error {
 				Resource:        "routers",
 				Name:            o.RouterName,
 			},
-			LiveChecks:  liveChecks,
-			ReadyChecks: []healthz.HealthzChecker{checkBackend, checkSync},
+			LBReadyChecks:  lbReadyChecks,
+			PodLiveChecks:  podLiveChecks,
+			PodReadyChecks: podReadyChecks,
 		}
 		if certFile := env("ROUTER_METRICS_TLS_CERT_FILE", ""); len(certFile) > 0 {
 			certificate, err := tls.LoadX509KeyPair(certFile, env("ROUTER_METRICS_TLS_KEY_FILE", ""))

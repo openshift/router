@@ -66,6 +66,10 @@ function haproxyHealthCheck() {
 }
 
 
+if [[ -e ${TERMINATE_MARKER:-'/var/lib/haproxy/run/terminating'} ]]; then
+  exit 0
+fi
+
 old_pids=$(pidof haproxy)
 
 reload_status=0

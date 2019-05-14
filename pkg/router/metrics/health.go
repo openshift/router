@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -51,6 +52,20 @@ func HasSynced(routerPtr **templateplugin.TemplatePlugin) (healthz.HealthzChecke
 		}
 		return nil
 	}), nil
+}
+
+// IsDraining returns a healthz check that fails if the "draining" marker is
+// present, indicating that load balancers should be draining connections to the
+// router.
+func IsDraining() healthz.HealthzChecker {
+	const drainMarker string = "/var/lib/haproxy/run/draining"
+
+	return healthz.NamedCheck("is-terminating", func(r *http.Request) error {
+		if _, err := os.Stat(drainMarker); os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("Terminating")
+	})
 }
 
 func ControllerLive() healthz.HealthzChecker {
