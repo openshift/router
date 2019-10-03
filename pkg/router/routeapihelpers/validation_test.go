@@ -731,6 +731,61 @@ MIIDjTCCAnWgAwIBAgIJAKM4rr3VRQARMA0GCSqGSIb3DQEBCwUAMF0xCzAJBgNV
 The+rest+of+the+certificate+info+is+invalid+and+badly+malformed/
 0A==
 -----END CERTIFICATE-----`
+
+	bz1723400cert = `-----BEGIN CERTIFICATE-----
+MIICFTCCAZsCCQC6eGzKy2Qy/TAKBggqhkjOPQQDAjB0MQswCQYDVQQGEwJVUzEX
+MBUGA1UECAwOTm9ydGggQ2Fyb2xpbmExEDAOBgNVBAcMB1JhbGVpZ2gxEDAOBgNV
+BAoMB1JlZCBIYXQxKDAmBgNVBAMMH3Rlc3QuYXBwcy5vcGVuc2hpZnQuZXhhbXBs
+ZS5jb20wHhcNMTkxMDAzMTcyNDI1WhcNMjAxMDAyMTcyNDI1WjB0MQswCQYDVQQG
+EwJVUzEXMBUGA1UECAwOTm9ydGggQ2Fyb2xpbmExEDAOBgNVBAcMB1JhbGVpZ2gx
+EDAOBgNVBAoMB1JlZCBIYXQxKDAmBgNVBAMMH3Rlc3QuYXBwcy5vcGVuc2hpZnQu
+ZXhhbXBsZS5jb20wdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARu6hfiVBD8SyjLDkcw
+aCr+uBFsxihnxNKxI7OEXc6tMQculFBmZkDVG9gk5Vj+iJwoQyxLcIB9c18hdKvS
+I0/0TA6vXDoiwSfEYFpM7qTysQBfAGAEUotkejWfaFMyP7IwCgYIKoZIzj0EAwID
+aAAwZQIxALVh70tdrlN2wFcG9sD4zn5CWcdwfiVaCmpB6oJnCg7OuQBxM68PyWXo
+iR2eneRXRAIwOgjKcF+CBfg6HFzWF7ivstVUrrfY6Q5a0G11+bMpWHP+lfBtaddb
+g7m2IZtNezz6
+-----END CERTIFICATE-----
+`
+
+	bz1723400key1 = `-----BEGIN EC PARAMETERS-----
+BgUrgQQAIg==
+-----END EC PARAMETERS-----
+-----BEGIN PRIVATE KEY-----
+MIGkAgEBBDAU83BvJPqAgq6NRuNGNAqAdFte0XrVOivNQuitDwrPIs1lmHgPw2YJ
+J05C+Pa7tZigBwYFK4EEACKhZANiAARu6hfiVBD8SyjLDkcwaCr+uBFsxihnxNKx
+I7OEXc6tMQculFBmZkDVG9gk5Vj+iJwoQyxLcIB9c18hdKvSI0/0TA6vXDoiwSfE
+YFpM7qTysQBfAGAEUotkejWfaFMyP7I=
+-----END PRIVATE KEY-----
+`
+	bz1723400key2 = `-----BEGIN EC PARAMETERS-----
+BgUrgQQAIg==
+-----END EC PARAMETERS-----
+-----BEGIN ECDSA PRIVATE KEY-----
+MIGkAgEBBDAU83BvJPqAgq6NRuNGNAqAdFte0XrVOivNQuitDwrPIs1lmHgPw2YJ
+J05C+Pa7tZigBwYFK4EEACKhZANiAARu6hfiVBD8SyjLDkcwaCr+uBFsxihnxNKx
+I7OEXc6tMQculFBmZkDVG9gk5Vj+iJwoQyxLcIB9c18hdKvSI0/0TA6vXDoiwSfE
+YFpM7qTysQBfAGAEUotkejWfaFMyP7I=
+-----END ECDSA PRIVATE KEY-----
+`
+	bz1723400key3 = `-----BEGIN EC PARAMETERS-----
+BgUrgQQAIg==
+-----END EC PARAMETERS-----
+-----BEGIN EC PRIVATE KEY-----
+MIGkAgEBBDAU83BvJPqAgq6NRuNGNAqAdFte0XrVOivNQuitDwrPIs1lmHgPw2YJ
+J05C+Pa7tZigBwYFK4EEACKhZANiAARu6hfiVBD8SyjLDkcwaCr+uBFsxihnxNKx
+I7OEXc6tMQculFBmZkDVG9gk5Vj+iJwoQyxLcIB9c18hdKvSI0/0TA6vXDoiwSfE
+YFpM7qTysQBfAGAEUotkejWfaFMyP7I=
+-----END EC PRIVATE KEY-----
+`
+
+	bz1723400keySanitized = `-----BEGIN EC PRIVATE KEY-----
+MIGkAgEBBDAU83BvJPqAgq6NRuNGNAqAdFte0XrVOivNQuitDwrPIs1lmHgPw2YJ
+J05C+Pa7tZigBwYFK4EEACKhZANiAARu6hfiVBD8SyjLDkcwaCr+uBFsxihnxNKx
+I7OEXc6tMQculFBmZkDVG9gk5Vj+iJwoQyxLcIB9c18hdKvSI0/0TA6vXDoiwSfE
+YFpM7qTysQBfAGAEUotkejWfaFMyP7I=
+-----END EC PRIVATE KEY-----
+`
 )
 
 // TestExtendedValidateRoute ensures that a route's certificate and keys
@@ -1399,7 +1454,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testIntCACertificateChain,
-						Key: "-----BEGIN UNRECOGNIZED-----\n-----END UNRECOGNIZED-----\n",
+						Key:                      "-----BEGIN UNRECOGNIZED-----\n-----END UNRECOGNIZED-----\n",
 					},
 				},
 			},
@@ -1408,7 +1463,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testIntCACertificateChainCanonical,
-						Key: "",
+						Key:                      "",
 					},
 				},
 			},
@@ -1421,7 +1476,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testIntCACertificateChain,
-						Key: "-----BEGIN UNRECOGNIZED-----\n----END UNRECOGNIZED-----\n",
+						Key:                      "-----BEGIN UNRECOGNIZED-----\n----END UNRECOGNIZED-----\n",
 					},
 				},
 			},
@@ -1430,7 +1485,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testIntCACertificateChainCanonical,
-						Key: "",
+						Key:                      "",
 					},
 				},
 			},
@@ -1443,7 +1498,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testIntCACertificateChain,
-						Key: "-----BEGIN EC PARAMETERS-----\n-----END EC PARAMETERS-----\n",
+						Key:                      "-----BEGIN EC PARAMETERS-----\n-----END EC PARAMETERS-----\n",
 					},
 				},
 			},
@@ -1452,7 +1507,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testIntCACertificateChainCanonical,
-						Key: "",
+						Key:                      "",
 					},
 				},
 			},
@@ -1501,6 +1556,72 @@ func TestExtendedValidateRoute(t *testing.T) {
 				},
 			},
 			expectedErrors: 1,
+		},
+		{
+			name: "bug 1723400 key 1",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: bz1723400cert,
+						Key:           bz1723400key1,
+					},
+				},
+			},
+			expectRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: bz1723400cert,
+						Key:           bz1723400keySanitized,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "bug 1723400 key 2",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: bz1723400cert,
+						Key:           bz1723400key2,
+					},
+				},
+			},
+			expectRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: bz1723400cert,
+						Key:           bz1723400keySanitized,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "bug 1723400 key 3",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: bz1723400cert,
+						Key:           bz1723400key3,
+					},
+				},
+			},
+			expectRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: bz1723400cert,
+						Key:           bz1723400keySanitized,
+					},
+				},
+			},
+			expectedErrors: 0,
 		},
 	}
 
