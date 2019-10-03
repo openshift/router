@@ -374,7 +374,7 @@ func (o *TemplateRouterOptions) Run() error {
 			return err
 		}
 		checkController := metrics.ControllerLive()
-		liveChecks := []healthz.HealthzChecker{checkController}
+		liveChecks := []healthz.HealthChecker{checkController}
 		if !(isTrue(env("ROUTER_BIND_PORTS_BEFORE_SYNC", ""))) {
 			liveChecks = append(liveChecks, checkBackend)
 		}
@@ -421,7 +421,7 @@ func (o *TemplateRouterOptions) Run() error {
 				Name:            o.RouterName,
 			},
 			LiveChecks:  liveChecks,
-			ReadyChecks: []healthz.HealthzChecker{checkBackend, checkSync},
+			ReadyChecks: []healthz.HealthChecker{checkBackend, checkSync},
 		}
 		if certFile := env("ROUTER_METRICS_TLS_CERT_FILE", ""); len(certFile) > 0 {
 			certificate, err := tls.LoadX509KeyPair(certFile, env("ROUTER_METRICS_TLS_KEY_FILE", ""))
@@ -501,14 +501,14 @@ func (o *TemplateRouterOptions) Run() error {
 		DynamicConfigManager:     cfgManager,
 	}
 
-	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.Core(), o.ResyncInterval, o.Namespace)
+	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
 	templatePlugin, err := templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {
 		return err
 	}
 	ptrTemplatePlugin = templatePlugin
 
-	factory := o.RouterSelection.NewFactory(routeclient, projectclient.Project().Projects(), kc)
+	factory := o.RouterSelection.NewFactory(routeclient, projectclient.ProjectV1().Projects(), kc)
 	factory.RouteModifierFn = o.RouteUpdate
 
 	var plugin router.Plugin = templatePlugin
@@ -521,7 +521,7 @@ func (o *TemplateRouterOptions) Run() error {
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
 		go tracker.Run(wait.NeverStop)
 		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
-		status := controller.NewStatusAdmitter(plugin, routeclient.Route(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
+		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
 		recorder = status
 		plugin = status
 	}
@@ -537,7 +537,7 @@ func (o *TemplateRouterOptions) Run() error {
 	if blueprintPlugin != nil {
 		// f is like factory but filters the routes based on the
 		// blueprint route namespace and label selector (if any).
-		f := o.RouterSelection.NewFactory(routeclient, projectclient.Project().Projects(), kc)
+		f := o.RouterSelection.NewFactory(routeclient, projectclient.ProjectV1().Projects(), kc)
 		f.LabelSelector = o.BlueprintRouteLabelSelector
 		f.Namespace = o.BlueprintRouteNamespace
 		f.ResyncInterval = o.ResyncInterval
@@ -562,7 +562,7 @@ func (o *TemplateRouterOptions) blueprintRoutes(routeclient *routeclientset.Clie
 		options.LabelSelector = o.BlueprintRouteLabelSelector
 	}
 
-	routeList, err := routeclient.Route().Routes(o.BlueprintRouteNamespace).List(options)
+	routeList, err := routeclient.RouteV1().Routes(o.BlueprintRouteNamespace).List(options)
 	if err != nil {
 		return blueprints, err
 	}
