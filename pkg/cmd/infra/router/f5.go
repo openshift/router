@@ -246,7 +246,7 @@ func (o *F5RouterOptions) Run() error {
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
 		go tracker.Run(wait.NeverStop)
 		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
-		status := controller.NewStatusAdmitter(plugin, routeclient.Route(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
+		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
 		recorder = status
 		plugin = status
 	}

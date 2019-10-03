@@ -194,10 +194,10 @@ func (f *RouterControllerFactory) createEndpointsSharedInformer() {
 	// we do not scope endpoints by labels or fields because the route labels != endpoints labels
 	lw := &kcache.ListWatch{
 		ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
-			return f.KClient.Core().Endpoints(f.Namespace).List(options)
+			return f.KClient.CoreV1().Endpoints(f.Namespace).List(options)
 		},
 		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-			return f.KClient.Core().Endpoints(f.Namespace).Watch(options)
+			return f.KClient.CoreV1().Endpoints(f.Namespace).Watch(options)
 		},
 	}
 	ep := &kapi.Endpoints{}
@@ -217,7 +217,7 @@ func (f *RouterControllerFactory) CreateRoutesSharedInformer() kcache.SharedInde
 	lw := &kcache.ListWatch{
 		ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 			f.setSelectors(&options)
-			routeList, err := f.RClient.Route().Routes(f.Namespace).List(options)
+			routeList, err := f.RClient.RouteV1().Routes(f.Namespace).List(options)
 			if err != nil {
 				return nil, err
 			}
@@ -232,7 +232,7 @@ func (f *RouterControllerFactory) CreateRoutesSharedInformer() kcache.SharedInde
 		},
 		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 			f.setSelectors(&options)
-			w, err := f.RClient.Route().Routes(f.Namespace).Watch(options)
+			w, err := f.RClient.RouteV1().Routes(f.Namespace).Watch(options)
 			if err != nil {
 				return nil, err
 			}
@@ -265,11 +265,11 @@ func (f *RouterControllerFactory) createNamespacesSharedInformer() {
 	lw := &kcache.ListWatch{
 		ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 			options.LabelSelector = f.NamespaceLabels.String()
-			return f.KClient.Core().Namespaces().List(options)
+			return f.KClient.CoreV1().Namespaces().List(options)
 		},
 		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 			options.LabelSelector = f.NamespaceLabels.String()
-			return f.KClient.Core().Namespaces().Watch(options)
+			return f.KClient.CoreV1().Namespaces().Watch(options)
 		},
 	}
 	ns := &kapi.Namespace{}

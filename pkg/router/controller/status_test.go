@@ -166,7 +166,7 @@ func TestStatusNoOp(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "a.b.c.d", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "a.b.c.d", noopLease{}, tracker)
 	err := admitter.HandleRoute(watch.Added, route)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -235,7 +235,7 @@ func TestStatusResetsHost(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	err := admitter.HandleRoute(watch.Added, route)
 
 	route = checkResult(t, err, c, admitter, "route1.test.local", now, &now.Time, 0, 0)
@@ -290,7 +290,7 @@ func TestStatusAdmitsRouteOnForbidden(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	err := admitter.HandleRoute(watch.Added, route)
 	route = checkResult(t, err, c, admitter, "route1.test.local", now, &touched.Time, 0, 0)
 	ingress := findIngressForRoute(route, "test")
@@ -335,7 +335,7 @@ func TestStatusBackoffOnConflict(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	err := admitter.HandleRoute(watch.Added, route)
 	checkResult(t, err, c, admitter, "route1.test.local", now, nil, 0, 0)
 }
@@ -351,7 +351,7 @@ func TestStatusRecordRejection(t *testing.T) {
 		Spec:       routev1.RouteSpec{Host: "route1.test.local"},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	admitter.RecordRouteRejection(route, "Failed", "generic error")
 
 	if len(c.Actions()) != 1 {
@@ -400,7 +400,7 @@ func TestStatusRecordRejectionNoChange(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	admitter.RecordRouteRejection(route, "Failed", "generic error")
 
 	if len(c.Actions()) != 0 {
@@ -435,7 +435,7 @@ func TestStatusRecordRejectionWithStatus(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	admitter.RecordRouteRejection(route, "Failed", "generic error")
 
 	if len(c.Actions()) != 1 {
@@ -484,7 +484,7 @@ func TestStatusRecordRejectionOnHostUpdateOnly(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	admitter.RecordRouteRejection(route, "Failed", "generic error")
 
 	if len(c.Actions()) != 1 {
@@ -540,7 +540,7 @@ func TestStatusRecordRejectionConflict(t *testing.T) {
 		},
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	admitter := NewStatusAdmitter(p, c.Route(), lister, "test", "", noopLease{}, tracker)
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "", noopLease{}, tracker)
 	admitter.RecordRouteRejection(route, "Failed", "generic error")
 
 	if len(c.Actions()) != 1 {
@@ -576,7 +576,7 @@ func TestStatusFightBetweenReplicas(t *testing.T) {
 		Status:     routev1.RouteStatus{},
 	}
 	lister1 := &routeLister{items: []*routev1.Route{route1}}
-	admitter1 := NewStatusAdmitter(p, c1.Route(), lister1, "test", "", noopLease{}, tracker1)
+	admitter1 := NewStatusAdmitter(p, c1.RouteV1(), lister1, "test", "", noopLease{}, tracker1)
 	err := admitter1.HandleRoute(watch.Added, route1)
 
 	outObj1 := checkResult(t, err, c1, admitter1, "route1.test.local", now1, &now1.Time, 0, 0)
@@ -591,7 +591,7 @@ func TestStatusFightBetweenReplicas(t *testing.T) {
 	c2 := fake.NewSimpleClientset(&routev1.Route{ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")}})
 	tracker2 := &fakeTracker{}
 	lister2 := &routeLister{items: []*routev1.Route{outObj1}}
-	admitter2 := NewStatusAdmitter(p, c2.Route(), lister2, "test", "", noopLease{}, tracker2)
+	admitter2 := NewStatusAdmitter(p, c2.RouteV1(), lister2, "test", "", noopLease{}, tracker2)
 	outObj1.Spec.Host = "route1.test-new.local"
 	err = admitter2.HandleRoute(watch.Added, outObj1)
 
@@ -670,7 +670,7 @@ func TestStatusFightBetweenRouters(t *testing.T) {
 		},
 	}
 	lister1 := &routeLister{items: []*routev1.Route{route1}}
-	admitter1 := NewStatusAdmitter(p, c1.Route(), lister1, "test2", "", noopLease{}, tracker)
+	admitter1 := NewStatusAdmitter(p, c1.RouteV1(), lister1, "test2", "", noopLease{}, tracker)
 	err := admitter1.HandleRoute(watch.Added, route1)
 
 	checkResult(t, err, c1, admitter1, "route2.test-new.local", now1, nil, 1, 0)
@@ -736,7 +736,7 @@ func makePass(t *testing.T, host string, admitter *StatusAdmitter, srcObj *route
 		})
 	}
 
-	admitter.client = c.Route()
+	admitter.client = c.RouteV1()
 
 	inputObj := srcObj.DeepCopy()
 	inputObj.Spec.Host = host
