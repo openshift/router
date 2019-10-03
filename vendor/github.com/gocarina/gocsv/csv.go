@@ -31,6 +31,21 @@ var ShouldAlignDuplicateHeadersWithStructFieldOrder = false
 // TagSeparator defines seperator string for multiple csv tags in struct fields
 var TagSeparator = ","
 
+// Normalizer is a function that takes and returns a string. It is applied to
+// struct and header field values before they are compared. It can be used to alter
+// names for comparison. For instance, you could allow case insensitive matching
+// or convert '-' to '_'.
+type Normalizer func(string) string
+
+// normalizeName function initially set to a nop Normalizer.
+var normalizeName = DefaultNameNormalizer()
+
+// DefaultNameNormalizer is a nop Normalizer.
+func DefaultNameNormalizer() Normalizer { return func(s string) string { return s } }
+
+// SetHeaderNormalizer sets the normalizer used to normalize struct and header field names.
+func SetHeaderNormalizer(f Normalizer) { normalizeName = f }
+
 // --------------------------------------------------------------------------
 // CSVWriter used to format CSV
 
@@ -117,7 +132,7 @@ func Marshal(in interface{}, out io.Writer) (err error) {
 	return writeTo(writer, in, false)
 }
 
-// Marshal returns the CSV in writer from the interface.
+// MarshalWithoutHeaders returns the CSV in writer from the interface.
 func MarshalWithoutHeaders(in interface{}, out io.Writer) (err error) {
 	writer := getCSVWriter(out)
 	return writeTo(writer, in, true)
@@ -158,12 +173,17 @@ func UnmarshalBytes(in []byte, out interface{}) error {
 
 // Unmarshal parses the CSV from the reader in the interface.
 func Unmarshal(in io.Reader, out interface{}) error {
-	return readTo(newDecoder(in), out)
+	return readTo(newSimpleDecoderFromReader(in), out)
 }
 
 // UnmarshalWithoutHeaders parses the CSV from the reader in the interface.
 func UnmarshalWithoutHeaders(in io.Reader, out interface{}) error {
-	return readToWithoutHeaders(newDecoder(in), out)
+	return readToWithoutHeaders(newSimpleDecoderFromReader(in), out)
+}
+
+// UnmarshalCSVWithoutHeaders parses a headerless CSV with passed in CSV reader
+func UnmarshalCSVWithoutHeaders(in CSVReader, out interface{}) error {
+	return readToWithoutHeaders(csvDecoder{in}, out)
 }
 
 // UnmarshalDecoder parses the CSV from the decoder in the interface
@@ -182,7 +202,16 @@ func UnmarshalToChan(in io.Reader, c interface{}) error {
 	if c == nil {
 		return fmt.Errorf("goscv: channel is %v", c)
 	}
-	return readEach(newDecoder(in), c)
+	return readEach(newSimpleDecoderFromReader(in), c)
+}
+
+// UnmarshalToChanWithoutHeaders parses the CSV from the reader and send each value in the chan c.
+// The channel must have a concrete type.
+func UnmarshalToChanWithoutHeaders(in io.Reader, c interface{}) error {
+	if c == nil {
+		return fmt.Errorf("goscv: channel is %v", c)
+	}
+	return readEachWithoutHeaders(newSimpleDecoderFromReader(in), c)
 }
 
 // UnmarshalDecoderToChan parses the CSV from the decoder and send each value in the chan c.
@@ -276,7 +305,7 @@ func UnmarshalStringToCallback(in string, c interface{}) (err error) {
 
 // CSVToMap creates a simple map from a CSV of 2 columns.
 func CSVToMap(in io.Reader) (map[string]string, error) {
-	decoder := newDecoder(in)
+	decoder := newSimpleDecoderFromReader(in)
 	header, err := decoder.getCSVRow()
 	if err != nil {
 		return nil, err

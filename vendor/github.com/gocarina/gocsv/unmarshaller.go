@@ -23,6 +23,7 @@ func NewUnmarshaller(reader *csv.Reader, out interface{}) (*Unmarshaller, error)
 	if err != nil {
 		return nil, err
 	}
+	headers = normalizeHeaders(headers)
 
 	um := &Unmarshaller{reader: reader, outType: reflect.TypeOf(out)}
 	err = validate(um, out, headers)
@@ -42,7 +43,7 @@ func (um *Unmarshaller) Read() (interface{}, error) {
 	return um.unmarshalRow(row, nil)
 }
 
-// The same as Read(), but returns a map of the columns that didn't match a field in the struct
+// ReadUnmatched is same as Read(), but returns a map of the columns that didn't match a field in the struct
 func (um *Unmarshaller) ReadUnmatched() (interface{}, map[string]string, error) {
 	row, err := um.reader.Read()
 	if err != nil {
@@ -81,8 +82,11 @@ func validate(um *Unmarshaller, s interface{}, headers []string) error {
 			}
 		}
 	}
-	if err := maybeDoubleHeaderNames(headers); err != nil {
-		return err
+
+	if FailIfDoubleHeaderNames {
+		if err := maybeDoubleHeaderNames(headers); err != nil {
+			return err
+		}
 	}
 
 	um.headerMap = csvHeaders
