@@ -10,8 +10,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/component-base/logs"
-
 	"k8s.io/client-go/pkg/version"
 
 	"github.com/openshift/library-go/pkg/serviceability"
@@ -20,8 +18,6 @@ import (
 )
 
 func main() {
-	defer logs.FlushLogs()
-
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
 	defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
 	rand.Seed(time.Now().UTC().UnixNano())
