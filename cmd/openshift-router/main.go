@@ -20,7 +20,6 @@ import (
 )
 
 func main() {
-	logs.InitLogs()
 	defer logs.FlushLogs()
 
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()

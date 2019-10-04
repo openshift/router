@@ -14,8 +14,8 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/openshift/api v3.9.1-0.20191002160657-d92789481b05+incompatible
-	github.com/openshift/client-go v0.0.0-20191001081553-3b0e988f8cb0
+	github.com/openshift/api v3.9.1-0.20190927132434-86c3b775619d+incompatible
+	github.com/openshift/client-go v0.0.0-20190923180330-3b6373338c9b
 	github.com/openshift/library-go v0.0.0-20191003152030-97c62d8a2901
 	github.com/pkg/profile v1.2.1 // indirect
 	github.com/prometheus/client_golang v0.9.2
