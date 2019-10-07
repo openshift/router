@@ -168,7 +168,7 @@ func (p *TemplatePlugin) HandleEndpoints(eventType watch.EventType, endpoints *k
 	log.V(4).Info("processing endpoints", "endpointCount", len(endpoints.Subsets), "namespace", endpoints.Namespace, "name", endpoints.Name, "eventType", eventType)
 
 	for i, s := range endpoints.Subsets {
-		log.V(4).Info("processing subset", "number", i, "subset", s)
+		log.V(4).Info("processing subset", "index", i, "subset", s)
 	}
 
 	if _, ok := p.Router.FindServiceUnit(key); !ok {
@@ -235,7 +235,7 @@ func endpointsKeyFromParts(namespace, name string) string {
 func getPartsFromEndpointsKey(key string) (string, string) {
 	tokens := strings.SplitN(key, endpointsKeySeparator, 2)
 	if len(tokens) != 2 {
-		log.Error(nil, "expected separator not found in endpoints", "separator", endpointsKeySeparator, "key", key)
+		log.Error(nil, "expected separator not found in endpoints key", "separator", endpointsKeySeparator, "key", key)
 	}
 	namespace := tokens[0]
 	name := tokens[1]

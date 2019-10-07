@@ -79,7 +79,7 @@ func matchPattern(pattern, s string) bool {
 	log.V(7).Info("matchPattern called", "pattern", pattern, "s", s)
 	status, err := regexp.MatchString(`\A(?:`+pattern+`)\z`, s)
 	if err == nil {
-		log.V(7).Info("matchPattern returning", "status", status)
+		log.V(7).Info("matchPattern returning", "foundMatch", status)
 		return status
 	}
 	log.Error(err, "error with regex pattern in call to matchPattern")

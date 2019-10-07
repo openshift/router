@@ -156,7 +156,7 @@ func (cm *simpleCertificateManager) Commit() error {
 		err := cm.w.DeleteCertificate(certFile.certDir, certFile.id)
 		if err != nil {
 			// Log a warning if the delete fails but proceed on.
-			log.Info("ignoring error deleting certificate file", "certFile", certFile.Tag(), "error", err)
+			log.V(0).Info("ignoring error deleting certificate file", "certFile", certFile.Tag(), "error", err)
 		}
 	}
 
