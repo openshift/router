@@ -31,8 +31,8 @@ type Listener struct {
 	Authorizer    authorizer.Authorizer
 	Record        authorizer.AttributesRecord
 
-	LiveChecks  []healthz.HealthzChecker
-	ReadyChecks []healthz.HealthzChecker
+	LiveChecks  []healthz.HealthChecker
+	ReadyChecks []healthz.HealthChecker
 }
 
 func (l Listener) handler() http.Handler {
@@ -98,7 +98,7 @@ func (l Listener) authorizeHandler(protected http.Handler) http.Handler {
 		case strings.HasPrefix(req.URL.Path, "/debug/"):
 			scopedRecord.Subresource = "debug"
 		}
-		scopedRecord.User = user
+		scopedRecord.User = user.User
 		authorized, reason, err := l.Authorizer.Authorize(scopedRecord)
 		if err != nil {
 			glog.V(3).Infof("Unable to authorize: %v", err)

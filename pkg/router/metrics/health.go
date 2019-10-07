@@ -22,7 +22,7 @@ var errBackend = fmt.Errorf("backend reported failure")
 
 // HTTPBackendAvailable returns a healthz check that verifies a backend responds to a GET to
 // the provided URL with 2xx or 3xx response.
-func HTTPBackendAvailable(u *url.URL) healthz.HealthzChecker {
+func HTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 	p := probehttp.New()
 	return healthz.NamedCheck("backend-http", func(r *http.Request) error {
 		result, _, err := p.Probe(u, nil, 2*time.Second)
@@ -40,7 +40,7 @@ func HTTPBackendAvailable(u *url.URL) healthz.HealthzChecker {
 // once.
 // routerPtr is a pointer because it may not yet be defined (there's a chicken-and-egg problem
 //   with when the health checker and router object are set up).
-func HasSynced(routerPtr **templateplugin.TemplatePlugin) (healthz.HealthzChecker, error) {
+func HasSynced(routerPtr **templateplugin.TemplatePlugin) (healthz.HealthChecker, error) {
 	if routerPtr == nil {
 		return nil, fmt.Errorf("Nil routerPtr passed to HasSynced")
 	}
@@ -53,7 +53,7 @@ func HasSynced(routerPtr **templateplugin.TemplatePlugin) (healthz.HealthzChecke
 	}), nil
 }
 
-func ControllerLive() healthz.HealthzChecker {
+func ControllerLive() healthz.HealthChecker {
 	return healthz.NamedCheck("controller", func(r *http.Request) error {
 		return nil
 	})
@@ -62,7 +62,7 @@ func ControllerLive() healthz.HealthzChecker {
 
 // ProxyProtocolHTTPBackendAvailable returns a healthz check that verifies a backend supporting
 // the HAProxy PROXY protocol responds to a GET to the provided URL with 2xx or 3xx response.
-func ProxyProtocolHTTPBackendAvailable(u *url.URL) healthz.HealthzChecker {
+func ProxyProtocolHTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 	dialer := &net.Dialer{
 		Timeout:   2 * time.Second,
 		DualStack: true,
