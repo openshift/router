@@ -308,7 +308,7 @@ func (f *RouterControllerFactory) registerSharedInformerEventHandlers(obj runtim
 
 				obj = tombstone.Obj
 				if objType != reflect.TypeOf(obj) {
-					log.Error(nil, "tombstone contained unexpected object type", "type", objType, "object", objType, obj)
+					log.Error(nil, "tombstone contained unexpected object type", "type", objType, "object", obj)
 					return
 				}
 			}

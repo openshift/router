@@ -133,7 +133,7 @@ func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Rou
 	}
 
 	if err := p.admitter(route); err != nil {
-		log.V(4).Info("route not admitted: %s", "routeNameKey", routeNameKey(route), "error", err.Error())
+		log.V(4).Info("route not admitted", "namespace", route.Namespace, "name", route.Name, "error", err.Error())
 		p.recorder.RecordRouteRejection(route, "RouteNotAdmitted", err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
