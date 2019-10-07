@@ -39,14 +39,14 @@ func NewCSVConverter(headers string, out interface{}, fn ByteConverterFunc) *CSV
 
 // Convert runs a haproxy dynamic config API command.
 func (c *CSVConverter) Convert(data []byte) ([]byte, error) {
-	log.V(5).Info("csv converter input data bytes", "data", string(data))
+	log.V(5).Info("converting CSV data from haproxy", "data", string(data))
 	if c.converterFunc != nil {
 		convertedBytes, err := c.converterFunc(data)
 		if err != nil {
 			return data, err
 		}
 		data = convertedBytes
-		log.V(5).Info("csv converter transformed data bytes", "data", string(data))
+		log.V(5).Info("converted CSV data from haproxy", "data", string(data))
 	}
 
 	if c.out == nil {

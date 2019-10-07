@@ -148,7 +148,7 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 
 		switch _, err := oc.Routes(route.Namespace).UpdateStatus(route); {
 		case err == nil:
-			log.V(4).Info("updated status", "action", action, "namespace", route.Namespace, "name", route.Name)
+			log.V(4).Info("updated route status", "action", action, "namespace", route.Namespace, "name", route.Name)
 			tracker.Clear(key, latest)
 			return writerlease.Extend, false
 		case errors.IsForbidden(err):
@@ -163,7 +163,7 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 		case errors.IsConflict(err):
 			// just follow the normal process, and retry when we receive the update notification due to
 			// the other entity updating the route.
-			log.V(4).Info("updating status failed due to write conflict", "action", action, "namespace", route.Namespace, "name", route.Name)
+			log.V(4).Info("updating route status failed due to write conflict", "action", action, "namespace", route.Namespace, "name", route.Name)
 			return writerlease.Release, true
 		default:
 			utilruntime.HandleError(fmt.Errorf("Unable to write router status for %s/%s: %v", route.Namespace, route.Name, err))

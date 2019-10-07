@@ -145,7 +145,7 @@ func (l *WriterLease) Run(stopCh <-chan struct{}) {
 		defer utilruntime.HandleCrash()
 		for l.work() {
 		}
-		log.V(4).Info("worker stopped", "name", l.name)
+		log.V(4).Info("worker stopped", "worker", l.name)
 	}()
 
 	<-stopCh

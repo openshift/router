@@ -189,7 +189,7 @@ func (c *Client) runCommandWithRetries(cmd string, limit int) (*bytes.Buffer, er
 	})
 
 	if cmdErr != nil {
-		log.V(4).Info("failed attempt(s) to run haproxy command", "command", cmd, "attempts", n, "error", cmdErr)
+		log.V(4).Info("failed attempt to run haproxy command", "command", cmd, "attempts", n, "error", cmdErr)
 	}
 
 	return buffer, cmdErr

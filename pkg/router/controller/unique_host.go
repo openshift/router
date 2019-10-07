@@ -94,7 +94,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 	host := route.Spec.Host
 
 	if len(host) == 0 {
-		log.V(4).Info("Route has no host value", "routeName", routeName)
+		log.V(4).Info("route has no host value", "namespace", route.Namespace, "name", route.Name)
 		p.recorder.RecordRouteRejection(route, "NoHostValue", "no host value was defined for the route")
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return nil

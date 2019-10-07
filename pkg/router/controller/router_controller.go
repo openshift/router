@@ -237,7 +237,7 @@ func (c *RouterController) Commit() {
 
 // processRoute logs and propagates a route event to the plugin
 func (c *RouterController) processRoute(eventType watch.EventType, route *routev1.Route) {
-	log.V(4).Info("processing route: %s/%s -> %s %s", "event", eventType, "route", route)
+	log.V(4).Info("processing route", "event", eventType, "route", route)
 
 	c.RecordNamespaceRoutes(eventType, route)
 	if err := c.Plugin.HandleRoute(eventType, route); err != nil {
