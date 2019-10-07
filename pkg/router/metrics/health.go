@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/glog"
-
 	"k8s.io/apiserver/pkg/server/healthz"
 
 	"github.com/openshift/router/pkg/router/metrics/probehttp"
@@ -89,14 +87,14 @@ func ProxyProtocolHTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 		// read full body
 		defer res.Body.Close()
 		if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
-			glog.V(4).Infof("Error discarding probe body contents: %v", err)
+			log.V(4).Info("error discarding probe body contents", "error", err)
 		}
 
 		if res.StatusCode < http.StatusOK && res.StatusCode >= http.StatusBadRequest {
-			glog.V(4).Infof("Probe failed for %s, Response: %v", u.String(), res)
+			log.V(4).Info("probe failed", "url", u.String(), "response", res)
 			return errBackend
 		}
-		glog.V(4).Infof("Probe succeeded for %s, Response: %v", u.String(), res)
+		log.V(4).Info("probe succeeded", "url", u.String(), "response", res)
 		return nil
 	})
 }

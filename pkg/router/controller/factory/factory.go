@@ -6,8 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/golang/glog"
-
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -22,15 +20,20 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
+	informerfactory "k8s.io/client-go/informers"
+
 	"github.com/openshift/router/pkg/router"
 	routercontroller "github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
-	informerfactory "k8s.io/client-go/informers"
+
+	logf "github.com/openshift/router/log"
 )
 
 const (
 	DefaultResyncInterval = 30 * time.Minute
 )
+
+var log = logf.Logger.WithName("controller_factory")
 
 // RouterControllerFactory initializes and manages the watches that drive a router
 // controller. It supports optional scoping on Namespace, Labels, and Fields of routes.
@@ -299,13 +302,13 @@ func (f *RouterControllerFactory) registerSharedInformerEventHandlers(obj runtim
 			if objType != reflect.TypeOf(obj) {
 				tombstone, ok := obj.(kcache.DeletedFinalStateUnknown)
 				if !ok {
-					glog.Errorf("Couldn't get object from tombstone: %+v", obj)
+					log.Error(nil, "couldn't get object from tombstone", "object", obj)
 					return
 				}
 
 				obj = tombstone.Obj
 				if objType != reflect.TypeOf(obj) {
-					glog.Errorf("Tombstone contained object that is not a %s: %+v", objType, obj)
+					log.Error(nil, "tombstone contained unexpected object type", "type", objType, "object", objType, obj)
 					return
 				}
 			}

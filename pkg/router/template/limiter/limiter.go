@@ -4,9 +4,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("limiter")
 
 // HandlerFunc defines function signature for a CoalescingSerializingRateLimiter.
 type HandlerFunc func() error
@@ -58,7 +61,7 @@ func NewCoalescingSerializingRateLimiter(interval time.Duration, handlerFunc Han
 // result in the function getting called.  If it is called repeatedly while it is still within the ReloadInterval since the last run, it will
 // only run once when the time allows it.
 func (csrl *CoalescingSerializingRateLimiter) RegisterChange() {
-	glog.V(8).Infof("RegisterChange called")
+	log.V(8).Info("RegisterChange called")
 
 	csrl.changeWorker(true)
 }
@@ -67,7 +70,7 @@ func (csrl *CoalescingSerializingRateLimiter) changeWorker(userChanged bool) {
 	csrl.lock.Lock()
 	defer csrl.lock.Unlock()
 
-	glog.V(8).Infof("changeWorker called")
+	log.V(8).Info("changeWorker called")
 
 	if userChanged && csrl.changeReqTime == nil {
 		// They just registered a change manually (and we aren't in the middle of a change)
@@ -77,14 +80,14 @@ func (csrl *CoalescingSerializingRateLimiter) changeWorker(userChanged bool) {
 
 	if csrl.handlerRunning {
 		// We don't need to do anything else... there's a run in progress, and when it is done it will re-call this function at which point the work will then happen
-		glog.V(8).Infof("The handler was already running (%v) started at %s, returning from the worker", csrl.handlerRunning, csrl.lastStart.String())
+		log.V(8).Info("handler was already running, returning from the worker", "running", csrl.handlerRunning, "lastStart", csrl.lastStart.String())
 		return
 	}
 
 	if csrl.changeReqTime == nil {
 		// There's no work queued so we have nothing to do.  We should only get here when
 		// the function is re-called after a reload
-		glog.V(8).Infof("No invoke requested time, so there's no queued work.  Nothing to do.")
+		log.V(8).Info("no invoke requested time, so there's no queued work.  Nothing to do.")
 		return
 	}
 
@@ -92,7 +95,7 @@ func (csrl *CoalescingSerializingRateLimiter) changeWorker(userChanged bool) {
 	now := time.Now()
 	sinceLastRun := now.Sub(csrl.lastStart)
 	untilNextCallback := csrl.callInterval - sinceLastRun
-	glog.V(8).Infof("Checking reload; now: %v, lastStart: %v, sinceLast %v, limit %v, remaining %v", now, csrl.lastStart, sinceLastRun, csrl.callInterval, untilNextCallback)
+	log.V(8).Info("checking reload", "now", now, "lastStart", csrl.lastStart, "sinceLast", sinceLastRun, "limit", csrl.callInterval, "remaining", untilNextCallback)
 
 	if untilNextCallback > 0 {
 		// We want to reload... but can't yet because some window is not satisfied
@@ -105,13 +108,13 @@ func (csrl *CoalescingSerializingRateLimiter) changeWorker(userChanged bool) {
 			csrl.callbackTimer.Reset(untilNextCallback)
 		}
 
-		glog.V(8).Infof("Can't invoke the handler yet, need to delay %s, callback scheduled", untilNextCallback.String())
+		log.V(8).Info("can't invoke the handler yet, need to delay, callback scheduled", "delay", untilNextCallback.String())
 
 		return
 	}
 
 	// Otherwise we can reload immediately... let's do it!
-	glog.V(8).Infof("Calling the handler function (for invoke time %v)", csrl.changeReqTime)
+	log.V(8).Info("calling the handler function", "invokeTime", csrl.changeReqTime)
 	csrl.handlerRunning = true
 	csrl.changeReqTime = nil
 	csrl.lastStart = now
@@ -139,6 +142,6 @@ func (csrl *CoalescingSerializingRateLimiter) runHandler() {
 
 	// Re-call the commit in case there is work waiting that came in while we were working
 	// we want to call the top level commit in case the state has not changed
-	glog.V(8).Infof("Re-Calling the worker after a reload in case work came in")
+	log.V(8).Info("re-calling the worker after a reload in case work came in")
 	csrl.changeWorker(false)
 }

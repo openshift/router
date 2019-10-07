@@ -3,8 +3,8 @@ package controller
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	kapi "k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -47,14 +47,10 @@ func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints
 func (p *ExtendedValidator) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	// Check if previously seen route and its Spec is unchanged.
 	routeName := routeNameKey(route)
-	if errs := routeapihelpers.ExtendedValidateRoute(route); len(errs) > 0 {
-		errmsg := ""
-		for i := 0; i < len(errs); i++ {
-			errmsg = errmsg + "\n  - " + errs[i].Error()
-		}
-		glog.Errorf("Skipping route %s due to invalid configuration: %s", routeName, errmsg)
+	if err := routeapihelpers.ExtendedValidateRoute(route).ToAggregate(); err != nil {
+		log.Error(err, "skipping route due to invalid configuration", "route", routeName)
 
-		p.recorder.RecordRouteRejection(route, "ExtendedValidationFailed", errmsg)
+		p.recorder.RecordRouteRejection(route, "ExtendedValidationFailed", err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return fmt.Errorf("invalid route configuration")
 	}
