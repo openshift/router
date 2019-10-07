@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -22,9 +21,12 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
+	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/controller"
 	controllerfactory "github.com/openshift/router/pkg/router/controller/factory"
 )
+
+var log = logf.Logger.WithName("router")
 
 // RouterSelection controls what routes and resources on the server are considered
 // part of this router.
@@ -115,7 +117,7 @@ func (o *RouterSelection) RouteUpdate(route *routev1.Route) {
 	}
 
 	s = strings.Trim(s, "\"'")
-	glog.V(4).Infof("changing route %s to %s", route.Spec.Host, s)
+	log.V(4).Info("changing route", "fromHost", route.Spec.Host, "toHost", s)
 	route.Spec.Host = s
 }
 
@@ -125,18 +127,18 @@ func (o *RouterSelection) AdmissionCheck(route *routev1.Route) error {
 	}
 
 	if hostInDomainList(route.Spec.Host, o.BlacklistedDomains) {
-		glog.V(4).Infof("host %s in list of denied domains", route.Spec.Host)
+		log.V(4).Info("host in list of denied domains", "routeName", route.Name, "host", route.Spec.Host)
 		return fmt.Errorf("host in list of denied domains")
 	}
 
 	if o.WhitelistedDomains.Len() > 0 {
-		glog.V(4).Infof("Checking if host %s is in the list of allowed domains", route.Spec.Host)
+		log.V(4).Info("checking if host is in the list of allowed domains", "routeName", route.Name, "host", route.Spec.Host)
 		if hostInDomainList(route.Spec.Host, o.WhitelistedDomains) {
-			glog.V(4).Infof("host %s admitted - in the list of allowed domains", route.Spec.Host)
+			log.V(4).Info("host admitted - in the list of allowed domains", "routeName", route.Name, "host", route.Spec.Host)
 			return nil
 		}
 
-		glog.V(4).Infof("host %s rejected - not in the list of allowed domains", route.Spec.Host)
+		log.V(4).Info("host rejected - not in the list of allowed domains", "routeName", route.Name, "host", route.Spec.Host)
 		return fmt.Errorf("host not in the allowed list of domains")
 	}
 	return nil
@@ -244,15 +246,15 @@ func (o *RouterSelection) NewFactory(routeclient routeclientset.Interface, proje
 	factory.ResyncInterval = o.ResyncInterval
 	switch {
 	case o.NamespaceLabels != nil:
-		glog.Infof("Router is only using routes in namespaces matching %s", o.NamespaceLabels)
+		log.V(0).Info("router is only using routes in namespaces matching labels", "labels", o.NamespaceLabels)
 		factory.NamespaceLabels = o.NamespaceLabels
 	case o.ProjectLabels != nil:
-		glog.Infof("Router is only using routes in projects matching %s", o.ProjectLabels)
+		log.V(0).Info("router is only using routes in projects matching labels", "labels", o.ProjectLabels)
 		factory.ProjectLabels = o.ProjectLabels
 	case len(factory.Namespace) > 0:
-		glog.Infof("Router is only using resources in namespace %s", factory.Namespace)
+		log.V(0).Info("router is only using resources in namespace", "namespace", factory.Namespace)
 	default:
-		glog.Infof("Router is including routes in all namespaces")
+		log.V(0).Info("router is including routes in all namespaces")
 	}
 	return factory
 }

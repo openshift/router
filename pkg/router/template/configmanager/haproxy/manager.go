@@ -11,14 +11,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	routev1 "github.com/openshift/api/route/v1"
+
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 	templaterouter "github.com/openshift/router/pkg/router/template"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("manager")
 
 const (
 	// haproxyManagerName is the name of this config manager.
@@ -156,7 +160,7 @@ type haproxyConfigManager struct {
 func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *haproxyConfigManager {
 	client := NewClient(options.ConnectionInfo, haproxyConnectionTimeout)
 
-	glog.V(4).Infof("%s: options = %+v\n", haproxyManagerName, options)
+	log.V(4).Info("creating new manager", "manager", haproxyManagerName, "options", options)
 
 	customAnnotations := []string{}
 	extraAnnotations := os.Getenv("ROUTER_BLUEPRINT_CUSTOM_ANNOTATIONS")
@@ -191,7 +195,7 @@ func (cm *haproxyConfigManager) Initialize(router templaterouter.RouterInterface
 	certBytes := []byte{}
 	if len(certPath) > 0 {
 		if b, err := ioutil.ReadFile(certPath); err != nil {
-			glog.Errorf("Loading router default certificate from %s: %v", certPath, err)
+			log.Error(err, "loading router default certificate", "certPath", certPath)
 		} else {
 			certBytes = b
 		}
@@ -209,7 +213,7 @@ func (cm *haproxyConfigManager) Initialize(router templaterouter.RouterInterface
 		cm.provisionRoutePool(r)
 	}
 
-	glog.V(2).Infof("haproxy Config Manager router will flush out any dynamically configured changes within %s of each other", cm.commitInterval.String())
+	log.V(2).Info("haproxy Config Manager router will flush out any dynamically configured changes within some interval of each other", "interval", cm.commitInterval.String())
 }
 
 // AddBlueprint adds a new (or replaces an existing) route blueprint.
@@ -317,7 +321,7 @@ func (cm *haproxyConfigManager) AddRoute(id, routingKey string, route *routev1.R
 		return fmt.Errorf("Router reload in progress, cannot dynamically add route %s", id)
 	}
 
-	glog.V(4).Infof("Adding route id %s", id)
+	log.V(4).Info("adding route", "id", id)
 
 	if cm.isManagedPoolRoute(route) {
 		return fmt.Errorf("managed pool blueprint route %s ignored", id)
@@ -341,7 +345,7 @@ func (cm *haproxyConfigManager) AddRoute(id, routingKey string, route *routev1.R
 		return fmt.Errorf("finding free backend pool slot for route %s: %v", id, err)
 	}
 
-	glog.V(4).Infof("Adding route id %s using blueprint pool slot %s", id, slotName)
+	log.V(4).Info("adding route using blueprint pool", "id", id, "slot", slotName)
 	entry, ok := cm.backendEntries[id]
 	if !ok {
 		// Should always find backend info but ...
@@ -361,24 +365,24 @@ func (cm *haproxyConfigManager) AddRoute(id, routingKey string, route *routev1.R
 	}
 
 	backendName := entry.BackendName()
-	glog.V(4).Infof("Finding backend %s ...", backendName)
+	log.V(4).Info("finding backend", "name", backendName)
 	backend, err := cm.client.FindBackend(backendName)
 	if err != nil {
 		return err
 	}
 
-	glog.V(4).Infof("Setting routing key for backend %s ...", backendName)
+	log.V(4).Info("setting routing key", "name", backendName)
 	if err := backend.SetRoutingKey(routingKey); err != nil {
 		return err
 	}
 
-	glog.V(4).Infof("Route %s added using blueprint pool slot %s", id, slotName)
+	log.V(4).Info("route added using blueprint pool", "id", id, "slot", slotName)
 	return nil
 }
 
 // RemoveRoute removes a route.
 func (cm *haproxyConfigManager) RemoveRoute(id string, route *routev1.Route) error {
-	glog.V(4).Infof("Removing route %s", id)
+	log.V(4).Info("removing route", "id", id)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically remove route id %s", id)
 	}
@@ -400,11 +404,11 @@ func (cm *haproxyConfigManager) RemoveRoute(id string, route *routev1.Route) err
 	}
 
 	backendName := entry.BackendName()
-	glog.V(4).Infof("For route %s, removing backend %s", id, backendName)
+	log.V(4).Info("removing backend", "id", id, "backend", backendName)
 
 	// Remove the associated haproxy map entries.
 	if err := cm.removeMapAssociations(entry.mapAssociations); err != nil {
-		glog.Warningf("Continuing despite errors removing backend %s map associations: %v", backendName, err)
+		log.V(0).Info("continuing despite errors removing backend map associations", "backend", backendName, "error", err)
 	}
 
 	// Remove pool usage entry for a route added in.
@@ -416,24 +420,24 @@ func (cm *haproxyConfigManager) RemoveRoute(id string, route *routev1.Route) err
 	delete(cm.backendEntries, id)
 
 	// Finally, disable all the servers.
-	glog.V(4).Infof("Finding backend %s ...", backendName)
+	log.V(4).Info("finding backend", "backend", backendName)
 	backend, err := cm.client.FindBackend(backendName)
 	if err != nil {
 		return err
 	}
-	glog.V(4).Infof("Disabling all servers for backend %s", backendName)
+	log.V(4).Info("disabling all servers for backend", "backend", backendName)
 	if err := backend.Disable(); err != nil {
 		return err
 	}
 
-	glog.V(4).Infof("Committing changes made to backend %s", backendName)
+	log.V(4).Info("committing changes made to backend", "backend", backendName)
 	return backend.Commit()
 }
 
 // ReplaceRouteEndpoints dynamically replaces a subset of the endpoints for
 // a route - modifies a subset of the servers on an haproxy backend.
 func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
-	glog.V(4).Infof("Replacing route endpoints for %s, weight=%v", id, weight)
+	log.V(4).Info("replacing route endpoints", "id", id, "weight", weight)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically add endpoints for %s", id)
 	}
@@ -465,7 +469,7 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 	}
 
 	backendName := entry.BackendName()
-	glog.V(4).Infof("Finding backend %s ...", backendName)
+	log.V(4).Info("finding backend", "backend", backendName)
 	backend, err := cm.client.FindBackend(backendName)
 	if err != nil {
 		return err
@@ -489,13 +493,13 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 		}
 	}
 
-	glog.V(4).Infof("Getting servers for backend %s", backendName)
+	log.V(4).Info("getting servers for backend", "backend", backendName)
 	servers, err := backend.Servers()
 	if err != nil {
 		return err
 	}
 
-	glog.V(4).Infof("Processing endpoint changes, deleted=%+v, modified=%+v", deletedEndpoints, modifiedEndpoints)
+	log.V(4).Info("processing endpoint changes", "deleted", deletedEndpoints, "modified", modifiedEndpoints)
 
 	// First process the deleted endpoints and update the servers we
 	// have already used - these would be the ones where the name
@@ -515,10 +519,10 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 
 		if _, ok := deletedEndpoints[relatedEndpointID]; ok {
 			configChanged = true
-			glog.V(4).Infof("For deleted endpoint %s, disabling server %s", relatedEndpointID, s.Name)
+			log.V(4).Info("disabling server for deleted endpoint", "endpoint", relatedEndpointID, "server", s.Name)
 			backend.DisableServer(s.Name)
 			if _, ok := entry.dynamicServerMap[s.Name]; ok {
-				glog.V(4).Infof("Removing server %s from dynamic server map (backend=%s)", s.Name, backendName)
+				log.V(4).Info("removing server from dynamic server map", "server", s.Name, "backend", backendName)
 				delete(entry.dynamicServerMap, s.Name)
 			}
 			continue
@@ -526,8 +530,7 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 
 		if ep, ok := modifiedEndpoints[relatedEndpointID]; ok {
 			configChanged = true
-			glog.V(4).Infof("For modified endpoint %s, setting server %s info to %s:%s with weight %d and enabling",
-				relatedEndpointID, s.Name, ep.IP, ep.Port, weight)
+			log.V(4).Info("enabling server for modified endpoint", "endpoint", relatedEndpointID, "server", s.Name, "ip", ep.IP, "port", ep.Port, "weight", weight)
 			backend.UpdateServerInfo(s.Name, ep.IP, ep.Port, weight, weightIsRelative)
 			backend.EnableServer(s.Name)
 
@@ -554,7 +557,7 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 		configChanged = true
 		entry.dynamicServerMap[name] = ep.ID
 
-		glog.V(4).Infof("For added endpoint %s, setting dynamic server %s info: (%s, %s, %d) and enabling", ep.ID, name, ep.IP, ep.Port, weight)
+		log.V(4).Info("enabling server for added endpoint", "endpoint", ep.ID, "server", name, "ip", ep.IP, "port", ep.Port, "weight", weight)
 		backend.UpdateServerInfo(name, ep.IP, ep.Port, weight, weightIsRelative)
 		backend.EnableServer(name)
 
@@ -568,13 +571,13 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 			id, len(modifiedEndpoints))
 	}
 
-	glog.V(4).Infof("Committing backend %s", backendName)
+	log.V(4).Info("committing backend", "backend", backendName)
 	return backend.Commit()
 }
 
 // RemoveRouteEndpoints removes servers matching the endpoints from a haproxy backend.
 func (cm *haproxyConfigManager) RemoveRouteEndpoints(id string, endpoints []templaterouter.Endpoint) error {
-	glog.V(4).Infof("Removing endpoints for id %s", id)
+	log.V(4).Info("removing endpoints", "id", id)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically delete endpoints for %s", id)
 	}
@@ -592,7 +595,7 @@ func (cm *haproxyConfigManager) RemoveRouteEndpoints(id string, endpoints []temp
 	}
 
 	backendName := entry.BackendName()
-	glog.V(4).Infof("Finding backend %s ...", backendName)
+	log.V(4).Info("finding backend", "backend", backendName)
 	backend, err := cm.client.FindBackend(backendName)
 	if err != nil {
 		return err
@@ -612,18 +615,18 @@ func (cm *haproxyConfigManager) RemoveRouteEndpoints(id string, endpoints []temp
 			delete(entry.dynamicServerMap, name)
 		}
 
-		glog.V(4).Infof("For endpoint %s, disabling server %s", ep.ID, name)
+		log.V(4).Info("disabling server for endpoint", "endpoint", ep.ID, "server", name)
 		backend.DisableServer(name)
 	}
 
-	glog.V(4).Infof("Committing backend %s", backendName)
+	log.V(4).Info("committing backend", "backend", backendName)
 	return backend.Commit()
 }
 
 // Notify informs the config manager of any template router state changes.
 // We only care about the reload specific events.
 func (cm *haproxyConfigManager) Notify(event templaterouter.RouterEventType) {
-	glog.V(4).Infof("Received a %s notification", string(event))
+	log.V(4).Info("received notification", "event", string(event))
 
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
@@ -641,7 +644,7 @@ func (cm *haproxyConfigManager) Notify(event templaterouter.RouterEventType) {
 
 // Commit commits the configuration and reloads the associated router.
 func (cm *haproxyConfigManager) Commit() {
-	glog.V(4).Infof("Committing dynamic config manager changes")
+	log.V(4).Info("committing dynamic config manager changes")
 	cm.commitRouterConfig()
 }
 
@@ -703,7 +706,7 @@ func (cm *haproxyConfigManager) commitRouterConfig() {
 	cm.router.AddRoute(route)
 	cm.router.RemoveRoute(route)
 
-	glog.V(4).Infof("Committing associated template router ... ")
+	log.V(4).Info("committing associated template router")
 	cm.router.Commit()
 }
 
@@ -724,7 +727,7 @@ func (cm *haproxyConfigManager) isManagedPoolRoute(route *routev1.Route) bool {
 // provisionRoutePool provisions a pre-allocated pool of routes based on a blueprint.
 func (cm *haproxyConfigManager) provisionRoutePool(blueprint *routev1.Route) {
 	poolSize := getPoolSize(blueprint, cm.blueprintRoutePoolSize)
-	glog.Infof("Provisioning blueprint route pool %s/%s-[1-%d]", blueprint.Namespace, blueprint.Name, poolSize)
+	log.V(0).Info("provisioning blueprint route pool", "namespace", blueprint.Namespace, "name", blueprint.Name, "size", poolSize)
 	for i := 0; i < poolSize; i++ {
 		route := blueprint.DeepCopy()
 		route.Namespace = blueprintRoutePoolNamespace
@@ -737,7 +740,7 @@ func (cm *haproxyConfigManager) provisionRoutePool(blueprint *routev1.Route) {
 // removeRoutePool removes a pre-allocated pool of routes based on a blueprint.
 func (cm *haproxyConfigManager) removeRoutePool(blueprint *routev1.Route) {
 	poolSize := getPoolSize(blueprint, cm.blueprintRoutePoolSize)
-	glog.Infof("Removing blueprint route pool %s/%s-[1-%d]", blueprint.Namespace, blueprint.Name, poolSize)
+	log.V(0).Info("removing blueprint route pool", "namespace", blueprint.Namespace, "name", blueprint.Name, "size", poolSize)
 	for i := 0; i < poolSize; i++ {
 		route := blueprint.DeepCopy()
 		route.Namespace = blueprintRoutePoolNamespace
@@ -749,7 +752,7 @@ func (cm *haproxyConfigManager) removeRoutePool(blueprint *routev1.Route) {
 
 // processMapAssociations processes all the map associations for a backend.
 func (cm *haproxyConfigManager) processMapAssociations(associations haproxyMapAssociation, add bool) error {
-	glog.V(4).Infof("Associations = %+v", associations)
+	log.V(4).Info("processing map associations", "associations", associations)
 
 	haproxyMaps, err := cm.client.Maps()
 	if err != nil {
@@ -759,7 +762,7 @@ func (cm *haproxyConfigManager) processMapAssociations(associations haproxyMapAs
 	for _, ham := range haproxyMaps {
 		name := path.Base(ham.Name())
 		if entries, ok := associations[name]; ok {
-			glog.V(4).Infof("Applying to map %s, entries %+v ", name, entries)
+			log.V(4).Info("applying to map", "name", name, "entries", entries)
 			if err := applyMapAssociations(ham, entries, add); err != nil {
 				return err
 			}
@@ -971,7 +974,7 @@ func buildBlueprintRoutes(customRoutes []*routev1.Route, validate bool) []*route
 		dolly.Namespace = blueprintRoutePoolNamespace
 		if validate {
 			if err := routeapihelpers.ExtendedValidateRoute(dolly).ToAggregate(); err != nil {
-				glog.Errorf("Skipping blueprint route %s/%s due to invalid configuration: %v", r.Namespace, r.Name, err)
+				log.Error(err, "skipping blueprint route due to invalid configuration", "namespace", r.Namespace, "name", r.Name)
 				continue
 			}
 		}
@@ -1034,8 +1037,8 @@ func getPoolSize(r *routev1.Route, defaultSize int) int {
 			return int(poolSize)
 		} else {
 			routeName := fmt.Sprintf("%s/%s", r.Namespace, r.Name)
-			glog.Warningf("Blueprint route %s has an invalid pool size annotation %q, using default size %v, error: %v",
-				routeName, v, defaultSize, err)
+			log.V(0).Info("blueprint route has an invalid pool size annotation; using default size",
+				"route", routeName, "annotation", v, "defaultSize", defaultSize, "error", err)
 		}
 	}
 
@@ -1064,7 +1067,7 @@ func isDynamicBackendServer(server BackendServerInfo) bool {
 // applyMapAssociations applies the backend associations to a haproxy map.
 func applyMapAssociations(m *HAProxyMap, associations map[string]string, add bool) error {
 	for k, v := range associations {
-		glog.V(4).Infof("Applying to map %s(k=%v, v=%v), add=%+v", m.Name(), k, v, add)
+		log.V(4).Info("applying to map", "name", m.Name(), "key", k, "value", v, "add", add)
 		if add {
 			if err := m.Add(k, v, true); err != nil {
 				return err

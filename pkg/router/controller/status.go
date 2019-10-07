@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
-
 	corev1 "k8s.io/api/core/v1"
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +30,7 @@ var LogRejections = logRecorder{}
 type logRecorder struct{}
 
 func (logRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	glog.V(3).Infof("Rejected route %s in namespace %s: %s: %s", route.Name, route.Namespace, reason, message)
+	log.V(3).Info("rejected route", "name", route.Name, "namespace", route.Namespace, "reason", reason, "message", message)
 }
 
 // StatusAdmitter ensures routes added to the plugin have status set.
@@ -125,14 +123,14 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 			return writerlease.None, false
 		}
 		if string(route.UID) != key {
-			glog.V(4).Infof("%s: skipped update due to route UID changing (likely delete and recreate): %s/%s", action, route.Namespace, route.Name)
+			log.V(4).Info("skipped update due to route UID changing (likely delete and recreate)", "action", action, "namespace", route.Namespace, "name", route.Name)
 			return writerlease.None, false
 		}
 
 		route = route.DeepCopy()
 		changed, created, now, latest, original := recordIngressCondition(route, routerName, hostName, condition)
 		if !changed {
-			glog.V(4).Infof("%s: no changes to route needed: %s/%s", action, route.Namespace, route.Name)
+			log.V(4).Info("no changes to route needed", "action", action, "namespace", route.Namespace, "name", route.Name)
 			// if the most recent change was to our ingress status, consider the current lease extended
 			if findMostRecentIngress(route) == routerName {
 				lease.Extend(key)
@@ -144,13 +142,13 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 		// value, skip updating altogether and rely on the next resync to resolve conflicts. This prevents routers
 		// with different configurations from endlessly updating the route status.
 		if !created && tracker.IsChangeContended(key, now, original) {
-			glog.V(4).Infof("%s: skipped update due to another process altering the route with a different ingress status value: %s %#v", action, key, original)
+			log.V(4).Info("skipped update due to another process altering the route with a different ingress status value", "action", action, "key", key, "original", original)
 			return writerlease.Release, false
 		}
 
 		switch _, err := oc.Routes(route.Namespace).UpdateStatus(route); {
 		case err == nil:
-			glog.V(4).Infof("%s: updated status of %s/%s", action, route.Namespace, route.Name)
+			log.V(4).Info("updated status", "action", action, "namespace", route.Namespace, "name", route.Name)
 			tracker.Clear(key, latest)
 			return writerlease.Extend, false
 		case errors.IsForbidden(err):
@@ -160,12 +158,12 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 			return writerlease.Extend, false
 		case errors.IsNotFound(err):
 			// route was deleted
-			glog.V(4).Infof("%s: route %s/%s was deleted before we could update status", action, route.Namespace, route.Name)
+			log.V(4).Info("route was deleted before we could update status", "action", action, "namespace", route.Namespace, "name", route.Name)
 			return writerlease.Release, false
 		case errors.IsConflict(err):
 			// just follow the normal process, and retry when we receive the update notification due to
 			// the other entity updating the route.
-			glog.V(4).Infof("%s: updating status of %s/%s failed due to write conflict", action, route.Namespace, route.Name)
+			log.V(4).Info("updating status failed due to write conflict", "action", action, "namespace", route.Namespace, "name", route.Name)
 			return writerlease.Release, true
 		default:
 			utilruntime.HandleError(fmt.Errorf("Unable to write router status for %s/%s: %v", route.Namespace, route.Name, err))

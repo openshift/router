@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/golang/glog"
 )
 
 // BackendServerState indicates the state for a haproxy backend server.
@@ -170,7 +168,7 @@ func (b *Backend) Refresh() error {
 
 // SetRoutingKey sets the cookie routing key for the haproxy backend.
 func (b *Backend) SetRoutingKey(k string) error {
-	glog.V(4).Infof("Setting routing key for %s", b.name)
+	log.V(4).Info("setting routing key", "backend", b.name)
 
 	cmd := fmt.Sprintf("set dynamic-cookie-key backend %s %s", b.name, k)
 	if err := b.executeCommand(cmd); err != nil {
@@ -217,13 +215,13 @@ func (b *Backend) Disable() error {
 
 // EnableServer enables serving traffic with a haproxy backend server.
 func (b *Backend) EnableServer(name string) error {
-	glog.V(4).Infof("Enabling server %s with ready state", name)
+	log.V(4).Info("enabling server with ready state", "server", name)
 	return b.UpdateServerState(name, BackendServerStateReady)
 }
 
 // DisableServer stops serving traffic for a haproxy backend server.
 func (b *Backend) DisableServer(name string) error {
-	glog.V(4).Infof("Disabling server %s with maint state", name)
+	log.V(4).Info("disabling server with maint state", "server", name)
 	return b.UpdateServerState(name, BackendServerStateMaint)
 }
 

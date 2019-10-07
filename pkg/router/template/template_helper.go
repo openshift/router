@@ -12,9 +12,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
-
 	routev1 "github.com/openshift/api/route/v1"
+
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
 	haproxyutil "github.com/openshift/router/pkg/router/template/util/haproxy"
@@ -30,17 +29,17 @@ func isTrue(s string) bool {
 }
 
 func firstMatch(pattern string, values ...string) string {
-	glog.V(7).Infof("firstMatch called with %s and %v", pattern, values)
+	log.V(7).Info("firstMatch called", "pattern", pattern, "values", values)
 	if re, err := regexp.Compile(`\A(?:` + pattern + `)\z`); err == nil {
 		for _, value := range values {
 			if re.MatchString(value) {
-				glog.V(7).Infof("firstMatch returning string: %s", value)
+				log.V(7).Info("firstMatch returning", "value", value)
 				return value
 			}
 		}
-		glog.V(7).Infof("firstMatch returning empty string")
+		log.V(7).Info("firstMatch returning empty string")
 	} else {
-		glog.Errorf("Error with regex pattern in call to firstMatch: %v", err)
+		log.Error(err, "error with regex pattern in call to firstMatch")
 	}
 	return ""
 }
@@ -65,25 +64,25 @@ func isInteger(s string) bool {
 }
 
 func matchValues(s string, allowedValues ...string) bool {
-	glog.V(7).Infof("matchValues called with %s and %v", s, allowedValues)
+	log.V(7).Info("matchValues called", "s", s, "allowedValues", allowedValues)
 	for _, value := range allowedValues {
 		if value == s {
-			glog.V(7).Infof("matchValues finds matching string: %s", s)
+			log.V(7).Info("matchValues finds matching string", "s", s)
 			return true
 		}
 	}
-	glog.V(7).Infof("matchValues cannot match string: %s", s)
+	log.V(7).Info("matchValues cannot match string", "s", s)
 	return false
 }
 
 func matchPattern(pattern, s string) bool {
-	glog.V(7).Infof("matchPattern called with %s and %s", pattern, s)
+	log.V(7).Info("matchPattern called", "pattern", pattern, "s", s)
 	status, err := regexp.MatchString(`\A(?:`+pattern+`)\z`, s)
 	if err == nil {
-		glog.V(7).Infof("matchPattern returning status: %v", status)
+		log.V(7).Info("matchPattern returning", "status", status)
 		return status
 	}
-	glog.Errorf("Error with regex pattern in call to matchPattern: %v", err)
+	log.Error(err, "error with regex pattern in call to matchPattern")
 	return false
 }
 
@@ -94,7 +93,7 @@ func matchPattern(pattern, s string) bool {
 func genSubdomainWildcardRegexp(hostname, path string, exactPath bool) string {
 	subdomain := routeapihelpers.GetDomainForHost(hostname)
 	if len(subdomain) == 0 {
-		glog.Warningf("Generating subdomain wildcard regexp - invalid host name %s", hostname)
+		log.V(0).Info("generating subdomain wildcard regexp - invalid host name", "hostname", hostname)
 		return fmt.Sprintf("%s%s", hostname, path)
 	}
 
@@ -196,7 +195,7 @@ func generateHAProxyWhiteListFile(workingDir, id, value string) string {
 	cidrs, _ := haproxyutil.ValidateWhiteList(value)
 	data := []byte(strings.Join(cidrs, "\n") + "\n")
 	if err := ioutil.WriteFile(name, data, 0644); err != nil {
-		glog.Errorf("Error writing haproxy whitelist contents: %v", err)
+		log.Error(err, "error writing haproxy whitelist contents")
 		return ""
 	}
 

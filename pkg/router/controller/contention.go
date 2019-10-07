@@ -4,8 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -149,9 +147,9 @@ func (t *SimpleContentionTracker) flush() {
 		}
 	}
 	if t.contentions > 0 && len(t.message) > 0 {
-		glog.Warning(t.message)
+		log.V(0).Info(t.message)
 	}
-	glog.V(5).Infof("Flushed contention tracker (%s): %d out of %d removed, %d total contentions", t.expires*2, removed, removed+len(t.ids), t.contentions)
+	log.V(5).Info("flushed contention tracker", "expires", t.expires*2, "removed", removed, "total", removed+len(t.ids), "contentions", t.contentions)
 	t.contentions = contentions
 }
 
@@ -165,7 +163,7 @@ func (t *SimpleContentionTracker) Changed(id string, current *routev1.RouteIngre
 
 	// we have detected a sufficient number of conflicts to skip all updates for this interval
 	if t.contentions > t.maxContentions {
-		glog.V(4).Infof("Reached max contentions, stop tracking changes")
+		log.V(4).Info("reached max contentions, stop tracking changes")
 		return
 	}
 
@@ -177,19 +175,19 @@ func (t *SimpleContentionTracker) Changed(id string, current *routev1.RouteIngre
 			state: stateCandidate,
 			last:  current,
 		}
-		glog.V(4).Infof("Object %s is a candidate for contention", id)
+		log.V(4).Info("object is a candidate for contention", "id", id)
 		return
 	}
 
 	// the previous state matches the current state, nothing to do
 	if ingressEqual(last.last, current) {
-		glog.V(4).Infof("Object %s is unchanged", id)
+		log.V(4).Info("object is unchanged", "id", id)
 		return
 	}
 
 	if last.state == stateContended {
 		t.contentions++
-		glog.V(4).Infof("Object %s is contended and has been modified by another writer", id)
+		log.V(4).Info("object is contended and has been modified by another writer", "id", id)
 		return
 	}
 
@@ -201,7 +199,7 @@ func (t *SimpleContentionTracker) Changed(id string, current *routev1.RouteIngre
 			last:  current,
 		}
 		t.contentions++
-		glog.V(4).Infof("Object %s has been modified by another writer", id)
+		log.V(4).Info("object has been modified by another writer", "id", id)
 		return
 	}
 }
@@ -212,7 +210,7 @@ func (t *SimpleContentionTracker) IsChangeContended(id string, now time.Time, cu
 
 	// we have detected a sufficient number of conflicts to skip all updates for this interval
 	if t.contentions > t.maxContentions {
-		glog.V(4).Infof("Reached max contentions, rejecting all update attempts until the next interval")
+		log.V(4).Info("reached max contentions, rejecting all update attempts until the next interval")
 		return true
 	}
 
@@ -224,7 +222,7 @@ func (t *SimpleContentionTracker) IsChangeContended(id string, now time.Time, cu
 
 	// if the object is contended, exit early
 	if last.state == stateContended {
-		glog.V(4).Infof("Object %s is being contended by another writer", id)
+		log.V(4).Info("object is being contended by another writer", "id", id)
 		return true
 	}
 

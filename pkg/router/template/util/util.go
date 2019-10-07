@@ -5,11 +5,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
-
 	routev1 "github.com/openshift/api/route/v1"
+
 	"github.com/openshift/router/pkg/router/routeapihelpers"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("util")
 
 // GenerateRouteRegexp generates a regular expression to match route hosts (and paths if any).
 func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
@@ -17,7 +20,7 @@ func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
 	if wildcard {
 		subdomain := routeapihelpers.GetDomainForHost(hostname)
 		if len(subdomain) == 0 {
-			glog.Warningf("Generating subdomain wildcard regexp - invalid host name %s", hostname)
+			log.V(0).Info("generating subdomain wildcard regexp - invalid host name", "hostname", hostname)
 		} else {
 			subdomainRE := regexp.QuoteMeta(fmt.Sprintf(".%s", subdomain))
 			hostRE = fmt.Sprintf(`[^\.]*%s`, subdomainRE)

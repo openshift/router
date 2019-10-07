@@ -29,8 +29,10 @@ import (
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/pkg/version"
 
-	"github.com/golang/glog"
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("metrics_probehttp")
 
 type Result string
 
@@ -102,9 +104,9 @@ func DoHTTPProbe(url *url.URL, headers http.Header, client HTTPGetInterface) (Re
 	}
 	body := string(b)
 	if res.StatusCode >= http.StatusOK && res.StatusCode < http.StatusBadRequest {
-		glog.V(4).Infof("Probe succeeded for %s, Response: %v", url.String(), *res)
+		log.V(4).Info("probe succeeded", "url", url.String(), "response", *res)
 		return Success, body, nil
 	}
-	glog.V(4).Infof("Probe failed for %s with request headers %v, response body: %v", url.String(), headers, body)
+	log.V(4).Info("probe failed", "url", url.String(), "headers", headers, "body", body)
 	return Failure, fmt.Sprintf("HTTP probe failed with statuscode: %d", res.StatusCode), nil
 }
