@@ -1,5 +1,15 @@
+FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base AS builder
+RUN INSTALL_PKGS="git ca-certificates gcc libc6-dev liblua5.3-dev libpcre3-dev libssl-dev libsystemd-dev make wget zlib1g-dev" && \
+      yum install -y $INSTALL_PKGS && \
+      rpm -V INSTALL_PKGS && \
+      yum clean all && \
+      git clone --single-branch --branch v2.0.0 https://github.com/haproxy/haproxy.git && \
+      cd haproxy && \
+      make TARGET=linux-glibc USE_LUA=1 USE_OPENSSL=1 USE_PCRE=1 USE_ZLIB=1 USE_SYSTEMD=1 EXTRA_OBJS="contrib/prometheus-exporter/service-prometheus.o" && \
+
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
+COPY --from=builder /haproxy/haproxy /usr/sbin/
+RUN INSTALL_PKGS="rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
