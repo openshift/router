@@ -7,7 +7,6 @@ import (
 	"time"
 
 	haproxy "github.com/bcicen/go-haproxy"
-	"github.com/golang/glog"
 
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 )
@@ -50,15 +49,15 @@ func NewClient(socketName string, timeout int) *Client {
 // RunCommand executes a haproxy dynamic config API command and if present
 // converts the response as desired.
 func (c *Client) RunCommand(cmd string, converter Converter) ([]byte, error) {
-	glog.V(4).Infof("Running haproxy command: %q ...", cmd)
+	log.V(4).Info("running haproxy command", "command", cmd)
 	buffer, err := c.runCommandWithRetries(cmd, maxRetries)
 	if err != nil {
-		glog.Warningf("haproxy dynamic config API command %s failed with error: %v", cmd, err)
+		log.V(0).Info("haproxy dynamic config API command failed", "command", cmd, "error", err)
 		return nil, err
 	}
 
 	response := buffer.Bytes()
-	glog.V(4).Infof("haproxy command response: %q", string(response))
+	log.V(4).Info("haproxy command returned", "response", string(response))
 	if converter == nil {
 		return response, nil
 	}
@@ -190,7 +189,7 @@ func (c *Client) runCommandWithRetries(cmd string, limit int) (*bytes.Buffer, er
 	})
 
 	if cmdErr != nil {
-		glog.V(4).Infof("%d attempt(s) to run haproxy command %q failed: %v", n, cmd, cmdErr)
+		log.V(4).Info("failed attempt to run haproxy command", "command", cmd, "attempts", n, "error", cmdErr)
 	}
 
 	return buffer, cmdErr

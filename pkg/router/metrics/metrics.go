@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/cockroachdb/cmux"
-	"github.com/golang/glog"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"k8s.io/apiserver/pkg/server/healthz"
@@ -17,7 +17,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("metrics")
 
 type Listener struct {
 	Addr string
@@ -69,10 +73,10 @@ func (l Listener) authorizeHandler(protected http.Handler) http.Handler {
 			// older routers will not have permission to check token access review, so treat this
 			// as an authorization denied if so
 			if !ok || errors.IsUnauthorized(err) {
-				glog.V(5).Infof("Unable to authenticate: %v", err)
+				log.V(5).Info("unable to authenticate", "error", err)
 				http.Error(w, "Unable to authenticate due to an error", http.StatusUnauthorized)
 			} else {
-				glog.V(3).Infof("Unable to authenticate: %v", err)
+				log.V(3).Info("unable to authenticate", "error", err)
 				http.Error(w, "Unable to authenticate due to an error", http.StatusInternalServerError)
 			}
 			return
@@ -101,12 +105,12 @@ func (l Listener) authorizeHandler(protected http.Handler) http.Handler {
 		scopedRecord.User = user.User
 		authorized, reason, err := l.Authorizer.Authorize(scopedRecord)
 		if err != nil {
-			glog.V(3).Infof("Unable to authorize: %v", err)
+			log.V(3).Info("unable to authorize", "error", err)
 			http.Error(w, "Unable to authorize the user due to an error", http.StatusInternalServerError)
 			return
 		}
 		if authorized != authorizer.DecisionAllow {
-			glog.V(5).Infof("Unable to authorize: %v", err)
+			log.V(5).Info("unable to authorize", "error", err)
 			http.Error(w, fmt.Sprintf("Forbidden: %s", reason), http.StatusForbidden)
 			return
 		}
@@ -122,7 +126,8 @@ func (l Listener) Listen() {
 
 	tcpl, err := net.Listen("tcp", l.Addr)
 	if err != nil {
-		glog.Fatal(err)
+		// TODO: This function should return an error.
+		panic(err)
 	}
 
 	// if a TLS connection was requested, set up a connection mux that will send TLS requests to
@@ -138,13 +143,14 @@ func (l Listener) Listen() {
 			Handler: handler,
 		}
 		if err := s.Serve(httpl); err != cmux.ErrListenerClosed {
-			glog.Fatal(err)
+			// TODO: This function should return an error.
+			panic(err)
 		}
 	}()
 
 	// match TLS if configured
 	if l.TLSConfig != nil {
-		glog.Infof("Router health and metrics port listening at %s on HTTP and HTTPS", l.Addr)
+		log.V(0).Info("router health and metrics port listening on HTTP and HTTPS", "address", l.Addr)
 		tlsl := m.Match(cmux.Any())
 		tlsl = tls.NewListener(tlsl, l.TLSConfig)
 		go func() {
@@ -152,16 +158,18 @@ func (l Listener) Listen() {
 				Handler: handler,
 			}
 			if err := s.Serve(tlsl); err != cmux.ErrListenerClosed {
-				glog.Fatal(err)
+				// TODO: This function should return an error.
+				panic(err)
 			}
 		}()
 	} else {
-		glog.Infof("Router health and metrics port listening at %s", l.Addr)
+		log.V(0).Info("router health and metrics port listening", "address", l.Addr)
 	}
 
 	go func() {
 		if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
-			glog.Fatal(err)
+			// TODO: This function should return an error.
+			panic(err)
 		}
 	}()
 }

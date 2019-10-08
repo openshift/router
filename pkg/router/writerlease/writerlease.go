@@ -6,12 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("writerlease")
 
 // Lease performs the equivalent of leader election by competing to perform work (such as
 // updating a contended resource). Every successful work unit is considered a lease renewal,
@@ -143,7 +145,7 @@ func (l *WriterLease) Run(stopCh <-chan struct{}) {
 		defer utilruntime.HandleCrash()
 		for l.work() {
 		}
-		glog.V(4).Infof("[%s] Worker stopped", l.name)
+		log.V(4).Info("worker stopped", "worker", l.name)
 	}()
 
 	<-stopCh
@@ -198,7 +200,7 @@ func (l *WriterLease) Extend(key string) {
 		case Follower:
 			l.tick++
 			backoff := l.nextBackoff()
-			glog.V(4).Infof("[%s] Clearing work for %s and extending lease by %s", l.name, key, backoff)
+			log.V(4).Info("clearing work and extending lease", "worker", l.name, "key", key, "duration", backoff)
 			l.expires = l.nowFn().Add(backoff)
 		}
 	}
@@ -237,7 +239,7 @@ func (l *WriterLease) work() bool {
 
 	work := l.get(key)
 	if work == nil {
-		glog.V(4).Infof("[%s] Work item %s was cleared, done", l.name, key)
+		log.V(4).Info("work item was cleared, done", "worker", l.name, "key", key)
 		l.queue.Done(key)
 		return true
 	}
@@ -246,15 +248,15 @@ func (l *WriterLease) work() bool {
 	if leaseState == Follower {
 		// if we are following, continue to defer work until the lease expires
 		if remaining := leaseExpires.Sub(l.nowFn()); remaining > 0 {
-			glog.V(4).Infof("[%s] Follower, %s remaining in lease", l.name, remaining)
+			log.V(4).Info("follower awaiting lease expiration", "worker", l.name, "leaseTimeRemaining", remaining)
 			time.Sleep(remaining)
 			l.queue.Add(key)
 			l.queue.Done(key)
 			return true
 		}
-		glog.V(4).Infof("[%s] Lease expired, running %s", l.name, key)
+		log.V(4).Info("lease expired, running", "worker", l.name, "key", key)
 	} else {
-		glog.V(4).Infof("[%s] Lease owner or electing, running %s", l.name, key)
+		log.V(4).Info("lease owner or electing, running", "worker", l.name, "key", key)
 	}
 
 	result, retry := work.fn()
@@ -275,7 +277,7 @@ func (l *WriterLease) retryKey(key string, result WorkResult) {
 	l.queue.AddAfter(key, l.retryInterval)
 	l.queue.Done(key)
 
-	glog.V(4).Infof("[%s] Retrying work for %s in state=%d tick=%d expires=%s", l.name, key, l.state, l.tick, l.expires)
+	log.V(4).Info("retrying work", "worker", l.name, "key", key, "state", l.state, "tick", l.tick, "expires", l.expires)
 }
 
 func (l *WriterLease) finishKey(key string, result WorkResult, id int) {
@@ -287,7 +289,7 @@ func (l *WriterLease) finishKey(key string, result WorkResult, id int) {
 		delete(l.queued, key)
 	}
 	l.queue.Done(key)
-	glog.V(4).Infof("[%s] Completed work for %s in state=%d tick=%d expires=%s", l.name, key, l.state, l.tick, l.expires)
+	log.V(4).Info("completed work", "worker", l.name, "key", key, "state", l.state, "tick", l.tick, "expires", l.expires)
 }
 
 // nextState must be called while holding the lock.

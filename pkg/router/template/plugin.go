@@ -9,7 +9,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/golang/glog"
 	kapi "k8s.io/api/core/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -166,10 +165,10 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 func (p *TemplatePlugin) HandleEndpoints(eventType watch.EventType, endpoints *kapi.Endpoints) error {
 	key := endpointsKey(endpoints)
 
-	glog.V(4).Infof("Processing %d Endpoints for %s/%s (%v)", len(endpoints.Subsets), endpoints.Namespace, endpoints.Name, eventType)
+	log.V(4).Info("processing endpoints", "endpointCount", len(endpoints.Subsets), "namespace", endpoints.Namespace, "name", endpoints.Name, "eventType", eventType)
 
 	for i, s := range endpoints.Subsets {
-		glog.V(4).Infof("  Subset %d : %#v", i, s)
+		log.V(4).Info("processing subset", "index", i, "subset", s)
 	}
 
 	if _, ok := p.Router.FindServiceUnit(key); !ok {
@@ -178,12 +177,12 @@ func (p *TemplatePlugin) HandleEndpoints(eventType watch.EventType, endpoints *k
 
 	switch eventType {
 	case watch.Added, watch.Modified:
-		glog.V(4).Infof("Modifying endpoints for %s", key)
+		log.V(4).Info("modifying endpoints", "key", key)
 		routerEndpoints := createRouterEndpoints(endpoints, !p.IncludeUDP, p.ServiceFetcher)
 		key := endpointsKey(endpoints)
 		p.Router.AddEndpoints(key, routerEndpoints)
 	case watch.Deleted:
-		glog.V(4).Infof("Deleting endpoints for %s", key)
+		log.V(4).Info("deleting endpoints", "key", key)
 		p.Router.DeleteEndpoints(key)
 	}
 
@@ -206,7 +205,7 @@ func (p *TemplatePlugin) HandleRoute(eventType watch.EventType, route *routev1.R
 	case watch.Added, watch.Modified:
 		p.Router.AddRoute(route)
 	case watch.Deleted:
-		glog.V(4).Infof("Deleting route %s/%s", route.Namespace, route.Name)
+		log.V(4).Info("deleting route", "namespace", route.Namespace, "name", route.Name)
 		p.Router.RemoveRoute(route)
 	}
 	return nil
@@ -236,7 +235,7 @@ func endpointsKeyFromParts(namespace, name string) string {
 func getPartsFromEndpointsKey(key string) (string, string) {
 	tokens := strings.SplitN(key, endpointsKeySeparator, 2)
 	if len(tokens) != 2 {
-		glog.Errorf("Expected separator %q not found in endpoints key %q", endpointsKeySeparator, key)
+		log.Error(nil, "expected separator not found in endpoints key", "separator", endpointsKeySeparator, "key", key)
 	}
 	namespace := tokens[0]
 	name := tokens[1]

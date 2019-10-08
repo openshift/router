@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -17,8 +15,11 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
+	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router"
 )
+
+var log = logf.Logger.WithName("controller")
 
 // RouterController abstracts the details of watching resources like Routes, Endpoints, etc.
 // used by the plugin implementation.
@@ -47,7 +48,7 @@ type RouterController struct {
 
 // Run begins watching and syncing.
 func (c *RouterController) Run() {
-	glog.V(4).Info("Running router controller")
+	log.V(4).Info("running router controller")
 	if c.ProjectLabels != nil {
 		c.HandleProjects()
 		go utilwait.Forever(c.HandleProjects, c.ProjectSyncInterval)
@@ -74,7 +75,7 @@ func (c *RouterController) HandleProjects() {
 		utilruntime.HandleError(fmt.Errorf("unable to get filtered projects for router: %v", err))
 		time.Sleep(c.ProjectWaitInterval)
 	}
-	glog.V(4).Infof("Unable to update list of filtered projects")
+	log.V(4).Info("unable to update list of filtered projects")
 }
 
 func (c *RouterController) GetFilteredProjectNames() (sets.String, error) {
@@ -105,7 +106,7 @@ func (c *RouterController) processNamespace(eventType watch.EventType, ns *kapi.
 
 	// Namespace added or deleted
 	if (!before && after) || (before && !after) {
-		glog.V(5).Infof("Processing matched namespace: %s with labels: %v", ns.Name, ns.Labels)
+		log.V(5).Info("processing matched namespace", "namespace", ns.Name, "labels", ns.Labels)
 
 		c.UpdateNamespaces()
 
@@ -138,7 +139,7 @@ func (c *RouterController) UpdateNamespaces() {
 	//       cleanup issues as old == new in Plugin.HandleNamespaces().
 	namespaces := sets.NewString(c.FilteredNamespaceNames.List()...)
 
-	glog.V(4).Infof("Updating watched namespaces: %v", namespaces)
+	log.V(4).Info("updating watched namespaces", "namespaces", namespaces)
 	if err := c.Plugin.HandleNamespaces(namespaces); err != nil {
 		utilruntime.HandleError(err)
 	}
@@ -183,8 +184,7 @@ func (c *RouterController) HandleNamespace(eventType watch.EventType, obj interf
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	glog.V(4).Infof("Processing Namespace: %s", ns.Name)
-	glog.V(4).Infof("           Event: %s", eventType)
+	log.V(4).Info("processing namespace", "namespace", ns.Name, "event", eventType)
 
 	c.processNamespace(eventType, ns)
 	c.Commit()
@@ -196,8 +196,7 @@ func (c *RouterController) HandleNode(eventType watch.EventType, obj interface{}
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	glog.V(4).Infof("Processing Node: %s", node.Name)
-	glog.V(4).Infof("           Event: %s", eventType)
+	log.V(4).Info("processing node", "node", node.Name, "event", eventType)
 
 	if err := c.Plugin.HandleNode(eventType, node); err != nil {
 		utilruntime.HandleError(err)
@@ -238,12 +237,7 @@ func (c *RouterController) Commit() {
 
 // processRoute logs and propagates a route event to the plugin
 func (c *RouterController) processRoute(eventType watch.EventType, route *routev1.Route) {
-	glog.V(4).Infof("Processing route: %s/%s -> %s %s", route.Namespace, route.Name, route.Spec.To.Name, route.UID)
-	glog.V(4).Infof("           Alias: %s", route.Spec.Host)
-	if len(route.Spec.Path) > 0 {
-		glog.V(4).Infof("           Path: %s", route.Spec.Path)
-	}
-	glog.V(4).Infof("           Event: %s rv=%s", eventType, route.ResourceVersion)
+	log.V(4).Info("processing route", "event", eventType, "route", route)
 
 	c.RecordNamespaceRoutes(eventType, route)
 	if err := c.Plugin.HandleRoute(eventType, route); err != nil {
@@ -256,6 +250,6 @@ func (c *RouterController) handleFirstSync() {
 	defer c.lock.Unlock()
 
 	c.firstSyncDone = true
-	glog.V(4).Infof("Router first sync complete")
+	log.V(4).Info("router first sync complete")
 	c.Commit()
 }

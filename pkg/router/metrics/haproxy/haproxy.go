@@ -17,11 +17,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("metrics_haproxy")
 
 const (
 	namespace = "haproxy" // For Prometheus metrics.
@@ -310,7 +313,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	switch {
 	case e.lastScrape != nil && e.lastScrape.Add(e.scrapeInterval).After(now):
 		// do nothing, return the most recently scraped metrics
-		glog.V(6).Infof("Will not scrape HAProxy metrics more often than every %s", e.scrapeInterval)
+		log.V(6).Info("will not scrape HAProxy metrics more often than interval", "interval", e.scrapeInterval)
 	default:
 		e.lastScrape = &now
 		e.resetMetrics()

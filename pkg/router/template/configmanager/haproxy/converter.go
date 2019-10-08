@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/gocarina/gocsv"
-	"github.com/golang/glog"
 )
 
 // Converter transforms a set of bytes. The haproxy dynamic API command
@@ -40,14 +39,14 @@ func NewCSVConverter(headers string, out interface{}, fn ByteConverterFunc) *CSV
 
 // Convert runs a haproxy dynamic config API command.
 func (c *CSVConverter) Convert(data []byte) ([]byte, error) {
-	glog.V(5).Infof("CSV converter input data bytes: %s", string(data))
+	log.V(5).Info("converting CSV data from haproxy", "data", string(data))
 	if c.converterFunc != nil {
 		convertedBytes, err := c.converterFunc(data)
 		if err != nil {
 			return data, err
 		}
 		data = convertedBytes
-		glog.V(5).Infof("CSV converter transformed data bytes: %s", string(data))
+		log.V(5).Info("converted CSV data from haproxy", "data", string(data))
 	}
 
 	if c.out == nil {
@@ -65,9 +64,9 @@ func (c *CSVConverter) Convert(data []byte) ([]byte, error) {
 		return r
 	})
 
-	glog.V(5).Infof("CSV converter fixing up csv header ...")
+	log.V(5).Info("csv converter fixing up csv header")
 	data, _ = fixupHeaders(data, c.headers)
-	glog.V(5).Infof("CSV converter fixed up data bytes: %s", string(data))
+	log.V(5).Info("csc converter fixed up data bytes", "data", string(data))
 	return data, gocsv.Unmarshal(bytes.NewBuffer(data), c.out)
 }
 

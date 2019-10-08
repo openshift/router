@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
-
 	routev1 "github.com/openshift/api/route/v1"
 )
 
@@ -71,7 +69,7 @@ func (cm *simpleCertificateManager) WriteCertificatesForConfig(config *ServiceAl
 		return nil
 	}
 	if config.Status == ServiceAliasConfigStatusSaved {
-		glog.V(4).Infof("skipping certificate write for %s%s since its status is already %s", config.Host, config.Path, ServiceAliasConfigStatusSaved)
+		log.V(4).Info("skipping certificate write since its status is already as expected", "host", config.Host, "path", config.Path, "status", ServiceAliasConfigStatusSaved)
 		return nil
 	}
 	if len(config.Certificates) > 0 {
@@ -158,7 +156,7 @@ func (cm *simpleCertificateManager) Commit() error {
 		err := cm.w.DeleteCertificate(certFile.certDir, certFile.id)
 		if err != nil {
 			// Log a warning if the delete fails but proceed on.
-			glog.Warningf("Ignoring error deleting certificate file %v: %v", certFile.Tag(), err)
+			log.V(0).Info("ignoring error deleting certificate file", "certFile", certFile.Tag(), "error", err)
 		}
 	}
 
@@ -187,7 +185,7 @@ func (cm *simpleCertificateWriter) WriteCertificate(directory string, id string,
 	err := ioutil.WriteFile(fileName, cert, 0644)
 
 	if err != nil {
-		glog.Errorf("Error writing certificate file %v: %v", fileName, err)
+		log.Error(err, "error writing certificate file", "file", fileName)
 		return err
 	}
 	return nil
@@ -198,13 +196,13 @@ func (cm *simpleCertificateWriter) WriteCertificate(directory string, id string,
 func (cm *simpleCertificateWriter) DeleteCertificate(directory, id string) error {
 	fileName := filepath.Join(directory, id+".pem")
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		glog.V(4).Infof("attempted to delete file %s but it does not exist", fileName)
+		log.V(4).Info("attempted to delete file but it does not exist", "fileName", fileName)
 		return nil
 	}
 
 	err := os.Remove(fileName)
 	if os.IsNotExist(err) {
-		glog.V(4).Infof("%s passed the existence check but it was gone when os.Remove was called", fileName)
+		log.V(4).Info("file passed the existence check but it was gone when os.Remove was called", "fileName", fileName)
 		return nil
 	}
 	return err

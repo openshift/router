@@ -18,14 +18,17 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
+
+	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/template/limiter"
 )
+
+var log = logf.Logger.WithName("template")
 
 const (
 	ProtocolHTTP  = "http"
@@ -162,9 +165,9 @@ type templateData struct {
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	dir := cfg.dir
 
-	glog.V(2).Infof("Creating a new template router, writing to %s", dir)
+	log.V(2).Info("creating a new template router", "writeDir", dir)
 	if len(cfg.peerEndpointsKey) > 0 {
-		glog.V(2).Infof("Router will use %s service to identify peers", cfg.peerEndpointsKey)
+		log.V(2).Info("router will use service to identify peers", "service", cfg.peerEndpointsKey)
 	}
 	certManagerConfig := &certificateManagerConfig{
 		certKeyFunc:     generateCertKey,
@@ -224,15 +227,15 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	if err := router.writeDefaultCert(); err != nil {
 		return nil, err
 	}
-	glog.V(4).Infof("Reading persisted state")
+	log.V(4).Info("reading persisted state")
 	if err := router.readState(); err != nil {
 		return nil, err
 	}
 	if router.dynamicConfigManager != nil {
-		glog.Infof("Initializing dynamic config manager ... ")
+		log.V(0).Info("initializing dynamic config manager ... ")
 		router.dynamicConfigManager.Initialize(router, router.defaultCertificatePath)
 	}
-	glog.V(4).Infof("Committing state")
+	log.V(4).Info("committing state")
 	// Bypass the rate limiter to ensure the first sync will be
 	// committed without delay.
 	router.commitAndReload()
@@ -241,7 +244,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 
 func (r *templateRouter) EnableRateLimiter(interval time.Duration, handlerFunc limiter.HandlerFunc) {
 	r.rateLimitedCommitFunction = limiter.NewCoalescingSerializingRateLimiter(interval, handlerFunc)
-	glog.V(2).Infof("Template router will coalesce reloads within %s of each other", interval.String())
+	log.V(2).Info("router will coalesce reloads within an interval of each other", "interval", interval.String())
 }
 
 // secretToPem composes a PEM file at the output directory from an input private key and crt file.
@@ -303,7 +306,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 	if err := watcher.Add(secPath); err != nil {
 		return err
 	}
-	glog.Infof("Watching %q for changes", secPath)
+	log.V(0).Info("watching for changes", "path", secPath)
 
 	path := filepath.Join(secPath, "tls.crt")
 	currentRealPath, err := filepath.EvalSymlinks(path)
@@ -315,13 +318,13 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 			select {
 			case event, ok := <-watcher.Events:
 				if !ok {
-					glog.Warningf("fsnotify channel closed")
+					log.V(0).Info("fsnotify channel closed")
 					return
 				}
 
 				newRealPath, err := filepath.EvalSymlinks(path)
 				if err != nil {
-					glog.Warningf("watchSecretDir: %v", err)
+					log.V(0).Info("watchSecretDir error", "error", err)
 					continue
 				}
 				if newRealPath == currentRealPath {
@@ -329,10 +332,10 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 				}
 				currentRealPath = newRealPath
 
-				glog.Infof("Got watch event %v; updating %q", event, outName)
+				log.V(0).Info("got watch event for update", "event", event, "name", outName)
 				os.Remove(outName)
 				if err := secretToPem(secPath, outName); err != nil {
-					glog.Warningf("Failed to update %q: %v", outName, err)
+					log.V(0).Info("failed to update", "name", outName, "error", err)
 				}
 
 				r.lock.Lock()
@@ -342,10 +345,10 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 				r.Commit()
 			case err, ok := <-watcher.Errors:
 				if !ok {
-					glog.Warningf("fsnotify channel closed")
+					log.V(0).Info("fsnotify channel closed")
 					return
 				}
-				glog.Warningf("Got error from fsnotify: %v", err)
+				log.V(0).Info("got error from fsnotify", "error", err)
 			}
 		}
 	}()
@@ -365,11 +368,11 @@ func (r *templateRouter) writeDefaultCert() error {
 		}
 		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
 			// no pem file, no default cert, use cert from container
-			glog.Warningf("Router default cert from router container")
+			log.V(0).Info("router default cert from router container")
 			return nil
 		}
 		if err := r.watchSecretDir(r.defaultCertificateDir, outPath); err != nil {
-			glog.Warningf("Failed to establish watch on certificate directory: %v", err)
+			log.V(0).Info("failed to establish watch on certificate directory", "error", err)
 			return nil
 		}
 		r.defaultCertificatePath = outPath
@@ -377,7 +380,7 @@ func (r *templateRouter) writeDefaultCert() error {
 	}
 
 	// write out the default cert (pem format)
-	glog.V(2).Infof("Writing default certificate to %s", dir)
+	log.V(2).Info("writing default certificate", "dir", dir)
 	if err := r.certManager.CertificateWriter().WriteCertificate(dir, defaultCertName, []byte(r.defaultCertificate)); err != nil {
 		return err
 	}
@@ -404,7 +407,7 @@ func (r *templateRouter) Commit() {
 	r.lock.Lock()
 
 	if !r.synced {
-		glog.V(4).Infof("Router state synchronized for the first time")
+		log.V(4).Info("router state synchronized for the first time")
 		r.synced = true
 		r.stateChanged = true
 		r.dynamicallyConfigured = false
@@ -425,7 +428,7 @@ func (r *templateRouter) commitAndReload() error {
 		r.lock.Lock()
 		defer r.lock.Unlock()
 
-		glog.V(4).Infof("Writing the router state")
+		log.V(4).Info("writing the router state")
 		if err := r.writeState(); err != nil {
 			return err
 		}
@@ -436,7 +439,7 @@ func (r *templateRouter) commitAndReload() error {
 			r.dynamicConfigManager.Notify(RouterEventReloadStart)
 		}
 
-		glog.V(4).Infof("Writing the router config")
+		log.V(4).Info("writing the router config")
 		reloadStart := time.Now()
 		err := r.writeConfig()
 		r.metricWriteConfig.Observe(float64(time.Now().Sub(reloadStart)) / float64(time.Second))
@@ -446,11 +449,11 @@ func (r *templateRouter) commitAndReload() error {
 	}
 
 	for i, fn := range r.reloadCallbacks {
-		glog.V(4).Infof("Calling reload function %d", i)
+		log.V(4).Info("calling reload function", "fn", i)
 		fn()
 	}
 
-	glog.V(4).Infof("Reloading the router")
+	log.V(4).Info("reloading the router")
 	reloadStart := time.Now()
 	err := r.reloadRouter()
 	r.metricReload.Observe(float64(time.Now().Sub(reloadStart)) / float64(time.Second))
@@ -500,12 +503,12 @@ func (r *templateRouter) writeConfig() error {
 		r.state[k] = cfg
 	}
 
-	glog.V(4).Infof("Committing router certificate manager changes...")
+	log.V(4).Info("committing router certificate manager changes...")
 	if err := r.certManager.Commit(); err != nil {
 		return fmt.Errorf("error committing certificate changes: %v", err)
 	}
 
-	glog.V(4).Infof("Router certificate manager config committed")
+	log.V(4).Info("router certificate manager config committed")
 
 	pathNames := make([]string, 0)
 	for k := range r.templates {
@@ -558,7 +561,7 @@ func (r *templateRouter) reloadRouter() error {
 	if err != nil {
 		return fmt.Errorf("error reloading router: %v\n%s", err, string(out))
 	}
-	glog.Infof("Router reloaded:\n%s", out)
+	log.V(0).Info("router reloaded", "output", out)
 	return nil
 }
 
@@ -652,7 +655,7 @@ func (r *templateRouter) DeleteServiceUnit(id string) {
 // addServiceAliasAssociation adds a reference to the backend in the ServiceUnit config.
 func (r *templateRouter) addServiceAliasAssociation(id, alias string) {
 	if serviceUnit, ok := r.findMatchingServiceUnit(id); ok {
-		glog.V(4).Infof("associated service unit %s -> service alias %s", id, alias)
+		log.V(4).Info("associated service unit -> service alias", "id", id, "alias", alias)
 		serviceUnit.ServiceAliasAssociations[alias] = true
 	}
 }
@@ -660,7 +663,7 @@ func (r *templateRouter) addServiceAliasAssociation(id, alias string) {
 // removeServiceAliasAssociation removes the reference to the backend in the ServiceUnit config.
 func (r *templateRouter) removeServiceAliasAssociation(id, alias string) {
 	if serviceUnit, ok := r.findMatchingServiceUnit(id); ok {
-		glog.V(4).Infof("removed association for service unit %s -> service alias %s", id, alias)
+		log.V(4).Info("removed association for service unit -> service alias", "id", id, "alias", alias)
 		delete(serviceUnit.ServiceAliasAssociations, alias)
 	}
 }
@@ -673,7 +676,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey string, route *routev1.R
 		return false
 	}
 
-	glog.V(4).Infof("Dynamically adding route backend %s", backendKey)
+	log.V(4).Info("dynamically adding route backend", "backendKey", backendKey)
 	r.dynamicConfigManager.Register(backendKey, route)
 
 	// If no initial sync was done, don't try to dynamically add the
@@ -684,7 +687,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey string, route *routev1.R
 
 	err := r.dynamicConfigManager.AddRoute(backendKey, backend.RoutingKeyName, route)
 	if err != nil {
-		glog.V(4).Infof("Router will reload as the ConfigManager could not dynamically add route for backend %s: %v", backendKey, err)
+		log.V(4).Info("router will reload as the ConfigManager could not dynamically add route for backend", "backendKey", backendKey, "error", err)
 		return false
 	}
 
@@ -696,21 +699,21 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey string, route *routev1.R
 	for key := range backend.ServiceUnits {
 		if service, ok := r.findMatchingServiceUnit(key); ok {
 			newEndpoints := endpointsForAlias(*backend, service)
-			glog.V(4).Infof("For new route backend %s, replacing endpoints for service %s: %+v", backendKey, key, newEndpoints)
+			log.V(4).Info("for new route backend, replacing endpoints for service", "backendKey", backendKey, "serviceKey", key, "newEndpoints", newEndpoints)
 
 			weight, ok := newWeights[key]
 			if !ok {
 				weight = 0
 			}
 			if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, oldEndpoints, newEndpoints, weight); err != nil {
-				glog.V(4).Infof("Router will reload as the ConfigManager could not dynamically replace endpoints for route backend %s, service %s: %v",
-					backendKey, key, err)
+				log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for route backend",
+					"backendKey", backendKey, "serviceKey", key, "error", err)
 				return false
 			}
 		}
 	}
 
-	glog.V(4).Infof("Dynamically added route backend %s", backendKey)
+	log.V(4).Info("dynamically added route backend", "backendKey", backendKey)
 	return true
 }
 
@@ -722,10 +725,10 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey string, route *routev
 		return false
 	}
 
-	glog.V(4).Infof("Dynamically removing route backend %s", backendKey)
+	log.V(4).Info("dynamically removing route backend", "backendKey", backendKey)
 
 	if err := r.dynamicConfigManager.RemoveRoute(backendKey, route); err != nil {
-		glog.V(4).Infof("Router will reload as the ConfigManager could not dynamically remove route backend %s: %v", backendKey, err)
+		log.V(4).Info("router will reload as the ConfigManager could not dynamically remove route backend", "backendKey", backendKey, "error", err)
 		return false
 	}
 
@@ -741,13 +744,13 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id string, service ServiceU
 		return false
 	}
 
-	glog.V(4).Infof("Replacing endpoints dynamically for service %s", id)
+	log.V(4).Info("replacing endpoints dynamically for service", "service", id)
 
 	// Update each of the routes that reference this service unit.
 	for backendKey := range service.ServiceAliasAssociations {
 		cfg, ok := r.state[backendKey]
 		if !ok {
-			glog.V(4).Infof("Associated service alias %s not found in state, ignoring ...", backendKey)
+			log.V(4).Info("associated service alias not found in state, ignoring ...", "serviceAlias", backendKey)
 			continue
 		}
 
@@ -762,10 +765,10 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id string, service ServiceU
 			weight = 0
 		}
 
-		glog.V(4).Infof("Dynamically replacing endpoints for associated backend %s: %+v", backendKey, newEndpoints)
+		log.V(4).Info("dynamically replacing endpoints for associated backend", "backendKey", backendKey, "newEndpoints", newEndpoints)
 		if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, oldEndpoints, newEndpoints, weight); err != nil {
 			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			glog.V(4).Infof("Router will reload as the ConfigManager could not dynamically replace endpoints for service id %s (backend=%s, weight=%v): %v", id, backendKey, weight, err)
+			log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for service", "service", id, "backendKey", backendKey, "weight", weight, "error", err)
 			return false
 		}
 	}
@@ -782,17 +785,17 @@ func (r *templateRouter) dynamicallyRemoveEndpoints(service ServiceUnit, endpoin
 		return false
 	}
 
-	glog.V(4).Infof("Dynamically removing endpoints for service unit %s", service.Name)
+	log.V(4).Info("dynamically removing endpoints for service unit", "service", service.Name)
 
 	for backendKey := range service.ServiceAliasAssociations {
 		if _, ok := r.state[backendKey]; !ok {
 			continue
 		}
 
-		glog.V(4).Infof("Dynamically removing endpoints for associated backend %s", backendKey)
+		log.V(4).Info("dynamically removing endpoints for associated backend", "backendKey", backendKey)
 		if err := r.dynamicConfigManager.RemoveRouteEndpoints(backendKey, endpoints); err != nil {
 			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			glog.V(4).Infof("Router will reload as the ConfigManager could not dynamically remove endpoints for backend %s: %v", backendKey, err)
+			log.V(4).Info("router will reload as the ConfigManager could not dynamically remove endpoints for backend", "backendKey", backendKey, "error", err)
 			return false
 		}
 	}
@@ -819,7 +822,7 @@ func (r *templateRouter) DeleteEndpoints(id string) {
 	// should be a DNS lookup for endpoints of our service name.
 	if id == r.peerEndpointsKey {
 		r.peerEndpoints = []Endpoint{}
-		glog.V(4).Infof("Peer endpoint table has been cleared")
+		log.V(4).Info("peer endpoint table has been cleared")
 	}
 
 	r.stateChanged = true
@@ -838,7 +841,7 @@ func routeKeyFromParts(namespace, name string) string {
 func getPartsFromRouteKey(key string) (string, string) {
 	tokens := strings.SplitN(key, routeKeySeparator, 2)
 	if len(tokens) != 2 {
-		glog.Errorf("Expected separator %q not found in route key %q", routeKeySeparator, key)
+		log.Error(nil, "expected separator not found in route key", "separator", routeKeySeparator, "key", key)
 	}
 	namespace := tokens[0]
 	name := tokens[1]
@@ -947,7 +950,7 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 			return
 		}
 
-		glog.V(4).Infof("Updating route %s/%s", route.Namespace, route.Name)
+		log.V(4).Info("updating route", "namespace", route.Namespace, "name", route.Name)
 
 		// Delete the route first, because modify is to be treated as delete+add
 		r.removeRouteInternal(route)
@@ -958,13 +961,13 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 		// is having stale service units accumulate with the attendant
 		// cost to router memory usage.
 	} else {
-		glog.V(4).Infof("Adding route %s/%s", route.Namespace, route.Name)
+		log.V(4).Info("adding route", "namespace", route.Namespace, "name", route.Name)
 	}
 
 	// Add service units referred to by the config
 	for key := range newConfig.ServiceUnits {
 		if _, ok := r.findMatchingServiceUnit(key); !ok {
-			glog.V(4).Infof("Creating new frontend for key: %v", key)
+			log.V(4).Info("creating new frontend", "key", key)
 			r.createServiceUnitInternal(key)
 		}
 		r.addServiceAliasAssociation(key, backendKey)
@@ -1025,7 +1028,7 @@ func (r *templateRouter) AddEndpoints(id string, endpoints []Endpoint) {
 
 	//only make the change if there is a difference
 	if reflect.DeepEqual(frontend.EndpointTable, endpoints) {
-		glog.V(4).Infof("Ignoring change for %s, endpoints are the same", id)
+		log.V(4).Info("ignoring change, endpoints are the same", "id", id)
 		return
 	}
 
@@ -1038,7 +1041,7 @@ func (r *templateRouter) AddEndpoints(id string, endpoints []Endpoint) {
 
 	if id == r.peerEndpointsKey {
 		r.peerEndpoints = frontend.EndpointTable
-		glog.V(4).Infof("Peer endpoints updated to: %#v", r.peerEndpoints)
+		log.V(4).Info("peer endpoints updated", "peerEndpoints", r.peerEndpoints)
 	}
 
 	r.stateChanged = true
@@ -1050,7 +1053,7 @@ func (r *templateRouter) AddEndpoints(id string, endpoints []Endpoint) {
 func (r *templateRouter) cleanUpServiceAliasConfig(cfg *ServiceAliasConfig) {
 	err := r.certManager.DeleteCertificatesForConfig(cfg)
 	if err != nil {
-		glog.Errorf("Error deleting certificates for route %s, the route will still be deleted but files may remain in the container: %v", cfg.Host, err)
+		log.Error(err, "error deleting certificates for route, the route will still be deleted but files may remain in the container", "host", cfg.Host)
 	}
 }
 
@@ -1097,11 +1100,11 @@ func (r *templateRouter) shouldWriteCerts(cfg *ServiceAliasConfig) bool {
 
 		if cfg.TLSTermination == routev1.TLSTerminationReencrypt {
 			if hasReencryptDestinationCACert(cfg) {
-				glog.V(4).Infof("a reencrypt route with host %s does not have an edge certificate, using default router certificate", cfg.Host)
+				log.V(4).Info("a reencrypt route does not have an edge certificate, using default router certificate", "host", cfg.Host)
 				return true
 			}
 			if len(r.defaultDestinationCAPath) > 0 {
-				glog.V(4).Infof("a reencrypt route with host %s does not have a destination CA, using default destination CA", cfg.Host)
+				log.V(4).Info("a reencrypt route does not have a destination CA, using default destination CA", "host", cfg.Host)
 				return true
 			}
 		}
@@ -1111,9 +1114,9 @@ func (r *templateRouter) shouldWriteCerts(cfg *ServiceAliasConfig) bool {
 		// if a default cert is configured we'll assume it is meant to be a wildcard and only log info
 		// otherwise we'll consider this a warning
 		if len(r.defaultCertificatePath) > 0 {
-			glog.V(4).Info(msg)
+			log.V(4).Info(msg)
 		} else {
-			glog.Warning(msg)
+			log.V(0).Info(msg)
 		}
 		return false
 	}
@@ -1269,9 +1272,10 @@ func (r *templateRouter) calculateServiceWeights(serviceUnits map[string]int32) 
 		if weight > 0.0 && serviceUnitNames[key] < 1 {
 			serviceUnitNames[key] = 1
 			numEp := r.numberOfEndpoints(key)
-			glog.V(4).Infof("%s: WARNING: Too many endpoints to achieve desired weight for route. Service can have %d but has %d endpoints", key, int32(weight*float32(numEp)), numEp)
+			log.V(4).Info("WARNING: Too many service endpoints to achieve desired weight for route.",
+				"key", key, "maxEndpoints", int32(weight*float32(numEp)), "actualEndpoints", numEp)
 		}
-		glog.V(6).Infof("%s: weight %d  %f  %d", key, serviceUnits[key], weight, serviceUnitNames[key])
+		log.V(6).Info(fmt.Sprintf("%s: weight %d  %f  %d", key, serviceUnits[key], weight, serviceUnitNames[key]))
 	}
 
 	return serviceUnitNames

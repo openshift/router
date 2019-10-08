@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/golang/glog"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -140,7 +140,7 @@ func getIntervalFromEnv(name string, defaultValSecs int) time.Duration {
 
 	value, err := time.ParseDuration(interval)
 	if err != nil {
-		glog.Warningf("Invalid %q %q, using default value %v ...", name, interval, defaultValSecs)
+		log.V(0).Info("invalid interval, using default", "name", name, "interval", interval, "default", defaultValSecs)
 		value = time.Duration(time.Duration(defaultValSecs) * time.Second)
 	}
 	return value
@@ -296,7 +296,7 @@ func (o *TemplateRouterOptions) Validate() error {
 
 // Run launches a template router using the provided options. It never exits.
 func (o *TemplateRouterOptions) Run() error {
-	glog.Infof("Starting template router (%s)", version.Get())
+	log.V(0).Info("starting router", "version", version.Get())
 	var ptrTemplatePlugin *templateplugin.TemplatePlugin
 
 	var reloadCallbacks []func()

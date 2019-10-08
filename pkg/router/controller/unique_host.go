@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
 	kapi "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -13,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
+
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller/hostindex"
 )
@@ -94,7 +94,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 	host := route.Spec.Host
 
 	if len(host) == 0 {
-		glog.V(4).Infof("Route %s has no host value", routeName)
+		log.V(4).Info("route has no host value", "namespace", route.Namespace, "name", route.Name)
 		p.recorder.RecordRouteRejection(route, "NoHostValue", "no host value was defined for the route")
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return nil
@@ -103,7 +103,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 	// Validate that the route host name conforms to DNS requirements.
 	// Defends against routes created before validation rules were added for host names.
 	if errs := ValidateHostName(route); len(errs) > 0 {
-		glog.V(4).Infof("Route %s - invalid host name %s", routeName, host)
+		log.V(4).Info("invalid host name", "routeName", routeName, "host", host)
 		errMessages := make([]string, len(errs))
 		for i := 0; i < len(errs); i++ {
 			errMessages[i] = errs[i].Error()
@@ -120,7 +120,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 	// their route does not get exposed.
 	switch eventType {
 	case watch.Deleted:
-		glog.V(4).Infof("Deleting route %s", routeName)
+		log.V(4).Info("deleting route", "routeName", routeName)
 
 		changes := p.index.Remove(route)
 		owner := "<unknown>"
@@ -137,7 +137,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 
 		// displaced routes must be deleted in nested plugins
 		for _, other := range changes.GetDisplaced() {
-			glog.V(4).Infof("route %s being deleted caused %s/%s to no longer be exposed", routeName, other.Namespace, other.Name)
+			log.V(4).Info("route being deleted caused another route to no longer be exposed", "routeName", routeName, "displacedNamespace", other.Namespace, "displacedName", other.Name)
 			p.recorder.RecordRouteRejection(other, "HostAlreadyClaimed", fmt.Sprintf("namespace %s owns hostname %s", owner, host))
 
 			if err := p.plugin.HandleRoute(watch.Deleted, other); err != nil {
@@ -169,7 +169,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 		for _, other := range changes.GetDisplaced() {
 			// adding this route displaced others
 			if other != route {
-				glog.V(4).Infof("route %s will replace path %s from %s because it is older", routeName, route.Spec.Path, other.Name)
+				log.V(4).Info("route will replace path from another route because it is older", "routeName", routeName, "path", route.Spec.Path, "otherName", other.Name)
 				p.recorder.RecordRouteRejection(other, "HostAlreadyClaimed", fmt.Sprintf("replaced by older route %s", route.Name))
 
 				if err := p.plugin.HandleRoute(watch.Deleted, other); err != nil {
@@ -187,7 +187,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 				owner = &routev1.Route{}
 				owner.Name = "<unknown>"
 			}
-			glog.V(4).Infof("Route %s cannot take %s from %s/%s", routeName, host, owner.Namespace, owner.Name)
+			log.V(4).Info("route cannot take claimed host", "routeName", routeName, "host", host, "ownerNamespace", owner.Namespace, "ownerName", owner.Name)
 			if owner.Namespace == route.Namespace {
 				p.recorder.RecordRouteRejection(route, "HostAlreadyClaimed", fmt.Sprintf("route %s already exposes %s and is older", owner.Name, host))
 			} else {

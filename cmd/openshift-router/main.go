@@ -50,7 +50,5 @@ func CommandFor(basename string) *cobra.Command {
 		os.Exit(1)
 	}
 
-	GLog(cmd.PersistentFlags())
-
 	return cmd
 }

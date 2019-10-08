@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
@@ -134,7 +133,7 @@ func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Rou
 	}
 
 	if err := p.admitter(route); err != nil {
-		glog.V(4).Infof("Route %s not admitted: %s", routeNameKey(route), err.Error())
+		log.V(4).Info("route not admitted", "namespace", route.Namespace, "name", route.Name, "error", err.Error())
 		p.recorder.RecordRouteRejection(route, "RouteNotAdmitted", err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
@@ -144,7 +143,7 @@ func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Rou
 		switch eventType {
 		case watch.Added, watch.Modified:
 			if err := p.addRoute(route); err != nil {
-				glog.Errorf("Route %s not admitted: %s", routeNameKey(route), err.Error())
+				log.Error(err, "route not admitted", "routeNameKey", routeNameKey(route))
 				return err
 			}
 
