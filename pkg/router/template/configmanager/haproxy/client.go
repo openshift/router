@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	templaterouter "github.com/openshift/router/pkg/router/template"
+
 	haproxy "github.com/bcicen/go-haproxy"
 
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
@@ -107,7 +109,7 @@ func (c *Client) Backends() ([]*Backend, error) {
 }
 
 // FindBackend returns a specific haproxy backend if it is configured.
-func (c *Client) FindBackend(id string) (*Backend, error) {
+func (c *Client) FindBackend(id templaterouter.ServiceAliasConfigKey) (*Backend, error) {
 	if _, err := c.Backends(); err != nil {
 		return nil, err
 	}

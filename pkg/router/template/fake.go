@@ -5,8 +5,8 @@ package templaterouter
 func NewFakeTemplateRouter() *templateRouter {
 	fakeCertManager, _ := newSimpleCertificateManager(newFakeCertificateManagerConfig(), &fakeCertWriter{})
 	return &templateRouter{
-		state:                     map[string]ServiceAliasConfig{},
-		serviceUnits:              make(map[string]ServiceUnit),
+		state:                     map[ServiceAliasConfigKey]ServiceAliasConfig{},
+		serviceUnits:              make(map[ServiceUnitKey]ServiceUnit),
 		certManager:               fakeCertManager,
 		rateLimitedCommitFunction: nil,
 	}

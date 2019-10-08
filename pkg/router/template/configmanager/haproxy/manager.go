@@ -67,7 +67,7 @@ type endpointToDynamicServerMap map[string]string
 
 // configEntryMap is a map containing name-value pairs representing the
 // config entries to add to an haproxy map.
-type configEntryMap map[string]string
+type configEntryMap map[string]templaterouter.ServiceAliasConfigKey
 
 // haproxyMapAssociation is a map of haproxy maps and their config entries for a backend.
 type haproxyMapAssociation map[string]configEntryMap
@@ -84,7 +84,7 @@ type routeBackendEntry struct {
 	wildcard bool
 
 	// BackendName is the name of the associated haproxy backend.
-	backendName string
+	backendName templaterouter.ServiceAliasConfigKey
 
 	// mapAssociations is the associated set of haproxy maps and their
 	// config entries.
@@ -92,7 +92,7 @@ type routeBackendEntry struct {
 
 	// poolRouteBackendName is backend name for any associated route
 	// from the pre-configured blueprint route pool.
-	poolRouteBackendName string
+	poolRouteBackendName templaterouter.ServiceAliasConfigKey
 
 	// DynamicServerMap is a map of all the allocated dynamic servers.
 	dynamicServerMap endpointToDynamicServerMap
@@ -140,11 +140,11 @@ type haproxyConfigManager struct {
 	reloadInProgress bool
 
 	// backendEntries is a map of route id to the route backend entry.
-	backendEntries map[string]*routeBackendEntry
+	backendEntries map[templaterouter.ServiceAliasConfigKey]*routeBackendEntry
 
 	// poolUsage is a mapping of blueprint route pool entries to their
 	// corresponding routes.
-	poolUsage map[string]string
+	poolUsage map[templaterouter.ServiceAliasConfigKey]templaterouter.ServiceAliasConfigKey
 
 	// lock is a mutex used to prevent concurrent config changes.
 	lock sync.Mutex
@@ -171,8 +171,8 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 
 		client:           client,
 		reloadInProgress: false,
-		backendEntries:   make(map[string]*routeBackendEntry),
-		poolUsage:        make(map[string]string),
+		backendEntries:   make(map[templaterouter.ServiceAliasConfigKey]*routeBackendEntry),
+		poolUsage:        make(map[templaterouter.ServiceAliasConfigKey]templaterouter.ServiceAliasConfigKey),
 	}
 }
 
@@ -284,10 +284,10 @@ func (cm *haproxyConfigManager) RemoveBlueprint(route *routev1.Route) {
 }
 
 // Register registers an id with an expected haproxy backend for a route.
-func (cm *haproxyConfigManager) Register(id string, route *routev1.Route) {
+func (cm *haproxyConfigManager) Register(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) {
 	wildcard := cm.wildcardRoutesAllowed && (route.Spec.WildcardPolicy == routev1.WildcardPolicySubdomain)
 	entry := &routeBackendEntry{
-		id:               id,
+		id:               string(id),
 		termination:      routeTerminationType(route),
 		wildcard:         wildcard,
 		backendName:      routeBackendName(id, route),
@@ -302,7 +302,7 @@ func (cm *haproxyConfigManager) Register(id string, route *routev1.Route) {
 }
 
 // AddRoute adds a new route or updates an existing route.
-func (cm *haproxyConfigManager) AddRoute(id, routingKey string, route *routev1.Route) error {
+func (cm *haproxyConfigManager) AddRoute(id templaterouter.ServiceAliasConfigKey, routingKey string, route *routev1.Route) error {
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically add route %s", id)
 	}
@@ -367,7 +367,7 @@ func (cm *haproxyConfigManager) AddRoute(id, routingKey string, route *routev1.R
 }
 
 // RemoveRoute removes a route.
-func (cm *haproxyConfigManager) RemoveRoute(id string, route *routev1.Route) error {
+func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) error {
 	log.V(4).Info("removing route", "id", id)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically remove route id %s", id)
@@ -422,7 +422,7 @@ func (cm *haproxyConfigManager) RemoveRoute(id string, route *routev1.Route) err
 
 // ReplaceRouteEndpoints dynamically replaces a subset of the endpoints for
 // a route - modifies a subset of the servers on an haproxy backend.
-func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
+func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
 	log.V(4).Info("replacing route endpoints", "id", id, "weight", weight)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically add endpoints for %s", id)
@@ -562,7 +562,7 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, n
 }
 
 // RemoveRouteEndpoints removes servers matching the endpoints from a haproxy backend.
-func (cm *haproxyConfigManager) RemoveRouteEndpoints(id string, endpoints []templaterouter.Endpoint) error {
+func (cm *haproxyConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAliasConfigKey, endpoints []templaterouter.Endpoint) error {
 	log.V(4).Info("removing endpoints", "id", id)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically delete endpoints for %s", id)
@@ -759,11 +759,11 @@ func (cm *haproxyConfigManager) processMapAssociations(associations haproxyMapAs
 }
 
 // findFreeBackendPoolSlot returns a free pool slot backend name.
-func (cm *haproxyConfigManager) findFreeBackendPoolSlot(blueprint *routev1.Route) (string, error) {
+func (cm *haproxyConfigManager) findFreeBackendPoolSlot(blueprint *routev1.Route) (templaterouter.ServiceAliasConfigKey, error) {
 	poolSize := getPoolSize(blueprint, cm.blueprintRoutePoolSize)
 	idPrefix := fmt.Sprintf("%s:%s", blueprint.Namespace, blueprint.Name)
 	for i := 0; i < poolSize; i++ {
-		id := fmt.Sprintf("%s-%v", idPrefix, i+1)
+		id := templaterouter.ServiceAliasConfigKey(fmt.Sprintf("%s-%v", idPrefix, i+1))
 		name := routeBackendName(id, blueprint)
 		if _, ok := cm.poolUsage[name]; !ok {
 			return name, nil
@@ -797,7 +797,7 @@ func (cm *haproxyConfigManager) reset() {
 
 	// Reset the blueprint route pool use and dynamic server maps as
 	// the router was reloaded.
-	cm.poolUsage = make(map[string]string)
+	cm.poolUsage = make(map[templaterouter.ServiceAliasConfigKey]templaterouter.ServiceAliasConfigKey)
 	for _, entry := range cm.backendEntries {
 		entry.poolRouteBackendName = ""
 		if len(entry.dynamicServerMap) > 0 {
@@ -858,7 +858,7 @@ func (cm *haproxyConfigManager) findMatchingBlueprint(route *routev1.Route) *rou
 }
 
 // BackendName returns the associated backend name for a route.
-func (entry *routeBackendEntry) BackendName() string {
+func (entry *routeBackendEntry) BackendName() templaterouter.ServiceAliasConfigKey {
 	if len(entry.poolRouteBackendName) > 0 {
 		return entry.poolRouteBackendName
 	}
@@ -875,7 +875,7 @@ func (entry *routeBackendEntry) BuildMapAssociations(route *routev1.Route) {
 	}
 
 	entry.mapAssociations = make(haproxyMapAssociation)
-	associate := func(name, k, v string) {
+	associate := func(name, k string, v templaterouter.ServiceAliasConfigKey) {
 		m, ok := entry.mapAssociations[name]
 		if !ok {
 			m = make(configEntryMap)
@@ -1002,10 +1002,10 @@ func createBlueprintRoute(routeType routev1.TLSTerminationType) *routev1.Route {
 }
 
 // routeBackendName returns the haproxy backend name for a route.
-func routeBackendName(id string, route *routev1.Route) string {
+func routeBackendName(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) templaterouter.ServiceAliasConfigKey {
 	termination := routeTerminationType(route)
 	prefix := templateutil.GenerateBackendNamePrefix(termination)
-	return fmt.Sprintf("%s:%s", prefix, id)
+	return templaterouter.ServiceAliasConfigKey(fmt.Sprintf("%s:%s", prefix, string(id)))
 }
 
 // getPoolSize returns the size to allocate for the pool for the specified
@@ -1045,7 +1045,7 @@ func isDynamicBackendServer(server BackendServerInfo) bool {
 }
 
 // applyMapAssociations applies the backend associations to a haproxy map.
-func applyMapAssociations(m *HAProxyMap, associations map[string]string, add bool) error {
+func applyMapAssociations(m *HAProxyMap, associations configEntryMap, add bool) error {
 	for k, v := range associations {
 		log.V(4).Info("applying to map", "name", m.Name(), "key", k, "value", v, "add", add)
 		if add {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	templaterouter "github.com/openshift/router/pkg/router/template"
 )
 
 const (
@@ -133,7 +135,7 @@ func (m *HAProxyMap) Find(k string) ([]HAProxyMapEntry, error) {
 
 // Add adds a new key and value to the haproxy map and allows all previous
 // entries in the map to be deleted (replaced).
-func (m *HAProxyMap) Add(k, v string, replace bool) error {
+func (m *HAProxyMap) Add(k string, v templaterouter.ServiceAliasConfigKey, replace bool) error {
 	if replace {
 		if err := m.Delete(k); err != nil {
 			return err
@@ -165,8 +167,8 @@ func (m *HAProxyMap) DeleteEntry(id string) error {
 }
 
 // addEntry adds a new haproxy map entry.
-func (m *HAProxyMap) addEntry(k, v string) error {
-	keyExpr := escapeKeyExpr(k)
+func (m *HAProxyMap) addEntry(k string, v templaterouter.ServiceAliasConfigKey) error {
+	keyExpr := escapeKeyExpr(string(k))
 	cmd := fmt.Sprintf("add map %s %s %s", m.name, keyExpr, v)
 	responseBytes, err := m.client.Execute(cmd)
 	if err != nil {

@@ -121,22 +121,22 @@ bGvtpjWA4r9WASIDPFsxk/cDEEEO6iPxgMOf5MdpQC2y2MU0rzF/Gg==
 
 // TestRouter provides an implementation of the plugin's router interface suitable for unit testing.
 type TestRouter struct {
-	State        map[string]ServiceAliasConfig
-	ServiceUnits map[string]ServiceUnit
+	State        map[ServiceAliasConfigKey]ServiceAliasConfig
+	ServiceUnits map[ServiceUnitKey]ServiceUnit
 }
 
 // NewTestRouter creates a new TestRouter and registers the initial state.
-func newTestRouter(state map[string]ServiceAliasConfig) *TestRouter {
+func newTestRouter(state map[ServiceAliasConfigKey]ServiceAliasConfig) *TestRouter {
 	return &TestRouter{
 		State:        state,
-		ServiceUnits: make(map[string]ServiceUnit),
+		ServiceUnits: make(map[ServiceUnitKey]ServiceUnit),
 	}
 }
 
 // CreateServiceUnit creates an empty service unit identified by id
-func (r *TestRouter) CreateServiceUnit(id string) {
+func (r *TestRouter) CreateServiceUnit(id ServiceUnitKey) {
 	su := ServiceUnit{
-		Name:          id,
+		Name:          string(id),
 		EndpointTable: []Endpoint{},
 	}
 
@@ -144,13 +144,13 @@ func (r *TestRouter) CreateServiceUnit(id string) {
 }
 
 // FindServiceUnit finds the service unit in the state
-func (r *TestRouter) FindServiceUnit(id string) (v ServiceUnit, ok bool) {
+func (r *TestRouter) FindServiceUnit(id ServiceUnitKey) (v ServiceUnit, ok bool) {
 	v, ok = r.ServiceUnits[id]
 	return
 }
 
 // AddEndpoints adds the endpoints to the service unit identified by id
-func (r *TestRouter) AddEndpoints(id string, endpoints []Endpoint) {
+func (r *TestRouter) AddEndpoints(id ServiceUnitKey, endpoints []Endpoint) {
 	su, _ := r.FindServiceUnit(id)
 
 	// simulate the logic that compares endpoints
@@ -162,7 +162,7 @@ func (r *TestRouter) AddEndpoints(id string, endpoints []Endpoint) {
 }
 
 // DeleteEndpoints removes all endpoints from the service unit
-func (r *TestRouter) DeleteEndpoints(id string) {
+func (r *TestRouter) DeleteEndpoints(id ServiceUnitKey) {
 	if su, ok := r.FindServiceUnit(id); !ok {
 		return
 	} else {
@@ -171,8 +171,8 @@ func (r *TestRouter) DeleteEndpoints(id string) {
 	}
 }
 
-func (r *TestRouter) calculateServiceWeights(serviceUnits map[string]int32) map[string]int32 {
-	var serviceWeights = make(map[string]int32)
+func (r *TestRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32) map[ServiceUnitKey]int32 {
+	var serviceWeights = make(map[ServiceUnitKey]int32)
 	for key := range serviceUnits {
 		serviceWeights[key] = serviceUnits[key]
 	}
@@ -220,8 +220,8 @@ func (r *TestRouter) SyncedAtLeastOnce() bool {
 
 func (r *TestRouter) FilterNamespaces(namespaces sets.String) {
 	if len(namespaces) == 0 {
-		r.State = make(map[string]ServiceAliasConfig)
-		r.ServiceUnits = make(map[string]ServiceUnit)
+		r.State = make(map[ServiceAliasConfigKey]ServiceAliasConfig)
+		r.ServiceUnits = make(map[ServiceUnitKey]ServiceUnit)
 	}
 	for k := range r.ServiceUnits {
 		// TODO: the id of a service unit should be defined inside this class, not passed in from the outside
@@ -243,7 +243,7 @@ func (r *TestRouter) FilterNamespaces(namespaces sets.String) {
 }
 
 // getKey create an identifier for the route consisting of host-path
-func getKey(route *routev1.Route) string {
+func getKey(route *routev1.Route) ServiceAliasConfigKey {
 	return routeKeyFromParts(route.Spec.Host, route.Spec.Path)
 }
 
@@ -328,7 +328,7 @@ func TestHandleEndpoints(t *testing.T) {
 		},
 	}
 
-	router := newTestRouter(make(map[string]ServiceAliasConfig))
+	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
 	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
@@ -337,7 +337,7 @@ func TestHandleEndpoints(t *testing.T) {
 	for _, tc := range testCases {
 		plugin.HandleEndpoints(tc.eventType, tc.endpoints)
 
-		su, ok := router.FindServiceUnit(tc.expectedServiceUnit.Name)
+		su, ok := router.FindServiceUnit(ServiceUnitKey(tc.expectedServiceUnit.Name))
 
 		if !ok {
 			t.Errorf("TestHandleEndpoints test case %s failed.  Couldn't find expected service unit with name %s", tc.name, tc.expectedServiceUnit.Name)
@@ -438,7 +438,7 @@ func TestHandleTCPEndpoints(t *testing.T) {
 		},
 	}
 
-	router := newTestRouter(make(map[string]ServiceAliasConfig))
+	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
 	templatePlugin := newDefaultTemplatePlugin(router, false, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
@@ -447,7 +447,7 @@ func TestHandleTCPEndpoints(t *testing.T) {
 	for _, tc := range testCases {
 		plugin.HandleEndpoints(tc.eventType, tc.endpoints)
 
-		su, ok := router.FindServiceUnit(tc.expectedServiceUnit.Name)
+		su, ok := router.FindServiceUnit(ServiceUnitKey(tc.expectedServiceUnit.Name))
 
 		if !ok {
 			t.Errorf("TestHandleEndpoints test case %s failed.  Couldn't find expected service unit with name %s", tc.name, tc.expectedServiceUnit.Name)
@@ -480,7 +480,7 @@ func (r *fakeRejections) RecordRouteRejection(route *routev1.Route, reason, mess
 // TestHandleRoute test route watch events
 func TestHandleRoute(t *testing.T) {
 	rejections := &fakeRejections{}
-	router := newTestRouter(make(map[string]ServiceAliasConfig))
+	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
 	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
@@ -1029,7 +1029,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 }
 
 func TestNamespaceScopingFromEmpty(t *testing.T) {
-	router := newTestRouter(make(map[string]ServiceAliasConfig))
+	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
 	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
