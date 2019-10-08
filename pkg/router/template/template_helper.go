@@ -172,7 +172,7 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 			hascert = ok && len(cert.Contents) > 0
 		}
 
-		backendConfig := backendConfig(k, cfg, hascert)
+		backendConfig := backendConfig(string(k), cfg, hascert)
 		if entry := haproxyutil.GenerateMapEntry(certConfigMap, backendConfig); entry != nil {
 			fqCertPath := path.Join(td.WorkingDir, "certs", entry.Key)
 			lines = append(lines, fmt.Sprintf("%s %s", fqCertPath, entry.Value))
@@ -203,8 +203,8 @@ func generateHAProxyWhiteListFile(workingDir, id, value string) string {
 }
 
 // getHTTPAliasesGroupedByHost returns HTTP(S) aliases grouped by their host.
-func getHTTPAliasesGroupedByHost(aliases map[string]ServiceAliasConfig) map[string]map[string]ServiceAliasConfig {
-	result := make(map[string]map[string]ServiceAliasConfig)
+func getHTTPAliasesGroupedByHost(aliases map[ServiceAliasConfigKey]ServiceAliasConfig) map[string]map[ServiceAliasConfigKey]ServiceAliasConfig {
+	result := make(map[string]map[ServiceAliasConfigKey]ServiceAliasConfig)
 
 	for k, a := range aliases {
 		if a.TLSTermination == routev1.TLSTerminationPassthrough {
@@ -212,7 +212,7 @@ func getHTTPAliasesGroupedByHost(aliases map[string]ServiceAliasConfig) map[stri
 		}
 
 		if _, exists := result[a.Host]; !exists {
-			result[a.Host] = make(map[string]ServiceAliasConfig)
+			result[a.Host] = make(map[ServiceAliasConfigKey]ServiceAliasConfig)
 		}
 		result[a.Host][k] = a
 	}
@@ -262,7 +262,7 @@ func generateHAProxyMap(name string, td templateData) []string {
 
 	lines := make([]string, 0)
 	for k, cfg := range td.State {
-		backendConfig := backendConfig(k, cfg, false)
+		backendConfig := backendConfig(string(k), cfg, false)
 		if entry := haproxyutil.GenerateMapEntry(name, backendConfig); entry != nil {
 			lines = append(lines, fmt.Sprintf("%s %s", entry.Key, entry.Value))
 		}

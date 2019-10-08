@@ -3,6 +3,7 @@ package haproxy
 import (
 	"testing"
 
+	templaterouter "github.com/openshift/router/pkg/router/template"
 	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
 
@@ -406,7 +407,7 @@ func TestClientCommit(t *testing.T) {
 
 	server.Reset()
 	for _, be := range backends {
-		if _, ok := skipNames[be.Name()]; ok {
+		if _, ok := skipNames[string(be.Name())]; ok {
 			continue
 		}
 
@@ -423,7 +424,7 @@ func TestClientCommit(t *testing.T) {
 
 	server.Reset()
 	for _, be := range backends {
-		if _, ok := skipNames[be.Name()]; ok {
+		if _, ok := skipNames[string(be.Name())]; ok {
 			continue
 		}
 
@@ -458,7 +459,7 @@ func TestClientBackends(t *testing.T) {
 func TestClientFindBackend(t *testing.T) {
 	testCases := []struct {
 		name            string
-		backendName     string
+		backendName     templaterouter.ServiceAliasConfigKey
 		failureExpected bool
 	}{
 		{

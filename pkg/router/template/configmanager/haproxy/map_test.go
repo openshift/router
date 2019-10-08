@@ -3,6 +3,7 @@ package haproxy
 import (
 	"testing"
 
+	templaterouter "github.com/openshift/router/pkg/router/template"
 	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
 
@@ -451,7 +452,7 @@ func TestHAProxyMapAdd(t *testing.T) {
 		sockFile        string
 		mapName         string
 		keyName         string
-		value           string
+		value           templaterouter.ServiceAliasConfigKey
 		replace         bool
 		failureExpected bool
 	}{

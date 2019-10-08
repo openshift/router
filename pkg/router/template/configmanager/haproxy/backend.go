@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	templaterouter "github.com/openshift/router/pkg/router/template"
 )
 
 // BackendServerState indicates the state for a haproxy backend server.
@@ -86,7 +88,7 @@ type BackendServerInfo struct {
 
 // Backend represents a specific haproxy backend.
 type Backend struct {
-	name    string
+	name    templaterouter.ServiceAliasConfigKey
 	servers map[string]*backendServer
 
 	client *Client
@@ -113,14 +115,14 @@ func buildHAProxyBackends(c *Client) ([]*Backend, error) {
 
 	backends := make([]*Backend, len(entries))
 	for k, v := range entries {
-		backends[k] = newBackend(v.Name, c)
+		backends[k] = newBackend(templaterouter.ServiceAliasConfigKey(v.Name), c)
 	}
 
 	return backends, nil
 }
 
 // newBackend returns a new Backend representing a haproxy backend.
-func newBackend(name string, c *Client) *Backend {
+func newBackend(name templaterouter.ServiceAliasConfigKey, c *Client) *Backend {
 	return &Backend{
 		name:    name,
 		servers: make(map[string]*backendServer),
@@ -129,7 +131,7 @@ func newBackend(name string, c *Client) *Backend {
 }
 
 // Name returns the name of this haproxy backend.
-func (b *Backend) Name() string {
+func (b *Backend) Name() templaterouter.ServiceAliasConfigKey {
 	return b.name
 }
 
@@ -317,11 +319,11 @@ func newBackendServer(info BackendServerInfo) *backendServer {
 }
 
 // ApplyChanges applies all the local backend server changes.
-func (s *backendServer) ApplyChanges(backendName string, client *Client) error {
+func (s *backendServer) ApplyChanges(backendName templaterouter.ServiceAliasConfigKey, client *Client) error {
 	// Build the haproxy dynamic config API commands.
 	commands := []string{}
 
-	cmdPrefix := fmt.Sprintf("%s %s/%s", SetServerCommand, backendName, s.Name)
+	cmdPrefix := fmt.Sprintf("%s %s/%s", SetServerCommand, string(backendName), s.Name)
 
 	if s.updatedIPAddress != s.IPAddress || s.updatedPort != s.Port {
 		cmd := fmt.Sprintf("%s addr %s", cmdPrefix, s.updatedIPAddress)
