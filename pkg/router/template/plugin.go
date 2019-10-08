@@ -10,7 +10,6 @@ import (
 	"time"
 
 	kapi "k8s.io/api/core/v1"
-	ktypes "k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
@@ -55,7 +54,6 @@ type TemplatePluginConfig struct {
 	StatsPassword            string
 	IncludeUDP               bool
 	AllowWildcardRoutes      bool
-	PeerService              *ktypes.NamespacedName
 	BindPortsAfterSync       bool
 	MaxConnections           string
 	Ciphers                  string
@@ -134,11 +132,6 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		templates[template.Name()] = templateWithHelper
 	}
 
-	peerKey := ""
-	if cfg.PeerService != nil {
-		peerKey = peerEndpointsKey(*cfg.PeerService)
-	}
-
 	templateRouterCfg := templateRouterCfg{
 		dir:                      cfg.WorkingDir,
 		templates:                templates,
@@ -153,7 +146,6 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		statsPassword:            cfg.StatsPassword,
 		statsPort:                cfg.StatsPort,
 		allowWildcardRoutes:      cfg.AllowWildcardRoutes,
-		peerEndpointsKey:         peerKey,
 		bindPortsAfterSync:       cfg.BindPortsAfterSync,
 		dynamicConfigManager:     cfg.DynamicConfigManager,
 	}
@@ -240,13 +232,6 @@ func getPartsFromEndpointsKey(key string) (string, string) {
 	namespace := tokens[0]
 	name := tokens[1]
 	return namespace, name
-}
-
-// peerServiceKey may be used by the underlying router when handling endpoints to identify
-// endpoints that belong to its peers.  THIS MUST FOLLOW THE KEY STRATEGY OF endpointsKey.  It
-// receives a NamespacedName that is created from the service that is added by the oadm command
-func peerEndpointsKey(namespacedName ktypes.NamespacedName) string {
-	return endpointsKeyFromParts(namespacedName.Namespace, namespacedName.Name)
 }
 
 // createRouterEndpoints creates openshift router endpoints based on k8s endpoints

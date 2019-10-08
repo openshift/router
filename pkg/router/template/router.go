@@ -76,13 +76,6 @@ type templateRouter struct {
 	// certificate CA (/var/run/secrets/kubernetes.io/serviceaccount/serving_ca.crt) that the infrastructure uses to
 	// generate certificates for services by name.
 	defaultDestinationCAPath string
-	// peerService provides a namespace/name to check against when receiving endpoint events in order
-	// to track the peers of this router.  This may be used to populate the set of peer ip addresses
-	// that a router can use for talking to other routers controlled by the same service.
-	// NOTE: this should follow the format of the router.endpointsKey that is used to key endpoints
-	peerEndpointsKey string
-	// peerEndpoints will contain an endpoint slice of the peers
-	peerEndpoints []Endpoint
 	// if the router can expose statistics it should expose them with this user for auth
 	statsUser string
 	// if the router can expose statistics it should expose them with this password for auth
@@ -129,7 +122,6 @@ type templateRouterCfg struct {
 	statsPassword            string
 	statsPort                int
 	allowWildcardRoutes      bool
-	peerEndpointsKey         string
 	includeUDP               bool
 	bindPortsAfterSync       bool
 	dynamicConfigManager     ConfigManager
@@ -148,8 +140,6 @@ type templateData struct {
 	DefaultCertificate string
 	// full path and file name to the default destination certificate
 	DefaultDestinationCA string
-	// peers
-	PeerEndpoints []Endpoint
 	//username to expose stats with (if the template supports it)
 	StatsUser string
 	//password to expose stats with (if the template supports it)
@@ -166,9 +156,6 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	dir := cfg.dir
 
 	log.V(2).Info("creating a new template router", "writeDir", dir)
-	if len(cfg.peerEndpointsKey) > 0 {
-		log.V(2).Info("router will use service to identify peers", "service", cfg.peerEndpointsKey)
-	}
 	certManagerConfig := &certificateManagerConfig{
 		certKeyFunc:     generateCertKey,
 		caCertKeyFunc:   generateCACertKey,
@@ -211,8 +198,6 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		statsPassword:            cfg.statsPassword,
 		statsPort:                cfg.statsPort,
 		allowWildcardRoutes:      cfg.allowWildcardRoutes,
-		peerEndpointsKey:         cfg.peerEndpointsKey,
-		peerEndpoints:            []Endpoint{},
 		bindPortsAfterSync:       cfg.bindPortsAfterSync,
 		dynamicConfigManager:     cfg.dynamicConfigManager,
 
@@ -528,7 +513,6 @@ func (r *templateRouter) writeConfig() error {
 			ServiceUnits:         r.serviceUnits,
 			DefaultCertificate:   r.defaultCertificatePath,
 			DefaultDestinationCA: r.defaultDestinationCAPath,
-			PeerEndpoints:        r.peerEndpoints,
 			StatsUser:            r.statsUser,
 			StatsPassword:        r.statsPassword,
 			StatsPort:            r.statsPort,
@@ -818,13 +802,6 @@ func (r *templateRouter) DeleteEndpoints(id string) {
 
 	r.serviceUnits[id] = service
 
-	// TODO: this is not safe (assuming that the subset of elements we are watching includes the peer endpoints)
-	// should be a DNS lookup for endpoints of our service name.
-	if id == r.peerEndpointsKey {
-		r.peerEndpoints = []Endpoint{}
-		log.V(4).Info("peer endpoint table has been cleared")
-	}
-
 	r.stateChanged = true
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
 }
@@ -1038,11 +1015,6 @@ func (r *templateRouter) AddEndpoints(id string, endpoints []Endpoint) {
 	r.serviceUnits[id] = frontend
 
 	configChanged := r.dynamicallyReplaceEndpoints(id, frontend, oldEndpoints)
-
-	if id == r.peerEndpointsKey {
-		r.peerEndpoints = frontend.EndpointTable
-		log.V(4).Info("peer endpoints updated", "peerEndpoints", r.peerEndpoints)
-	}
 
 	r.stateChanged = true
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
