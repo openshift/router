@@ -17,7 +17,6 @@ import (
 	"github.com/spf13/pflag"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ktypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
@@ -108,7 +107,6 @@ type TemplateRouter struct {
 	DefaultCertificatePath   string
 	DefaultCertificateDir    string
 	DefaultDestinationCAPath string
-	RouterService            *ktypes.NamespacedName
 	BindPortsAfterSync       bool
 	MaxConnections           string
 	Ciphers                  string
@@ -228,10 +226,6 @@ func (o *TemplateRouterOptions) Complete() error {
 	if len(routerSvcName) > 0 {
 		if len(routerSvcNamespace) == 0 {
 			return fmt.Errorf("ROUTER_SERVICE_NAMESPACE is required when ROUTER_SERVICE_NAME is specified")
-		}
-		o.RouterService = &ktypes.NamespacedName{
-			Namespace: routerSvcNamespace,
-			Name:      routerSvcName,
 		}
 	}
 
@@ -491,7 +485,6 @@ func (o *TemplateRouterOptions) Run() error {
 		StatsPort:                statsPort,
 		StatsUsername:            o.StatsUsername,
 		StatsPassword:            o.StatsPassword,
-		PeerService:              o.RouterService,
 		BindPortsAfterSync:       o.BindPortsAfterSync,
 		IncludeUDP:               o.RouterSelection.IncludeUDP,
 		AllowWildcardRoutes:      o.RouterSelection.AllowWildcardRoutes,
