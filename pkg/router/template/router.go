@@ -59,8 +59,8 @@ type templateRouter struct {
 	reloadScriptPath string
 	reloadInterval   time.Duration
 	reloadCallbacks  []func()
-	state            map[string]ServiceAliasConfig
-	serviceUnits     map[string]ServiceUnit
+	state            map[ServiceAliasConfigKey]ServiceAliasConfig
+	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
@@ -133,9 +133,9 @@ type templateData struct {
 	// the directory that files will be written to, defaults to /var/lib/containers/router
 	WorkingDir string
 	// the routes
-	State map[string](ServiceAliasConfig)
+	State map[ServiceAliasConfigKey](ServiceAliasConfig)
 	// the service lookup
-	ServiceUnits map[string]ServiceUnit
+	ServiceUnits map[ServiceUnitKey]ServiceUnit
 	// full path and file name to the default certificate
 	DefaultCertificate string
 	// full path and file name to the default destination certificate
@@ -187,8 +187,8 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		reloadScriptPath:         cfg.reloadScriptPath,
 		reloadInterval:           cfg.reloadInterval,
 		reloadCallbacks:          cfg.reloadCallbacks,
-		state:                    make(map[string]ServiceAliasConfig),
-		serviceUnits:             make(map[string]ServiceUnit),
+		state:                    make(map[ServiceAliasConfigKey]ServiceAliasConfig),
+		serviceUnits:             make(map[ServiceUnitKey]ServiceUnit),
 		certManager:              certManager,
 		defaultCertificate:       cfg.defaultCertificate,
 		defaultCertificatePath:   cfg.defaultCertificatePath,
@@ -377,7 +377,7 @@ func (r *templateRouter) readState() error {
 	data, err := ioutil.ReadFile(filepath.Join(r.dir, routeFile))
 	// TODO: rework
 	if err != nil {
-		r.state = make(map[string]ServiceAliasConfig)
+		r.state = make(map[ServiceAliasConfigKey]ServiceAliasConfig)
 		return nil
 	}
 
@@ -554,8 +554,8 @@ func (r *templateRouter) FilterNamespaces(namespaces sets.String) {
 	defer r.lock.Unlock()
 
 	if len(namespaces) == 0 {
-		r.state = make(map[string]ServiceAliasConfig)
-		r.serviceUnits = make(map[string]ServiceUnit)
+		r.state = make(map[ServiceAliasConfigKey]ServiceAliasConfig)
+		r.serviceUnits = make(map[ServiceUnitKey]ServiceUnit)
 		r.stateChanged = true
 	}
 	for k := range r.serviceUnits {
@@ -584,7 +584,7 @@ func (r *templateRouter) FilterNamespaces(namespaces sets.String) {
 }
 
 // CreateServiceUnit creates a new service named with the given id.
-func (r *templateRouter) CreateServiceUnit(id string) {
+func (r *templateRouter) CreateServiceUnit(id ServiceUnitKey) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -593,14 +593,14 @@ func (r *templateRouter) CreateServiceUnit(id string) {
 
 // CreateServiceUnit creates a new service named with the given id - internal
 // lockless form, caller needs to ensure lock acquisition [and release].
-func (r *templateRouter) createServiceUnitInternal(id string) {
+func (r *templateRouter) createServiceUnitInternal(id ServiceUnitKey) {
 	namespace, name := getPartsFromEndpointsKey(id)
 	service := ServiceUnit{
-		Name:          id,
+		Name:          string(id),
 		Hostname:      fmt.Sprintf("%s.%s.svc", name, namespace),
 		EndpointTable: []Endpoint{},
 
-		ServiceAliasAssociations: make(map[string]bool),
+		ServiceAliasAssociations: make(map[ServiceAliasConfigKey]bool),
 	}
 
 	r.serviceUnits[id] = service
@@ -609,13 +609,13 @@ func (r *templateRouter) createServiceUnitInternal(id string) {
 
 // findMatchingServiceUnit finds the service with the given id - internal
 // lockless form, caller needs to ensure lock acquisition [and release].
-func (r *templateRouter) findMatchingServiceUnit(id string) (ServiceUnit, bool) {
+func (r *templateRouter) findMatchingServiceUnit(id ServiceUnitKey) (ServiceUnit, bool) {
 	v, ok := r.serviceUnits[id]
 	return v, ok
 }
 
 // FindServiceUnit finds the service with the given id.
-func (r *templateRouter) FindServiceUnit(id string) (ServiceUnit, bool) {
+func (r *templateRouter) FindServiceUnit(id ServiceUnitKey) (ServiceUnit, bool) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -623,7 +623,7 @@ func (r *templateRouter) FindServiceUnit(id string) (ServiceUnit, bool) {
 }
 
 // DeleteServiceUnit deletes the service with the given id.
-func (r *templateRouter) DeleteServiceUnit(id string) {
+func (r *templateRouter) DeleteServiceUnit(id ServiceUnitKey) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -637,7 +637,7 @@ func (r *templateRouter) DeleteServiceUnit(id string) {
 }
 
 // addServiceAliasAssociation adds a reference to the backend in the ServiceUnit config.
-func (r *templateRouter) addServiceAliasAssociation(id, alias string) {
+func (r *templateRouter) addServiceAliasAssociation(id ServiceUnitKey, alias ServiceAliasConfigKey) {
 	if serviceUnit, ok := r.findMatchingServiceUnit(id); ok {
 		log.V(4).Info("associated service unit -> service alias", "id", id, "alias", alias)
 		serviceUnit.ServiceAliasAssociations[alias] = true
@@ -645,7 +645,7 @@ func (r *templateRouter) addServiceAliasAssociation(id, alias string) {
 }
 
 // removeServiceAliasAssociation removes the reference to the backend in the ServiceUnit config.
-func (r *templateRouter) removeServiceAliasAssociation(id, alias string) {
+func (r *templateRouter) removeServiceAliasAssociation(id ServiceUnitKey, alias ServiceAliasConfigKey) {
 	if serviceUnit, ok := r.findMatchingServiceUnit(id); ok {
 		log.V(4).Info("removed association for service unit -> service alias", "id", id, "alias", alias)
 		delete(serviceUnit.ServiceAliasAssociations, alias)
@@ -655,7 +655,7 @@ func (r *templateRouter) removeServiceAliasAssociation(id, alias string) {
 // dynamicallyAddRoute attempts to dynamically add a route.
 // Note: The config should have been synced at least once initially and
 //       the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyAddRoute(backendKey string, route *routev1.Route, backend *ServiceAliasConfig) bool {
+func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, route *routev1.Route, backend *ServiceAliasConfig) bool {
 	if r.dynamicConfigManager == nil {
 		return false
 	}
@@ -704,7 +704,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey string, route *routev1.R
 // dynamicallyRemoveRoute attempts to dynamically remove a route.
 // Note: The config should have been synced at least once initially and
 //       the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyRemoveRoute(backendKey string, route *routev1.Route) bool {
+func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey, route *routev1.Route) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
 	}
@@ -723,7 +723,7 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey string, route *routev
 // on all the routes associated with a given service.
 // Note: The config should have been synced at least once initially and
 //       the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyReplaceEndpoints(id string, service ServiceUnit, oldEndpoints []Endpoint) bool {
+func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service ServiceUnit, oldEndpoints []Endpoint) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
 	}
@@ -788,7 +788,7 @@ func (r *templateRouter) dynamicallyRemoveEndpoints(service ServiceUnit, endpoin
 }
 
 // DeleteEndpoints deletes the endpoints for the service with the given id.
-func (r *templateRouter) DeleteEndpoints(id string) {
+func (r *templateRouter) DeleteEndpoints(id ServiceUnitKey) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	service, ok := r.findMatchingServiceUnit(id)
@@ -807,16 +807,16 @@ func (r *templateRouter) DeleteEndpoints(id string) {
 }
 
 // routeKey generates route key. This allows templates to use this key without having to create a separate method
-func routeKey(route *routev1.Route) string {
+func routeKey(route *routev1.Route) ServiceAliasConfigKey {
 	return routeKeyFromParts(route.Namespace, route.Name)
 }
 
-func routeKeyFromParts(namespace, name string) string {
-	return fmt.Sprintf("%s%s%s", namespace, routeKeySeparator, name)
+func routeKeyFromParts(namespace, name string) ServiceAliasConfigKey {
+	return ServiceAliasConfigKey(fmt.Sprintf("%s%s%s", namespace, routeKeySeparator, name))
 }
 
-func getPartsFromRouteKey(key string) (string, string) {
-	tokens := strings.SplitN(key, routeKeySeparator, 2)
+func getPartsFromRouteKey(key ServiceAliasConfigKey) (string, string) {
+	tokens := strings.SplitN(string(key), routeKeySeparator, 2)
 	if len(tokens) != 2 {
 		log.Error(nil, "expected separator not found in route key", "separator", routeKeySeparator, "key", key)
 	}
@@ -827,7 +827,7 @@ func getPartsFromRouteKey(key string) (string, string) {
 
 // createServiceAliasConfig creates a ServiceAliasConfig from a route and the router state.
 // The router state is not modified in the process, so referenced ServiceUnits may not exist.
-func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendKey string) *ServiceAliasConfig {
+func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendKey ServiceAliasConfigKey) *ServiceAliasConfig {
 	wantsWildcardSupport := (route.Spec.WildcardPolicy == routev1.WildcardPolicySubdomain)
 
 	// The router config trumps what the route asks for/wants.
@@ -877,7 +877,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 			if len(tls.Certificate) > 0 {
 				certKey := generateCertKey(&config)
 				cert := Certificate{
-					ID:         backendKey,
+					ID:         string(backendKey),
 					Contents:   tls.Certificate,
 					PrivateKey: tls.Key,
 				}
@@ -888,7 +888,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 			if len(tls.CACertificate) > 0 {
 				caCertKey := generateCACertKey(&config)
 				caCert := Certificate{
-					ID:       backendKey,
+					ID:       string(backendKey),
 					Contents: tls.CACertificate,
 				}
 
@@ -898,7 +898,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 			if len(tls.DestinationCACertificate) > 0 {
 				destCertKey := generateDestCertKey(&config)
 				destCert := Certificate{
-					ID:       backendKey,
+					ID:       string(backendKey),
 					Contents: tls.DestinationCACertificate,
 				}
 
@@ -988,7 +988,7 @@ func (r *templateRouter) removeRouteInternal(route *routev1.Route) {
 
 // numberOfEndpoints returns the number of endpoints
 // Must be called while holding r.lock
-func (r *templateRouter) numberOfEndpoints(id string) int32 {
+func (r *templateRouter) numberOfEndpoints(id ServiceUnitKey) int32 {
 	var eps = 0
 	svc, ok := r.findMatchingServiceUnit(id)
 	if ok && len(svc.EndpointTable) > eps {
@@ -998,7 +998,7 @@ func (r *templateRouter) numberOfEndpoints(id string) int32 {
 }
 
 // AddEndpoints adds new Endpoints for the given id.
-func (r *templateRouter) AddEndpoints(id string, endpoints []Endpoint) {
+func (r *templateRouter) AddEndpoints(id ServiceUnitKey, endpoints []Endpoint) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	frontend, _ := r.findMatchingServiceUnit(id)
@@ -1145,8 +1145,8 @@ func generateDestCertKey(config *ServiceAliasConfig) string {
 // if weight < 0 or > 256 set to 0.
 // When the weight is 0 no traffic goes to the service. If they are
 // all 0 the request is returned with 503 response.
-func getServiceUnits(route *routev1.Route) map[string]int32 {
-	serviceUnits := make(map[string]int32)
+func getServiceUnits(route *routev1.Route) map[ServiceUnitKey]int32 {
+	serviceUnits := make(map[ServiceUnitKey]int32)
 
 	// get the weight and number of endpoints for each service
 	key := endpointsKeyFromParts(route.Namespace, route.Spec.To.Name)
@@ -1181,7 +1181,7 @@ func getServiceUnitWeight(weightRef *int32) int32 {
 
 // getActiveEndpoints calculates the number of endpoints that are not associated
 // with service units with a zero weight and returns the count.
-func (r *templateRouter) getActiveEndpoints(serviceUnits map[string]int32) int {
+func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int32) int {
 	var activeEndpoints int32 = 0
 
 	for key, weight := range serviceUnits {
@@ -1202,10 +1202,10 @@ func (r *templateRouter) getActiveEndpoints(serviceUnits map[string]int32) int {
 // Inaccuracies occur when converting float32 to int32 and when the scaled
 // weight per endpoint is less than 1.0, the minimum.
 // The above assumes roundRobin scheduling.
-func (r *templateRouter) calculateServiceWeights(serviceUnits map[string]int32) map[string]int32 {
-	serviceUnitNames := make(map[string]int32)
+func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32) map[ServiceUnitKey]int32 {
+	serviceUnitNames := make(map[ServiceUnitKey]int32)
 	// portion of service weight for each endpoint
-	epWeight := make(map[string]float32)
+	epWeight := make(map[ServiceUnitKey]float32)
 	// maximum endpoint weight
 	var maxEpWeight float32 = 0.0
 

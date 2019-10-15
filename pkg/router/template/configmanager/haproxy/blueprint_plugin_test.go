@@ -15,12 +15,12 @@ import (
 )
 
 type fakeConfigManager struct {
-	blueprints map[string]*routev1.Route
+	blueprints map[templaterouter.ServiceAliasConfigKey]*routev1.Route
 }
 
 func newFakeConfigManager() *fakeConfigManager {
 	return &fakeConfigManager{
-		blueprints: make(map[string]*routev1.Route),
+		blueprints: make(map[templaterouter.ServiceAliasConfigKey]*routev1.Route),
 	}
 }
 
@@ -36,27 +36,27 @@ func (cm *fakeConfigManager) RemoveBlueprint(route *routev1.Route) {
 	delete(cm.blueprints, routeKey(route))
 }
 
-func (cm *fakeConfigManager) FindBlueprint(id string) (*routev1.Route, bool) {
+func (cm *fakeConfigManager) FindBlueprint(id templaterouter.ServiceAliasConfigKey) (*routev1.Route, bool) {
 	route, ok := cm.blueprints[id]
 	return route, ok
 }
 
-func (cm *fakeConfigManager) Register(id string, route *routev1.Route) {
+func (cm *fakeConfigManager) Register(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) {
 }
 
-func (cm *fakeConfigManager) AddRoute(id, routingKey string, route *routev1.Route) error {
+func (cm *fakeConfigManager) AddRoute(id templaterouter.ServiceAliasConfigKey, routingKey string, route *routev1.Route) error {
 	return nil
 }
 
-func (cm *fakeConfigManager) RemoveRoute(id string, route *routev1.Route) error {
+func (cm *fakeConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) error {
 	return nil
 }
 
-func (cm *fakeConfigManager) ReplaceRouteEndpoints(id string, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
+func (cm *fakeConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
 	return nil
 }
 
-func (cm *fakeConfigManager) RemoveRouteEndpoints(id string, endpoints []templaterouter.Endpoint) error {
+func (cm *fakeConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAliasConfigKey, endpoints []templaterouter.Endpoint) error {
 	return nil
 }
 
@@ -75,8 +75,8 @@ func (cm *fakeConfigManager) GenerateDynamicServerNames(id string) []string {
 	return []string{}
 }
 
-func routeKey(route *routev1.Route) string {
-	return fmt.Sprintf("%s:%s", route.Name, route.Namespace)
+func routeKey(route *routev1.Route) templaterouter.ServiceAliasConfigKey {
+	return templaterouter.ServiceAliasConfigKey(fmt.Sprintf("%s:%s", route.Name, route.Namespace))
 }
 
 // TestHandleRoute test route watch events

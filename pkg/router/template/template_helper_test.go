@@ -33,8 +33,8 @@ func buildServiceAliasConfig(name, namespace, host, path string, termination rou
 	}
 }
 
-func buildTestTemplateState() map[string]ServiceAliasConfig {
-	state := make(map[string]ServiceAliasConfig)
+func buildTestTemplateState() map[ServiceAliasConfigKey]ServiceAliasConfig {
+	state := make(map[ServiceAliasConfigKey]ServiceAliasConfig)
 
 	state["stg:api-route"] = buildServiceAliasConfig("api-route", "stg", "api-stg.127.0.0.1.nip.io", "", routev1.TLSTerminationEdge, routev1.InsecureEdgeTerminationPolicyRedirect, false)
 	state["prod:api-route"] = buildServiceAliasConfig("api-route", "prod", "api-prod.127.0.0.1.nip.io", "", routev1.TLSTerminationEdge, routev1.InsecureEdgeTerminationPolicyRedirect, false)
@@ -402,7 +402,7 @@ func TestGenerateHAProxyCertConfigMap(t *testing.T) {
 	td := templateData{
 		WorkingDir:   "/path/to",
 		State:        buildTestTemplateState(),
-		ServiceUnits: make(map[string]ServiceUnit),
+		ServiceUnits: make(map[ServiceUnitKey]ServiceUnit),
 	}
 
 	expectedOrder := []string{
@@ -430,7 +430,7 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	td := templateData{
 		WorkingDir:   "/path/to",
 		State:        buildTestTemplateState(),
-		ServiceUnits: make(map[string]ServiceUnit),
+		ServiceUnits: make(map[ServiceUnitKey]ServiceUnit),
 	}
 
 	wildcardDomainOrder := []string{
@@ -532,7 +532,7 @@ func TestGenerateHAProxyMap(t *testing.T) {
 }
 
 func TestGetHTTPAliasesGroupedByHost(t *testing.T) {
-	aliases := map[string]ServiceAliasConfig{
+	aliases := map[ServiceAliasConfigKey]ServiceAliasConfig{
 		"project1:route1": {
 			Host: "example.com",
 			Path: "/",
@@ -551,7 +551,7 @@ func TestGetHTTPAliasesGroupedByHost(t *testing.T) {
 		},
 	}
 
-	expected := map[string]map[string]ServiceAliasConfig{
+	expected := map[string]map[ServiceAliasConfigKey]ServiceAliasConfig{
 		"example.com": {
 			"project1:route1": {
 				Host: "example.com",

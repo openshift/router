@@ -72,14 +72,14 @@ type RouterInterface interface {
 	SyncedAtLeastOnce() bool
 
 	// CreateServiceUnit creates a new service named with the given id.
-	CreateServiceUnit(id string)
+	CreateServiceUnit(id ServiceUnitKey)
 	// FindServiceUnit finds the service with the given id.
-	FindServiceUnit(id string) (v ServiceUnit, ok bool)
+	FindServiceUnit(id ServiceUnitKey) (v ServiceUnit, ok bool)
 
 	// AddEndpoints adds new Endpoints for the given id.
-	AddEndpoints(id string, endpoints []Endpoint)
+	AddEndpoints(id ServiceUnitKey, endpoints []Endpoint)
 	// DeleteEndpoints deletes the endpoints for the frontend with the given id.
-	DeleteEndpoints(id string)
+	DeleteEndpoints(id ServiceUnitKey)
 
 	// AddRoute attempts to add a route to the router.
 	AddRoute(route *routev1.Route)
@@ -216,16 +216,16 @@ func (p *TemplatePlugin) Commit() error {
 }
 
 // endpointsKey returns the internal router key to use for the given Endpoints.
-func endpointsKey(endpoints *kapi.Endpoints) string {
+func endpointsKey(endpoints *kapi.Endpoints) ServiceUnitKey {
 	return endpointsKeyFromParts(endpoints.Namespace, endpoints.Name)
 }
 
-func endpointsKeyFromParts(namespace, name string) string {
-	return fmt.Sprintf("%s%s%s", namespace, endpointsKeySeparator, name)
+func endpointsKeyFromParts(namespace, name string) ServiceUnitKey {
+	return ServiceUnitKey(fmt.Sprintf("%s%s%s", namespace, endpointsKeySeparator, name))
 }
 
-func getPartsFromEndpointsKey(key string) (string, string) {
-	tokens := strings.SplitN(key, endpointsKeySeparator, 2)
+func getPartsFromEndpointsKey(key ServiceUnitKey) (string, string) {
+	tokens := strings.SplitN(string(key), endpointsKeySeparator, 2)
 	if len(tokens) != 2 {
 		log.Error(nil, "expected separator not found in endpoints key", "separator", endpointsKeySeparator, "key", key)
 	}

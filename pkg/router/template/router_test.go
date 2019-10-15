@@ -16,7 +16,7 @@ import (
 // TestCreateServiceUnit tests creating a service unit and finding it in router state
 func TestCreateServiceUnit(t *testing.T) {
 	router := NewFakeTemplateRouter()
-	suKey := "ns/test"
+	suKey := ServiceUnitKey("ns/test")
 	router.CreateServiceUnit(suKey)
 
 	if _, ok := router.FindServiceUnit(suKey); !ok {
@@ -27,7 +27,7 @@ func TestCreateServiceUnit(t *testing.T) {
 // TestDeleteServiceUnit tests that deleted service units no longer exist in state
 func TestDeleteServiceUnit(t *testing.T) {
 	router := NewFakeTemplateRouter()
-	suKey := "ns/test"
+	suKey := ServiceUnitKey("ns/test")
 	router.CreateServiceUnit(suKey)
 
 	if _, ok := router.FindServiceUnit(suKey); !ok {
@@ -44,7 +44,7 @@ func TestDeleteServiceUnit(t *testing.T) {
 // TestAddEndpoints test adding endpoints to service units
 func TestAddEndpoints(t *testing.T) {
 	router := NewFakeTemplateRouter()
-	suKey := "nsl/test"
+	suKey := ServiceUnitKey("nsl/test")
 	router.CreateServiceUnit(suKey)
 
 	if _, ok := router.FindServiceUnit(suKey); !ok {
@@ -83,7 +83,7 @@ func TestAddEndpoints(t *testing.T) {
 // Test that AddEndpoints returns true and false correctly for changed endpoints.
 func TestAddEndpointDuplicates(t *testing.T) {
 	router := NewFakeTemplateRouter()
-	suKey := "ns/test"
+	suKey := ServiceUnitKey("ns/test")
 	router.CreateServiceUnit(suKey)
 	if _, ok := router.FindServiceUnit(suKey); !ok {
 		t.Fatalf("Unable to find service unit %s after creation", suKey)
@@ -154,7 +154,7 @@ func TestAddEndpointDuplicates(t *testing.T) {
 // TestDeleteEndpoints tests removing endpoints from service units
 func TestDeleteEndpoints(t *testing.T) {
 	router := NewFakeTemplateRouter()
-	suKey := "ns/test"
+	suKey := ServiceUnitKey("ns/test")
 	router.CreateServiceUnit(suKey)
 
 	if _, ok := router.FindServiceUnit(suKey); !ok {
@@ -318,7 +318,7 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 	config := *router.createServiceAliasConfig(route, "foo")
 
 	suName := endpointsKeyFromParts(namespace, serviceName)
-	expectedSUs := map[string]int32{
+	expectedSUs := map[ServiceUnitKey]int32{
 		suName: serviceWeight,
 	}
 
@@ -358,13 +358,13 @@ func TestAddRoute(t *testing.T) {
 	}
 
 	suName := endpointsKeyFromParts(namespace, serviceName)
-	expectedSUs := map[string]ServiceUnit{
+	expectedSUs := map[ServiceUnitKey]ServiceUnit{
 		suName: {
-			Name:          suName,
+			Name:          string(suName),
 			Hostname:      "TestService.foo.svc",
 			EndpointTable: []Endpoint{},
 
-			ServiceAliasAssociations: map[string]bool{"foo:bar": true},
+			ServiceAliasAssociations: map[ServiceAliasConfigKey]bool{"foo:bar": true},
 		},
 	}
 
@@ -680,40 +680,40 @@ func TestFilterNamespaces(t *testing.T) {
 
 	testCases := []struct {
 		name         string
-		serviceUnits map[string]ServiceUnit
-		state        map[string]ServiceAliasConfig
+		serviceUnits map[ServiceUnitKey]ServiceUnit
+		state        map[ServiceAliasConfigKey]ServiceAliasConfig
 
 		filterNamespaces sets.String
 
-		expectedServiceUnits map[string]ServiceUnit
-		expectedState        map[string]ServiceAliasConfig
+		expectedServiceUnits map[ServiceUnitKey]ServiceUnit
+		expectedState        map[ServiceAliasConfigKey]ServiceAliasConfig
 		expectedStateChanged bool
 	}{
 		{
 			name:                 "empty",
-			serviceUnits:         map[string]ServiceUnit{},
-			state:                map[string]ServiceAliasConfig{},
+			serviceUnits:         map[ServiceUnitKey]ServiceUnit{},
+			state:                map[ServiceAliasConfigKey]ServiceAliasConfig{},
 			filterNamespaces:     sets.NewString("ns1"),
-			expectedServiceUnits: map[string]ServiceUnit{},
-			expectedState:        map[string]ServiceAliasConfig{},
+			expectedServiceUnits: map[ServiceUnitKey]ServiceUnit{},
+			expectedState:        map[ServiceAliasConfigKey]ServiceAliasConfig{},
 			expectedStateChanged: false,
 		},
 		{
 			name: "valid, filter none",
-			serviceUnits: map[string]ServiceUnit{
+			serviceUnits: map[ServiceUnitKey]ServiceUnit{
 				endpointsKeyFromParts("ns1", "svc"): {},
 				endpointsKeyFromParts("ns2", "svc"): {},
 			},
-			state: map[string]ServiceAliasConfig{
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
 				routeKeyFromParts("ns1", "svc"): {},
 				routeKeyFromParts("ns2", "svc"): {},
 			},
 			filterNamespaces: sets.NewString("ns1", "ns2"),
-			expectedServiceUnits: map[string]ServiceUnit{
+			expectedServiceUnits: map[ServiceUnitKey]ServiceUnit{
 				endpointsKeyFromParts("ns1", "svc"): {},
 				endpointsKeyFromParts("ns2", "svc"): {},
 			},
-			expectedState: map[string]ServiceAliasConfig{
+			expectedState: map[ServiceAliasConfigKey]ServiceAliasConfig{
 				routeKeyFromParts("ns1", "svc"): {},
 				routeKeyFromParts("ns2", "svc"): {},
 			},
@@ -721,36 +721,36 @@ func TestFilterNamespaces(t *testing.T) {
 		},
 		{
 			name: "valid, filter some",
-			serviceUnits: map[string]ServiceUnit{
+			serviceUnits: map[ServiceUnitKey]ServiceUnit{
 				endpointsKeyFromParts("ns1", "svc"): {},
 				endpointsKeyFromParts("ns2", "svc"): {},
 			},
-			state: map[string]ServiceAliasConfig{
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
 				routeKeyFromParts("ns1", "svc"): {},
 				routeKeyFromParts("ns2", "svc"): {},
 			},
 			filterNamespaces: sets.NewString("ns2"),
-			expectedServiceUnits: map[string]ServiceUnit{
+			expectedServiceUnits: map[ServiceUnitKey]ServiceUnit{
 				endpointsKeyFromParts("ns2", "svc"): {},
 			},
-			expectedState: map[string]ServiceAliasConfig{
+			expectedState: map[ServiceAliasConfigKey]ServiceAliasConfig{
 				routeKeyFromParts("ns2", "svc"): {},
 			},
 			expectedStateChanged: true,
 		},
 		{
 			name: "valid, filter all",
-			serviceUnits: map[string]ServiceUnit{
+			serviceUnits: map[ServiceUnitKey]ServiceUnit{
 				endpointsKeyFromParts("ns1", "svc"): {},
 				endpointsKeyFromParts("ns2", "svc"): {},
 			},
-			state: map[string]ServiceAliasConfig{
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
 				routeKeyFromParts("ns1", "svc"): {},
 				routeKeyFromParts("ns2", "svc"): {},
 			},
 			filterNamespaces:     sets.NewString("ns3"),
-			expectedServiceUnits: map[string]ServiceUnit{},
-			expectedState:        map[string]ServiceAliasConfig{},
+			expectedServiceUnits: map[ServiceUnitKey]ServiceUnit{},
+			expectedState:        map[ServiceAliasConfigKey]ServiceAliasConfig{},
 			expectedStateChanged: true,
 		},
 	}

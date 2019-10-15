@@ -18,8 +18,10 @@ type ServiceUnit struct {
 	EndpointTable []Endpoint
 	// ServiceAliasAssociations indicates what service aliases are
 	// associated with this service unit.
-	ServiceAliasAssociations map[string]bool
+	ServiceAliasAssociations map[ServiceAliasConfigKey]bool
 }
+
+type ServiceUnitKey string
 
 // ServiceAliasConfig is a route for a service.  Uniquely identified by host + path.
 type ServiceAliasConfig struct {
@@ -58,14 +60,14 @@ type ServiceAliasConfig struct {
 	// Annotations attached to this route
 	Annotations map[string]string
 
-	// ServiceUnits is the weight for each service assigned to the route keyed by service name.
+	// ServiceUnits is the weight for each service assigned to the route.
 	// It is used in calculating the weight for the server that is found in ServiceUnitNames
-	ServiceUnits map[string]int32
+	ServiceUnits map[ServiceUnitKey]int32
 
 	// ServiceUnitNames is the weight to apply to each endpoint of each service supporting this route.
-	// The key is the service name, the value is the scaled portion of the service weight to assign
+	// The value is the scaled portion of the service weight to assign
 	// to each endpoint in the service.
-	ServiceUnitNames map[string]int32
+	ServiceUnitNames map[ServiceUnitKey]int32
 
 	// ActiveServiceUnits is a count of the service units with a non-zero weight
 	ActiveServiceUnits int
@@ -81,6 +83,8 @@ const (
 	// been persisted to disk.
 	ServiceAliasConfigStatusSaved ServiceAliasConfigStatus = "saved"
 )
+
+type ServiceAliasConfigKey string
 
 // Certificate represents a pub/private key pair.  It is identified by ID which will become the file name.
 // A CA certificate will not have a PrivateKey set.
@@ -190,20 +194,20 @@ type ConfigManager interface {
 	RemoveBlueprint(route *routev1.Route)
 
 	// Register registers an id to be associated with a route.
-	Register(id string, route *routev1.Route)
+	Register(id ServiceAliasConfigKey, route *routev1.Route)
 
 	// AddRoute adds a new route or updates an existing route.
-	AddRoute(id, routingKey string, route *routev1.Route) error
+	AddRoute(id ServiceAliasConfigKey, routingKey string, route *routev1.Route) error
 
 	// RemoveRoute removes a route.
-	RemoveRoute(id string, route *routev1.Route) error
+	RemoveRoute(id ServiceAliasConfigKey, route *routev1.Route) error
 
 	// ReplaceRouteEndpoints replaces a subset (the ones associated with
 	// a single service unit) of a route endpoints.
-	ReplaceRouteEndpoints(id string, oldEndpoints, newEndpoints []Endpoint, weight int32) error
+	ReplaceRouteEndpoints(id ServiceAliasConfigKey, oldEndpoints, newEndpoints []Endpoint, weight int32) error
 
 	// RemoveRouteEndpoints removes a set of endpoints from a route.
-	RemoveRouteEndpoints(id string, endpoints []Endpoint) error
+	RemoveRouteEndpoints(id ServiceAliasConfigKey, endpoints []Endpoint) error
 
 	// Notify notifies a configuration manager of a router event.
 	// Currently the only ones that are received are on reload* events,
