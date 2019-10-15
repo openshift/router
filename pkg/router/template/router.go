@@ -545,7 +545,7 @@ func (r *templateRouter) reloadRouter() error {
 	if err != nil {
 		return fmt.Errorf("error reloading router: %v\n%s", err, string(out))
 	}
-	log.V(0).Info("router reloaded", "output", out)
+	log.V(0).Info("router reloaded", "output", string(out))
 	return nil
 }
 
