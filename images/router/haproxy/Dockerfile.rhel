@@ -10,6 +10,13 @@ RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy
 COPY images/router/haproxy/* /var/lib/haproxy/
+RUN (cd /tmp												&& \
+	wget -O haproxy.rpm https://spicy.frobware.com/~aim/x86_64/haproxy20-2.0.8-1.el7.x86_64.rpm	&& \
+	md5sum haproxy.rpm										&& \
+	rpm2cpio haproxy.rpm | cpio -idmv								&& \
+	cp usr/sbin/haproxy /usr/sbin/haproxy)
+RUN setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy
+RUN haproxy -vv
 LABEL io.k8s.display-name="OpenShift HAProxy Router" \
       io.k8s.description="This component offers ingress to an OpenShift cluster via Ingress and Route rules." \
       io.openshift.tags="openshift,router,haproxy"
