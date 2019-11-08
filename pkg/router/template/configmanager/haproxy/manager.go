@@ -166,7 +166,7 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 	// allow adding list of extra annotations for HAProxy blueprint
 	for _, entry := range strings.Split(extraAnnotations, ",") {
 		if v := strings.Trim(entry, " "); len(v) > 0 {
-			glog.V(6).Infof("ROUTER_BLUEPRINT_CUSTOM_ANNOTATIONS has annotation %s", entry)
+			log.V(6).Info("ROUTER_BLUEPRINT_CUSTOM_ANNOTATIONS has annotation %s", entry)
 			customAnnotations = append(customAnnotations, v)
 		}
 	}
