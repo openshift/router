@@ -161,7 +161,6 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 	client := NewClient(options.ConnectionInfo, haproxyConnectionTimeout)
 
 	log.V(4).Info("creating new manager", "manager", haproxyManagerName, "options", options)
-
 	customAnnotations := []string{}
 	extraAnnotations := os.Getenv("ROUTER_BLUEPRINT_CUSTOM_ANNOTATIONS")
 	// allow adding list of extra annotations for HAProxy blueprint
