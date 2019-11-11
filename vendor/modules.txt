@@ -25,8 +25,6 @@ github.com/fsnotify/fsnotify
 github.com/getsentry/raven-go
 # github.com/go-logr/logr v0.1.0
 github.com/go-logr/logr
-# github.com/go-logr/zapr v0.1.1
-github.com/go-logr/zapr
 # github.com/go-openapi/jsonpointer v0.19.2
 github.com/go-openapi/jsonpointer
 # github.com/go-openapi/jsonreference v0.19.2
@@ -122,17 +120,6 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# go.uber.org/atomic v0.0.0-20181018215023-8dc6146f7569
-go.uber.org/atomic
-# go.uber.org/multierr v0.0.0-20180122172545-ddea229ff1df
-go.uber.org/multierr
-# go.uber.org/zap v0.0.0-20180814183419-67bc79d13d15
-go.uber.org/zap
-go.uber.org/zap/zapcore
-go.uber.org/zap/internal/bufferpool
-go.uber.org/zap/buffer
-go.uber.org/zap/internal/color
-go.uber.org/zap/internal/exit
 # golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
@@ -212,7 +199,6 @@ k8s.io/api/authorization/v1
 k8s.io/apimachinery/pkg/apis/meta/v1
 k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/labels
-k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/wait
@@ -222,6 +208,7 @@ k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/util/runtime
 k8s.io/apimachinery/pkg/util/validation/field
 k8s.io/apimachinery/pkg/runtime
+k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/util/net
 k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/util/intstr
@@ -435,6 +422,7 @@ k8s.io/component-base/metrics/legacyregistry
 k8s.io/component-base/version
 # k8s.io/klog v0.4.0
 k8s.io/klog
+k8s.io/klog/klogr
 # k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 k8s.io/kube-openapi/pkg/util/proto
 # k8s.io/utils v0.0.0-20190801114015-581e00157fb1
