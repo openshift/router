@@ -9,12 +9,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/fsnotify/fsnotify"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -33,6 +36,7 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
+
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
@@ -417,16 +421,13 @@ func (o *TemplateRouterOptions) Run() error {
 			LiveChecks:  liveChecks,
 			ReadyChecks: []healthz.HealthChecker{checkBackend, checkSync},
 		}
-		if certFile := env("ROUTER_METRICS_TLS_CERT_FILE", ""); len(certFile) > 0 {
-			certificate, err := tls.LoadX509KeyPair(certFile, env("ROUTER_METRICS_TLS_KEY_FILE", ""))
-			if err != nil {
-				return err
-			}
-			l.TLSConfig = crypto.SecureTLSConfig(&tls.Config{
-				Certificates: []tls.Certificate{certificate},
-				ClientAuth:   tls.RequestClientCert,
-			})
+
+		if tlsConfig, err := makeTLSConfig(); err != nil {
+			return err
+		} else {
+			l.TLSConfig = tlsConfig
 		}
+
 		l.Listen()
 
 		// on reload, invoke the collector to preserve whatever metrics we can
@@ -564,4 +565,89 @@ func (o *TemplateRouterOptions) blueprintRoutes(routeclient *routeclientset.Clie
 	}
 
 	return blueprints, nil
+}
+
+// makeTLSConfig checks whether metrics TLS is configured and
+// if so returns a tls.Config whose certificate is automatically
+// reloaded every 5 minutes or in response to file changes.
+func makeTLSConfig() (*tls.Config, error) {
+	certFile := env("ROUTER_METRICS_TLS_CERT_FILE", "")
+	if len(certFile) == 0 {
+		return nil, nil
+	}
+	keyFile := env("ROUTER_METRICS_TLS_KEY_FILE", "")
+
+	// Make sure we have something useful to start with
+	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// Safely reload the certificate as requested.
+	var lock sync.Mutex
+	reload := make(chan bool) // value will be false for an unscheduled reload
+	go func() {
+		for {
+			select {
+			case scheduled := <-reload:
+				latest, err := tls.LoadX509KeyPair(certFile, keyFile)
+				if err != nil {
+					// TODO: add a prometheus metric? Fail a health check? This should surface somehow...
+					log.Error(err, "failed to reload certificate", "cert", certFile, "key", keyFile)
+					break
+				}
+				lock.Lock()
+				certificate = latest
+				lock.Unlock()
+				// TODO: add a prometheus metric instead?
+				if scheduled {
+					log.V(4).Info("reloaded certificate on fixed schedule", "cert", certFile, "key", keyFile)
+				} else {
+					log.V(0).Info("reloaded modified certificate", "cert", certFile, "key", keyFile)
+				}
+			}
+		}
+	}()
+
+	// Reload when the files change or when the fixed timer fires
+	ticker := time.NewTicker(5 * time.Minute)
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+	if err := watcher.Add(certFile); err != nil {
+		return nil, err
+	}
+	if err := watcher.Add(keyFile); err != nil {
+		return nil, err
+	}
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				reload <- true
+			case _, ok := <-watcher.Events:
+				if ok {
+					// Ignoring the event type for now to avoid any portability
+					// issues at the expense of potentially spurious reloads on
+					// irrelevant events (which should be rare, this is a mounted
+					// secret).
+					reload <- false
+				}
+			case err, _ := <-watcher.Errors:
+				if err != nil {
+					log.Error(err, "file watch error")
+				}
+			}
+		}
+	}()
+
+	return crypto.SecureTLSConfig(&tls.Config{
+		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			lock.Lock()
+			defer lock.Unlock()
+			return &certificate, nil
+		},
+		ClientAuth: tls.RequestClientCert,
+	}), nil
 }
