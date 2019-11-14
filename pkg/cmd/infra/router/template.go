@@ -590,7 +590,20 @@ func makeTLSConfig() (*tls.Config, error) {
 		return nil, err
 	}
 
-	// Safely reload the certificate as requested.
+	// Reload when the files change or when the fixed timer fires
+	ticker := time.NewTicker(5 * time.Minute)
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
+	}
+	if err := watcher.Add(certFile); err != nil {
+		return nil, err
+	}
+	if err := watcher.Add(keyFile); err != nil {
+		return nil, err
+	}
+
+	// Safely reload the certificate when signaled.
 	var lock sync.Mutex
 	reload := make(chan bool) // value will be false for an unscheduled reload
 	go func() {
@@ -616,18 +629,7 @@ func makeTLSConfig() (*tls.Config, error) {
 		}
 	}()
 
-	// Reload when the files change or when the fixed timer fires
-	ticker := time.NewTicker(5 * time.Minute)
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
-	if err := watcher.Add(certFile); err != nil {
-		return nil, err
-	}
-	if err := watcher.Add(keyFile); err != nil {
-		return nil, err
-	}
+	// Watch events and trigger reloads.
 	go func() {
 		for {
 			select {
