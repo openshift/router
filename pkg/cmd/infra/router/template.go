@@ -605,7 +605,6 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		for {
 			select {
 			case <-ticker.C:
-				// Check for certificate or key content changes.
 				latestCertBytes, err := ioutil.ReadFile(certFile)
 				if err != nil {
 					log.Error(err, "failed to read certificate file", "cert", certFile, "key", keyFile)
@@ -622,17 +621,19 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 					break
 				}
 
-				// Something changed, refresh the certificate.
-				latest, err := tls.X509KeyPair(latestCertBytes, latestKeyBytes)
+				// Something changed, reload the certificate.
+				certBytes = latestCertBytes
+				keyBytes = latestKeyBytes
+				latest, err := tls.X509KeyPair(certBytes, keyBytes)
 				if err != nil {
 					log.Error(err, "failed to reload certificate", "cert", certFile, "key", keyFile)
 					break
 				}
+
 				lock.Lock()
 				certificate = latest
-				certBytes = latestCertBytes
-				keyBytes = latestKeyBytes
 				lock.Unlock()
+
 				log.V(0).Info("reloaded metrics certificate", "cert", certFile, "key", keyFile)
 			}
 		}
