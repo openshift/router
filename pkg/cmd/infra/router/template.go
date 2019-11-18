@@ -1,9 +1,11 @@
 package router
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -16,8 +18,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
-	"github.com/fsnotify/fsnotify"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "k8s.io/apimachinery/pkg/types"
@@ -428,7 +428,7 @@ func (o *TemplateRouterOptions) Run() error {
 			ReadyChecks: []healthz.HealthzChecker{checkBackend, checkSync},
 		}
 
-		if tlsConfig, err := makeTLSConfig(); err != nil {
+		if tlsConfig, err := makeTLSConfig(30 * time.Second); err != nil {
 			return err
 		} else {
 			l.TLSConfig = tlsConfig
@@ -576,77 +576,64 @@ func (o *TemplateRouterOptions) blueprintRoutes(routeclient *routeclientset.Clie
 
 // makeTLSConfig checks whether metrics TLS is configured and
 // if so returns a tls.Config whose certificate is automatically
-// reloaded every 5 minutes or in response to file changes.
-func makeTLSConfig() (*tls.Config, error) {
+// reloaded on the given period.
+func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 	certFile := env("ROUTER_METRICS_TLS_CERT_FILE", "")
 	if len(certFile) == 0 {
 		return nil, nil
 	}
 	keyFile := env("ROUTER_METRICS_TLS_KEY_FILE", "")
 
-	// Make sure we have something useful to start with
-	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+	// Load the initial certificate contents.
+	certBytes, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+	keyBytes, err := ioutil.ReadFile(keyFile)
+	if err != nil {
+		return nil, err
+	}
+	certificate, err := tls.X509KeyPair(certBytes, keyBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	// Reload when the files change or when the fixed timer fires
-	ticker := time.NewTicker(5 * time.Minute)
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
-	if err := watcher.Add(certFile); err != nil {
-		return nil, err
-	}
-	if err := watcher.Add(keyFile); err != nil {
-		return nil, err
-	}
-
-	// Safely reload the certificate when signaled.
+	// Safely reload the certificate on a fixed period for simplicity.
+	ticker := time.NewTicker(reloadPeriod)
 	var lock sync.Mutex
-	reload := make(chan bool) // value will be false for an unscheduled reload
 	go func() {
 		for {
 			select {
-			case scheduled := <-reload:
-				latest, err := tls.LoadX509KeyPair(certFile, keyFile)
+			case <-ticker.C:
+				// Check for certificate or key content changes.
+				latestCertBytes, err := ioutil.ReadFile(certFile)
 				if err != nil {
-					// TODO: add a prometheus metric? Fail a health check? This should surface somehow...
+					log.Error(err, "failed to read certificate file", "cert", certFile, "key", keyFile)
+					break
+				}
+				latestKeyBytes, err := ioutil.ReadFile(keyFile)
+				if err != nil {
+					log.Error(err, "failed to read key file", "cert", certFile, "key", keyFile)
+					break
+				}
+
+				if bytes.Equal(latestCertBytes, certBytes) && bytes.Equal(latestKeyBytes, keyBytes) {
+					// Nothing changed, try later.
+					break
+				}
+
+				// Something changed, refresh the certificate.
+				latest, err := tls.X509KeyPair(latestCertBytes, latestKeyBytes)
+				if err != nil {
 					log.Error(err, "failed to reload certificate", "cert", certFile, "key", keyFile)
 					break
 				}
 				lock.Lock()
 				certificate = latest
+				certBytes = latestCertBytes
+				keyBytes = latestKeyBytes
 				lock.Unlock()
-				// TODO: add a prometheus metric instead?
-				if scheduled {
-					log.V(4).Info("reloaded certificate on fixed schedule", "cert", certFile, "key", keyFile)
-				} else {
-					log.V(0).Info("reloaded modified certificate", "cert", certFile, "key", keyFile)
-				}
-			}
-		}
-	}()
-
-	// Watch events and trigger reloads.
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				reload <- true
-			case _, ok := <-watcher.Events:
-				if ok {
-					// Ignoring the event type for now to avoid any portability
-					// issues at the expense of potentially spurious reloads on
-					// irrelevant events (which should be rare, this is a mounted
-					// secret).
-					reload <- false
-				}
-			case err, _ := <-watcher.Errors:
-				if err != nil {
-					log.Error(err, "file watch error")
-				}
+				log.V(0).Info("reloaded metrics certificate", "cert", certFile, "key", keyFile)
 			}
 		}
 	}()
