@@ -615,13 +615,13 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 				}
 
 				// Something changed, reload the certificate.
-				certBytes = latestCertBytes
-				keyBytes = latestKeyBytes
 				latest, err := tls.X509KeyPair(certBytes, keyBytes)
 				if err != nil {
 					log.Error(err, "failed to reload certificate", "cert", certFile, "key", keyFile)
 					break
 				}
+				certBytes = latestCertBytes
+				keyBytes = latestKeyBytes
 
 				lock.Lock()
 				certificate = latest
