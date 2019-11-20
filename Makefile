@@ -9,11 +9,21 @@ ifneq ($(DELVE),)
 GO_GCFLAGS ?= -gcflags=all="-N -l"
 endif
 
-GO_LDFLAGS ?= -ldflags '-X github.com/openshift/router/vendor/k8s.io/client-go/pkg/version.gitVersion=$(shell git describe) -X github.com/openshift/router/vendor/k8s.io/client-go/pkg/version.gitCommit=$(shell git rev-parse HEAD)'
+SOURCE_GIT_TAG ?=$(shell git describe --long --tags --abbrev=7 --match 'v[0-9]*' 2>/dev/null || echo 'v0.0.0-unknown')
+SOURCE_GIT_COMMIT ?=$(shell git rev-parse --short "HEAD^{commit}" 2>/dev/null)
+SOURCE_GIT_TREE_STATE ?=$(shell ( ( [ ! -d ".git/" ] || git diff --quiet ) && echo 'clean' ) || echo 'dirty')
+
+define version-ldflags
+-X $(1).versionFromGit="$(SOURCE_GIT_TAG)" \
+-X $(1).commitFromGit="$(SOURCE_GIT_COMMIT)" \
+-X $(1).gitTreeState="$(SOURCE_GIT_TREE_STATE)" \
+-X $(1).buildDate="$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')"
+endef
+GO_LD_EXTRAFLAGS ?=
+GO_LDFLAGS ?=-ldflags "-s -w $(call version-ldflags,$(PACKAGE)/pkg/version) $(GO_LD_EXTRAFLAGS)"
 
 GO=GO111MODULE=on GOFLAGS=-mod=vendor go
 GO_BUILD_RECIPE=CGO_ENABLED=0 $(GO) build -o $(BIN) $(GO_GCFLAGS) $(GO_LDFLAGS) $(MAIN_PACKAGE)
-
 
 all: build
 
