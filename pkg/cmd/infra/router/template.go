@@ -28,7 +28,6 @@ import (
 	"k8s.io/apiserver/pkg/server/healthz"
 	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
-	"k8s.io/client-go/pkg/version"
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned"
@@ -44,6 +43,7 @@ import (
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
 	"github.com/openshift/router/pkg/router/writerlease"
+	"github.com/openshift/router/pkg/version"
 )
 
 // defaultReloadInterval is how often to do reloads in seconds.
@@ -213,7 +213,7 @@ func NewCommandTemplateRouter(name string) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCmdVersion(name, version.Get(), os.Stdout))
+	cmd.AddCommand(newCmdVersion(name, version.String(), os.Stdout))
 
 	flag := cmd.Flags()
 	options.Config.Bind(flag)
@@ -294,7 +294,7 @@ func (o *TemplateRouterOptions) Validate() error {
 
 // Run launches a template router using the provided options. It never exits.
 func (o *TemplateRouterOptions) Run() error {
-	log.V(0).Info("starting router", "version", version.Get())
+	log.V(0).Info("starting router", "version", version.String())
 	var ptrTemplatePlugin *templateplugin.TemplatePlugin
 
 	var reloadCallbacks []func()

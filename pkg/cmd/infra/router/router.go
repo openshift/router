@@ -15,12 +15,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/apimachinery/pkg/version"
 	kclientset "k8s.io/client-go/kubernetes"
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
+
 	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/controller"
 	controllerfactory "github.com/openshift/router/pkg/router/controller/factory"
@@ -286,13 +286,13 @@ func hostInDomainList(host string, domains sets.String) bool {
 
 // newCmdVersion provides a shim around version for
 // non-client packages that require version information
-func newCmdVersion(fullName string, versionInfo version.Info, out io.Writer) *cobra.Command {
+func newCmdVersion(fullName string, versionInfo string, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Display version",
 		Long:  "Display version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintf(out, "%s %v\n", fullName, versionInfo)
+			fmt.Fprintf(out, "%s\n\n%v\n", fullName, versionInfo)
 		},
 	}
 
