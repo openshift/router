@@ -11,7 +11,7 @@ RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
     chmod -R g+w /var/lib/haproxy
 COPY images/router/haproxy/* /var/lib/haproxy/
 RUN (cd /tmp												&& \
-	wget -O haproxy.rpm https://spicy.frobware.com/~aim/x86_64/haproxy20-2.0.8-1.el7.x86_64.rpm	&& \
+	wget -O haproxy.rpm https://spicy.frobware.com/~aim/x86_64/haproxy20-2.0.9-1.el7.x86_64.rpm	&& \
 	md5sum haproxy.rpm										&& \
 	rpm2cpio haproxy.rpm | cpio -idmv								&& \
 	cp usr/sbin/haproxy /usr/sbin/haproxy)
