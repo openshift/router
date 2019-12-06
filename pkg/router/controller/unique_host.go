@@ -148,8 +148,6 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 		return p.plugin.HandleRoute(eventType, route)
 
 	case watch.Added, watch.Modified:
-		removed := false
-
 		var nestedErr error
 		changes, newRoute := p.index.Add(route)
 
@@ -179,7 +177,6 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 			}
 
 			// we were not added because another route is covering us
-			removed = true
 			var owner *routev1.Route
 			if old, ok := p.index.RoutesForHost(host); ok && len(old) > 0 {
 				owner = old[0]
@@ -203,16 +200,6 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 			}
 		}
 
-		// // ensure we pass down modifications
-		// if !added && !removed {
-		// 	if err := p.plugin.HandleRoute(watch.Modified, route); err != nil {
-		// 		utilruntime.HandleError(fmt.Errorf("unable to modify route %s: %v", routeName, err))
-		// 	}
-		// }
-
-		if removed {
-			return fmt.Errorf("another route has claimed this host")
-		}
 		return nestedErr
 
 	default:

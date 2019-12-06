@@ -549,8 +549,8 @@ func TestHandleRoute(t *testing.T) {
 			},
 		},
 	}
-	if err := plugin.HandleRoute(watch.Added, fooDupe2); err == nil {
-		t.Fatal("unexpected non-error")
+	if err := plugin.HandleRoute(watch.Added, fooDupe2); err != nil {
+		t.Fatal("unexpected error")
 	}
 
 	if _, ok := router.FindServiceUnit(endpointsKeyFromParts("foo", "TestService2")); ok {
