@@ -1,6 +1,4 @@
 FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
-RUN curl -k https://spicy.frobware.com/~aim/haproxy20.repo > /etc/yum.repos.d/haproxy20.repo
-RUN yum --disablerepo="*" --enablerepo="brew-task-repo-haproxy-2.0.10-1.el7-scratch" update
 RUN INSTALL_PKGS="haproxy20 rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
