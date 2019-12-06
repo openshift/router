@@ -1,5 +1,7 @@
-FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
+FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
+RUN curl -k https://spicy.frobware.com/~aim/haproxy20.repo > /etc/yum.repos.d/haproxy20.repo
+RUN yum --disablerepo="*" --enablerepo="brew-task-repo-haproxy-2.0.10-1.el7-scratch" update
+RUN INSTALL_PKGS="haproxy20 rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
@@ -10,11 +12,6 @@ RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy
 COPY images/router/haproxy/* /var/lib/haproxy/
-RUN (cd /tmp												&& \
-	wget -O haproxy.rpm https://spicy.frobware.com/~aim/x86_64/haproxy20-2.0.10-1.el7.x86_64.rpm	&& \
-	md5sum haproxy.rpm										&& \
-	rpm2cpio haproxy.rpm | cpio -idmv								&& \
-	cp usr/sbin/haproxy /usr/sbin/haproxy)
 RUN setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy
 RUN haproxy -vv
 LABEL io.k8s.display-name="OpenShift HAProxy Router" \
