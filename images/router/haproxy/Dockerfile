@@ -1,4 +1,4 @@
-FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
+FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
 RUN INSTALL_PKGS="haproxy20 rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
@@ -10,8 +10,6 @@ RUN INSTALL_PKGS="haproxy20 rsyslog sysvinit-tools" && \
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy
 COPY images/router/haproxy/* /var/lib/haproxy/
-RUN setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy
-RUN haproxy -vv
 LABEL io.k8s.display-name="OpenShift HAProxy Router" \
       io.k8s.description="This component offers ingress to an OpenShift cluster via Ingress and Route rules." \
       io.openshift.tags="openshift,router,haproxy"
