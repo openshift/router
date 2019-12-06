@@ -113,7 +113,6 @@ func (a *StatusAdmitter) RecordRouteRejection(route *routev1.Route, reason, mess
 
 // performIngressConditionUpdate updates the route to the appropriate status for the provided condition.
 func performIngressConditionUpdate(action string, lease writerlease.Lease, tracker ContentionTracker, oc client.RoutesGetter, lister routelisters.RouteLister, route *routev1.Route, routerName, hostName string, condition routev1.RouteIngressCondition) {
-	attempts := 3
 	key := string(route.UID)
 	routeNamespace, routeName := route.Namespace, route.Name
 
@@ -151,11 +150,6 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 			log.V(4).Info("updated route status", "action", action, "namespace", route.Namespace, "name", route.Name)
 			tracker.Clear(key, latest)
 			return writerlease.Extend, false
-		case errors.IsForbidden(err):
-			// if the router can't write status updates, allow the route to go through
-			utilruntime.HandleError(fmt.Errorf("Unable to write router status - please ensure you reconcile your system policy or grant this router access to update route status: %v", err))
-			tracker.Clear(key, latest)
-			return writerlease.Extend, false
 		case errors.IsNotFound(err):
 			// route was deleted
 			log.V(4).Info("route was deleted before we could update status", "action", action, "namespace", route.Namespace, "name", route.Name)
@@ -167,8 +161,7 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 			return writerlease.Release, true
 		default:
 			utilruntime.HandleError(fmt.Errorf("Unable to write router status for %s/%s: %v", route.Namespace, route.Name, err))
-			attempts--
-			return writerlease.Release, attempts > 0
+			return writerlease.Release, true
 		}
 	})
 }
