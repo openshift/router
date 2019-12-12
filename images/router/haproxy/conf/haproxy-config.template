@@ -7,7 +7,7 @@
 {{- $workingDir := .WorkingDir }}
 {{- $defaultDestinationCA := .DefaultDestinationCA }}
 {{- $dynamicConfigManager := .DynamicConfigManager }}
-{{- $router_ip_v4_v6_mode := env "ROUTER_IP_V4_V6_MODE" "v4" }}
+{{- $router_ip_v4_v6_mode := env "ROUTER_IP_V4_V6_MODE" "v4v6" }}
 
 
 {{- /* A bunch of regular expressions.  Each should be wrapped in (?:) so that it is safe to include bare */}}
