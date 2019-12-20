@@ -1,5 +1,5 @@
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-RUN INSTALL_PKGS="haproxy20 rsyslog sysvinit-tools" && \
+RUN INSTALL_PKGS="haproxy rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
@@ -16,6 +16,7 @@ LABEL io.k8s.display-name="OpenShift HAProxy Router" \
 USER 1001
 EXPOSE 80 443
 WORKDIR /var/lib/haproxy/conf
+RUN /usr/sbin/haproxy -vv
 ENV TEMPLATE_FILE=/var/lib/haproxy/conf/haproxy-config.template \
     RELOAD_SCRIPT=/var/lib/haproxy/reload-haproxy
 ENTRYPOINT ["/usr/bin/openshift-router"]
