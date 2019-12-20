@@ -105,6 +105,10 @@ func (hi *hostIndex) add(route *routev1.Route, changes *routeChanges) bool {
 			// another route. Remove the existing state to avoid maintaining a
 			// duplicate claim in the index.
 			hi.remove(existing, false, changes)
+		case existing.Spec.To != route.Spec.To:
+			// target svc changed, remove the existing state to avoid maintaining a
+			// duplicate claim in the index.
+			hi.remove(existing, false, changes)
 		default:
 			// if no changes have been made, we don't need to note a change
 			if existing.ResourceVersion == route.ResourceVersion {

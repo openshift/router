@@ -247,6 +247,34 @@ func Test_hostIndex(t *testing.T) {
 			activates: map[string]struct{}{"001": {}},
 		},
 		{
+			name:       "multiple changes to target svc of same route",
+			activateFn: SameNamespace,
+			steps: []step{
+				{route: newRoute("test", "1", 1, 1, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcBlue",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "1", 1, 2, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcGreen",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "1", 1, 3, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcBlue",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "1", 1, 4, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcGreen",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "1", 1, 5, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcBlue",
+					Weight: new(int32),
+				}})},
+			},
+			active:    map[string][]string{"test.com": {"001"}},
+			activates: map[string]struct{}{"001": {}},
+		},
+		{
 			name:       "remove unchanged path-based route",
 			activateFn: SameNamespace,
 			steps: []step{
@@ -286,6 +314,31 @@ func Test_hostIndex(t *testing.T) {
 				{route: newRoute("test", "2", 2, 1, routev1.RouteSpec{Host: "test.com", Path: "/foo"})},
 				{route: newRoute("test", "2", 2, 2, routev1.RouteSpec{Host: "test.com", Path: "/bar"})},
 				{route: newRoute("test", "2", 2, 3, routev1.RouteSpec{Host: "test.com", Path: "/x/y/z"})},
+			},
+			active:    map[string][]string{"test.com": {"001"}},
+			displaces: map[string]struct{}{"002": {}},
+			inactive:  map[string][]string{"test.com": {"002"}},
+		},
+		{
+			name:       "to target svc route rejection",
+			activateFn: SameNamespace,
+			steps: []step{
+				{route: newRoute("test", "1", 1, 1, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcBlue",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "2", 2, 1, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcGreen",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "2", 2, 2, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcRed",
+					Weight: new(int32),
+				}})},
+				{route: newRoute("test", "2", 2, 3, routev1.RouteSpec{Host: "test.com", To: routev1.RouteTargetReference{
+					Name:   "TestSvcBlue",
+					Weight: new(int32),
+				}})},
 			},
 			active:    map[string][]string{"test.com": {"001"}},
 			displaces: map[string]struct{}{"002": {}},
