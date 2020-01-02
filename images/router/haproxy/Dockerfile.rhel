@@ -1,6 +1,6 @@
 FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
-RUN wget https://spicy.frobware.com/~aim/x86_64/haproxy21-2.1.1-2.el7.x86_64.rpm
-RUN rpm -ivh haproxy21-2.1.1-2.el7.x86_64.rpm
+RUN wget https://spicy.frobware.com/~aim/x86_64/haproxy21-2.1.2-1.el7.x86_64.rpm
+RUN rpm -ivh haproxy21-2.1.2-1.el7.x86_64.rpm
 RUN /usr/sbin/haproxy -vv
 RUN INSTALL_PKGS="rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
