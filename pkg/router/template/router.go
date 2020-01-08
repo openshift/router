@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -29,6 +30,7 @@ import (
 )
 
 var log = logf.Logger.WithName("template")
+var noChildProcessesRegExp = regexp.MustCompile("[wait|waitid]: no child processes")
 
 const (
 	ProtocolHTTP  = "http"
@@ -542,7 +544,12 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 func (r *templateRouter) reloadRouter() error {
 	cmd := exec.Command(r.reloadScriptPath)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
+	// Explicitly handle the case where the process has exited
+	// cleanly before we hit the call to wait() in
+	// CombinedOutput(). The logic there calls Start(), then
+	// Wait() and that could be racy if there is a GC pause (or
+	// other scheduling activity).
+	if err != nil && !noChildProcessesRegExp.MatchString(err.Error()) {
 		return fmt.Errorf("error reloading router: %v\n%s", err, string(out))
 	}
 	log.V(0).Info("router reloaded", "output", string(out))
