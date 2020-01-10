@@ -34,7 +34,6 @@ import (
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
-	"github.com/openshift/library-go/pkg/proc"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
@@ -538,8 +537,6 @@ func (o *TemplateRouterOptions) Run() error {
 		c := f.Create(blueprintPlugin, false)
 		c.Run()
 	}
-
-	proc.StartReaper()
 
 	select {}
 }
