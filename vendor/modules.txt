@@ -94,7 +94,6 @@ github.com/openshift/client-go/route/clientset/versioned/typed/route/v1/fake
 # github.com/openshift/library-go v0.0.0-20191003152030-97c62d8a2901
 github.com/openshift/library-go/pkg/serviceability
 github.com/openshift/library-go/pkg/crypto
-github.com/openshift/library-go/pkg/proc
 # github.com/pkg/errors v0.8.0
 github.com/pkg/errors
 # github.com/pkg/profile v1.2.1
@@ -202,7 +201,6 @@ k8s.io/apimachinery/pkg/labels
 k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/wait
-k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/util/runtime
@@ -211,6 +209,7 @@ k8s.io/apimachinery/pkg/runtime
 k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/util/net
 k8s.io/apimachinery/pkg/runtime/schema
+k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/conversion
