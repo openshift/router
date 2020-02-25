@@ -14,6 +14,11 @@ spec:
       labels:
         k8s-app: ingress-router
     spec:
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "edge"
+          effect: NoSchedule
       serviceAccountName: ingress-router
       containers:
       - env:
