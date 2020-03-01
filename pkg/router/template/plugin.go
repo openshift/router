@@ -153,6 +153,14 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
 }
 
+// Stop instructs the router plugin to stop invoking the reload method, and waits until no further
+// reloads will occur. It then invokes the reload script one final time with the ROUTER_SHUTDOWN
+// environment variable set with true.
+func (p *TemplatePlugin) Stop() error {
+	p.Router.(*templateRouter).rateLimitedCommitFunction.Stop()
+	return p.Router.(*templateRouter).reloadRouter(true)
+}
+
 // HandleEndpoints processes watch events on the Endpoints resource.
 func (p *TemplatePlugin) HandleEndpoints(eventType watch.EventType, endpoints *kapi.Endpoints) error {
 	key := endpointsKey(endpoints)

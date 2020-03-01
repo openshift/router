@@ -440,7 +440,7 @@ func (r *templateRouter) commitAndReload() error {
 
 	log.V(4).Info("reloading the router")
 	reloadStart := time.Now()
-	err := r.reloadRouter()
+	err := r.reloadRouter(false)
 	r.metricReload.Observe(float64(time.Now().Sub(reloadStart)) / float64(time.Second))
 	if err != nil {
 		if r.dynamicConfigManager != nil {
@@ -539,8 +539,11 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 }
 
 // reloadRouter executes the router's reload script.
-func (r *templateRouter) reloadRouter() error {
+func (r *templateRouter) reloadRouter(shutdown bool) error {
 	cmd := exec.Command(r.reloadScriptPath)
+	if shutdown {
+		cmd.Env = append(os.Environ(), "ROUTER_SHUTDOWN=true")
+	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error reloading router: %v\n%s", err, string(out))
