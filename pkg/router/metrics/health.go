@@ -16,7 +16,24 @@ import (
 	templateplugin "github.com/openshift/router/pkg/router/template"
 )
 
-var errBackend = fmt.Errorf("backend reported failure")
+var (
+	errBackend      = fmt.Errorf("backend reported failure")
+	errShuttingDown = fmt.Errorf("process is terminating")
+)
+
+// ProcessRunning returns a healthz check that returns true as long as the provided
+// stopCh is not closed.
+func ProcessRunning(stopCh <-chan struct{}) healthz.HealthChecker {
+	return healthz.NamedCheck("process-running", func(r *http.Request) error {
+		select {
+		case <-stopCh:
+			return errShuttingDown
+		default:
+			return nil
+		}
+		return nil
+	})
+}
 
 // HTTPBackendAvailable returns a healthz check that verifies a backend responds to a GET to
 // the provided URL with 2xx or 3xx response.

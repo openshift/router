@@ -37,6 +37,9 @@ type CoalescingSerializingRateLimiter struct {
 	// handlerRunning indicates whether the Handler is actively running.
 	handlerRunning bool
 
+	// stopped indicates no further commits should occur.
+	stopped bool
+
 	// lock protects the CoalescingSerializingRateLimiter structure from multiple threads manipulating it at once.
 	lock sync.Mutex
 
@@ -56,13 +59,30 @@ func NewCoalescingSerializingRateLimiter(interval time.Duration, handlerFunc Han
 	return limiter
 }
 
+// Stop signals shutdown and waits until no handler is running. After this method returns
+// no handler will be invoked in the future.
+func (csrl *CoalescingSerializingRateLimiter) Stop() {
+	csrl.lock.Lock()
+	csrl.stopped = true
+	csrl.lock.Unlock()
+
+	for csrl.isHandlerRunning() {
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+func (csrl *CoalescingSerializingRateLimiter) isHandlerRunning() bool {
+	csrl.lock.Lock()
+	defer csrl.lock.Unlock()
+	return csrl.handlerRunning
+}
+
 // RegisterChange() indicates that the rate limited function should be called. It may not immediately run it, but it will cause it to run within
 // the ReloadInterval.  It will always immediately return, the function will be run in the background.  Not every call to RegisterChange() will
 // result in the function getting called.  If it is called repeatedly while it is still within the ReloadInterval since the last run, it will
 // only run once when the time allows it.
 func (csrl *CoalescingSerializingRateLimiter) RegisterChange() {
 	log.V(8).Info("RegisterChange called")
-
 	csrl.changeWorker(true)
 }
 
@@ -71,6 +91,11 @@ func (csrl *CoalescingSerializingRateLimiter) changeWorker(userChanged bool) {
 	defer csrl.lock.Unlock()
 
 	log.V(8).Info("changeWorker called")
+
+	if csrl.stopped {
+		log.V(8).Info("limiter is stopped")
+		return
+	}
 
 	if userChanged && csrl.changeReqTime == nil {
 		// They just registered a change manually (and we aren't in the middle of a change)
