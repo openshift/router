@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -40,6 +39,7 @@ import (
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
+	"github.com/openshift/router/pkg/router/shutdown"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
 	"github.com/openshift/router/pkg/router/writerlease"
@@ -209,7 +209,7 @@ func NewCommandTemplateRouter(name string) *cobra.Command {
 			if err := options.Validate(); err != nil {
 				return err
 			}
-			return options.Run()
+			return options.Run(shutdown.SetupSignalHandler())
 		},
 	}
 
@@ -293,7 +293,7 @@ func (o *TemplateRouterOptions) Validate() error {
 }
 
 // Run launches a template router using the provided options. It never exits.
-func (o *TemplateRouterOptions) Run() error {
+func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	log.V(0).Info("starting router", "version", version.String())
 	var ptrTemplatePlugin *templateplugin.TemplatePlugin
 
@@ -419,7 +419,7 @@ func (o *TemplateRouterOptions) Run() error {
 				Name:            o.RouterName,
 			},
 			LiveChecks:  liveChecks,
-			ReadyChecks: []healthz.HealthChecker{checkBackend, checkSync},
+			ReadyChecks: []healthz.HealthChecker{checkBackend, checkSync, metrics.ProcessRunning(stopCh)},
 		}
 
 		if tlsConfig, err := makeTLSConfig(30 * time.Second); err != nil {
@@ -541,7 +541,23 @@ func (o *TemplateRouterOptions) Run() error {
 
 	proc.StartReaper()
 
-	select {}
+	select {
+	case <-stopCh:
+		// 45s is the default interval that almost all cloud load balancers require to take an unhealthy
+		// endpoint out of rotation.
+		delay := getIntervalFromEnv("ROUTER_GRACEFUL_SHUTDOWN_DELAY", 45)
+		log.Info(fmt.Sprintf("Shutdown requested, waiting %s for new connections to cease", delay))
+		time.Sleep(delay)
+		log.Info("Instructing the template router to terminate")
+		if err := templatePlugin.Stop(); err != nil {
+			log.Error(err, "Router did not shut down cleanly")
+		} else {
+			log.Info("Shutdown complete, exiting")
+		}
+		// wait one second to let any remaining actions settle
+		time.Sleep(time.Second)
+	}
+	return nil
 }
 
 // blueprintRoutes returns all the routes in the blueprint namespace.
