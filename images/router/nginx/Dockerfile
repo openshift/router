@@ -13,7 +13,7 @@ RUN yum install -y nginx-${NGINX_VERSION} && \
     ln -sf /var/lib/nginx/log/error.log /var/log/nginx/error.log && \
     rm /etc/yum.repos.d/nginx.repo
 
-COPY images/router/nginx/* /var/lib/nginx/
+COPY images/router/nginx/ /var/lib/nginx/
 LABEL io.k8s.display-name="OpenShift NGINX Router" \
       io.k8s.description="This is a component of OpenShift and contains an NGINX instance that exposes ingress to services within the cluster through routes, and offers TLS termination, reencryption, or SNI-passthrough on ports 80 and 443."
 USER 1001
