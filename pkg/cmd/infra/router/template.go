@@ -1,14 +1,17 @@
 package router
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
@@ -34,6 +37,7 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
+
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
@@ -423,16 +427,13 @@ func (o *TemplateRouterOptions) Run() error {
 			LiveChecks:  liveChecks,
 			ReadyChecks: []healthz.HealthzChecker{checkBackend, checkSync},
 		}
-		if certFile := env("ROUTER_METRICS_TLS_CERT_FILE", ""); len(certFile) > 0 {
-			certificate, err := tls.LoadX509KeyPair(certFile, env("ROUTER_METRICS_TLS_KEY_FILE", ""))
-			if err != nil {
-				return err
-			}
-			l.TLSConfig = crypto.SecureTLSConfig(&tls.Config{
-				Certificates: []tls.Certificate{certificate},
-				ClientAuth:   tls.RequestClientCert,
-			})
+
+		if tlsConfig, err := makeTLSConfig(30 * time.Second); err != nil {
+			return err
+		} else {
+			l.TLSConfig = tlsConfig
 		}
+
 		l.Listen()
 
 		// on reload, invoke the collector to preserve whatever metrics we can
@@ -571,4 +572,79 @@ func (o *TemplateRouterOptions) blueprintRoutes(routeclient *routeclientset.Clie
 	}
 
 	return blueprints, nil
+}
+
+// makeTLSConfig checks whether metrics TLS is configured and
+// if so returns a tls.Config whose certificate is automatically
+// reloaded on the given period.
+func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
+	certFile := env("ROUTER_METRICS_TLS_CERT_FILE", "")
+	if len(certFile) == 0 {
+		return nil, nil
+	}
+	keyFile := env("ROUTER_METRICS_TLS_KEY_FILE", "")
+
+	// Load the initial certificate contents.
+	certBytes, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, err
+	}
+	keyBytes, err := ioutil.ReadFile(keyFile)
+	if err != nil {
+		return nil, err
+	}
+	certificate, err := tls.X509KeyPair(certBytes, keyBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Safely reload the certificate on a fixed period for simplicity.
+	ticker := time.NewTicker(reloadPeriod)
+	var lock sync.Mutex
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				latestCertBytes, err := ioutil.ReadFile(certFile)
+				if err != nil {
+					glog.Errorf("Failed to read certificate file %q: %v", certFile, err)
+					break
+				}
+				latestKeyBytes, err := ioutil.ReadFile(keyFile)
+				if err != nil {
+					glog.Errorf("failed to read key file %q: %v", keyFile, err)
+					break
+				}
+
+				if bytes.Equal(latestCertBytes, certBytes) && bytes.Equal(latestKeyBytes, keyBytes) {
+					// Nothing changed, try later.
+					break
+				}
+
+				// Something changed, reload the certificate.
+				latest, err := tls.X509KeyPair(certBytes, keyBytes)
+				if err != nil {
+					glog.Errorf("Failed to reload certificate for cert file %q and key file %q: %v", certFile, keyFile, err)
+					break
+				}
+				certBytes = latestCertBytes
+				keyBytes = latestKeyBytes
+
+				lock.Lock()
+				certificate = latest
+				lock.Unlock()
+
+				glog.V(0).Infof("Reloaded metrics certificate for cert file %q and key file %q", certFile, keyFile)
+			}
+		}
+	}()
+
+	return crypto.SecureTLSConfig(&tls.Config{
+		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			lock.Lock()
+			defer lock.Unlock()
+			return &certificate, nil
+		},
+		ClientAuth: tls.RequestClientCert,
+	}), nil
 }
