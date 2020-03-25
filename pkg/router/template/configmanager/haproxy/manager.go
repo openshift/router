@@ -635,7 +635,7 @@ func (cm *haproxyConfigManager) Commit() {
 }
 
 // ServerTemplateName returns the dynamic server template name.
-func (cm *haproxyConfigManager) ServerTemplateName(id string) string {
+func (cm *haproxyConfigManager) ServerTemplateName(id templaterouter.ServiceAliasConfigKey) string {
 	if cm.maxDynamicServers > 0 {
 		// Adding the id makes the name unwieldy - use pod.
 		return fmt.Sprintf("%s-pod", dynamicServerPrefix)
@@ -646,7 +646,7 @@ func (cm *haproxyConfigManager) ServerTemplateName(id string) string {
 
 // ServerTemplateSize returns the dynamic server template size.
 // Note this is returned as a string for easier use in the haproxy template.
-func (cm *haproxyConfigManager) ServerTemplateSize(id string) string {
+func (cm *haproxyConfigManager) ServerTemplateSize(id templaterouter.ServiceAliasConfigKey) string {
 	if cm.maxDynamicServers < 1 {
 		return ""
 	}
@@ -655,7 +655,7 @@ func (cm *haproxyConfigManager) ServerTemplateSize(id string) string {
 }
 
 // GenerateDynamicServerNames generates the dynamic server names.
-func (cm *haproxyConfigManager) GenerateDynamicServerNames(id string) []string {
+func (cm *haproxyConfigManager) GenerateDynamicServerNames(id templaterouter.ServiceAliasConfigKey) []string {
 	if cm.maxDynamicServers > 0 {
 		if prefix := cm.ServerTemplateName(id); len(prefix) > 0 {
 			names := make([]string, cm.maxDynamicServers)

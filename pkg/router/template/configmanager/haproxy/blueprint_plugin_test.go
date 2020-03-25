@@ -63,15 +63,15 @@ func (cm *fakeConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAlias
 func (cm *fakeConfigManager) Notify(event templaterouter.RouterEventType) {
 }
 
-func (cm *fakeConfigManager) ServerTemplateName(id string) string {
+func (cm *fakeConfigManager) ServerTemplateName(id templaterouter.ServiceAliasConfigKey) string {
 	return "fakeConfigManager"
 }
 
-func (cm *fakeConfigManager) ServerTemplateSize(id string) string {
+func (cm *fakeConfigManager) ServerTemplateSize(id templaterouter.ServiceAliasConfigKey) string {
 	return "1"
 }
 
-func (cm *fakeConfigManager) GenerateDynamicServerNames(id string) []string {
+func (cm *fakeConfigManager) GenerateDynamicServerNames(id templaterouter.ServiceAliasConfigKey) []string {
 	return []string{}
 }
 

@@ -216,13 +216,13 @@ type ConfigManager interface {
 	Notify(event RouterEventType)
 
 	// ServerTemplateName returns the dynamic server template name.
-	ServerTemplateName(id string) string
+	ServerTemplateName(id ServiceAliasConfigKey) string
 
 	// ServerTemplateSize returns the dynamic server template size.
-	ServerTemplateSize(id string) string
+	ServerTemplateSize(id ServiceAliasConfigKey) string
 
 	// GenerateDynamicServerNames generates the dynamic server names.
-	GenerateDynamicServerNames(id string) []string
+	GenerateDynamicServerNames(id ServiceAliasConfigKey) []string
 }
 
 // RouterEventType indicates the type of event fired by the router.
