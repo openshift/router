@@ -9,7 +9,7 @@ RUN INSTALL_PKGS="haproxy20 rsyslog sysvinit-tools" && \
     setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy && \
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy
-COPY images/router/haproxy/* /var/lib/haproxy/
+COPY images/router/haproxy/ /var/lib/haproxy/
 LABEL io.k8s.display-name="OpenShift HAProxy Router" \
       io.k8s.description="This component offers ingress to an OpenShift cluster via Ingress and Route rules." \
       io.openshift.tags="openshift,router,haproxy"
