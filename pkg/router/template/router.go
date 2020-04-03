@@ -326,6 +326,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 				r.lock.Lock()
 				r.stateChanged = true
 				r.dynamicallyConfigured = false
+				r.defaultCertificatePath = outName
 				r.lock.Unlock()
 				r.Commit()
 			case err, ok := <-watcher.Errors:
@@ -354,13 +355,14 @@ func (r *templateRouter) writeDefaultCert() error {
 		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
 			// no pem file, no default cert, use cert from container
 			log.V(0).Info("router default cert from router container")
-			return nil
+		} else {
+			r.defaultCertificatePath = outPath
 		}
 		if err := r.watchSecretDir(r.defaultCertificateDir, outPath); err != nil {
 			log.V(0).Info("failed to establish watch on certificate directory", "error", err)
 			return nil
 		}
-		r.defaultCertificatePath = outPath
+
 		return nil
 	}
 
