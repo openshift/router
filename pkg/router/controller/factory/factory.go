@@ -8,7 +8,7 @@ import (
 	"time"
 
 	kapi "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -63,7 +63,7 @@ func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectcl
 		ProjectClient:  pc,
 		ResyncInterval: DefaultResyncInterval,
 
-		Namespace: v1.NamespaceAll,
+		Namespace: metav1.NamespaceAll,
 		informers: map[reflect.Type]kcache.SharedIndexInformer{},
 	}
 }
@@ -189,7 +189,7 @@ func (f *RouterControllerFactory) processExistingItems(rc *routercontroller.Rout
 	}
 }
 
-func (f *RouterControllerFactory) setSelectors(options *v1.ListOptions) {
+func (f *RouterControllerFactory) setSelectors(options *metav1.ListOptions) {
 	options.LabelSelector = f.LabelSelector
 	options.FieldSelector = f.FieldSelector
 }
@@ -197,10 +197,10 @@ func (f *RouterControllerFactory) setSelectors(options *v1.ListOptions) {
 func (f *RouterControllerFactory) createEndpointsSharedInformer() {
 	// we do not scope endpoints by labels or fields because the route labels != endpoints labels
 	lw := &kcache.ListWatch{
-		ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return f.KClient.CoreV1().Endpoints(f.Namespace).List(context.TODO(), options)
 		},
-		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return f.KClient.CoreV1().Endpoints(f.Namespace).Watch(context.TODO(), options)
 		},
 	}
@@ -219,7 +219,7 @@ func (f *RouterControllerFactory) CreateRoutesSharedInformer() kcache.SharedInde
 	}
 
 	lw := &kcache.ListWatch{
-		ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			f.setSelectors(&options)
 			routeList, err := f.RClient.RouteV1().Routes(f.Namespace).List(context.TODO(), options)
 			if err != nil {
@@ -234,7 +234,7 @@ func (f *RouterControllerFactory) CreateRoutesSharedInformer() kcache.SharedInde
 			sort.Sort(routeAge(routeList.Items))
 			return routeList, nil
 		},
-		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			f.setSelectors(&options)
 			w, err := f.RClient.RouteV1().Routes(f.Namespace).Watch(context.TODO(), options)
 			if err != nil {
@@ -267,11 +267,11 @@ func (f *RouterControllerFactory) createNodesSharedInformer() {
 
 func (f *RouterControllerFactory) createNamespacesSharedInformer() {
 	lw := &kcache.ListWatch{
-		ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.LabelSelector = f.NamespaceLabels.String()
 			return f.KClient.CoreV1().Namespaces().List(context.TODO(), options)
 		},
-		WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			options.LabelSelector = f.NamespaceLabels.String()
 			return f.KClient.CoreV1().Namespaces().Watch(context.TODO(), options)
 		},

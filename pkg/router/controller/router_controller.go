@@ -7,7 +7,7 @@ import (
 	"time"
 
 	kapi "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -81,7 +81,7 @@ func (c *RouterController) HandleProjects() {
 
 func (c *RouterController) GetFilteredProjectNames() (sets.String, error) {
 	names := sets.String{}
-	all, err := c.ProjectClient.List(context.TODO(), v1.ListOptions{LabelSelector: c.ProjectLabels.String()})
+	all, err := c.ProjectClient.List(context.TODO(), metav1.ListOptions{LabelSelector: c.ProjectLabels.String()})
 	if err != nil {
 		return nil, err
 	}
