@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/cockroachdb/cmux"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 
@@ -49,7 +50,7 @@ func (l Listener) handler() http.Handler {
 		protected.HandleFunc("/debug/pprof/", pprof.Index)
 		protected.HandleFunc("/debug/pprof/profile", pprof.Profile)
 		protected.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		protected.Handle("/metrics", prometheus.Handler())
+		protected.Handle("/metrics", promhttp.Handler())
 		mux.Handle("/", l.authorizeHandler(protected))
 	}
 	return mux
@@ -103,7 +104,7 @@ func (l Listener) authorizeHandler(protected http.Handler) http.Handler {
 			scopedRecord.Subresource = "debug"
 		}
 		scopedRecord.User = user.User
-		authorized, reason, err := l.Authorizer.Authorize(scopedRecord)
+		authorized, reason, err := l.Authorizer.Authorize(context.TODO(), scopedRecord)
 		if err != nil {
 			log.V(3).Info("unable to authorize", "error", err)
 			http.Error(w, "Unable to authorize the user due to an error", http.StatusInternalServerError)

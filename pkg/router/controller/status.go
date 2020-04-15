@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -145,7 +146,7 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 			return writerlease.Release, false
 		}
 
-		switch _, err := oc.Routes(route.Namespace).UpdateStatus(route); {
+		switch _, err := oc.Routes(route.Namespace).UpdateStatus(context.TODO(), route, metav1.UpdateOptions{}); {
 		case err == nil:
 			log.V(4).Info("updated route status", "action", action, "namespace", route.Namespace, "name", route.Name)
 			tracker.Clear(key, latest)

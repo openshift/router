@@ -2,6 +2,7 @@ package router
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -25,8 +26,8 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/apiserver/pkg/server/healthz"
-	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
-	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
+	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
+	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned"
@@ -401,7 +402,6 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			Anonymous:               true,
 			TokenAccessReviewClient: tokenClient.TokenReviews(),
 			CacheTTL:                10 * time.Second,
-			ClientCAFile:            env("ROUTER_METRICS_AUTHENTICATOR_CA_FILE", ""),
 		}.New()
 		if err != nil {
 			return err
@@ -572,7 +572,7 @@ func (o *TemplateRouterOptions) blueprintRoutes(routeclient *routeclientset.Clie
 		options.LabelSelector = o.BlueprintRouteLabelSelector
 	}
 
-	routeList, err := routeclient.RouteV1().Routes(o.BlueprintRouteNamespace).List(options)
+	routeList, err := routeclient.RouteV1().Routes(o.BlueprintRouteNamespace).List(context.TODO(), options)
 	if err != nil {
 		return blueprints, err
 	}
