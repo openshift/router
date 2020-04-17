@@ -9,8 +9,6 @@ require (
 	github.com/cockroachdb/cmux v0.0.0-20170110192607-30d10be49292
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/getsentry/raven-go v0.2.0 // indirect
-	github.com/go-logr/logr v0.1.0
-	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/openshift/api v3.9.1-0.20190927132434-86c3b775619d+incompatible
