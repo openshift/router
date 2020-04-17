@@ -38,3 +38,8 @@ images/router/*/Dockerfile.rhel: images/router/base/Dockerfile.rhel
 
 check:
 	$(GO) test -race ./...
+
+.PHONY: verify
+verify:
+	hack/verify-gofmt.sh
+	hack/verify-deps.sh
