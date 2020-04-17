@@ -1,6 +1,7 @@
 package templaterouter
 
 import (
+	"context"
 	"time"
 
 	api "k8s.io/api/core/v1"
@@ -23,10 +24,10 @@ func NewListWatchServiceLookup(svcGetter kcoreclient.ServicesGetter, resync time
 	svcStore := cache.NewStore(cache.MetaNamespaceKeyFunc)
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return svcGetter.Services(namespace).List(options)
+			return svcGetter.Services(namespace).List(context.TODO(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return svcGetter.Services(namespace).Watch(options)
+			return svcGetter.Services(namespace).Watch(context.TODO(), options)
 		},
 	}
 	go cache.NewReflector(lw, &api.Service{}, svcStore, resync).Run(wait.NeverStop)
