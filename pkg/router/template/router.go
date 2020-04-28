@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"text/template"
@@ -467,16 +466,11 @@ func (r *templateRouter) writeConfig() error {
 
 	log.V(4).Info("router certificate manager config committed")
 
-	pathNames := make([]string, 0)
-	for k := range r.templates {
-		pathNames = append(pathNames, filepath.Join(r.dir, k))
-	}
-	sort.Strings(pathNames)
-	for _, path := range pathNames {
-		template := r.templates[filepath.Base(path)]
-		file, err := os.Create(path)
+	for name, template := range r.templates {
+		filename := filepath.Join(r.dir, name)
+		file, err := os.Create(filename)
 		if err != nil {
-			return fmt.Errorf("error creating config file %s: %v", path, err)
+			return fmt.Errorf("error creating config file %s: %v", filename, err)
 		}
 
 		data := templateData{
@@ -493,7 +487,7 @@ func (r *templateRouter) writeConfig() error {
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
-			return fmt.Errorf("error executing template for file %s: %v", path, err)
+			return fmt.Errorf("error executing template for file %s: %v", filename, err)
 		}
 		file.Close()
 	}
