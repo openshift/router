@@ -3,7 +3,7 @@
     					encryption before finally sending to a host_be which is the backend that is the final
     					backend for a route and contains all the endpoints for the service
 */}}
-{{- define "haproxy.config" }}
+{{- define "conf/haproxy.config" }}
 {{- $workingDir := .WorkingDir }}
 {{- $defaultDestinationCA := .DefaultDestinationCA }}
 {{- $dynamicConfigManager := .DynamicConfigManager }}
@@ -586,7 +586,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
 			[sub]domain regexps. This map is used to check if
 			a host matches a [sub]domain with has wildcard support.
 */}}
-{{ define "os_wildcard_domain.map" -}}
+{{ define "conf/os_wildcard_domain.map" -}}
 {{     if isTrue (env "ROUTER_ALLOW_WILDCARD_ROUTES") -}}
 {{         range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
@@ -601,7 +601,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
                                                 be_edge_http for edge routes with InsecureEdgeTerminationPolicy Allow
                                                 be_secure for reencrypt routes with InsecureEdgeTerminationPolicy Allow
 */}}
-{{ define "os_http_be.map" -}}
+{{ define "conf/os_http_be.map" -}}
 {{     range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
 {{     end -}}
@@ -614,7 +614,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
                          by attaching prefix: be_edge_http for edge terminated routes
                                               be_secure for reencrypt routes
 */}}
-{{ define "os_edge_reencrypt_be.map" -}}
+{{ define "conf/os_edge_reencrypt_be.map" -}}
 {{     range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
 {{     end -}}
@@ -626,7 +626,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
     Map is used to redirect insecure traffic to use a secure scheme (https)
     if acls match for routes that have the insecure option set to redirect.
 */}}
-{{ define "os_route_http_redirect.map" -}}
+{{ define "conf/os_route_http_redirect.map" -}}
 {{     range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
 {{     end -}}
@@ -637,7 +637,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
     os_tcp_be.map: contains a mapping of www.example.com -> <service name>.  This map is used to discover the correct backend
                         by use_backend statements if acls are matched.
 */}}
-{{ define "os_tcp_be.map" -}}
+{{ define "conf/os_tcp_be.map" -}}
 {{     range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
 {{     end -}}
@@ -648,7 +648,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
     os_sni_passthrough.map: contains a mapping of routes that expect to have an sni header and should be passed
     					through to the host_be.  Driven by the termination type of the ServiceAliasConfigs
 */}}
-{{ define "os_sni_passthrough.map" -}}
+{{ define "conf/os_sni_passthrough.map" -}}
 {{     range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
 {{     end -}}
@@ -662,7 +662,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
           "<cert>: <domain-set>" is important as this allows us to use
          wildcards and/or use a deny set with !<domain> in the future.
 */}}
-{{ define "cert_config.map" -}}
+{{ define "conf/cert_config.map" -}}
 {{     range $idx, $line := generateHAProxyMap . -}}
 {{$line}}
 {{     end -}}

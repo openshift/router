@@ -150,7 +150,7 @@ func getIntervalFromEnv(name string, defaultValSecs int) time.Duration {
 }
 
 func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
-	flag.StringVar(&o.WorkingDir, "working-dir", "/var/lib/haproxy/router", "The working directory for the router plugin")
+	flag.StringVar(&o.WorkingDir, "working-dir", "/var/lib/haproxy", "The working directory for the router plugin")
 	flag.StringVar(&o.DefaultCertificate, "default-certificate", env("DEFAULT_CERTIFICATE", ""), "The contents of a default certificate to use for routes that don't expose a TLS server cert; in PEM format")
 	flag.StringVar(&o.DefaultCertificatePath, "default-certificate-path", env("DEFAULT_CERTIFICATE_PATH", ""), "A path to default certificate to use for routes that don't expose a TLS server cert; in PEM format")
 	flag.StringVar(&o.DefaultCertificateDir, "default-certificate-dir", env("DEFAULT_CERTIFICATE_DIR", ""), "A path to a directory that contains a file named tls.crt. If tls.crt is not a PEM file which also contains a private key, it is first combined with a file named tls.key in the same directory. The PEM-format contents are then used as the default certificate. Only used if default-certificate and default-certificate-path are not specified.")
