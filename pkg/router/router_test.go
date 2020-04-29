@@ -137,12 +137,10 @@ func TestAdmissionEdgeCases(t *testing.T) {
 			mustDelete{"c"},
 
 			expectAdmitted{"a", "d", "e"},
-			expectRejected{},
 
 			mustDelete{"e"},
 
 			expectAdmitted{"a", "d"},
-			expectRejected{},
 		},
 	}
 
