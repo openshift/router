@@ -33,7 +33,6 @@ const (
 	ProtocolHTTPS = "https"
 	ProtocolTLS   = "tls"
 
-	routeFile       = "routes.json"
 	certDir         = "certs"
 	caCertDir       = "cacerts"
 	defaultCertName = "default"
