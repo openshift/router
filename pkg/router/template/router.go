@@ -351,8 +351,9 @@ func (r *templateRouter) writeDefaultCert() error {
 			return nil
 		}
 		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+			log.Error(err, "failed to write default cert")
 			// no pem file, no default cert, use cert from container
-			log.V(0).Info("router default cert from router container")
+			log.V(0).Info("using default cert from router container image")
 		} else {
 			r.defaultCertificatePath = outPath
 		}
