@@ -17,6 +17,7 @@ type BackendConfig struct {
 
 // HAProxyMapEntry is a haproxy map entry.
 type HAProxyMapEntry struct {
-	Key   string
-	Value string
+	Key           string
+	Value         string
+	SSLBindConfig string
 }
