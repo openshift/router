@@ -202,8 +202,8 @@ http {
     {{- if (or (eq $primaryCfg.TLSTermination "edge") (eq $primaryCfg.TLSTermination "reencrypt")) -}}
       {{ $cert := index $primaryCfg.Certificates $cfgHost -}}
       {{ if ne $cert.Contents "" }}
-    ssl_certificate     {{$workingDir}}/certs/{{$primaryCfgIdx}}.pem;
-    ssl_certificate_key {{$workingDir}}/certs/{{$primaryCfgIdx}}.pem;
+    ssl_certificate     {{$workingDir}}/router/certs/{{$primaryCfgIdx}}.pem;
+    ssl_certificate_key {{$workingDir}}/router/certs/{{$primaryCfgIdx}}.pem;
       {{ else }}
     ssl_certificate {{ printf "%s/tls.crt" (env "DEFAULT_CERTIFICATE_DIR" "/etc/pki/tls/private") }};
     ssl_certificate_key {{ printf "%s/tls.key" (env "DEFAULT_CERTIFICATE_DIR" "/etc/pki/tls/private") }};
@@ -229,7 +229,7 @@ http {
         {{ if eq $cfg.TLSTermination "reencrypt" }}
       grpc_ssl_name {{ $cfg.Host }};
           {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }}
-      grpc_ssl_trusted_certificate {{ $workingDir }}/cacerts/{{$cfgIdx}}.pem;
+      grpc_ssl_trusted_certificate {{ $workingDir }}/router/cacerts/{{$cfgIdx}}.pem;
       grpc_ssl_verify on;
           {{ else }}
             {{ if gt (len $defaultDestinationCA) 0 }}
@@ -266,7 +266,7 @@ http {
         {{ if eq $cfg.TLSTermination "reencrypt" }}
       proxy_ssl_name {{ $cfg.Host }};
           {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }}
-      proxy_ssl_trusted_certificate {{ $workingDir }}/cacerts/{{$cfgIdx}}.pem;
+      proxy_ssl_trusted_certificate {{ $workingDir }}/router/cacerts/{{$cfgIdx}}.pem;
       proxy_ssl_verify on;
           {{ else }}
             {{ if gt (len $defaultDestinationCA) 0 }}

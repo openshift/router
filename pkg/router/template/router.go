@@ -33,9 +33,11 @@ const (
 	ProtocolHTTPS = "https"
 	ProtocolTLS   = "tls"
 
-	certDir         = "certs"
-	caCertDir       = "cacerts"
+	certDir         = "router/certs"
+	caCertDir       = "router/cacerts"
 	defaultCertName = "default"
+
+	whitelistDir = "router/whitelists"
 
 	caCertPostfix   = "_ca"
 	destCertPostfix = "_pod"
