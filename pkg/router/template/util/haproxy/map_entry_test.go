@@ -811,7 +811,11 @@ func TestGenerateCertConfigMapEntry(t *testing.T) {
 		}
 
 		certHost := templateutil.GenCertificateHostName(host, wildcard)
-		return &HAProxyMapEntry{Key: key, Value: certHost}
+		e := &HAProxyMapEntry{Key: key, Value: certHost}
+		if hascert {
+			e.SSLBindConfig = "[alpn h2,http/1.1]"
+		}
+		return e
 	}
 
 	for _, tt := range tests {

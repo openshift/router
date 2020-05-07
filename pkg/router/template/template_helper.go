@@ -175,7 +175,7 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 		backendConfig := backendConfig(string(k), cfg, hascert)
 		if entry := haproxyutil.GenerateMapEntry(certConfigMap, backendConfig); entry != nil {
 			fqCertPath := path.Join(td.WorkingDir, "certs", entry.Key)
-			lines = append(lines, fmt.Sprintf("%s %s", fqCertPath, entry.Value))
+			lines = append(lines, strings.Join([]string{fqCertPath, entry.SSLBindConfig, entry.Value}, " "))
 		}
 	}
 
