@@ -101,9 +101,7 @@ func generateCertConfigMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 		}
 		if cfg.HasCertificate {
 			switch cfg.Termination {
-			case routev1.TLSTerminationEdge:
-				fallthrough
-			case routev1.TLSTerminationReencrypt:
+			case routev1.TLSTerminationEdge, routev1.TLSTerminationReencrypt:
 				e.SSLBindConfig = "[alpn h2,http/1.1]"
 			}
 		}
