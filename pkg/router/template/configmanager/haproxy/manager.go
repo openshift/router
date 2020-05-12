@@ -1104,5 +1104,6 @@ func modAnnotationsList(termination routev1.TLSTerminationType) []string {
 	annotations = append(annotations, "haproxy.router.openshift.io/disable_cookies")
 	annotations = append(annotations, "router.openshift.io/cookie_name")
 	annotations = append(annotations, "haproxy.router.openshift.io/hsts_header")
+	annotations = append(annotations, "haproxy.router.openshift.io/rewrite-target")
 	return annotations
 }
