@@ -41,7 +41,7 @@ be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-vn6lh:download
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-g7nsm:downloads:10.129.5.61:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,2,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.129.5.61:8080,450630300ddc04605decdd966ea57de6,http,,,,,,,,0,0,0,,,0,,0,0,0,0,
 be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,512,2,0,,0,802,0,,1,18,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,a663438294fbd72a8e16964e97c8ecde,http,leastconn,,,,,,,0,0,0,0,0,,,0,0,0,0,
 `,
-		// increase the count of connections on the second console pod by 5
+		// increase the count of connections on the first console pod by 5
 		`public,FRONTEND,,,0,2,20000,162,18770,30715,0,0,0,,,,,OPEN,,,,,,,,,1,2,0,,,,0,0,0,1,,,,0,160,1,0,1,0,,0,1,162,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,http,,0,1,162,160,0,0,0,,,0,0,,,,,,,
 public_ssl,FRONTEND,,,1,32,20000,200,928408,2060591,0,0,0,,,,,OPEN,,,,,,,,,1,3,0,,,,0,0,0,50,,,,,,,,,,,0,0,0,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,tcp,,0,50,200,,0,0,0,,,,,,,,,,,
 be_sni,fe_sni,0,0,1,32,,184,900961,1776021,,0,,0,0,0,0,no check,1,1,0,,,802,,,1,4,1,,184,,2,0,,51,,,,,,,,,,,,,,3,0,,,,,68,,,2,0,0,734,,,,,,,,,,,,127.0.0.1:10444,,tcp,,,,,,,,0,184,0,,,0,,29,6,0,46392,
@@ -105,7 +105,7 @@ be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP
 `,
 		// simulate a second reset metrics due to the router reloading:
 		// * set first console pod connections to 1
-		// * set fe_sni connections to 0
+		// * fe_sni connections is still 0
 		`public,FRONTEND,,,0,2,20000,162,18770,30715,0,0,0,,,,,OPEN,,,,,,,,,1,2,0,,,,0,0,0,1,,,,0,160,1,0,1,0,,0,1,162,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,http,,0,1,162,160,0,0,0,,,0,0,,,,,,,
 public_ssl,FRONTEND,,,1,32,20000,200,928408,2060591,0,0,0,,,,,OPEN,,,,,,,,,1,3,0,,,,0,0,0,50,,,,,,,,,,,0,0,0,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,tcp,,0,50,200,,0,0,0,,,,,,,,,,,
 be_sni,fe_sni,0,0,1,32,,0,900961,1776021,,0,,0,0,0,0,no check,1,1,0,,,802,,,1,4,1,,184,,2,0,,51,,,,,,,,,,,,,,3,0,,,,,68,,,2,0,0,734,,,,,,,,,,,,127.0.0.1:10444,,tcp,,,,,,,,0,184,0,,,0,,29,6,0,46392,

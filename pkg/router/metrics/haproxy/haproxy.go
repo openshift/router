@@ -143,11 +143,11 @@ type Exporter struct {
 	// is invoked.
 	counterValues counterValuesByMetric
 	// counterIndices records the index in the packed array of metrics (under counterValuesByMetric).
-	// A zero indicates the field index is not a counter, a non-zero value is the index in the packed
-	// array. The first position is always zero
-	// Example: Given counter fields 2, 4, and 5, the array should be:
-	//          []byte{0, 0, 0, 1, 0, 2, 3}
-	//          indicating that position 0 in the packed array is where the second field is stored.
+	// A 0 indicates the field index is not a counter, a positive integer is the index in the packed
+	// array. The first element in the packed array is always zero to avoid having to do index math.
+	// Example: Given counter fields 2, 4, and 5, the counterIndices array should be:
+	//          []byte{0, 0, 1, 0, 2, 3}
+	//          indicating that position 1 in the packed array is where counter field 2 is stored.
 	counterIndices []byte
 	// counterIndexSize the number of counters for each remembered counterValues
 	counterIndexSize int
@@ -601,11 +601,11 @@ func (e *Exporter) exportAndRecordRow(metrics metrics, rowID metricID, updatedVa
 	var updatedBaseValues []int64
 	baseValues := e.counterValues[rowID]
 	if updatedValues != nil {
-		if baseValues == nil {
-			baseValues = make([]int64, e.counterIndexSize)
-		}
-		updatedValues[rowID] = baseValues
 		updatedBaseValues = baseValues
+		if updatedBaseValues == nil {
+			updatedBaseValues = make([]int64, e.counterIndexSize)
+		}
+		updatedValues[rowID] = updatedBaseValues
 	}
 
 	exportCSVFields(e.csvParseFailures, metrics, baseValues, updatedBaseValues, e.counterIndices, csvRow, labels)
@@ -622,7 +622,7 @@ func exportCSVFields(csvParseFailures prometheus.Counter, metrics metrics, baseV
 		}
 
 		// the stored position of the previous value
-		storedIdx := counterIndices[byte(fieldIdx)]
+		storedIdx := counterIndices[fieldIdx]
 
 		var value int64
 		switch fieldIdx {
