@@ -108,11 +108,11 @@ type counterValuesByMetric map[metricID][]int64
 
 // defaultSelectedMetrics is the list of metrics included by default. These metrics are a subset
 // of the metrics exposed by haproxy_exporter by default for performance reasons.
-var defaultSelectedMetrics = []int{2, 4, 5, 7, 8, 9, 13, 14, 17, 21, 24, 33, 35, 40, 43, 60}
+var defaultSelectedMetrics = []int{2, 4, 5, 7, 8, 9, 13, 14, 17, 21, 24, 33, 35, 39, 40, 41, 42, 43, 44, 58, 59, 60, 79, 85}
 
 // defaultCounterMetrics is the list of metrics that are counters and should be preserved across
 // restarts. Only add metrics to this list if they are a counter.
-var defaultCounterMetrics = []int{7, 8, 9, 13, 14, 21, 24, 40, 43}
+var defaultCounterMetrics = []int{7, 8, 9, 13, 14, 21, 24, 39, 40, 41, 42, 43, 44, 79, 85}
 
 // Exporter collects HAProxy stats from the given URI and exports them using
 // the prometheus metrics package.
@@ -143,11 +143,11 @@ type Exporter struct {
 	// is invoked.
 	counterValues counterValuesByMetric
 	// counterIndices records the index in the packed array of metrics (under counterValuesByMetric).
-	// A zero indicates the field index is not a counter, a non-zero value is the index in the packed
-	// array. The first position is always zero
-	// Example: Given counter fields 2, 4, and 5, the array should be:
-	//          []byte{0, 0, 0, 1, 0, 2, 3}
-	//          indicating that position 0 in the packed array is where the second field is stored.
+	// A 0 indicates the field index is not a counter, a positive integer is the index in the packed
+	// array. The first element in the packed array is always zero to avoid having to do index math.
+	// Example: Given counter fields 2, 4, and 5, the counterIndices array should be:
+	//          []byte{0, 0, 1, 0, 2, 3}
+	//          indicating that position 1 in the packed array is where counter field 2 is stored.
 	counterIndices []byte
 	// counterIndexSize the number of counters for each remembered counterValues
 	counterIndexSize int
@@ -222,7 +222,6 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			4:  newFrontendMetric("current_sessions", "Current number of active sessions.", nil),
 			5:  newFrontendMetric("max_sessions", "Maximum observed number of active sessions.", nil),
 			6:  newFrontendMetric("limit_sessions", "Configured session limit.", nil),
-			7:  newFrontendMetric("connections_total", "Total number of connections.", nil),
 			8:  newFrontendMetric("bytes_in_total", "Current total of incoming bytes.", nil),
 			9:  newFrontendMetric("bytes_out_total", "Current total of outgoing bytes.", nil),
 			10: newFrontendMetric("requests_denied_total", "Total of requests denied for security.", nil),
@@ -237,7 +236,7 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			43: newFrontendMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "5xx"}),
 			44: newFrontendMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "other"}),
 			48: newFrontendMetric("http_requests_total", "Total HTTP requests.", nil),
-			60: newFrontendMetric("http_average_response_latency_milliseconds", "Average response latency of the last 1024 requests in milliseconds.", nil),
+			79: newFrontendMetric("connections_total", "Total number of connections.", nil),
 		}),
 		reducedBackendExports: map[int]struct{}{2: {}, 3: {}, 7: {}, 17: {}},
 		backendMetrics: filterMetrics(opts.ExportedMetrics, metrics{
@@ -263,7 +262,10 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			42: newBackendMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "4xx"}),
 			43: newBackendMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "5xx"}),
 			44: newBackendMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "other"}),
+			58: newBackendMetric("http_average_queue_latency_milliseconds", "Average latency to be dequeued of the last 1024 requests in milliseconds.", nil),
+			59: newBackendMetric("http_average_connect_latency_milliseconds", "Average connect latency of the last 1024 requests in milliseconds.", nil),
 			60: newBackendMetric("http_average_response_latency_milliseconds", "Average response latency of the last 1024 requests in milliseconds.", nil),
+			85: newBackendMetric("connections_reused_total", "Total number of connections reused.", nil),
 		}),
 		serverMetrics: filterMetrics(opts.ExportedMetrics, metrics{
 			2:  newServerMetric("current_queue", "Current number of queued requests assigned to this server.", nil),
@@ -291,7 +293,10 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			42: newServerMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "4xx"}),
 			43: newServerMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "5xx"}),
 			44: newServerMetric("http_responses_total", "Total of HTTP responses.", prometheus.Labels{"code": "other"}),
+			58: newServerMetric("http_average_queue_latency_milliseconds", "Average latency to be dequeued of the last 1024 requests in milliseconds.", nil),
+			59: newServerMetric("http_average_connect_latency_milliseconds", "Average connect latency of the last 1024 requests in milliseconds.", nil),
 			60: newServerMetric("http_average_response_latency_milliseconds", "Average response latency of the last 1024 requests in milliseconds.", nil),
+			85: newServerMetric("connections_reused_total", "Total number of connections reused.", nil),
 		}),
 		counterIndices:   counterIndices,
 		counterIndexSize: counterIndexSize + 1,
@@ -601,11 +606,11 @@ func (e *Exporter) exportAndRecordRow(metrics metrics, rowID metricID, updatedVa
 	var updatedBaseValues []int64
 	baseValues := e.counterValues[rowID]
 	if updatedValues != nil {
-		if baseValues == nil {
-			baseValues = make([]int64, e.counterIndexSize)
-		}
-		updatedValues[rowID] = baseValues
 		updatedBaseValues = baseValues
+		if updatedBaseValues == nil {
+			updatedBaseValues = make([]int64, e.counterIndexSize)
+		}
+		updatedValues[rowID] = updatedBaseValues
 	}
 
 	exportCSVFields(e.csvParseFailures, metrics, baseValues, updatedBaseValues, e.counterIndices, csvRow, labels)
@@ -622,7 +627,7 @@ func exportCSVFields(csvParseFailures prometheus.Counter, metrics metrics, baseV
 		}
 
 		// the stored position of the previous value
-		storedIdx := counterIndices[byte(fieldIdx)]
+		storedIdx := counterIndices[fieldIdx]
 
 		var value int64
 		switch fieldIdx {
