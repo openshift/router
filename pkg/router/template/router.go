@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -151,6 +152,8 @@ type templateData struct {
 	BindPorts bool
 	// The dynamic configuration manager if "configured".
 	DynamicConfigManager ConfigManager
+	// DisableHTTP2 on the frontend and the backend when set "true"
+	DisableHTTP2 bool
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -468,6 +471,8 @@ func (r *templateRouter) writeConfig() error {
 
 	log.V(4).Info("router certificate manager config committed")
 
+	disableHTTP2, _ := strconv.ParseBool(os.Getenv("ROUTER_DISABLE_HTTP2"))
+
 	for name, template := range r.templates {
 		filename := filepath.Join(r.dir, name)
 		file, err := os.Create(filename)
@@ -486,6 +491,7 @@ func (r *templateRouter) writeConfig() error {
 			StatsPort:            r.statsPort,
 			BindPorts:            !r.bindPortsAfterSync || r.synced,
 			DynamicConfigManager: r.dynamicConfigManager,
+			DisableHTTP2:         disableHTTP2,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
