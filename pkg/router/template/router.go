@@ -3,7 +3,6 @@ package templaterouter
 import (
 	"bytes"
 	"crypto/md5"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -11,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"text/template"
@@ -35,10 +33,11 @@ const (
 	ProtocolHTTPS = "https"
 	ProtocolTLS   = "tls"
 
-	routeFile       = "routes.json"
-	certDir         = "certs"
-	caCertDir       = "cacerts"
+	certDir         = "router/certs"
+	caCertDir       = "router/cacerts"
 	defaultCertName = "default"
+
+	whitelistDir = "router/whitelists"
 
 	caCertPostfix   = "_ca"
 	destCertPostfix = "_pod"
@@ -57,6 +56,7 @@ type templateRouter struct {
 	dir              string
 	templates        map[string]*template.Template
 	reloadScriptPath string
+	reloadFn         func(shutdown bool) error
 	reloadInterval   time.Duration
 	reloadCallbacks  []func()
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
@@ -112,6 +112,7 @@ type templateRouterCfg struct {
 	dir                      string
 	templates                map[string]*template.Template
 	reloadScriptPath         string
+	reloadFn                 func(shutdown bool) error
 	reloadInterval           time.Duration
 	reloadCallbacks          []func()
 	defaultCertificate       string
@@ -187,6 +188,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		reloadScriptPath:         cfg.reloadScriptPath,
 		reloadInterval:           cfg.reloadInterval,
 		reloadCallbacks:          cfg.reloadCallbacks,
+		reloadFn:                 cfg.reloadFn,
 		state:                    make(map[ServiceAliasConfigKey]ServiceAliasConfig),
 		serviceUnits:             make(map[ServiceUnitKey]ServiceUnit),
 		certManager:              certManager,
@@ -210,10 +212,6 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	router.EnableRateLimiter(cfg.reloadInterval, router.commitAndReload)
 
 	if err := router.writeDefaultCert(); err != nil {
-		return nil, err
-	}
-	log.V(4).Info("reading persisted state")
-	if err := router.readState(); err != nil {
 		return nil, err
 	}
 	if router.dynamicConfigManager != nil {
@@ -353,8 +351,9 @@ func (r *templateRouter) writeDefaultCert() error {
 			return nil
 		}
 		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+			log.Error(err, "failed to write default cert")
 			// no pem file, no default cert, use cert from container
-			log.V(0).Info("router default cert from router container")
+			log.V(0).Info("using default cert from router container image")
 		} else {
 			r.defaultCertificatePath = outPath
 		}
@@ -373,17 +372,6 @@ func (r *templateRouter) writeDefaultCert() error {
 	}
 	r.defaultCertificatePath = outPath
 	return nil
-}
-
-func (r *templateRouter) readState() error {
-	data, err := ioutil.ReadFile(filepath.Join(r.dir, routeFile))
-	// TODO: rework
-	if err != nil {
-		r.state = make(map[ServiceAliasConfigKey]ServiceAliasConfig)
-		return nil
-	}
-
-	return json.Unmarshal(data, &r.state)
 }
 
 // Commit applies the changes made to the router configuration - persists
@@ -414,11 +402,6 @@ func (r *templateRouter) commitAndReload() error {
 	if err := func() error {
 		r.lock.Lock()
 		defer r.lock.Unlock()
-
-		log.V(4).Info("writing the router state")
-		if err := r.writeState(); err != nil {
-			return err
-		}
 
 		r.stateChanged = false
 		if r.dynamicConfigManager != nil {
@@ -458,18 +441,6 @@ func (r *templateRouter) commitAndReload() error {
 	return nil
 }
 
-// writeState writes the state of this router to disk.
-func (r *templateRouter) writeState() error {
-	data, err := json.MarshalIndent(r.state, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal route table: %v", err)
-	}
-	if err := ioutil.WriteFile(filepath.Join(r.dir, routeFile), data, 0644); err != nil {
-		return fmt.Errorf("failed to write route table: %v", err)
-	}
-	return nil
-}
-
 // writeConfig writes the config to disk
 // Must be called while holding r.lock
 func (r *templateRouter) writeConfig() error {
@@ -497,16 +468,11 @@ func (r *templateRouter) writeConfig() error {
 
 	log.V(4).Info("router certificate manager config committed")
 
-	pathNames := make([]string, 0)
-	for k := range r.templates {
-		pathNames = append(pathNames, k)
-	}
-	sort.Strings(pathNames)
-	for _, path := range pathNames {
-		template := r.templates[path]
-		file, err := os.Create(path)
+	for name, template := range r.templates {
+		filename := filepath.Join(r.dir, name)
+		file, err := os.Create(filename)
 		if err != nil {
-			return fmt.Errorf("error creating config file %s: %v", path, err)
+			return fmt.Errorf("error creating config file %s: %v", filename, err)
 		}
 
 		data := templateData{
@@ -523,7 +489,7 @@ func (r *templateRouter) writeConfig() error {
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
-			return fmt.Errorf("error executing template for file %s: %v", path, err)
+			return fmt.Errorf("error executing template for file %s: %v", filename, err)
 		}
 		file.Close()
 	}
@@ -542,6 +508,9 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 
 // reloadRouter executes the router's reload script.
 func (r *templateRouter) reloadRouter(shutdown bool) error {
+	if r.reloadFn != nil {
+		return r.reloadFn(shutdown)
+	}
 	cmd := exec.Command(r.reloadScriptPath)
 	if shutdown {
 		cmd.Env = append(os.Environ(), "ROUTER_SHUTDOWN=true")

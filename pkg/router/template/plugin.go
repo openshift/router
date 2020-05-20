@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
+
 	unidlingapi "github.com/openshift/router/pkg/router/unidling"
 )
 
@@ -43,6 +44,7 @@ type TemplatePluginConfig struct {
 	WorkingDir               string
 	TemplatePath             string
 	ReloadScriptPath         string
+	ReloadFn                 func(shutdown bool) error
 	ReloadInterval           time.Duration
 	ReloadCallbacks          []func()
 	DefaultCertificate       string
@@ -117,13 +119,13 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 	if err != nil {
 		return nil, err
 	}
+
 	templates := map[string]*template.Template{}
 
 	for _, template := range masterTemplate.Templates() {
 		if template.Name() == templateBaseName {
 			continue
 		}
-
 		templateWithHelper, err := createTemplateWithHelper(template)
 		if err != nil {
 			return nil, err
@@ -136,6 +138,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		dir:                      cfg.WorkingDir,
 		templates:                templates,
 		reloadScriptPath:         cfg.ReloadScriptPath,
+		reloadFn:                 cfg.ReloadFn,
 		reloadInterval:           cfg.ReloadInterval,
 		reloadCallbacks:          cfg.ReloadCallbacks,
 		defaultCertificate:       cfg.DefaultCertificate,

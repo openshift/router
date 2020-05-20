@@ -174,7 +174,7 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 
 		backendConfig := backendConfig(string(k), cfg, hascert)
 		if entry := haproxyutil.GenerateMapEntry(certConfigMap, backendConfig); entry != nil {
-			fqCertPath := path.Join(td.WorkingDir, "certs", entry.Key)
+			fqCertPath := path.Join(td.WorkingDir, certDir, entry.Key)
 			lines = append(lines, strings.Join([]string{fqCertPath, entry.SSLBindConfig, entry.Value}, " "))
 		}
 	}
@@ -191,7 +191,7 @@ func validateHAProxyWhiteList(value string) bool {
 
 // generateHAProxyWhiteListFile generates a whitelist file for use with an haproxy acl.
 func generateHAProxyWhiteListFile(workingDir, id, value string) string {
-	name := path.Join(workingDir, "whitelists", fmt.Sprintf("%s.txt", id))
+	name := path.Join(workingDir, whitelistDir, fmt.Sprintf("%s.txt", id))
 	cidrs, _ := haproxyutil.ValidateWhiteList(value)
 	data := []byte(strings.Join(cidrs, "\n") + "\n")
 	if err := ioutil.WriteFile(name, data, 0644); err != nil {

@@ -406,18 +406,18 @@ func TestGenerateHAProxyCertConfigMap(t *testing.T) {
 	}
 
 	expectedOrder := []string{
-		"/path/to/certs/zzz:zed-route.pem",
-		"/path/to/certs/test:api-route.pem",
-		"/path/to/certs/stg:api-route.pem",
-		"/path/to/certs/prod:wildcard-route.pem",
-		"/path/to/certs/prod:backend-route.pem",
-		"/path/to/certs/prod:api-route.pem",
-		"/path/to/certs/prod:api-path-route.pem",
-		"/path/to/certs/devel2:foo-wildcard-test.pem",
-		"/path/to/certs/devel2:foo-wildcard-route.pem",
-		"/path/to/certs/dev:reencrypt-route.pem",
-		"/path/to/certs/dev:api-route.pem",
-		"/path/to/certs/dev:admin-route.pem",
+		"/path/to/router/certs/zzz:zed-route.pem",
+		"/path/to/router/certs/test:api-route.pem",
+		"/path/to/router/certs/stg:api-route.pem",
+		"/path/to/router/certs/prod:wildcard-route.pem",
+		"/path/to/router/certs/prod:backend-route.pem",
+		"/path/to/router/certs/prod:api-route.pem",
+		"/path/to/router/certs/prod:api-path-route.pem",
+		"/path/to/router/certs/devel2:foo-wildcard-test.pem",
+		"/path/to/router/certs/devel2:foo-wildcard-route.pem",
+		"/path/to/router/certs/dev:reencrypt-route.pem",
+		"/path/to/router/certs/dev:api-route.pem",
+		"/path/to/router/certs/dev:admin-route.pem",
 	}
 
 	lines := generateHAProxyCertConfigMap(td)
@@ -511,18 +511,18 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	certBackendOrder := []string{
-		"/path/to/certs/zzz:zed-route.pem",
-		"/path/to/certs/test:api-route.pem",
-		"/path/to/certs/stg:api-route.pem",
-		"/path/to/certs/prod:wildcard-route.pem",
-		"/path/to/certs/prod:backend-route.pem",
-		"/path/to/certs/prod:api-route.pem",
-		"/path/to/certs/prod:api-path-route.pem",
-		"/path/to/certs/devel2:foo-wildcard-test.pem",
-		"/path/to/certs/devel2:foo-wildcard-route.pem",
-		"/path/to/certs/dev:reencrypt-route.pem",
-		"/path/to/certs/dev:api-route.pem",
-		"/path/to/certs/dev:admin-route.pem",
+		"/path/to/router/certs/zzz:zed-route.pem",
+		"/path/to/router/certs/test:api-route.pem",
+		"/path/to/router/certs/stg:api-route.pem",
+		"/path/to/router/certs/prod:wildcard-route.pem",
+		"/path/to/router/certs/prod:backend-route.pem",
+		"/path/to/router/certs/prod:api-route.pem",
+		"/path/to/router/certs/prod:api-path-route.pem",
+		"/path/to/router/certs/devel2:foo-wildcard-test.pem",
+		"/path/to/router/certs/devel2:foo-wildcard-route.pem",
+		"/path/to/router/certs/dev:reencrypt-route.pem",
+		"/path/to/router/certs/dev:api-route.pem",
+		"/path/to/router/certs/dev:admin-route.pem",
 	}
 
 	lines = generateHAProxyMap("cert_config.map", td)
