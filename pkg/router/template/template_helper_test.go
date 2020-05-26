@@ -525,9 +525,30 @@ func TestGenerateHAProxyMap(t *testing.T) {
 		"/path/to/router/certs/dev:admin-route.pem",
 	}
 
-	lines = generateHAProxyMap("cert_config.map", td)
-	if err := checkExpectedOrderPrefixes(lines, certBackendOrder); err != nil {
-		t.Errorf("TestGenerateHAProxyMap cert_config.map error: %v", err)
+	for _, tc := range []struct {
+		DisableHTTP2       bool
+		ExpectedSSLBinding string
+	}{
+		{
+			DisableHTTP2: true,
+		},
+		{
+			DisableHTTP2:       false,
+			ExpectedSSLBinding: "[alpn h2,http/1.1]",
+		},
+	} {
+		td.DisableHTTP2 = tc.DisableHTTP2
+		lines := generateHAProxyMap("cert_config.map", td)
+		if err := checkExpectedOrderPrefixes(lines, certBackendOrder); err != nil {
+			t.Errorf("TestGenerateHAProxyMap cert_config.map error: %v", err)
+		}
+		if tc.ExpectedSSLBinding != "" {
+			for _, line := range lines {
+				if !strings.Contains(line, tc.ExpectedSSLBinding) {
+					t.Errorf("line %q does not contain expected SSL binding %q", line, tc.ExpectedSSLBinding)
+				}
+			}
+		}
 	}
 }
 
