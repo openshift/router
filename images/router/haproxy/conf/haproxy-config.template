@@ -8,6 +8,7 @@
 {{- $defaultDestinationCA := .DefaultDestinationCA }}
 {{- $dynamicConfigManager := .DynamicConfigManager }}
 {{- $router_ip_v4_v6_mode := env "ROUTER_IP_V4_V6_MODE" "v4" }}
+{{- $router_disable_http2 := env "ROUTER_DISABLE_HTTP2" "false" }}
 
 
 {{- /* A bunch of regular expressions.  Each should be wrapped in (?:) so that it is safe to include bare */}}
@@ -456,7 +457,9 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
       {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
         {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
   server {{$endpoint.ID}} {{$endpoint.IP}}:{{$endpoint.Port}} cookie {{$endpoint.IdHash}} weight {{$weight}}
-          {{- if (eq $cfg.TLSTermination "reencrypt") }} alpn h2,http/1.1 ssl
+          {{- if (eq $cfg.TLSTermination "reencrypt") }} ssl
+	    {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
+	    {{- end }}
             {{- if $cfg.VerifyServiceHostname }} verifyhost {{ $serviceUnit.Hostname }}
             {{- end }}
             {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx}}.pem

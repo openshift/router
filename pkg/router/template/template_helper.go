@@ -175,7 +175,11 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 		backendConfig := backendConfig(string(k), cfg, hascert)
 		if entry := haproxyutil.GenerateMapEntry(certConfigMap, backendConfig); entry != nil {
 			fqCertPath := path.Join(td.WorkingDir, certDir, entry.Key)
-			lines = append(lines, strings.Join([]string{fqCertPath, entry.SSLBindConfig, entry.Value}, " "))
+			if td.DisableHTTP2 {
+				lines = append(lines, strings.Join([]string{fqCertPath, entry.Value}, " "))
+			} else {
+				lines = append(lines, strings.Join([]string{fqCertPath, entry.SSLBindConfig, entry.Value}, " "))
+			}
 		}
 	}
 
