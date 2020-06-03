@@ -105,7 +105,6 @@ global
 defaults
   maxconn {{env "ROUTER_MAX_CONNECTIONS" "20000"}}
 
-  # Add x-forwarded-for header.
 {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
   {{- if ne (env "ROUTER_SYSLOG_FORMAT") "" }}
   log-format {{env "ROUTER_SYSLOG_FORMAT"}}
