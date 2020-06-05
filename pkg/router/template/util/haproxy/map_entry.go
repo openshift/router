@@ -95,17 +95,10 @@ func generateSNIPassthroughMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 // generateCertConfigMapEntry generates a cert config map entry.
 func generateCertConfigMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 	if len(cfg.Host) > 0 && (cfg.Termination == routev1.TLSTerminationEdge || cfg.Termination == routev1.TLSTerminationReencrypt) && cfg.HasCertificate {
-		e := &HAProxyMapEntry{
+		return &HAProxyMapEntry{
 			Key:   fmt.Sprintf("%s.pem", cfg.Name),
 			Value: templateutil.GenCertificateHostName(cfg.Host, cfg.IsWildcard),
 		}
-		if cfg.HasCertificate {
-			switch cfg.Termination {
-			case routev1.TLSTerminationEdge, routev1.TLSTerminationReencrypt:
-				e.SSLBindConfig = "[alpn h2,http/1.1]"
-			}
-		}
-		return e
 	}
 
 	return nil
