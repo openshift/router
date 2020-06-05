@@ -168,7 +168,8 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 	for k, cfg := range td.State {
 		hascert := false
 		if len(cfg.Host) > 0 {
-			cert, ok := cfg.Certificates[cfg.Host]
+			certKey := generateCertKey(&cfg)
+			cert, ok := cfg.Certificates[certKey]
 			hascert = ok && len(cert.Contents) > 0
 		}
 

@@ -1094,7 +1094,8 @@ func (r *templateRouter) SyncedAtLeastOnce() bool {
 // hasRequiredEdgeCerts ensures that at least a host certificate and key are provided.
 // a ca cert is not required because it may be something that is in the root cert chain
 func hasRequiredEdgeCerts(cfg *ServiceAliasConfig) bool {
-	hostCert, ok := cfg.Certificates[cfg.Host]
+	certKey := generateCertKey(cfg)
+	hostCert, ok := cfg.Certificates[certKey]
 	return ok && len(hostCert.Contents) > 0 && len(hostCert.PrivateKey) > 0
 }
 
