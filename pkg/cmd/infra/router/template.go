@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,19 +105,23 @@ type TemplateRouterOptions struct {
 }
 
 type TemplateRouter struct {
-	WorkingDir               string
-	TemplateFile             string
-	ReloadScript             string
-	ReloadInterval           time.Duration
-	DefaultCertificate       string
-	DefaultCertificatePath   string
-	DefaultCertificateDir    string
-	DefaultDestinationCAPath string
-	BindPortsAfterSync       bool
-	MaxConnections           string
-	Ciphers                  string
-	StrictSNI                bool
-	MetricsType              string
+	WorkingDir                       string
+	TemplateFile                     string
+	ReloadScript                     string
+	ReloadInterval                   time.Duration
+	DefaultCertificate               string
+	DefaultCertificatePath           string
+	DefaultCertificateDir            string
+	DefaultDestinationCAPath         string
+	BindPortsAfterSync               bool
+	MaxConnections                   string
+	Ciphers                          string
+	StrictSNI                        bool
+	MetricsType                      string
+	CaptureHTTPRequestHeadersString  string
+	CaptureHTTPResponseHeadersString string
+	CaptureHTTPRequestHeaders        []templateplugin.CaptureHTTPHeader
+	CaptureHTTPResponseHeaders       []templateplugin.CaptureHTTPHeader
 
 	TemplateRouterConfigManager
 }
@@ -169,6 +174,8 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.BlueprintRouteLabelSelector, "blueprint-route-labels", env("ROUTER_BLUEPRINT_ROUTE_LABELS", ""), "A label selector to apply to the routes in the blueprint route namespace. These selected routes will serve as blueprints for the dynamic dynamic configuration manager.")
 	flag.IntVar(&o.BlueprintRoutePoolSize, "blueprint-route-pool-size", int(envInt("ROUTER_BLUEPRINT_ROUTE_POOL_SIZE", 10, 1)), "Specifies the size of the pre-allocated pool for each route blueprint managed by the router specific dynamic configuration manager. This can be overriden by an annotation router.openshift.io/pool-size on an individual route.")
 	flag.IntVar(&o.MaxDynamicServers, "max-dynamic-servers", int(envInt("ROUTER_MAX_DYNAMIC_SERVERS", 5, 1)), "Specifies the maximum number of dynamic servers added to a route for use by the router specific dynamic configuration manager.")
+	flag.StringVar(&o.CaptureHTTPRequestHeadersString, "capture-http-request-headers", env("ROUTER_CAPTURE_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
+	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 }
 
 type RouterStats struct {
@@ -225,6 +232,51 @@ func NewCommandTemplateRouter(name string) *cobra.Command {
 	return cmd
 }
 
+// validTokenRE matches valid tokens as defined in section 2.2 of RFC 2616.
+// A token comprises 1 or more non-control and non-separator characters:
+//
+//   token          = 1*<any CHAR except CTLs or separators>
+//   CHAR           = <any US-ASCII character (octets 0 - 127)>
+//   CTL            = <any US-ASCII control character
+//                    (octets 0 - 31) and DEL (127)>
+//   separators     = "(" | ")" | "<" | ">" | "@"
+//                  | "," | ";" | ":" | "\" | <">
+//                  | "/" | "[" | "]" | "?" | "="
+//                  | "{" | "}" | SP | HT
+//   SP             = <US-ASCII SP, space (32)>
+//   HT             = <US-ASCII HT, horizontal-tab (9)>
+var validTokenRE *regexp.Regexp = regexp.MustCompile(`^[\x21\x23-\x27\x2a\x2b\x2d\x2e\x30-\x39\x41-\x5a\x5e-\x7a\x7c\x7e]+$`)
+
+func parseCaptureHeaders(in string) ([]templateplugin.CaptureHTTPHeader, error) {
+	var captureHeaders []templateplugin.CaptureHTTPHeader
+
+	if len(in) > 0 {
+		for _, header := range strings.Split(in, ",") {
+			parts := strings.Split(header, ":")
+			if len(parts) != 2 {
+				return captureHeaders, fmt.Errorf("invalid HTTP header capture specification: %v", header)
+			}
+			headerName := parts[0]
+			// RFC 2616, section 4.2, states that the header name
+			// must be a valid token.
+			if !validTokenRE.MatchString(headerName) {
+				return captureHeaders, fmt.Errorf("invalid HTTP header name: %v", headerName)
+			}
+			maxLength, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return captureHeaders, err
+			}
+			capture := templateplugin.CaptureHTTPHeader{
+				Name:      headerName,
+				MaxLength: maxLength,
+			}
+			captureHeaders = append(captureHeaders, capture)
+		}
+	}
+
+	return captureHeaders, nil
+}
+
 func (o *TemplateRouterOptions) Complete() error {
 	routerSvcName := env("ROUTER_SERVICE_NAME", "")
 	routerSvcNamespace := env("ROUTER_SERVICE_NAMESPACE", "")
@@ -265,6 +317,18 @@ func (o *TemplateRouterOptions) Complete() error {
 	if nsecs := int(o.CommitInterval.Seconds()); nsecs < 1 {
 		return fmt.Errorf("invalid dynamic configuration manager commit interval: %v - must be a positive duration", nsecs)
 	}
+
+	captureHTTPRequestHeaders, err := parseCaptureHeaders(o.CaptureHTTPRequestHeadersString)
+	if err != nil {
+		return err
+	}
+	o.CaptureHTTPRequestHeaders = captureHTTPRequestHeaders
+
+	captureHTTPResponseHeaders, err := parseCaptureHeaders(o.CaptureHTTPResponseHeadersString)
+	if err != nil {
+		return err
+	}
+	o.CaptureHTTPResponseHeaders = captureHTTPResponseHeaders
 
 	return o.RouterSelection.Complete()
 }
@@ -474,25 +538,27 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	}
 
 	pluginCfg := templateplugin.TemplatePluginConfig{
-		WorkingDir:               o.WorkingDir,
-		TemplatePath:             o.TemplateFile,
-		ReloadScriptPath:         o.ReloadScript,
-		ReloadInterval:           o.ReloadInterval,
-		ReloadCallbacks:          reloadCallbacks,
-		DefaultCertificate:       o.DefaultCertificate,
-		DefaultCertificatePath:   o.DefaultCertificatePath,
-		DefaultCertificateDir:    o.DefaultCertificateDir,
-		DefaultDestinationCAPath: o.DefaultDestinationCAPath,
-		StatsPort:                statsPort,
-		StatsUsername:            o.StatsUsername,
-		StatsPassword:            o.StatsPassword,
-		BindPortsAfterSync:       o.BindPortsAfterSync,
-		IncludeUDP:               o.RouterSelection.IncludeUDP,
-		AllowWildcardRoutes:      o.RouterSelection.AllowWildcardRoutes,
-		MaxConnections:           o.MaxConnections,
-		Ciphers:                  o.Ciphers,
-		StrictSNI:                o.StrictSNI,
-		DynamicConfigManager:     cfgManager,
+		WorkingDir:                 o.WorkingDir,
+		TemplatePath:               o.TemplateFile,
+		ReloadScriptPath:           o.ReloadScript,
+		ReloadInterval:             o.ReloadInterval,
+		ReloadCallbacks:            reloadCallbacks,
+		DefaultCertificate:         o.DefaultCertificate,
+		DefaultCertificatePath:     o.DefaultCertificatePath,
+		DefaultCertificateDir:      o.DefaultCertificateDir,
+		DefaultDestinationCAPath:   o.DefaultDestinationCAPath,
+		StatsPort:                  statsPort,
+		StatsUsername:              o.StatsUsername,
+		StatsPassword:              o.StatsPassword,
+		BindPortsAfterSync:         o.BindPortsAfterSync,
+		IncludeUDP:                 o.RouterSelection.IncludeUDP,
+		AllowWildcardRoutes:        o.RouterSelection.AllowWildcardRoutes,
+		MaxConnections:             o.MaxConnections,
+		Ciphers:                    o.Ciphers,
+		StrictSNI:                  o.StrictSNI,
+		DynamicConfigManager:       cfgManager,
+		CaptureHTTPRequestHeaders:  o.CaptureHTTPRequestHeaders,
+		CaptureHTTPResponseHeaders: o.CaptureHTTPResponseHeaders,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
