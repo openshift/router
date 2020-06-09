@@ -178,7 +178,7 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 			if td.DisableHTTP2 {
 				lines = append(lines, strings.Join([]string{fqCertPath, entry.Value}, " "))
 			} else {
-				lines = append(lines, strings.Join([]string{fqCertPath, entry.SSLBindConfig, entry.Value}, " "))
+				lines = append(lines, strings.Join([]string{fqCertPath, "[alpn h2,http/1.1]", entry.Value}, " "))
 			}
 		}
 	}
