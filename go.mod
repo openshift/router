@@ -9,17 +9,21 @@ require (
 	github.com/cockroachdb/cmux v0.0.0-20170110192607-30d10be49292
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/getsentry/raven-go v0.2.0 // indirect
-	github.com/go-logr/logr v0.1.0
-	github.com/go-logr/zapr v0.1.1 // indirect
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/openshift/api v3.9.1-0.20190927132434-86c3b775619d+incompatible
+	github.com/json-iterator/go v1.1.10 // indirect
+	github.com/openshift/api v0.0.0-20190927132434-86c3b775619d
 	github.com/openshift/client-go v0.0.0-20190923180330-3b6373338c9b
 	github.com/openshift/library-go v0.0.0-20191003152030-97c62d8a2901
 	github.com/pkg/profile v1.2.1 // indirect
 	github.com/prometheus/client_golang v0.9.2
+	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
+	github.com/prometheus/common v0.0.0-20181126121408-4724e9255275
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
+	golang.org/x/net v0.0.0-20200625001655-4c5254603344 // indirect
+	golang.org/x/text v0.3.3 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
