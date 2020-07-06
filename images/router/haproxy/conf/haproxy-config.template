@@ -458,8 +458,10 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
         {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
   server {{$endpoint.ID}} {{$endpoint.IP}}:{{$endpoint.Port}} cookie {{$endpoint.IdHash}} weight {{$weight}}
           {{- if (eq $cfg.TLSTermination "reencrypt") }} ssl
-	    {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
-	    {{- end }}
+	    {{ if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }}
+	      {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
+	      {{- end }}
+            {{- end }}
             {{- if $cfg.VerifyServiceHostname }} verifyhost {{ $serviceUnit.Hostname }}
             {{- end }}
             {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx}}.pem
