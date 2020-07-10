@@ -167,6 +167,13 @@ frontend public
   monitor-uri /_______internal_router_healthz
   {{- end }}
 
+  {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
+  capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
+  {{- range $idx, $captureHeader := .CaptureHTTPResponseHeaders }}
+  capture response header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
+
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
@@ -240,6 +247,13 @@ frontend fe_sni
     {{- end }}
   mode http
 
+  {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
+  capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
+  {{- range $idx, $captureHeader := .CaptureHTTPResponseHeaders }}
+  capture response header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
+
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
@@ -310,6 +324,13 @@ frontend fe_no_sni
       {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CRL") }} crl-file {{.}} {{ end }}
     {{- end }}
   mode http
+
+  {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
+  capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
+  {{- range $idx, $captureHeader := .CaptureHTTPResponseHeaders }}
+  capture response header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy

@@ -225,6 +225,16 @@ type ConfigManager interface {
 	GenerateDynamicServerNames(id string) []string
 }
 
+// CaptureHTTPHeader specifies an HTTP header that should be captured for access
+// logs.
+type CaptureHTTPHeader struct {
+	// Name specifies an HTTP header name.
+	Name string
+
+	// MaxLength specifies a maximum length for the header value.
+	MaxLength int
+}
+
 // RouterEventType indicates the type of event fired by the router.
 type RouterEventType string
 
