@@ -99,6 +99,7 @@ func TestMain(m *testing.M) {
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {
 		fmt.Println(err)
+		os.RemoveAll(workdir)
 		os.Exit(1)
 	}
 
@@ -112,7 +113,9 @@ func TestMain(m *testing.M) {
 	c := factory.Create(plugin, false)
 	c.Run()
 
-	os.Exit(m.Run())
+	exitCode := m.Run()
+	os.RemoveAll(workdir)
+	os.Exit(exitCode)
 }
 
 func TestAdmissionEdgeCases(t *testing.T) {

@@ -491,6 +491,9 @@ func (r *templateRouter) writeConfig() error {
 
 	for name, template := range r.templates {
 		filename := filepath.Join(r.dir, name)
+		if err := os.MkdirAll(filepath.Dir(filename), 0777); err != nil {
+			return fmt.Errorf("error creating path %q: %v", filepath.Dir(filename), err)
+		}
 		file, err := os.Create(filename)
 		if err != nil {
 			return fmt.Errorf("error creating config file %s: %v", filename, err)
