@@ -120,8 +120,10 @@ type TemplateRouter struct {
 	MetricsType                      string
 	CaptureHTTPRequestHeadersString  string
 	CaptureHTTPResponseHeadersString string
+	CaptureHTTPCookieString          string
 	CaptureHTTPRequestHeaders        []templateplugin.CaptureHTTPHeader
 	CaptureHTTPResponseHeaders       []templateplugin.CaptureHTTPHeader
+	CaptureHTTPCookie                *templateplugin.CaptureHTTPCookie
 
 	TemplateRouterConfigManager
 }
@@ -176,6 +178,7 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.IntVar(&o.MaxDynamicServers, "max-dynamic-servers", int(envInt("ROUTER_MAX_DYNAMIC_SERVERS", 5, 1)), "Specifies the maximum number of dynamic servers added to a route for use by the router specific dynamic configuration manager.")
 	flag.StringVar(&o.CaptureHTTPRequestHeadersString, "capture-http-request-headers", env("ROUTER_CAPTURE_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
+	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
 }
 
 type RouterStats struct {
@@ -277,6 +280,38 @@ func parseCaptureHeaders(in string) ([]templateplugin.CaptureHTTPHeader, error) 
 	return captureHeaders, nil
 }
 
+func parseCaptureCookie(in string) (*templateplugin.CaptureHTTPCookie, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+
+	parts := strings.Split(in, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid HTTP cookie capture specification: %v", in)
+	}
+	cookieName := parts[0]
+	matchType := templateplugin.CookieMatchTypePrefix
+	if strings.HasSuffix(cookieName, "=") {
+		cookieName = cookieName[:len(cookieName)-1]
+		matchType = templateplugin.CookieMatchTypeExact
+	}
+	// RFC 6265 section 4.1 states that the cookie name must be a
+	// valid token.
+	if !validTokenRE.MatchString(cookieName) {
+		return nil, fmt.Errorf("invalid HTTP cookie name: %v", cookieName)
+	}
+	maxLength, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	return &templateplugin.CaptureHTTPCookie{
+		Name:      cookieName,
+		MaxLength: maxLength,
+		MatchType: matchType,
+	}, nil
+}
+
 func (o *TemplateRouterOptions) Complete() error {
 	routerSvcName := env("ROUTER_SERVICE_NAME", "")
 	routerSvcNamespace := env("ROUTER_SERVICE_NAMESPACE", "")
@@ -329,6 +364,12 @@ func (o *TemplateRouterOptions) Complete() error {
 		return err
 	}
 	o.CaptureHTTPResponseHeaders = captureHTTPResponseHeaders
+
+	captureHTTPCookie, err := parseCaptureCookie(o.CaptureHTTPCookieString)
+	if err != nil {
+		return err
+	}
+	o.CaptureHTTPCookie = captureHTTPCookie
 
 	return o.RouterSelection.Complete()
 }
@@ -559,6 +600,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		DynamicConfigManager:       cfgManager,
 		CaptureHTTPRequestHeaders:  o.CaptureHTTPRequestHeaders,
 		CaptureHTTPResponseHeaders: o.CaptureHTTPResponseHeaders,
+		CaptureHTTPCookie:          o.CaptureHTTPCookie,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)

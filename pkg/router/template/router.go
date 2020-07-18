@@ -112,6 +112,9 @@ type templateRouter struct {
 	// captureHTTPResponseHeaders specifies HTTP response headers
 	// that should be captured for logging.
 	captureHTTPResponseHeaders []CaptureHTTPHeader
+	// captureHTTPCookie specifies an HTTP cookie that should be
+	// captured for logging.
+	captureHTTPCookie *CaptureHTTPCookie
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
@@ -135,6 +138,7 @@ type templateRouterCfg struct {
 	dynamicConfigManager       ConfigManager
 	captureHTTPRequestHeaders  []CaptureHTTPHeader
 	captureHTTPResponseHeaders []CaptureHTTPHeader
+	captureHTTPCookie          *CaptureHTTPCookie
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -168,6 +172,9 @@ type templateData struct {
 	// CaptureHTTPResponseHeaders specifies HTTP response headers
 	// that should be captured for logging.
 	CaptureHTTPResponseHeaders []CaptureHTTPHeader
+	// CaptureHTTPCookie specifies an HTTP cookie that should be
+	// captured for logging.
+	CaptureHTTPCookie *CaptureHTTPCookie
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -221,6 +228,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		dynamicConfigManager:       cfg.dynamicConfigManager,
 		captureHTTPRequestHeaders:  cfg.captureHTTPRequestHeaders,
 		captureHTTPResponseHeaders: cfg.captureHTTPResponseHeaders,
+		captureHTTPCookie:          cfg.captureHTTPCookie,
 
 		metricReload:      metricsReload,
 		metricWriteConfig: metricWriteConfig,
@@ -515,6 +523,7 @@ func (r *templateRouter) writeConfig() error {
 			DisableHTTP2:               disableHTTP2,
 			CaptureHTTPRequestHeaders:  r.captureHTTPRequestHeaders,
 			CaptureHTTPResponseHeaders: r.captureHTTPResponseHeaders,
+			CaptureHTTPCookie:          r.captureHTTPCookie,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()

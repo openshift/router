@@ -63,6 +63,7 @@ type TemplatePluginConfig struct {
 	DynamicConfigManager       ConfigManager
 	CaptureHTTPRequestHeaders  []CaptureHTTPHeader
 	CaptureHTTPResponseHeaders []CaptureHTTPHeader
+	CaptureHTTPCookie          *CaptureHTTPCookie
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation
@@ -155,6 +156,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		dynamicConfigManager:       cfg.DynamicConfigManager,
 		captureHTTPRequestHeaders:  cfg.CaptureHTTPRequestHeaders,
 		captureHTTPResponseHeaders: cfg.CaptureHTTPResponseHeaders,
+		captureHTTPCookie:          cfg.CaptureHTTPCookie,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err

@@ -235,6 +235,32 @@ type CaptureHTTPHeader struct {
 	MaxLength int
 }
 
+// CaptureHTTPCookie specifies an HTTP cookie that should be captured
+// for access logs.
+type CaptureHTTPCookie struct {
+	// Name specifies an HTTP cookie name.
+	Name string
+
+	// MaxLength specifies a maximum length for the cookie value.
+	MaxLength int
+
+	// MatchType specifies the type of match to be performed on the cookie
+	// name.
+	MatchType CookieMatchType
+}
+
+// CookieMatchType indicates the type of matching used against cookie names to
+// select a cookie for capture.
+type CookieMatchType string
+
+const (
+	// CookieMatchTypeExact indicates that an exact match should be performed.
+	CookieMatchTypeExact CookieMatchType = "exact"
+
+	// CookieMatchTypePrefix indicates that a prefix match should be performed.
+	CookieMatchTypePrefix CookieMatchType = "prefix"
+)
+
 // RouterEventType indicates the type of event fired by the router.
 type RouterEventType string
 

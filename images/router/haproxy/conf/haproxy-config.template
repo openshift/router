@@ -173,6 +173,9 @@ frontend public
   {{- range $idx, $captureHeader := .CaptureHTTPResponseHeaders }}
   capture response header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
   {{- end }}
+  {{- with $captureCookie := .CaptureHTTPCookie }}
+  capture cookie {{ $captureCookie.Name }}{{ if eq $captureCookie.MatchType "exact" }}={{ end }} len {{ $captureCookie.MaxLength }}
+  {{- end }}
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
@@ -258,6 +261,9 @@ frontend fe_sni
   {{- range $idx, $captureHeader := .CaptureHTTPResponseHeaders }}
   capture response header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
   {{- end }}
+  {{- with $captureCookie := .CaptureHTTPCookie }}
+  capture cookie {{ $captureCookie.Name }}{{ if eq $captureCookie.MatchType "exact" }}={{ end }} len {{ $captureCookie.MaxLength }}
+  {{- end }}
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
@@ -340,6 +346,9 @@ frontend fe_no_sni
   {{- end }}
   {{- range $idx, $captureHeader := .CaptureHTTPResponseHeaders }}
   capture response header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
+  {{- end }}
+  {{- with $captureCookie := .CaptureHTTPCookie }}
+  capture cookie {{ $captureCookie.Name }}{{ if eq $captureCookie.MatchType "exact" }}={{ end }} len {{ $captureCookie.MaxLength }}
   {{- end }}
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
