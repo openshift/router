@@ -33,6 +33,15 @@
 {{- $hstsOptionalTokenPattern := `(?:includeSubDomains|preload)` }}
 {{- $hstsPattern := printf `(?:%[1]s[;])*max-age=(?:\d+|"\d+")(?:[;]%[1]s)*`  $hstsOptionalTokenPattern -}}
 
+{{- /* setForwardedHeadersPattern matches valid options for how and when Forwarded: and X-Forwarded-*: headers are set. */}}
+{{- $setForwardedHeadersPattern := `(?:append|replace|if-none|never)` -}}
+
+{{- /* Route-Specific Annotations */}}
+{{- /* setForwardedHeadersAnnotation configures how Forwarded: and X-Forwarded-*: headers are set.  */}}
+{{- $setForwardedHeadersAnnotation := "haproxy.router.openshift.io/set-forwarded-headers" }}
+{{- /* setForwardedHeadersDefaultValue is the default value if a route does not have the setForwardedHeadersAnnotation annotation.  */}}
+{{- $setForwardedHeadersDefaultValue := firstMatch $setForwardedHeadersPattern (env "ROUTER_SET_FORWARDED_HEADERS" "append") "append" -}}
+
 global
   maxconn {{env "ROUTER_MAX_CONNECTIONS" "20000"}}
 {{- $threads := env "ROUTER_THREADS" }}
@@ -96,7 +105,6 @@ global
 defaults
   maxconn {{env "ROUTER_MAX_CONNECTIONS" "20000"}}
 
-  # Add x-forwarded-for header.
 {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
   {{- if ne (env "ROUTER_SYSLOG_FORMAT") "" }}
   log-format {{env "ROUTER_SYSLOG_FORMAT"}}
@@ -429,7 +437,13 @@ backend openshift_default
 backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
   mode http
   option redispatch
+  {{- with $setHeaders := firstMatch $setForwardedHeadersPattern (index $cfg.Annotations $setForwardedHeadersAnnotation) $setForwardedHeadersDefaultValue }}
+    {{- if eq $setHeaders "append" }}
   option forwardfor
+    {{- else if eq $setHeaders "if-none" }}
+  option forwardfor if-none
+    {{- end }}
+  {{- end}}
 
     {{- with $balanceAlgo := firstMatch "roundrobin|leastconn|source" (index $cfg.Annotations "haproxy.router.openshift.io/balance") (env "ROUTER_LOAD_BALANCE_ALGORITHM") }}
   balance {{ $balanceAlgo }}
@@ -473,17 +487,50 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
     {{- end }}
 
   timeout check 5000ms
+  {{- with $setHeaders := firstMatch $setForwardedHeadersPattern (index $cfg.Annotations $setForwardedHeadersAnnotation) $setForwardedHeadersDefaultValue }}
+    {{- if eq $setHeaders "append" }}
+    {{- /* X-Forwarded-For: is handled by "option forwardfor" above.  */}}
+  http-request add-header X-Forwarded-Host %[req.hdr(host)]
+  http-request add-header X-Forwarded-Port %[dst_port]
+  http-request add-header X-Forwarded-Proto http if !{ ssl_fc }
+  http-request add-header X-Forwarded-Proto https if { ssl_fc }
+  http-request add-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 }
+      {{- if matchPattern "(v4)?v6" $router_ip_v4_v6_mode }}
+  # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
+  http-request add-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
+      {{- else }}
+  http-request add-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
+      {{- end }}
+    {{- else if eq $setHeaders "replace" }}
+  http-request set-header X-Forwarded-For %[src]
   http-request set-header X-Forwarded-Host %[req.hdr(host)]
   http-request set-header X-Forwarded-Port %[dst_port]
   http-request set-header X-Forwarded-Proto http if !{ ssl_fc }
   http-request set-header X-Forwarded-Proto https if { ssl_fc }
   http-request set-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 }
-  {{- if matchPattern "(v4)?v6" $router_ip_v4_v6_mode }}
+      {{- if matchPattern "(v4)?v6" $router_ip_v4_v6_mode }}
   # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
-  http-request add-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
-  {{- else }}
-  http-request add-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
-  {{- end }}
+  http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
+      {{- else }}
+  http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
+      {{- end }}
+    {{- else if eq $setHeaders "if-none" }}
+      {{- /* X-Forwarded-For: is handled by "option forwardfor if-none" above.  */}}
+  http-request set-header X-Forwarded-Host %[req.hdr(host)] if !{ req.hdr(X-Forwarded-Host) -m found }
+  http-request set-header X-Forwarded-Port %[dst_port] if !{ req.hdr(X-Forwarded-Port) -m found }
+  http-request set-header X-Forwarded-Proto http if !{ ssl_fc } !{ req.hdr(X-Forwarded-Proto) -m found }
+  http-request set-header X-Forwarded-Proto https if { ssl_fc } !{ req.hdr(X-Forwarded-Proto) -m found }
+  http-request set-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 } !{ req.hdr(X-Forwarded-Proto-Version) -m found }
+      {{- if matchPattern "(v4)?v6" $router_ip_v4_v6_mode }}
+  # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
+  http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !{ req.hdr(Forwarded) -m found }
+      {{- else }}
+  http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !{ req.hdr(Forwarded) -m found }
+      {{- end }}
+    {{- else if eq $setHeaders "never" }}
+      {{- /* No Forward headers set.  */}}
+    {{- end }}
+  {{- end}}
 
   {{- if not (isTrue (index $cfg.Annotations "haproxy.router.openshift.io/disable_cookies")) }}
   cookie {{firstMatch $cookieNamePattern (index $cfg.Annotations "router.openshift.io/cookie_name") (env "ROUTER_COOKIE_NAME" "") $cfg.RoutingKeyName}} insert indirect nocache httponly
