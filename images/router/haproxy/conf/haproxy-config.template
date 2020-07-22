@@ -547,7 +547,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
   {{- range $serviceUnitName, $weight := $cfg.ServiceUnitNames }}
     {{- if ge $weight 0 }}{{/* weight=0 is reasonable to keep existing connections to backends with cookies as we can see the HTTP headers */}}
       {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
-        {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
+        {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "shuffle") }}
   server {{$endpoint.ID}} {{$endpoint.IP}}:{{$endpoint.Port}} cookie {{$endpoint.IdHash}} weight {{$weight}}
           {{- if (eq $cfg.TLSTermination "reencrypt") }} ssl
 	    {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
@@ -645,7 +645,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
     {{- range $serviceUnitName, $weight := $cfg.ServiceUnitNames }}
       {{- if ne $weight 0 }}{{/* drop connections where weight=0 as we can't use cookies, leaving only r-r and src-ip as dispatch methods and weight make no sense there */}}
         {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
-          {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
+          {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "shuffle") }}
   server {{$endpoint.ID}} {{$endpoint.IP}}:{{$endpoint.Port}} weight {{$weight}}
             {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms"}}
             {{- end }}{{/* end else no health check */}}
