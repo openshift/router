@@ -3,6 +3,7 @@ package templaterouter
 import (
 	"crypto/md5"
 	"fmt"
+	"net"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -291,6 +292,17 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 
 	out := make([]Endpoint, 0, len(endpoints.Subsets)*4)
 
+	// Return address as "[<address>]" if an IPv6 address,
+	// otherwise address is returned unadorned.
+	formatIPAddr := func(address string) string {
+		if ip := net.ParseIP(address); ip != nil {
+			if ip.To4() == nil && strings.Count(address, ":") >= 2 {
+				return "[" + address + "]"
+			}
+		}
+		return address
+	}
+
 	// Now build the actual endpoints we pass to the template
 	for _, s := range subsets {
 		for _, p := range s.Ports {
@@ -299,13 +311,14 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 			}
 			for _, a := range s.Addresses {
 				ep := Endpoint{
-					IP:   a.IP,
+					IP:   formatIPAddr(a.IP),
 					Port: strconv.Itoa(int(p.Port)),
 
 					PortName: p.Name,
 
 					NoHealthCheck: wasIdled,
 				}
+
 				if a.TargetRef != nil {
 					ep.TargetName = a.TargetRef.Name
 					if a.TargetRef.Kind == "Pod" {
@@ -314,7 +327,7 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 						ep.ID = fmt.Sprintf("ept:%s:%s:%d", endpoints.Name, a.IP, p.Port)
 					}
 				} else {
-					ep.TargetName = ep.IP
+					ep.TargetName = a.IP
 					ep.ID = fmt.Sprintf("ept:%s:%s:%d", endpoints.Name, a.IP, p.Port)
 				}
 
