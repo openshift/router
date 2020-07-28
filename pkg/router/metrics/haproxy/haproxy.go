@@ -361,6 +361,23 @@ func (e *Exporter) CollectNow() {
 }
 
 func fetchHTTP(uri string, timeout time.Duration) func() (io.ReadCloser, error) {
+
+	// Create a new counter to count how mnany times we try to fetch stats via http
+	httpFetchCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "haproxy_server_http_stats_fetch_total",
+		Help: "Total number of attempts to fetch HA Proxy stats via http",
+	})
+
+	// Create a new counter to count how many times we failed to fetch stats via http
+	// Having total and failed separated will allows us to easily calculate an error rate
+	httpFetchFailCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "haproxy_server_http_stats_fetch_failed",
+		Help: "Total number of failures to fetch HA Proxy stats via http",
+	})
+
+	// Start counting the totals
+	httpFetchCounter.Inc()
+
 	client := http.Client{
 		Timeout: timeout,
 	}
@@ -368,9 +385,13 @@ func fetchHTTP(uri string, timeout time.Duration) func() (io.ReadCloser, error) 
 	return func() (io.ReadCloser, error) {
 		resp, err := client.Get(uri)
 		if err != nil {
+			// Increment failure counter
+			httpFetchFailCounter.Inc()
 			return nil, err
 		}
 		if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+			// Increment failure counter
+			httpFetchFailCounter.Inc()
 			resp.Body.Close()
 			return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
 		}
@@ -379,22 +400,46 @@ func fetchHTTP(uri string, timeout time.Duration) func() (io.ReadCloser, error) 
 }
 
 func fetchUnix(u *url.URL, timeout time.Duration) func() (io.ReadCloser, error) {
+
+	// Create a new counter to count how mnany times we try to fetch stats via unix socket
+	unixFetchCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "haproxy_server_unix_stats_fetch_total",
+		Help: "Total number of attempts to fetch HA Proxy stats via unix socket",
+	})
+
+	// Create a new counter to count how many times we failed to fetch stats via unix socket
+	// Having total and failed separated will allows us to easily calculate an error rate
+	unixFetchFailCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "haproxy_server_unix_stats_fetch_failed",
+		Help: "Total number of failures to fetch HA Proxy stats via unix socket",
+	})
+
+	// Start counting the totals
+	unixFetchCounter.Inc()
 	return func() (io.ReadCloser, error) {
 		f, err := net.DialTimeout("unix", u.Path, timeout)
 		if err != nil {
+			// Increment failure counter
+			unixFetchFailCounter.Inc()
 			return nil, err
 		}
 		if err := f.SetDeadline(time.Now().Add(timeout)); err != nil {
+			// Increment failure counter
+			unixFetchFailCounter.Inc()
 			f.Close()
 			return nil, err
 		}
 		cmd := "show stat\n"
 		n, err := io.WriteString(f, cmd)
 		if err != nil {
+			// Increment failure counter
+			unixFetchFailCounter.Inc()
 			f.Close()
 			return nil, err
 		}
 		if n != len(cmd) {
+			// Increment failure counter
+			unixFetchFailCounter.Inc()
 			f.Close()
 			return nil, errors.New("write error")
 		}
