@@ -3,11 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math/rand"
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -22,7 +20,7 @@ import (
 func main() {
 	defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
 	defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
-	rand.Seed(time.Now().UTC().UnixNano())
+	// rand.Seed(time.Now().UTC().UnixNano())
 
 	cmd := CommandFor(filepath.Base(os.Args[0]))
 	cmd.SilenceUsage = true
