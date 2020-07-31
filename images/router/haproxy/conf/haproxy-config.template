@@ -42,6 +42,9 @@
 {{- /* setForwardedHeadersDefaultValue is the default value if a route does not have the setForwardedHeadersAnnotation annotation.  */}}
 {{- $setForwardedHeadersDefaultValue := firstMatch $setForwardedHeadersPattern (env "ROUTER_SET_FORWARDED_HEADERS" "append") "append" -}}
 
+{{- /* pathRewriteTargetPattern: Match path rewrite-Target */}}
+{{- $pathRewriteTargetPattern := `^/.*$` -}}
+
 global
   maxconn {{env "ROUTER_MAX_CONNECTIONS" "20000"}}
 {{- $threads := env "ROUTER_THREADS" }}
@@ -532,6 +535,15 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
     {{- end }}
   {{- end}}
 
+  {{- with $pathRewriteTarget := firstMatch $pathRewriteTargetPattern (index $cfg.Annotations "haproxy.router.openshift.io/rewrite-target") }}
+  # Path rewrite target
+    {{- if eq $pathRewriteTarget "/" }}
+  http-request replace-path ^{{ $cfg.Path }}/?(.*)$ {{ $pathRewriteTarget }}\1
+    {{- else }}
+  http-request replace-path ^{{ $cfg.Path }}(.*)$ {{ $pathRewriteTarget }}\1
+    {{- end }}
+  {{- end }}{{/* rewrite target */}}
+  
   {{- if not (isTrue (index $cfg.Annotations "haproxy.router.openshift.io/disable_cookies")) }}
   cookie {{firstMatch $cookieNamePattern (index $cfg.Annotations "router.openshift.io/cookie_name") (env "ROUTER_COOKIE_NAME" "") $cfg.RoutingKeyName}} insert indirect nocache httponly
     {{- if and (matchValues (print $cfg.TLSTermination) "edge" "reencrypt") (ne $cfg.InsecureEdgeTerminationPolicy "Allow") }} secure
