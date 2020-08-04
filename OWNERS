@@ -6,6 +6,7 @@ approvers:
   - Miciah
   - smarterclayton
   - frobware
+  - sgreene570
 reviewers:
   - ironcladlou
   - knobunc
@@ -15,3 +16,5 @@ reviewers:
   - smarterclayton
   - danehans
   - frobware
+  - sgreene570
+component: Routing
