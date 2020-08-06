@@ -98,6 +98,8 @@ type templateRouter struct {
 	stateChanged bool
 	// metricReload tracks reloads
 	metricReload prometheus.Summary
+	// metricReloadFails tracks reload failures
+	metricReloadFails prometheus.Counter
 	// metricWriteConfig tracks writing config
 	metricWriteConfig prometheus.Summary
 	// dynamicConfigManager configures route changes dynamically on the
@@ -199,6 +201,12 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		Help:      "Measures the time spent reloading the router in seconds.",
 	})
 	prometheus.MustRegister(metricsReload)
+	metricReloadFails := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "template_router",
+		Name:      "reload_fails",
+		Help:      "Tracks the number of failed router reloads",
+	})
+	prometheus.MustRegister(metricReloadFails)
 	metricWriteConfig := prometheus.NewSummary(prometheus.SummaryOpts{
 		Namespace: "template_router",
 		Name:      "write_config_seconds",
@@ -231,6 +239,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		captureHTTPCookie:          cfg.captureHTTPCookie,
 
 		metricReload:      metricsReload,
+		metricReloadFails: metricReloadFails,
 		metricWriteConfig: metricWriteConfig,
 
 		rateLimitedCommitFunction: nil,
@@ -460,6 +469,8 @@ func (r *templateRouter) commitAndReload() error {
 		if r.dynamicConfigManager != nil {
 			r.dynamicConfigManager.Notify(RouterEventReloadError)
 		}
+		// Increment the failed reload counter when a reload fails
+		r.metricReloadFails.Inc()
 		return err
 	}
 
