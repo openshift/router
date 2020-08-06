@@ -254,12 +254,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		log.V(0).Info("initializing dynamic config manager ... ")
 		router.dynamicConfigManager.Initialize(router, router.defaultCertificatePath)
 	}
-	log.V(4).Info("committing state")
-	// Bypass the rate limiter to ensure the first sync will be
-	// committed without delay.
-	if err := router.commitAndReload(); err != nil {
-		return nil, err
-	}
+
 	return router, nil
 }
 
