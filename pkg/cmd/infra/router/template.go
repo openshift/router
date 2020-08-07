@@ -633,7 +633,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
-	controller := factory.Create(plugin, false)
+	controller := factory.Create(plugin, false, wait.NeverStop)
 	controller.Run()
 
 	if blueprintPlugin != nil {
@@ -643,7 +643,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		f.LabelSelector = o.BlueprintRouteLabelSelector
 		f.Namespace = o.BlueprintRouteNamespace
 		f.ResyncInterval = o.ResyncInterval
-		c := f.Create(blueprintPlugin, false)
+		c := f.Create(blueprintPlugin, false, wait.NeverStop)
 		c.Run()
 	}
 

@@ -75,8 +75,8 @@ func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectcl
 }
 
 // Create begins listing and watching against the API server for the desired route and endpoint
-// resources. It spawns child goroutines that cannot be terminated.
-func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool) *routercontroller.RouterController {
+// resources.
+func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, stopCh <-chan struct{}) *routercontroller.RouterController {
 	rc := &routercontroller.RouterController{
 		Plugin:     plugin,
 		WatchNodes: watchNodes,
@@ -100,13 +100,13 @@ func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool) 
 		rc.ProjectSyncInterval = f.ResyncInterval
 	}
 
-	f.initInformers(rc)
+	f.initInformers(rc, stopCh)
 	f.processExistingItems(rc)
 	f.registerInformerEventHandlers(rc)
 	return rc
 }
 
-func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterController) {
+func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterController, stopCh <-chan struct{}) {
 	if f.NamespaceLabels != nil {
 		f.createNamespacesSharedInformer()
 	}
@@ -123,7 +123,7 @@ func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterContr
 
 	// Start informers
 	for _, informer := range f.informers {
-		go informer.Run(utilwait.NeverStop)
+		go informer.Run(stopCh)
 	}
 
 	// Wait for informers cache to be synced

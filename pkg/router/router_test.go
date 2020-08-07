@@ -110,7 +110,7 @@ func TestMain(m *testing.M) {
 	plugin = controller.NewHostAdmitter(plugin, routerSelection.RouteAdmissionFunc(), false, false, statusPlugin)
 
 	// Start the controller
-	c := factory.Create(plugin, false)
+	c := factory.Create(plugin, false, wait.NeverStop)
 	c.Run()
 
 	exitCode := m.Run()
