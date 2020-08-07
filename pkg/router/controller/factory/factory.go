@@ -171,6 +171,11 @@ func (f *RouterControllerFactory) aggregateEndpointSlice(namespace, name string)
 		fullSet[i] = *eps.DeepCopy()
 	}
 
+	// Make guarantees for all receivers/consumers.
+	sort.SliceStable(fullSet, func(i, j int) bool {
+		return path.Join(fullSet[i].Namespace, fullSet[i].Name) < path.Join(fullSet[j].Namespace, fullSet[j].Name)
+	})
+
 	return fullSet
 }
 
