@@ -34,7 +34,6 @@ import (
 
 const (
 	DefaultResyncInterval = 30 * time.Minute
-	ServiceNameLabel      = "kubernetes.io/service-name"
 	ServiceNameIndex      = "service-name"
 )
 
@@ -144,7 +143,7 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 		f.registerSharedInformerEventHandlers(&discoveryv1beta1.EndpointSlice{}, func(eventType watch.EventType, obj interface{}) {
 			eps := obj.(*discoveryv1beta1.EndpointSlice)
 			if serviceName := endpointSliceServiceName(eps); len(serviceName) == 0 {
-				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", ServiceNameLabel)
+				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", discoveryv1beta1.LabelServiceName)
 			} else {
 				objMeta := eps.ObjectMeta.DeepCopy()
 				objMeta.Name = serviceName
@@ -393,7 +392,7 @@ func (r routeAge) Less(i, j int) bool {
 }
 
 func endpointSliceServiceName(eps *discoveryv1beta1.EndpointSlice) string {
-	if name, ok := eps.Labels[ServiceNameLabel]; ok && name != "" {
+	if name, ok := eps.Labels[discoveryv1beta1.LabelServiceName]; ok && name != "" {
 		return name
 	}
 	return ""
