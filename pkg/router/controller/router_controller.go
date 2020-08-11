@@ -231,10 +231,62 @@ func (c *RouterController) HandleEndpoints(eventType watch.EventType, obj interf
 
 // HandleEndpointSlice handles a single EndpointSlice event and refreshes the router backend.
 func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMeta metav1.ObjectMeta, items []discoveryv1beta1.EndpointSlice) {
+	endpoints := &kapi.Endpoints{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            objMeta.Name,
+			Namespace:       objMeta.Namespace,
+			Labels:          objMeta.Labels,
+			Annotations:     objMeta.Annotations,
+			OwnerReferences: objMeta.OwnerReferences,
+			ClusterName:     objMeta.ClusterName,
+		},
+		Subsets: convertEndpointSliceToEndpointSubset(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
+	}
+
+	// RecordNamespaceEndpoints and all HandleEndpoints
+	// implementations treat watch.Modified and watch.Added the
+	// same, so we can conflate watch.Modified and watch.Added
+	// here
+	if len(items) == 0 {
+		eventType = watch.Deleted
+	} else {
+		eventType = watch.Modified
+	}
+
+	c.HandleEndpoints(eventType, endpoints)
+}
+
+// Commit notifies the plugin that it is safe to commit state.
+func (c *RouterController) Commit() {
+	if c.firstSyncDone {
+		if err := c.Plugin.Commit(); err != nil {
+			utilruntime.HandleError(err)
+		}
+	}
+}
+
+// processRoute logs and propagates a route event to the plugin
+func (c *RouterController) processRoute(eventType watch.EventType, route *routev1.Route) {
+	log.V(4).Info("processing route", "event", eventType, "route", route)
+
+	c.RecordNamespaceRoutes(eventType, route)
+	if err := c.Plugin.HandleRoute(eventType, route); err != nil {
+		utilruntime.HandleError(err)
+	}
+}
+
+func (c *RouterController) handleFirstSync() {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	c.firstSyncDone = true
+	log.V(4).Info("router first sync complete")
+	c.Commit()
+}
+
+func convertEndpointSliceToEndpointSubset(items []discoveryv1beta1.EndpointSlice, addressOrderByFuncs []endpointsubset.EndpointAddressLessFunc, portOrderByFuncs []endpointsubset.EndpointPortLessFunc) []kapi.EndpointSubset {
 	var subsets []kapi.EndpointSubset
+
 	for i := range items {
 		var ports []kapi.EndpointPort
 		var addresses []kapi.EndpointAddress
@@ -268,8 +320,8 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 			ports = append(ports, endpointPort)
 		}
 
-		endpointsubset.SortAddresses(addresses)
-		endpointsubset.SortPorts(ports)
+		endpointsubset.SortAddresses(addresses, addressOrderByFuncs)
+		endpointsubset.SortPorts(ports, portOrderByFuncs)
 
 		subsets = append(subsets, kapi.EndpointSubset{
 			Addresses: addresses,
@@ -277,59 +329,5 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 		})
 	}
 
-	endpoints := &kapi.Endpoints{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            objMeta.Name,
-			Namespace:       objMeta.Namespace,
-			Labels:          objMeta.Labels,
-			Annotations:     objMeta.Annotations,
-			OwnerReferences: objMeta.OwnerReferences,
-			ClusterName:     objMeta.ClusterName,
-		},
-		Subsets: subsets,
-	}
-
-	// RecordNamespaceEndpoints and all HandleEndpoints
-	// implementations treat watch.Modified and watch.Added the
-	// same, so we can conflate watch.Modified and watch.Added
-	// here
-	if len(items) == 0 {
-		eventType = watch.Deleted
-	} else {
-		eventType = watch.Modified
-	}
-
-	c.RecordNamespaceEndpoints(eventType, endpoints)
-	if err := c.Plugin.HandleEndpoints(eventType, endpoints); err != nil {
-		utilruntime.HandleError(err)
-	}
-	c.Commit()
-}
-
-// Commit notifies the plugin that it is safe to commit state.
-func (c *RouterController) Commit() {
-	if c.firstSyncDone {
-		if err := c.Plugin.Commit(); err != nil {
-			utilruntime.HandleError(err)
-		}
-	}
-}
-
-// processRoute logs and propagates a route event to the plugin
-func (c *RouterController) processRoute(eventType watch.EventType, route *routev1.Route) {
-	log.V(4).Info("processing route", "event", eventType, "route", route)
-
-	c.RecordNamespaceRoutes(eventType, route)
-	if err := c.Plugin.HandleRoute(eventType, route); err != nil {
-		utilruntime.HandleError(err)
-	}
-}
-
-func (c *RouterController) handleFirstSync() {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	c.firstSyncDone = true
-	log.V(4).Info("router first sync complete")
-	c.Commit()
+	return subsets
 }

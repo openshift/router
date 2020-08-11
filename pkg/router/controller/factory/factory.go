@@ -34,7 +34,6 @@ import (
 
 const (
 	DefaultResyncInterval = 30 * time.Minute
-	ServiceNameLabel      = "kubernetes.io/service-name"
 	ServiceNameIndex      = "service-name"
 )
 
@@ -75,8 +74,8 @@ func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectcl
 }
 
 // Create begins listing and watching against the API server for the desired route and endpoint
-// resources. It spawns child goroutines that cannot be terminated.
-func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool) *routercontroller.RouterController {
+// resources.
+func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, stopCh <-chan struct{}) *routercontroller.RouterController {
 	rc := &routercontroller.RouterController{
 		Plugin:     plugin,
 		WatchNodes: watchNodes,
@@ -100,13 +99,13 @@ func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool) 
 		rc.ProjectSyncInterval = f.ResyncInterval
 	}
 
-	f.initInformers(rc)
+	f.initInformers(rc, stopCh)
 	f.processExistingItems(rc)
 	f.registerInformerEventHandlers(rc)
 	return rc
 }
 
-func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterController) {
+func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterController, stopCh <-chan struct{}) {
 	if f.NamespaceLabels != nil {
 		f.createNamespacesSharedInformer()
 	}
@@ -123,7 +122,7 @@ func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterContr
 
 	// Start informers
 	for _, informer := range f.informers {
-		go informer.Run(utilwait.NeverStop)
+		go informer.Run(stopCh)
 	}
 
 	// Wait for informers cache to be synced
@@ -144,7 +143,7 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 		f.registerSharedInformerEventHandlers(&discoveryv1beta1.EndpointSlice{}, func(eventType watch.EventType, obj interface{}) {
 			eps := obj.(*discoveryv1beta1.EndpointSlice)
 			if serviceName := endpointSliceServiceName(eps); len(serviceName) == 0 {
-				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", ServiceNameLabel)
+				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", discoveryv1beta1.LabelServiceName)
 			} else {
 				objMeta := eps.ObjectMeta.DeepCopy()
 				objMeta.Name = serviceName
@@ -170,6 +169,11 @@ func (f *RouterControllerFactory) aggregateEndpointSlice(namespace, name string)
 		eps := objs[i].(*discoveryv1beta1.EndpointSlice)
 		fullSet[i] = *eps.DeepCopy()
 	}
+
+	// Make guarantees for all receivers/consumers.
+	sort.SliceStable(fullSet, func(i, j int) bool {
+		return path.Join(fullSet[i].Namespace, fullSet[i].Name) < path.Join(fullSet[j].Namespace, fullSet[j].Name)
+	})
 
 	return fullSet
 }
@@ -388,7 +392,7 @@ func (r routeAge) Less(i, j int) bool {
 }
 
 func endpointSliceServiceName(eps *discoveryv1beta1.EndpointSlice) string {
-	if name, ok := eps.Labels[ServiceNameLabel]; ok && name != "" {
+	if name, ok := eps.Labels[discoveryv1beta1.LabelServiceName]; ok && name != "" {
 		return name
 	}
 	return ""
