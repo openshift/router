@@ -770,3 +770,130 @@ func TestFilterNamespaces(t *testing.T) {
 		}
 	}
 }
+
+// TestCalculateServiceWeights tests calculating the service
+// endpoint weights
+func TestCalculateServiceWeights(t *testing.T) {
+	router := NewFakeTemplateRouter()
+
+	suKey1 := ServiceUnitKey("ns/svc1")
+	suKey2 := ServiceUnitKey("ns/svc2")
+	ep1 := Endpoint{
+		ID:     "ep1",
+		IP:     "ip",
+		Port:   "port",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep1ipport"))),
+	}
+	ep2 := Endpoint{
+		ID:     "ep2",
+		IP:     "ip",
+		Port:   "port",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep2ipport"))),
+	}
+	ep3 := Endpoint{
+		ID:     "ep3",
+		IP:     "ip",
+		Port:   "port",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep3ipport"))),
+	}
+
+	testCases := []struct {
+		name            string
+		serviceUnits    map[ServiceUnitKey][]Endpoint
+		serviceWeights  map[ServiceUnitKey]int32
+		expectedWeights map[ServiceUnitKey]int32
+	}{
+		{
+			name: "equally weighted services with same number of endpoints",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1},
+				suKey2: {ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 256,
+				suKey2: 256,
+			},
+		},
+		{
+			name: "unequally weighted services with same number of endpoints",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1},
+				suKey2: {ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 25,
+				suKey2: 75,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 85,
+				suKey2: 256,
+			},
+		},
+		{
+			name: "services with equal weights and a different number of endpoints",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 128,
+				suKey2: 256,
+			},
+		},
+		{
+			name: "services with unequal weights and a different number of endpoints",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 20,
+				suKey2: 60,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 42,
+				suKey2: 256,
+			},
+		},
+		{
+			name: "services with equal weights and a different number of endpoints, one of which is common",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 128,
+				suKey2: 256,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for suKey, eps := range tc.serviceUnits {
+			router.CreateServiceUnit(suKey)
+			router.AddEndpoints(suKey, eps)
+		}
+		endpointWeights := router.calculateServiceWeights(tc.serviceWeights)
+		if !reflect.DeepEqual(endpointWeights, tc.expectedWeights) {
+			t.Errorf("test %s: expected endpointWeights to be %v, got %v", tc.name, tc.expectedWeights, endpointWeights)
+		}
+		// Remove endpoints and service units so the same sample template router
+		// can be re-used.
+		for suKey := range tc.serviceUnits {
+			router.DeleteEndpoints(suKey)
+			router.DeleteServiceUnit(suKey)
+		}
+	}
+}
