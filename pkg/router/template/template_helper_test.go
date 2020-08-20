@@ -1,6 +1,7 @@
 package templaterouter
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"reflect"
@@ -678,5 +679,70 @@ func TestGetPrimaryAliasKey(t *testing.T) {
 		if result != test.expected {
 			t.Errorf("getPrimaryAliasKey failed. When testing for %v got %v expected %v", test.name, result, test.expected)
 		}
+	}
+}
+
+func TestProcessEndpointsForAlias(t *testing.T) {
+	router := NewFakeTemplateRouter()
+	alias := buildServiceAliasConfig("api-route", "stg", "api-stg.127.0.0.1.nip.io", "", routev1.TLSTerminationEdge, routev1.InsecureEdgeTerminationPolicyRedirect, false)
+	suKey := ServiceUnitKey("stg/svc")
+	router.CreateServiceUnit(suKey)
+	ep1 := Endpoint{
+		ID:     "ep1",
+		IP:     "ip",
+		Port:   "foo",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep1ipport"))),
+	}
+	ep2 := Endpoint{
+		ID:     "ep2",
+		IP:     "ip",
+		Port:   "foo",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep2ipport"))),
+	}
+	ep3 := Endpoint{
+		ID:     "ep3",
+		IP:     "ip",
+		Port:   "bar",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep3ipport"))),
+	}
+
+	testCases := []struct {
+		name           string
+		preferPort     string
+		endpoints      []Endpoint
+		expectedLength int
+	}{
+		{
+			name:           "2 basic endpoints with same Port string",
+			preferPort:     "foo",
+			endpoints:      []Endpoint{ep1, ep2},
+			expectedLength: 2,
+		},
+		{
+			name:           "3 basic endpoints with different Port string",
+			preferPort:     "foo",
+			endpoints:      []Endpoint{ep1, ep2, ep3},
+			expectedLength: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+		alias.PreferPort = tc.preferPort
+		endpointsCopy := make([]Endpoint, len(tc.endpoints))
+		for i := range tc.endpoints {
+			endpointsCopy[i] = tc.endpoints[i]
+		}
+		router.AddEndpoints(suKey, endpointsCopy)
+		svc, _ := router.FindServiceUnit(suKey)
+		endpoints := processEndpointsForAlias(alias, svc, "")
+		if len(endpoints) != tc.expectedLength {
+			t.Errorf("test %s: got wrong number of endpoints. Expected %d got %d", tc.name, tc.expectedLength, len(endpoints))
+		}
+		if len(tc.endpoints) == tc.expectedLength {
+			if !reflect.DeepEqual(tc.endpoints, endpoints) {
+				t.Errorf("test %s: endpoints out of order. Expected %v got %v", tc.name, tc.endpoints, endpoints)
+			}
+		}
+		router.DeleteEndpoints(suKey)
 	}
 }
