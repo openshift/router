@@ -270,14 +270,14 @@ func TestHandleEndpoints(t *testing.T) {
 				},
 				Subsets: []kapi.EndpointSubset{{
 					Addresses: []kapi.EndpointAddress{{IP: "1.1.1.1"}},
-					Ports:     []kapi.EndpointPort{{Port: 345}},
+					Ports:     []kapi.EndpointPort{{Port: 345, Name: "port"}},
 				}}, //not specifying a port to force the port 80 assumption
 			},
 			expectedServiceUnit: &ServiceUnit{
 				Name: "foo/test", //service name from kapi.endpoints object
 				EndpointTable: []Endpoint{
 					{
-						ID:   "ept:test:1.1.1.1:345",
+						ID:   "ept:test:port:1.1.1.1:345",
 						IP:   "1.1.1.1",
 						Port: "345",
 					},
@@ -294,14 +294,14 @@ func TestHandleEndpoints(t *testing.T) {
 				},
 				Subsets: []kapi.EndpointSubset{{
 					Addresses: []kapi.EndpointAddress{{IP: "2.2.2.2", TargetRef: &kapi.ObjectReference{Kind: "Pod", Name: "pod-1"}}},
-					Ports:     []kapi.EndpointPort{{Port: 8080}},
+					Ports:     []kapi.EndpointPort{{Port: 8080, Name: "port"}},
 				}},
 			},
 			expectedServiceUnit: &ServiceUnit{
 				Name: "foo/test",
 				EndpointTable: []Endpoint{
 					{
-						ID:   "pod:pod-1:test:2.2.2.2:8080",
+						ID:   "pod:pod-1:test:port:2.2.2.2:8080",
 						IP:   "2.2.2.2",
 						Port: "8080",
 					},
@@ -375,8 +375,8 @@ func TestHandleTCPEndpoints(t *testing.T) {
 				Subsets: []kapi.EndpointSubset{{
 					Addresses: []kapi.EndpointAddress{{IP: "1.1.1.1", TargetRef: &kapi.ObjectReference{Kind: "Pod", Name: "pod-1"}}},
 					Ports: []kapi.EndpointPort{
-						{Port: 345},
-						{Port: 346, Protocol: kapi.ProtocolUDP},
+						{Port: 345, Name: "tcp"},
+						{Port: 346, Protocol: kapi.ProtocolUDP, Name: "udp"},
 					},
 				}}, //not specifying a port to force the port 80 assumption
 			},
@@ -384,7 +384,7 @@ func TestHandleTCPEndpoints(t *testing.T) {
 				Name: "foo/test", //service name from kapi.endpoints object
 				EndpointTable: []Endpoint{
 					{
-						ID:   "pod:pod-1:test:1.1.1.1:345",
+						ID:   "pod:pod-1:test:tcp:1.1.1.1:345",
 						IP:   "1.1.1.1",
 						Port: "345",
 					},
@@ -402,8 +402,8 @@ func TestHandleTCPEndpoints(t *testing.T) {
 				Subsets: []kapi.EndpointSubset{{
 					Addresses: []kapi.EndpointAddress{{IP: "2.2.2.2"}},
 					Ports: []kapi.EndpointPort{
-						{Port: 8080},
-						{Port: 8081, Protocol: kapi.ProtocolUDP},
+						{Port: 8080, Name: "tcp"},
+						{Port: 8081, Protocol: kapi.ProtocolUDP, Name: "udp"},
 					},
 				}},
 			},
@@ -411,7 +411,7 @@ func TestHandleTCPEndpoints(t *testing.T) {
 				Name: "foo/test",
 				EndpointTable: []Endpoint{
 					{
-						ID:   "ept:test:2.2.2.2:8080",
+						ID:   "ept:test:tcp:2.2.2.2:8080",
 						IP:   "2.2.2.2",
 						Port: "8080",
 					},
