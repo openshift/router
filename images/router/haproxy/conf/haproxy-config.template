@@ -142,6 +142,13 @@ defaults
 
   option http-use-htx
 
+{{- if isTrue (env "ROUTER_DONT_LOG_NULL") }}
+  option dontlognull
+{{- end }}
+{{- if isTrue (env "ROUTER_HTTP_IGNORE_PROBES") }}
+  option http-ignore-probes
+{{- end }}
+
 {{ if (gt .StatsPort -1) }}
 listen stats
   bind :{{if (gt .StatsPort 0)}}{{.StatsPort}}{{else}}1936{{end}}
