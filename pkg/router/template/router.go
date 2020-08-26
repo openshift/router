@@ -340,7 +340,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 
 				newRealPath, err := filepath.EvalSymlinks(path)
 				if err != nil {
-					log.V(0).Info("watchSecretDir error", "error", err)
+					log.Error(err, "failed to resolve symlink", "path", path)
 					continue
 				}
 				if newRealPath == currentRealPath {
@@ -351,7 +351,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 				log.V(0).Info("got watch event for update", "event", event, "name", outName)
 				os.Remove(outName)
 				if err := secretToPem(secPath, outName); err != nil {
-					log.V(0).Info("failed to update", "name", outName, "error", err)
+					log.Error(err, "failed to update default certificate", "path", outName)
 				}
 
 				r.lock.Lock()
@@ -365,7 +365,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 					log.V(0).Info("fsnotify channel closed")
 					return
 				}
-				log.V(0).Info("got error from fsnotify", "error", err)
+				log.Error(err, "received error from fsnotify")
 			}
 		}
 	}()
