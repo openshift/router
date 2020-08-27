@@ -296,16 +296,18 @@ func secretToPem(secPath, outName string) error {
 	return ioutil.WriteFile(outName, pemBlock, 0444)
 }
 
-// watchSecretDir adds a watcher on the input directory that updates the output
-// PEM file when a change is detected.
-func (r *templateRouter) watchSecretDir(secPath, outName string) error {
+// watchVolumeMountDir adds a watcher on path, which should be a secret or
+// configmap volume mount, and calls reloadFn when a change is detected.
+func (r *templateRouter) watchVolumeMountDir(path string, reloadFn func()) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 
-	// We need to know when the content of tls.crt is updated, but tls.crt
-	// is really a symlink with a path that includes another symlink:
+	// Suppose path has the value "/etc/pki/private".  We need to know when
+	// the content of any file in /etc/pki/private is updated, but the files
+	// are really symlinks with a path that includes another symlink.  For
+	// example, a secret might have a tls.crt file:
 	//
 	//     tls.crt -> ..data/tls.crt
 	//     ..data -> ..YY_mm_dd-HH_MM_SS.NN
@@ -317,15 +319,15 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 	// which means that using the symlink when adding the watch would fail
 	// to tell us when the ..data symlink were changed to point to a new
 	// version of the secret.  Instead, we watch the directory that contains
-	// tls.crt and ..data, and when we get an event, we re-evaluate the
-	// symlink to see whether it has changed.
-	if err := watcher.Add(secPath); err != nil {
+	// ..data, and when we get an event, we re-evaluate the symlink to see
+	// whether it has changed.
+	if err := watcher.Add(path); err != nil {
 		return err
 	}
-	log.V(0).Info("watching for changes", "path", secPath)
+	log.V(0).Info("watching for changes", "path", path)
 
-	path := filepath.Join(secPath, "tls.crt")
-	currentRealPath, err := filepath.EvalSymlinks(path)
+	dataPath := filepath.Join(path, "..data")
+	currentDataPath, err := filepath.EvalSymlinks(dataPath)
 	if err != nil {
 		return err
 	}
@@ -338,23 +340,18 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 					return
 				}
 
-				newRealPath, err := filepath.EvalSymlinks(path)
+				newDataPath, err := filepath.EvalSymlinks(dataPath)
 				if err != nil {
-					log.Error(err, "failed to resolve symlink", "path", path)
+					log.Error(err, "failed to resolve symlink", "path", dataPath)
 					continue
 				}
-				if newRealPath == currentRealPath {
+				if newDataPath == currentDataPath {
 					continue
 				}
-				currentRealPath = newRealPath
+				currentDataPath = newDataPath
 
 				log.V(0).Info("got watch event from fsnotify", "operation", event.Op.String(), "path", event.Name)
-				os.Remove(outName)
-				if err := secretToPem(secPath, outName); err != nil {
-					log.Error(err, "failed to update default certificate", "path", outName)
-				}
-
-				r.rateLimitedCommitFunction.RegisterChange()
+				reloadFn()
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					log.V(0).Info("fsnotify channel closed")
@@ -385,7 +382,17 @@ func (r *templateRouter) writeDefaultCert() error {
 		} else {
 			r.defaultCertificatePath = outPath
 		}
-		if err := r.watchSecretDir(r.defaultCertificateDir, outPath); err != nil {
+		reloadFn := func() {
+			log.V(0).Info("updating default certificate", "path", outPath)
+			os.Remove(outPath)
+			if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+				log.Error(err, "failed to update default certificate", "path", outPath)
+				return
+			}
+			log.V(0).Info("reloading to get updated default certificate")
+			r.rateLimitedCommitFunction.RegisterChange()
+		}
+		if err := r.watchVolumeMountDir(r.defaultCertificateDir, reloadFn); err != nil {
 			log.V(0).Info("failed to establish watch on certificate directory", "error", err)
 			return nil
 		}
