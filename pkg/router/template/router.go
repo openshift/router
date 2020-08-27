@@ -354,12 +354,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 					log.Error(err, "failed to update default certificate", "path", outName)
 				}
 
-				r.lock.Lock()
-				r.stateChanged = true
-				r.dynamicallyConfigured = false
-				r.defaultCertificatePath = outName
-				r.lock.Unlock()
-				r.Commit()
+				r.rateLimitedCommitFunction.RegisterChange()
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					log.V(0).Info("fsnotify channel closed")
