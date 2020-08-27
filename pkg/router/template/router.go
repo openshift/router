@@ -250,6 +250,9 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	if err := router.writeDefaultCert(); err != nil {
 		return nil, err
 	}
+	if err := router.watchMutualTLSCert(); err != nil {
+		return nil, err
+	}
 	if router.dynamicConfigManager != nil {
 		log.V(0).Info("initializing dynamic config manager ... ")
 		router.dynamicConfigManager.Initialize(router, router.defaultCertificatePath)
@@ -406,6 +409,34 @@ func (r *templateRouter) writeDefaultCert() error {
 		return err
 	}
 	r.defaultCertificatePath = outPath
+	return nil
+}
+
+// watchMutualTLSCert watches the directory containing the certificates for
+// mutual TLS and reloads the router if the directory contents change.
+func (r *templateRouter) watchMutualTLSCert() error {
+	caPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CA")
+	if len(caPath) != 0 {
+		reloadFn := func() {
+			log.V(0).Info("reloading to get updated client CA", "name", caPath)
+			r.rateLimitedCommitFunction.RegisterChange()
+		}
+		if err := r.watchVolumeMountDir(filepath.Dir(caPath), reloadFn); err != nil {
+			log.V(0).Info("failed to establish watch on mTLS certificate directory", "error", err)
+			return nil
+		}
+	}
+	crlPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CRL")
+	if len(crlPath) != 0 && filepath.Dir(caPath) != filepath.Dir(crlPath) {
+		reloadFn := func() {
+			log.V(0).Info("reloading to get updated client CA CRL", "name", crlPath)
+			r.rateLimitedCommitFunction.RegisterChange()
+		}
+		if err := r.watchVolumeMountDir(filepath.Dir(crlPath), reloadFn); err != nil {
+			log.V(0).Info("failed to establish watch on mTLS certificate directory", "error", err)
+			return nil
+		}
+	}
 	return nil
 }
 
