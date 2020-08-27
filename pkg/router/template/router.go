@@ -348,7 +348,7 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 				}
 				currentRealPath = newRealPath
 
-				log.V(0).Info("got watch event for update", "event", event, "name", outName)
+				log.V(0).Info("got watch event from fsnotify", "operation", event.Op.String(), "path", event.Name)
 				os.Remove(outName)
 				if err := secretToPem(secPath, outName); err != nil {
 					log.Error(err, "failed to update default certificate", "path", outName)
