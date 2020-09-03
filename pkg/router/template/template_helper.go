@@ -123,7 +123,7 @@ func genCertificateHostName(hostname string, wildcard bool) string {
 // processEndpointsForAlias returns the list of endpoints for the given route's service
 // action argument further processes the list e.g. shuffle
 // The default action is in-order traversal of internal data structure that stores
-//   the endpoints (does not change the return order if the data structure did not mutate)
+// the endpoints (does not change the return order if the data structure did not mutate)
 func processEndpointsForAlias(alias ServiceAliasConfig, svc ServiceUnit, action string) []Endpoint {
 	endpoints := endpointsForAlias(alias, svc)
 	if strings.ToLower(action) == "shuffle" {
