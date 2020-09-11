@@ -32,7 +32,7 @@ func generateRouteHostRegexp(hostname string, wildcard bool) string {
 // GenerateRouteRegexp generates a regular expression to match routes, including
 // host, optional port, and optional path.
 func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
-	hostRE := generateRouteHostRegexp(hostname, wildcard)
+	hostRE := fmt.Sprintf("%s\\.?", generateRouteHostRegexp(hostname, wildcard))
 
 	portRE := "(:[0-9]+)?"
 

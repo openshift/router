@@ -434,9 +434,9 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	wildcardDomainOrder := []string{
-		`^[^\.]*\.foo\.wildcard\.test(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.foo\.wildcard\.test\.?(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
 	}
 
 	lines := generateHAProxyMap("os_wildcard_domain.map", td)
