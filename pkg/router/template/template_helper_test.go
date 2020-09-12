@@ -501,8 +501,8 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	sniPassthroughOrder := []string{
-		`^passthrough-prod\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
-		`^passthrough-dev\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
+		`^passthrough-prod\.127\.0\.0\.1\.nip\.io$`,
+		`^passthrough-dev\.127\.0\.0\.1\.nip\.io$`,
 	}
 
 	lines = generateHAProxyMap("os_sni_passthrough.map", td)

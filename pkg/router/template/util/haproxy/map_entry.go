@@ -84,7 +84,7 @@ func generateTCPMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 func generateSNIPassthroughMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 	if len(cfg.Host) > 0 && len(cfg.Path) == 0 && cfg.Termination == routev1.TLSTerminationPassthrough {
 		return &HAProxyMapEntry{
-			Key:   templateutil.GenerateRouteRegexp(cfg.Host, "", cfg.IsWildcard),
+			Key:   templateutil.GenerateSNIRegexp(cfg.Host, cfg.IsWildcard),
 			Value: "1",
 		}
 	}

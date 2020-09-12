@@ -652,7 +652,7 @@ func TestGenerateSNIPassthroughMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^www\.example\.test$`,
 		},
 		{
 			name:        "host with path",
@@ -668,7 +668,7 @@ func TestGenerateSNIPassthroughMapEntry(t *testing.T) {
 			hostname:    "www.wild.test",
 			path:        "",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^[^\.]*\.wild\.test$`,
 		},
 		{
 			name:        "wildcard host with path",

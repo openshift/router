@@ -14,8 +14,8 @@ import (
 
 var log = logf.Logger.WithName("util")
 
-// GenerateRouteRegexp generates a regular expression to match route hosts (and paths if any).
-func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
+// generateRouteHostRegexp generates a regular expression to match route hosts.
+func generateRouteHostRegexp(hostname string, wildcard bool) string {
 	hostRE := regexp.QuoteMeta(hostname)
 	if wildcard {
 		subdomain := routeapihelpers.GetDomainForHost(hostname)
@@ -26,6 +26,13 @@ func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
 			hostRE = fmt.Sprintf(`[^\.]*%s`, subdomainRE)
 		}
 	}
+	return hostRE
+}
+
+// GenerateRouteRegexp generates a regular expression to match routes, including
+// host, optional port, and optional path.
+func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
+	hostRE := generateRouteHostRegexp(hostname, wildcard)
 
 	portRE := "(:[0-9]+)?"
 
@@ -45,6 +52,12 @@ func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
 	}
 
 	return "^" + hostRE + portRE + pathRE + subpathRE + "$"
+}
+
+// GenerateSNIRegexp generates a regular expression to match route hosts against
+// a server name in a TLS client hello message.
+func GenerateSNIRegexp(hostname string, wildcard bool) string {
+	return "^" + generateRouteHostRegexp(hostname, wildcard) + "$"
 }
 
 // GenCertificateHostName generates the host name to use for serving/certificate matching.
