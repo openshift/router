@@ -435,9 +435,9 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	wildcardDomainOrder := []string{
-		`^[^\.]*\.foo\.wildcard\.test(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.foo\.wildcard\.test\.?(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
 	}
 
 	lines := generateHAProxyMap("os_wildcard_domain.map", td)
@@ -502,8 +502,8 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	sniPassthroughOrder := []string{
-		`^passthrough-prod\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
-		`^passthrough-dev\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
+		`^passthrough-prod\.127\.0\.0\.1\.nip\.io$`,
+		`^passthrough-dev\.127\.0\.0\.1\.nip\.io$`,
 	}
 
 	lines = generateHAProxyMap("os_sni_passthrough.map", td)
