@@ -1,17 +1,45 @@
-FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
+#
+# This is the HAProxy router for OpenShift Origin.
+#
+# The standard name for this image is openshift/origin-haproxy-router
+#
+#FROM openshift/origin-cli
+#FROM centos:7
+FROM registry.redhat.io/openshift3/ose-haproxy-router:v3.11
+#ADD haproxy18-1.8.26-1.el7.x86_64.rpm .
+#RUN rpm -ivh haproxy18-1.8.26-1.el7.x86_64.rpm
+#RUN INSTALL_PKGS="https://github.com/miheer/router/blob/RFE-600/images/router/haproxy/haproxy18-1.8.26-1.el7.x86_64.rpm rsyslog" && \
+USER root
+#RUN mv -f /etc/yum.repos.d/ubi.repo /tmp || :
+#USER 0
+#ADD atomic-reactor-repos/* /etc/yum.repos.d/
+#ENV __doozer=update BUILD_RELEASE=1 BUILD_VERSION=v3.11.272 OS_GIT_MAJOR=3 OS_GIT_MINOR=11 OS_GIT_PATCH=272 OS_GIT_TREE_STATE=clean OS_GIT_VERSION=3.11.272-1 SOURCE_GIT_TREE_STATE=clean
+#ENV __doozer=merge OS_GIT_COMMIT=8b0575f OS_GIT_VERSION=3.11.272-1-8b0575f SOURCE_DATE_EPOCH=1597728664 SOURCE_GIT_COMMIT=8b0575fb48cf4f59516045a85631a719ccab50f7 SOURCE_GIT_TAG=v3.11.272-1 SOURCE_GIT_URL=https://github.com/openshift/ose
+#RUN yum -y install https://github.com/openshift/router/raw/62f68ccad868298ce12ca51c4d47c818e1105715/images/router/haproxy/haproxy18-1.8.26-1.el7.x86_64.rpm
+RUN INSTALL_PKGS="https://github.com/openshift/router/raw/62f68ccad868298ce12ca51c4d47c818e1105715/images/router/haproxy/haproxy18-1.8.26-1.el7.x86_64.rpm rsyslog" && \
+    yum remove -y haproxy18 && \
+    yum remove -y $INSTALL_PKGS && \
     yum install -y $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
-    yum clean all && \
-    mkdir -p /var/lib/haproxy/router/{certs,cacerts,whitelists} && \
+    #rpm -V $INSTALL_PKGS && \
+    yum clean all
+#RUN rpm -ivh https://github.com/miheer/router/blob/RFE-600/images/router/haproxy/haproxy18-1.8.26-1.el7.x86_64.rpm
+#ADD images/router/haproxy/haproxy18-1.8.26-1.el7.x86_64.rpm .
+#RUN rpm -ivh haproxy18-1.8.26-1.el7.x86_64.rpm
+RUN haproxy -vv
+RUN mkdir -p /var/lib/haproxy/router/{certs,cacerts,whitelists} && \
     mkdir -p /var/lib/haproxy/{conf/.tmp,run,bin,log} && \
     touch /var/lib/haproxy/conf/{{os_http_be,os_edge_reencrypt_be,os_tcp_be,os_sni_passthrough,os_route_http_redirect,cert_config,os_wildcard_domain}.map,haproxy.config} && \
     setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy && \
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy
-COPY images/router/haproxy/* /var/lib/haproxy/
-LABEL io.k8s.display-name="OpenShift HAProxy Router" \
-      io.k8s.description="This component offers ingress to an OpenShift cluster via Ingress and Route rules." \
+
+#COPY . /var/lib/haproxy/
+##COPY images/router/haproxy/ /var/lib/haproxy/
+#COPY openshift-router /usr/bin/openshift-router
+COPY . /var/lib/haproxy/
+
+LABEL io.k8s.display-name="OpenShift Origin HAProxy Router" \
+      io.k8s.description="This is a component of OpenShift Origin and contains an HAProxy instance that automatically exposes services within the cluster through routes, and offers TLS termination, reencryption, or SNI-passthrough on ports 80 and 443." \
       io.openshift.tags="openshift,router,haproxy"
 USER 1001
 EXPOSE 80 443

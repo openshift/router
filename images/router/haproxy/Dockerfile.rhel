@@ -1,5 +1,5 @@
 FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
-RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools" && \
+RUN INSTALL_PKGS="haproxy18 rsyslog sysvinit-tools https://github.com/miheer/test-haproxy/blob/master/haproxy-1.8.26-1.el7.src.rpm" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
