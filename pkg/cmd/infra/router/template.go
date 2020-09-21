@@ -647,7 +647,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		c.Run()
 	}
 
-	proc.StartReaper()
+	proc.StartReaper(6 * time.Second)
 
 	select {
 	case <-stopCh:
