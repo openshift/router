@@ -12,13 +12,13 @@ require (
 	github.com/go-logr/logr v0.2.1 // indirect
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 	github.com/google/go-cmp v0.4.0
-	github.com/openshift/api v0.0.0-20200330134433-8e259f67fc55
-	github.com/openshift/client-go v0.0.0-20200326155132-2a6cd50aedd0
-	github.com/openshift/library-go v0.0.0-20200421122923-c1de486c7d47
+	github.com/openshift/api v0.0.0-20200827090112-c05698d102cf
+	github.com/openshift/client-go v0.0.0-20200827190008-3062137373b5
+	github.com/openshift/library-go v0.0.0-20200921120329-c803a7b7bb2c
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.10.0
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.19.2
 	k8s.io/apimachinery v0.19.2
