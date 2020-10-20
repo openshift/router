@@ -251,10 +251,10 @@ func (o *RouterSelection) NewFactory(routeclient routeclientset.Interface, proje
 	factory.ResyncInterval = o.ResyncInterval
 	switch {
 	case o.NamespaceLabels != nil:
-		log.V(0).Info("router is only using routes in namespaces matching labels", "labels", o.NamespaceLabels)
+		log.V(0).Info("router is only using routes in namespaces matching labels", "labels", o.NamespaceLabels.String())
 		factory.NamespaceLabels = o.NamespaceLabels
 	case o.ProjectLabels != nil:
-		log.V(0).Info("router is only using routes in projects matching labels", "labels", o.ProjectLabels)
+		log.V(0).Info("router is only using routes in projects matching labels", "labels", o.ProjectLabels.String())
 		factory.ProjectLabels = o.ProjectLabels
 	case len(factory.Namespace) > 0:
 		log.V(0).Info("router is only using resources in namespace", "namespace", factory.Namespace)
