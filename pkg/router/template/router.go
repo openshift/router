@@ -481,6 +481,7 @@ func (r *templateRouter) commitAndReload() error {
 func (r *templateRouter) writeConfig() error {
 	//write out any certificate files that don't exist
 	for k, cfg := range r.state {
+		cfg := cfg // avoid implicit memory aliasing (gosec G601)
 		if err := r.writeCertificates(&cfg); err != nil {
 			return fmt.Errorf("error writing certificates for %s: %v", k, err)
 		}

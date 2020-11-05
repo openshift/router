@@ -260,14 +260,12 @@ func ingressConditionTouched(ingress *routev1.RouteIngress) *metav1.Time {
 }
 
 func ingressChanged(oldRoute, route *routev1.Route, routerName string) *routev1.RouteIngress {
-	var ingress *routev1.RouteIngress
 	for i := range route.Status.Ingress {
 		if route.Status.Ingress[i].RouterName == routerName {
-			ingress = &route.Status.Ingress[i]
-			for _, old := range oldRoute.Status.Ingress {
-				if old.RouterName == routerName {
-					if !ingressEqual(ingress, &old) {
-						return ingress
+			for j := range oldRoute.Status.Ingress {
+				if oldRoute.Status.Ingress[j].RouterName == routerName {
+					if !ingressEqual(&route.Status.Ingress[i], &oldRoute.Status.Ingress[j]) {
+						return &route.Status.Ingress[i]
 					}
 					return nil
 				}
