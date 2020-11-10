@@ -166,6 +166,7 @@ func backendConfig(name string, cfg ServiceAliasConfig, hascert bool) *haproxyut
 func generateHAProxyCertConfigMap(td templateData) []string {
 	lines := make([]string, 0)
 	for k, cfg := range td.State {
+		cfg := cfg // avoid implicit memory aliasing (gosec G601)
 		hascert := false
 		if len(cfg.Host) > 0 {
 			certKey := generateCertKey(&cfg)
