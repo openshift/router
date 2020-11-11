@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 
@@ -21,6 +22,8 @@ import (
 
 const (
 	certConfigMap = "cert_config.map"
+	// max timeout allowable by HAProxy
+	haproxyMaxTimeout = "2147483647ms"
 )
 
 func isTrue(s string) bool {
@@ -277,6 +280,46 @@ func generateHAProxyMap(name string, td templateData) []string {
 	return templateutil.SortMapPaths(lines, `^[^\.]*\.`)
 }
 
+// clipHAProxyTimeoutValue prevents the HAProxy config file
+// from using timeout values specified via the haproxy.router.openshift.io/timeout
+// annotation that exceed the maximum value allowed by HAProxy.
+// Return the parameter string instead of an err in the event that a
+// timeout string value is not parsable as a valid time duration.
+func clipHAProxyTimeoutValue(val string) string {
+	// If the empty string is passed in,
+	// simply return the empty string.
+	if len(val) == 0 {
+		return val
+	}
+	endIndex := len(val) - 1
+	maxTimeout, err := time.ParseDuration(haproxyMaxTimeout)
+	if err != nil {
+		return val
+	}
+	// time.ParseDuration doesn't work with days
+	// despite HAProxy accepting timeouts that specify day units
+	if val[endIndex] == 'd' {
+		days, err := strconv.Atoi(val[:endIndex])
+		if err != nil {
+			return val
+		}
+		if maxTimeout.Hours() < float64(days*24) {
+			log.V(7).Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max")
+			return haproxyMaxTimeout
+		}
+	} else {
+		duration, err := time.ParseDuration(val)
+		if err != nil {
+			return val
+		}
+		if maxTimeout.Milliseconds() < duration.Milliseconds() {
+			log.V(7).Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max")
+			return haproxyMaxTimeout
+		}
+	}
+	return val
+}
+
 var helperFunctions = template.FuncMap{
 	"endpointsForAlias":        endpointsForAlias,        //returns the list of valid endpoints
 	"processEndpointsForAlias": processEndpointsForAlias, //returns the list of valid endpoints after processing them
@@ -299,4 +342,6 @@ var helperFunctions = template.FuncMap{
 	"generateHAProxyMap":           generateHAProxyMap,           //generates a haproxy map content
 	"validateHAProxyWhiteList":     validateHAProxyWhiteList,     //validates a haproxy whitelist (acl) content
 	"generateHAProxyWhiteListFile": generateHAProxyWhiteListFile, //generates a haproxy whitelist file for use in an acl
+
+	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
 }
