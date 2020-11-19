@@ -463,7 +463,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
       {{- end }}
   tcp-request content reject if !whitelist
     {{- end }}
-    {{- with $value := firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")}}
+    {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
   timeout server  {{$value}}
     {{- end }}
 
@@ -635,7 +635,7 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
       {{- end }}
   tcp-request content reject if !whitelist
     {{- end }}
-    {{- with $value := firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")}}
+    {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
   timeout tunnel  {{$value}}
     {{- end }}
 
