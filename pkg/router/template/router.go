@@ -117,30 +117,33 @@ type templateRouter struct {
 	// captureHTTPCookie specifies an HTTP cookie that should be
 	// captured for logging.
 	captureHTTPCookie *CaptureHTTPCookie
+	// httpHeaderNameCaseAdjustments specifies HTTP header name case adjustments.
+	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
 type templateRouterCfg struct {
-	dir                        string
-	templates                  map[string]*template.Template
-	reloadScriptPath           string
-	reloadFn                   func(shutdown bool) error
-	reloadInterval             time.Duration
-	reloadCallbacks            []func()
-	defaultCertificate         string
-	defaultCertificatePath     string
-	defaultCertificateDir      string
-	defaultDestinationCAPath   string
-	statsUser                  string
-	statsPassword              string
-	statsPort                  int
-	allowWildcardRoutes        bool
-	includeUDP                 bool
-	bindPortsAfterSync         bool
-	dynamicConfigManager       ConfigManager
-	captureHTTPRequestHeaders  []CaptureHTTPHeader
-	captureHTTPResponseHeaders []CaptureHTTPHeader
-	captureHTTPCookie          *CaptureHTTPCookie
+	dir                           string
+	templates                     map[string]*template.Template
+	reloadScriptPath              string
+	reloadFn                      func(shutdown bool) error
+	reloadInterval                time.Duration
+	reloadCallbacks               []func()
+	defaultCertificate            string
+	defaultCertificatePath        string
+	defaultCertificateDir         string
+	defaultDestinationCAPath      string
+	statsUser                     string
+	statsPassword                 string
+	statsPort                     int
+	allowWildcardRoutes           bool
+	includeUDP                    bool
+	bindPortsAfterSync            bool
+	dynamicConfigManager          ConfigManager
+	captureHTTPRequestHeaders     []CaptureHTTPHeader
+	captureHTTPResponseHeaders    []CaptureHTTPHeader
+	captureHTTPCookie             *CaptureHTTPCookie
+	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -177,6 +180,9 @@ type templateData struct {
 	// CaptureHTTPCookie specifies an HTTP cookie that should be
 	// captured for logging.
 	CaptureHTTPCookie *CaptureHTTPCookie
+	// HTTPHeaderNameCaseAdjustments specifies HTTP header name adjustments
+	// performed on HTTP headers.
+	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -215,28 +221,29 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	prometheus.MustRegister(metricWriteConfig)
 
 	router := &templateRouter{
-		dir:                        dir,
-		templates:                  cfg.templates,
-		reloadScriptPath:           cfg.reloadScriptPath,
-		reloadInterval:             cfg.reloadInterval,
-		reloadCallbacks:            cfg.reloadCallbacks,
-		reloadFn:                   cfg.reloadFn,
-		state:                      make(map[ServiceAliasConfigKey]ServiceAliasConfig),
-		serviceUnits:               make(map[ServiceUnitKey]ServiceUnit),
-		certManager:                certManager,
-		defaultCertificate:         cfg.defaultCertificate,
-		defaultCertificatePath:     cfg.defaultCertificatePath,
-		defaultCertificateDir:      cfg.defaultCertificateDir,
-		defaultDestinationCAPath:   cfg.defaultDestinationCAPath,
-		statsUser:                  cfg.statsUser,
-		statsPassword:              cfg.statsPassword,
-		statsPort:                  cfg.statsPort,
-		allowWildcardRoutes:        cfg.allowWildcardRoutes,
-		bindPortsAfterSync:         cfg.bindPortsAfterSync,
-		dynamicConfigManager:       cfg.dynamicConfigManager,
-		captureHTTPRequestHeaders:  cfg.captureHTTPRequestHeaders,
-		captureHTTPResponseHeaders: cfg.captureHTTPResponseHeaders,
-		captureHTTPCookie:          cfg.captureHTTPCookie,
+		dir:                           dir,
+		templates:                     cfg.templates,
+		reloadScriptPath:              cfg.reloadScriptPath,
+		reloadInterval:                cfg.reloadInterval,
+		reloadCallbacks:               cfg.reloadCallbacks,
+		reloadFn:                      cfg.reloadFn,
+		state:                         make(map[ServiceAliasConfigKey]ServiceAliasConfig),
+		serviceUnits:                  make(map[ServiceUnitKey]ServiceUnit),
+		certManager:                   certManager,
+		defaultCertificate:            cfg.defaultCertificate,
+		defaultCertificatePath:        cfg.defaultCertificatePath,
+		defaultCertificateDir:         cfg.defaultCertificateDir,
+		defaultDestinationCAPath:      cfg.defaultDestinationCAPath,
+		statsUser:                     cfg.statsUser,
+		statsPassword:                 cfg.statsPassword,
+		statsPort:                     cfg.statsPort,
+		allowWildcardRoutes:           cfg.allowWildcardRoutes,
+		bindPortsAfterSync:            cfg.bindPortsAfterSync,
+		dynamicConfigManager:          cfg.dynamicConfigManager,
+		captureHTTPRequestHeaders:     cfg.captureHTTPRequestHeaders,
+		captureHTTPResponseHeaders:    cfg.captureHTTPResponseHeaders,
+		captureHTTPCookie:             cfg.captureHTTPCookie,
+		httpHeaderNameCaseAdjustments: cfg.httpHeaderNameCaseAdjustments,
 
 		metricReload:        metricsReload,
 		metricReloadFailure: metricReloadFailure,
@@ -519,20 +526,21 @@ func (r *templateRouter) writeConfig() error {
 		}
 
 		data := templateData{
-			WorkingDir:                 r.dir,
-			State:                      r.state,
-			ServiceUnits:               r.serviceUnits,
-			DefaultCertificate:         r.defaultCertificatePath,
-			DefaultDestinationCA:       r.defaultDestinationCAPath,
-			StatsUser:                  r.statsUser,
-			StatsPassword:              r.statsPassword,
-			StatsPort:                  r.statsPort,
-			BindPorts:                  !r.bindPortsAfterSync || r.synced,
-			DynamicConfigManager:       r.dynamicConfigManager,
-			DisableHTTP2:               disableHTTP2,
-			CaptureHTTPRequestHeaders:  r.captureHTTPRequestHeaders,
-			CaptureHTTPResponseHeaders: r.captureHTTPResponseHeaders,
-			CaptureHTTPCookie:          r.captureHTTPCookie,
+			WorkingDir:                    r.dir,
+			State:                         r.state,
+			ServiceUnits:                  r.serviceUnits,
+			DefaultCertificate:            r.defaultCertificatePath,
+			DefaultDestinationCA:          r.defaultDestinationCAPath,
+			StatsUser:                     r.statsUser,
+			StatsPassword:                 r.statsPassword,
+			StatsPort:                     r.statsPort,
+			BindPorts:                     !r.bindPortsAfterSync || r.synced,
+			DynamicConfigManager:          r.dynamicConfigManager,
+			DisableHTTP2:                  disableHTTP2,
+			CaptureHTTPRequestHeaders:     r.captureHTTPRequestHeaders,
+			CaptureHTTPResponseHeaders:    r.captureHTTPResponseHeaders,
+			CaptureHTTPCookie:             r.captureHTTPCookie,
+			HTTPHeaderNameCaseAdjustments: r.httpHeaderNameCaseAdjustments,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()

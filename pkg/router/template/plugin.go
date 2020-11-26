@@ -42,29 +42,30 @@ func newDefaultTemplatePlugin(router RouterInterface, includeUDP bool, lookupSvc
 }
 
 type TemplatePluginConfig struct {
-	WorkingDir                 string
-	TemplatePath               string
-	ReloadScriptPath           string
-	ReloadFn                   func(shutdown bool) error
-	ReloadInterval             time.Duration
-	ReloadCallbacks            []func()
-	DefaultCertificate         string
-	DefaultCertificatePath     string
-	DefaultCertificateDir      string
-	DefaultDestinationCAPath   string
-	StatsPort                  int
-	StatsUsername              string
-	StatsPassword              string
-	IncludeUDP                 bool
-	AllowWildcardRoutes        bool
-	BindPortsAfterSync         bool
-	MaxConnections             string
-	Ciphers                    string
-	StrictSNI                  bool
-	DynamicConfigManager       ConfigManager
-	CaptureHTTPRequestHeaders  []CaptureHTTPHeader
-	CaptureHTTPResponseHeaders []CaptureHTTPHeader
-	CaptureHTTPCookie          *CaptureHTTPCookie
+	WorkingDir                    string
+	TemplatePath                  string
+	ReloadScriptPath              string
+	ReloadFn                      func(shutdown bool) error
+	ReloadInterval                time.Duration
+	ReloadCallbacks               []func()
+	DefaultCertificate            string
+	DefaultCertificatePath        string
+	DefaultCertificateDir         string
+	DefaultDestinationCAPath      string
+	StatsPort                     int
+	StatsUsername                 string
+	StatsPassword                 string
+	IncludeUDP                    bool
+	AllowWildcardRoutes           bool
+	BindPortsAfterSync            bool
+	MaxConnections                string
+	Ciphers                       string
+	StrictSNI                     bool
+	DynamicConfigManager          ConfigManager
+	CaptureHTTPRequestHeaders     []CaptureHTTPHeader
+	CaptureHTTPResponseHeaders    []CaptureHTTPHeader
+	CaptureHTTPCookie             *CaptureHTTPCookie
+	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation
@@ -139,25 +140,26 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 	}
 
 	templateRouterCfg := templateRouterCfg{
-		dir:                        cfg.WorkingDir,
-		templates:                  templates,
-		reloadScriptPath:           cfg.ReloadScriptPath,
-		reloadFn:                   cfg.ReloadFn,
-		reloadInterval:             cfg.ReloadInterval,
-		reloadCallbacks:            cfg.ReloadCallbacks,
-		defaultCertificate:         cfg.DefaultCertificate,
-		defaultCertificatePath:     cfg.DefaultCertificatePath,
-		defaultCertificateDir:      cfg.DefaultCertificateDir,
-		defaultDestinationCAPath:   cfg.DefaultDestinationCAPath,
-		statsUser:                  cfg.StatsUsername,
-		statsPassword:              cfg.StatsPassword,
-		statsPort:                  cfg.StatsPort,
-		allowWildcardRoutes:        cfg.AllowWildcardRoutes,
-		bindPortsAfterSync:         cfg.BindPortsAfterSync,
-		dynamicConfigManager:       cfg.DynamicConfigManager,
-		captureHTTPRequestHeaders:  cfg.CaptureHTTPRequestHeaders,
-		captureHTTPResponseHeaders: cfg.CaptureHTTPResponseHeaders,
-		captureHTTPCookie:          cfg.CaptureHTTPCookie,
+		dir:                           cfg.WorkingDir,
+		templates:                     templates,
+		reloadScriptPath:              cfg.ReloadScriptPath,
+		reloadFn:                      cfg.ReloadFn,
+		reloadInterval:                cfg.ReloadInterval,
+		reloadCallbacks:               cfg.ReloadCallbacks,
+		defaultCertificate:            cfg.DefaultCertificate,
+		defaultCertificatePath:        cfg.DefaultCertificatePath,
+		defaultCertificateDir:         cfg.DefaultCertificateDir,
+		defaultDestinationCAPath:      cfg.DefaultDestinationCAPath,
+		statsUser:                     cfg.StatsUsername,
+		statsPassword:                 cfg.StatsPassword,
+		statsPort:                     cfg.StatsPort,
+		allowWildcardRoutes:           cfg.AllowWildcardRoutes,
+		bindPortsAfterSync:            cfg.BindPortsAfterSync,
+		dynamicConfigManager:          cfg.DynamicConfigManager,
+		captureHTTPRequestHeaders:     cfg.CaptureHTTPRequestHeaders,
+		captureHTTPResponseHeaders:    cfg.CaptureHTTPResponseHeaders,
+		captureHTTPCookie:             cfg.CaptureHTTPCookie,
+		httpHeaderNameCaseAdjustments: cfg.HTTPHeaderNameCaseAdjustments,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
