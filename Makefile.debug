@@ -1,0 +1,35 @@
+# -*- mode: makefile -*-
+
+export GOOS=linux
+
+TAG ?= remote-debug
+TAG = bz1905100-plus-hard-stop-after
+
+new-openshift-router-image:
+	GO111MODULE=on GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
+	~/go/bin/imagebuilder -t frobware/openshift-router:$(TAG) -f Dockerfile.debug .
+
+push:
+	docker tag frobware/openshift-router:$(TAG) quay.io/frobware/openshift-router:$(TAG)
+	docker push quay.io/frobware/openshift-router:$(TAG)
+
+set-image:
+	oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
+	oc scale --replicas 0 -n openshift-ingress-operator deployments ingress-operator
+	oc -n openshift-ingress scale deployment --replicas=0 router-default
+	oc -n openshift-ingress set image deployment/router-default router=quay.io/frobware/openshift-router:$(TAG)
+	oc -n openshift-ingress scale deployment --replicas=1 router-default
+	oc patch deployment -n openshift-ingress router-default -p '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"router"}],"containers":[{"imagePullPolicy":"Always","name":"router"}]}}}}'
+
+# oc patch deployment -n openshift-ingress router-default -p '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"router"}],"containers":[{"imagePullPolicy":"Always","livenessProbe":null,"name":"router","readinessProbe":null}]}}}}'
+
+dwim:  new-openshift-router-image push set-image
+
+reset:
+	oc scale --replicas 1 -n openshift-cluster-version deployments/cluster-version-operator
+	oc scale --replicas 1 -n openshift-ingress-operator deployments ingress-operator
+
+# Don't forget to change the router deployment to when debugging via delve:
+## Remove liveness probe
+## Remove readiness probe
+## Set ImagePullPolicy: Always
