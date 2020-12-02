@@ -290,6 +290,7 @@ func convertEndpointSliceToEndpointSubset(items []discoveryv1beta1.EndpointSlice
 	for i := range items {
 		var ports []kapi.EndpointPort
 		var addresses []kapi.EndpointAddress
+		var notReadyAddresses []kapi.EndpointAddress
 
 		for j := range items[i].Endpoints {
 			for k := range items[i].Endpoints[j].Addresses {
@@ -300,7 +301,12 @@ func convertEndpointSliceToEndpointSubset(items []discoveryv1beta1.EndpointSlice
 				if items[i].Endpoints[j].Hostname != nil {
 					epa.Hostname = *items[i].Endpoints[j].Hostname
 				}
-				addresses = append(addresses, epa)
+				// A nil Ready condition indicates an unknown state and should be interpreted as ready.
+				if items[i].Endpoints[j].Conditions.Ready != nil && !*items[i].Endpoints[j].Conditions.Ready {
+					notReadyAddresses = append(notReadyAddresses, epa)
+				} else {
+					addresses = append(addresses, epa)
+				}
 			}
 		}
 
@@ -321,11 +327,13 @@ func convertEndpointSliceToEndpointSubset(items []discoveryv1beta1.EndpointSlice
 		}
 
 		endpointsubset.SortAddresses(addresses, addressOrderByFuncs)
+		endpointsubset.SortAddresses(notReadyAddresses, addressOrderByFuncs)
 		endpointsubset.SortPorts(ports, portOrderByFuncs)
 
 		subsets = append(subsets, kapi.EndpointSubset{
-			Addresses: addresses,
-			Ports:     ports,
+			Addresses:         addresses,
+			NotReadyAddresses: notReadyAddresses,
+			Ports:             ports,
 		})
 	}
 
