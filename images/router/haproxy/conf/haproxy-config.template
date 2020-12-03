@@ -71,6 +71,10 @@ global
   tune.maxrewrite 8192
   tune.bufsize 32768
 
+  {{- range $idx, $adjustment := .HTTPHeaderNameCaseAdjustments }}
+  h1-case-adjust {{ $adjustment.From }} {{ $adjustment.To }}
+  {{- end }}
+
   # Configure the TLS versions we support
   ssl-default-bind-options ssl-min-ver {{env "SSL_MIN_VERSION" "TLSv1.2"}}
     {{- if ne (env "SSL_MAX_VERSION" "") "" }} ssl-max-ver {{env "SSL_MAX_VERSION"}}{{ end }}
@@ -147,6 +151,9 @@ defaults
 {{- end }}
 {{- if isTrue (env "ROUTER_HTTP_IGNORE_PROBES") }}
   option http-ignore-probes
+{{- end }}
+{{- if .HTTPHeaderNameCaseAdjustments }}
+  option h1-case-adjust-bogus-client
 {{- end }}
 
 {{ if (gt .StatsPort -1) }}
@@ -454,6 +461,12 @@ backend {{genBackendNamePrefix $cfg.TLSTermination}}:{{$cfgIdx}}
   option forwardfor if-none
     {{- end }}
   {{- end}}
+
+  {{- with $adjustments := $.HTTPHeaderNameCaseAdjustments }}
+    {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/h1-adjust-case") }}
+  option h1-case-adjust-bogus-server
+    {{- end }}
+  {{- end }}
 
     {{- with $balanceAlgo := firstMatch "roundrobin|leastconn|source" (index $cfg.Annotations "haproxy.router.openshift.io/balance") (env "ROUTER_LOAD_BALANCE_ALGORITHM") }}
   balance {{ $balanceAlgo }}

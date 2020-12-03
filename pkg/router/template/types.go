@@ -261,6 +261,18 @@ const (
 	CookieMatchTypePrefix CookieMatchType = "prefix"
 )
 
+// HTTPHeaderNameCaseAdjustment specifies an HTTP header that should have its
+// capitalization adjusted, and how the header should be adjusted.
+type HTTPHeaderNameCaseAdjustment struct {
+	// From specifies the original header name.  It must be a valid HTTP
+	// header name in lower case.
+	From string
+
+	// To specifies the desired header name.  It should be the same as From
+	// but with the desired capitalization.
+	To string
+}
+
 // RouterEventType indicates the type of event fired by the router.
 type RouterEventType string
 

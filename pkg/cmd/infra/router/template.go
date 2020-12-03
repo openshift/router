@@ -105,25 +105,27 @@ type TemplateRouterOptions struct {
 }
 
 type TemplateRouter struct {
-	WorkingDir                       string
-	TemplateFile                     string
-	ReloadScript                     string
-	ReloadInterval                   time.Duration
-	DefaultCertificate               string
-	DefaultCertificatePath           string
-	DefaultCertificateDir            string
-	DefaultDestinationCAPath         string
-	BindPortsAfterSync               bool
-	MaxConnections                   string
-	Ciphers                          string
-	StrictSNI                        bool
-	MetricsType                      string
-	CaptureHTTPRequestHeadersString  string
-	CaptureHTTPResponseHeadersString string
-	CaptureHTTPCookieString          string
-	CaptureHTTPRequestHeaders        []templateplugin.CaptureHTTPHeader
-	CaptureHTTPResponseHeaders       []templateplugin.CaptureHTTPHeader
-	CaptureHTTPCookie                *templateplugin.CaptureHTTPCookie
+	WorkingDir                          string
+	TemplateFile                        string
+	ReloadScript                        string
+	ReloadInterval                      time.Duration
+	DefaultCertificate                  string
+	DefaultCertificatePath              string
+	DefaultCertificateDir               string
+	DefaultDestinationCAPath            string
+	BindPortsAfterSync                  bool
+	MaxConnections                      string
+	Ciphers                             string
+	StrictSNI                           bool
+	MetricsType                         string
+	CaptureHTTPRequestHeadersString     string
+	CaptureHTTPResponseHeadersString    string
+	CaptureHTTPCookieString             string
+	CaptureHTTPRequestHeaders           []templateplugin.CaptureHTTPHeader
+	CaptureHTTPResponseHeaders          []templateplugin.CaptureHTTPHeader
+	CaptureHTTPCookie                   *templateplugin.CaptureHTTPCookie
+	HTTPHeaderNameCaseAdjustmentsString string
+	HTTPHeaderNameCaseAdjustments       []templateplugin.HTTPHeaderNameCaseAdjustment
 
 	TemplateRouterConfigManager
 }
@@ -179,6 +181,7 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.CaptureHTTPRequestHeadersString, "capture-http-request-headers", env("ROUTER_CAPTURE_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
+	flag.StringVar(&o.HTTPHeaderNameCaseAdjustmentsString, "http-header-name-case-adjustments", env("ROUTER_H1_CASE_ADJUST", ""), "A comma-delimited list of HTTP header names that should have their case adjusted. Each item must be a valid HTTP header name and should have the desired capitalization.")
 }
 
 type RouterStats struct {
@@ -312,6 +315,27 @@ func parseCaptureCookie(in string) (*templateplugin.CaptureHTTPCookie, error) {
 	}, nil
 }
 
+func parseHTTPHeaderNameCaseAdjustments(in string) ([]templateplugin.HTTPHeaderNameCaseAdjustment, error) {
+	var adjustments []templateplugin.HTTPHeaderNameCaseAdjustment
+
+	if len(in) > 0 {
+		for _, headerName := range strings.Split(in, ",") {
+			// RFC 2616, section 4.2, states that the header name
+			// must be a valid token.
+			if !validTokenRE.MatchString(headerName) {
+				return adjustments, fmt.Errorf("invalid HTTP header name: %v", headerName)
+			}
+			adjustment := templateplugin.HTTPHeaderNameCaseAdjustment{
+				From: strings.ToLower(headerName),
+				To:   headerName,
+			}
+			adjustments = append(adjustments, adjustment)
+		}
+	}
+
+	return adjustments, nil
+}
+
 func (o *TemplateRouterOptions) Complete() error {
 	routerSvcName := env("ROUTER_SERVICE_NAME", "")
 	routerSvcNamespace := env("ROUTER_SERVICE_NAMESPACE", "")
@@ -370,6 +394,12 @@ func (o *TemplateRouterOptions) Complete() error {
 		return err
 	}
 	o.CaptureHTTPCookie = captureHTTPCookie
+
+	httpHeaderNameCaseAdjustments, err := parseHTTPHeaderNameCaseAdjustments(o.HTTPHeaderNameCaseAdjustmentsString)
+	if err != nil {
+		return err
+	}
+	o.HTTPHeaderNameCaseAdjustments = httpHeaderNameCaseAdjustments
 
 	return o.RouterSelection.Complete()
 }
@@ -579,28 +609,29 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	}
 
 	pluginCfg := templateplugin.TemplatePluginConfig{
-		WorkingDir:                 o.WorkingDir,
-		TemplatePath:               o.TemplateFile,
-		ReloadScriptPath:           o.ReloadScript,
-		ReloadInterval:             o.ReloadInterval,
-		ReloadCallbacks:            reloadCallbacks,
-		DefaultCertificate:         o.DefaultCertificate,
-		DefaultCertificatePath:     o.DefaultCertificatePath,
-		DefaultCertificateDir:      o.DefaultCertificateDir,
-		DefaultDestinationCAPath:   o.DefaultDestinationCAPath,
-		StatsPort:                  statsPort,
-		StatsUsername:              o.StatsUsername,
-		StatsPassword:              o.StatsPassword,
-		BindPortsAfterSync:         o.BindPortsAfterSync,
-		IncludeUDP:                 o.RouterSelection.IncludeUDP,
-		AllowWildcardRoutes:        o.RouterSelection.AllowWildcardRoutes,
-		MaxConnections:             o.MaxConnections,
-		Ciphers:                    o.Ciphers,
-		StrictSNI:                  o.StrictSNI,
-		DynamicConfigManager:       cfgManager,
-		CaptureHTTPRequestHeaders:  o.CaptureHTTPRequestHeaders,
-		CaptureHTTPResponseHeaders: o.CaptureHTTPResponseHeaders,
-		CaptureHTTPCookie:          o.CaptureHTTPCookie,
+		WorkingDir:                    o.WorkingDir,
+		TemplatePath:                  o.TemplateFile,
+		ReloadScriptPath:              o.ReloadScript,
+		ReloadInterval:                o.ReloadInterval,
+		ReloadCallbacks:               reloadCallbacks,
+		DefaultCertificate:            o.DefaultCertificate,
+		DefaultCertificatePath:        o.DefaultCertificatePath,
+		DefaultCertificateDir:         o.DefaultCertificateDir,
+		DefaultDestinationCAPath:      o.DefaultDestinationCAPath,
+		StatsPort:                     statsPort,
+		StatsUsername:                 o.StatsUsername,
+		StatsPassword:                 o.StatsPassword,
+		BindPortsAfterSync:            o.BindPortsAfterSync,
+		IncludeUDP:                    o.RouterSelection.IncludeUDP,
+		AllowWildcardRoutes:           o.RouterSelection.AllowWildcardRoutes,
+		MaxConnections:                o.MaxConnections,
+		Ciphers:                       o.Ciphers,
+		StrictSNI:                     o.StrictSNI,
+		DynamicConfigManager:          cfgManager,
+		CaptureHTTPRequestHeaders:     o.CaptureHTTPRequestHeaders,
+		CaptureHTTPResponseHeaders:    o.CaptureHTTPResponseHeaders,
+		CaptureHTTPCookie:             o.CaptureHTTPCookie,
+		HTTPHeaderNameCaseAdjustments: o.HTTPHeaderNameCaseAdjustments,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
