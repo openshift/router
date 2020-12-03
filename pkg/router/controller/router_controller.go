@@ -240,7 +240,7 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 			OwnerReferences: objMeta.OwnerReferences,
 			ClusterName:     objMeta.ClusterName,
 		},
-		Subsets: convertEndpointSliceToEndpointSubset(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
+		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
 	}
 
 	// RecordNamespaceEndpoints and all HandleEndpoints
@@ -282,60 +282,4 @@ func (c *RouterController) handleFirstSync() {
 	c.firstSyncDone = true
 	log.V(4).Info("router first sync complete")
 	c.Commit()
-}
-
-func convertEndpointSliceToEndpointSubset(items []discoveryv1beta1.EndpointSlice, addressOrderByFuncs []endpointsubset.EndpointAddressLessFunc, portOrderByFuncs []endpointsubset.EndpointPortLessFunc) []kapi.EndpointSubset {
-	var subsets []kapi.EndpointSubset
-
-	for i := range items {
-		var ports []kapi.EndpointPort
-		var addresses []kapi.EndpointAddress
-		var notReadyAddresses []kapi.EndpointAddress
-
-		for j := range items[i].Endpoints {
-			for k := range items[i].Endpoints[j].Addresses {
-				epa := kapi.EndpointAddress{
-					IP:        items[i].Endpoints[j].Addresses[k],
-					TargetRef: items[i].Endpoints[j].TargetRef,
-				}
-				if items[i].Endpoints[j].Hostname != nil {
-					epa.Hostname = *items[i].Endpoints[j].Hostname
-				}
-				// A nil Ready condition indicates an unknown state and should be interpreted as ready.
-				if items[i].Endpoints[j].Conditions.Ready != nil && !*items[i].Endpoints[j].Conditions.Ready {
-					notReadyAddresses = append(notReadyAddresses, epa)
-				} else {
-					addresses = append(addresses, epa)
-				}
-			}
-		}
-
-		for j := range items[i].Ports {
-			endpointPort := kapi.EndpointPort{
-				AppProtocol: items[i].Ports[j].AppProtocol,
-			}
-			if items[i].Ports[j].Name != nil {
-				endpointPort.Name = *items[i].Ports[j].Name
-			}
-			if items[i].Ports[j].Port != nil {
-				endpointPort.Port = *items[i].Ports[j].Port
-			}
-			if items[i].Ports[j].Protocol != nil {
-				endpointPort.Protocol = *items[i].Ports[j].Protocol
-			}
-			ports = append(ports, endpointPort)
-		}
-
-		endpointsubset.SortAddresses(addresses, addressOrderByFuncs)
-		endpointsubset.SortAddresses(notReadyAddresses, addressOrderByFuncs)
-		endpointsubset.SortPorts(ports, portOrderByFuncs)
-
-		subsets = append(subsets, kapi.EndpointSubset{
-			Addresses:         addresses,
-			NotReadyAddresses: notReadyAddresses,
-			Ports:             ports,
-		})
-	}
-
-	return subsets
 }
