@@ -701,3 +701,41 @@ func TestGetPrimaryAliasKey(t *testing.T) {
 		}
 	}
 }
+
+func TestClipHAProxyTimeoutValue(t *testing.T) {
+	testCases := []struct {
+		value    string
+		expected string
+	}{
+		{
+			value:    "",
+			expected: "",
+		},
+		{
+			value:    "10",
+			expected: "10",
+		},
+		{
+			value:    "10s",
+			expected: "10s",
+		},
+		{
+			value:    "10d",
+			expected: "10d",
+		},
+		{
+			value:    "100d",
+			expected: haproxyMaxTimeout,
+		},
+		{
+			value:    "1000h",
+			expected: haproxyMaxTimeout,
+		},
+	}
+	for _, tc := range testCases {
+		actual := clipHAProxyTimeoutValue(tc.value)
+		if actual != tc.expected {
+			t.Errorf("clipHAProxyTimeoutValue yielded incorrect result: expected %s but got %s", tc.expected, actual)
+		}
+	}
+}
