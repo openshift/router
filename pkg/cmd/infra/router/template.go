@@ -22,7 +22,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
@@ -648,11 +647,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	var recorder controller.RejectionRecorder = controller.LogRejections
 	if o.UpdateStatus {
 		lease := writerlease.New(time.Minute, 3*time.Second)
-		go lease.Run(wait.NeverStop)
+		go lease.Run(stopCh)
 		informer := factory.CreateRoutesSharedInformer()
 		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
-		go tracker.Run(wait.NeverStop)
+		go tracker.Run(stopCh)
 		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
 		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
 		recorder = status
@@ -664,7 +663,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
-	controller := factory.Create(plugin, false, wait.NeverStop)
+	controller := factory.Create(plugin, false, stopCh)
 	controller.Run()
 
 	if blueprintPlugin != nil {
@@ -674,7 +673,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		f.LabelSelector = o.BlueprintRouteLabelSelector
 		f.Namespace = o.BlueprintRouteNamespace
 		f.ResyncInterval = o.ResyncInterval
-		c := f.Create(blueprintPlugin, false, wait.NeverStop)
+		c := f.Create(blueprintPlugin, false, stopCh)
 		c.Run()
 	}
 
