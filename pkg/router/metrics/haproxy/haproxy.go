@@ -545,13 +545,17 @@ func knownServerSegment(value string) (string, string, string, bool) {
 	if i := strings.Index(value, ":"); i != -1 {
 		switch value[:i] {
 		case "ept":
-			if service, server, ok := parseNameSegment(value[i+1:]); ok {
-				return "", service, server, true
+			if service, remainder, ok := parseNameSegment(value[i+1:]); ok {
+				if _, server, ok := parseNameSegment(remainder); ok {
+					return "", service, server, true
+				}
 			}
 		case "pod":
 			if pod, remainder, ok := parseNameSegment(value[i+1:]); ok {
-				if service, server, ok := parseNameSegment(remainder); ok {
-					return pod, service, server, true
+				if service, remainder, ok := parseNameSegment(remainder); ok {
+					if _, server, ok := parseNameSegment(remainder); ok {
+						return pod, service, server, true
+					}
 				}
 			}
 		}
