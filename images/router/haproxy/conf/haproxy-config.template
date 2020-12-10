@@ -127,7 +127,7 @@ defaults
   compression type {{env "ROUTER_COMPRESSION_MIME" "text/html text/plain text/css"}}
 {{- end }}
 
-  option http-use-htx
+  no option http-use-htx
 
 {{ if (gt .StatsPort -1) }}
 listen stats
