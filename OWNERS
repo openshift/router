@@ -8,6 +8,7 @@ approvers:
   - frobware
   - sgreene570
   - candita
+  - rfredette
 reviewers:
   - ironcladlou
   - knobunc
@@ -19,4 +20,5 @@ reviewers:
   - frobware
   - sgreene570
   - candita
+  - rfredette
 component: Routing
