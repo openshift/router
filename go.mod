@@ -1,6 +1,6 @@
 module github.com/openshift/router
 
-go 1.13
+go 1.15
 
 require (
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e
@@ -11,7 +11,7 @@ require (
 	github.com/getsentry/raven-go v0.2.0 // indirect
 	github.com/go-logr/logr v0.2.1 // indirect
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.5.2
 	github.com/openshift/api v0.0.0-20200827090112-c05698d102cf
 	github.com/openshift/client-go v0.0.0-20200827190008-3062137373b5
 	github.com/openshift/library-go v0.0.0-20200921120329-c803a7b7bb2c
@@ -20,9 +20,9 @@ require (
 	github.com/prometheus/common v0.10.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
-	k8s.io/api v0.19.2
-	k8s.io/apimachinery v0.19.2
-	k8s.io/apiserver v0.19.2
-	k8s.io/client-go v0.19.2
+	k8s.io/api v0.20.0
+	k8s.io/apimachinery v0.20.0
+	k8s.io/apiserver v0.20.0
+	k8s.io/client-go v0.20.0
 	k8s.io/klog v1.0.0
 )
