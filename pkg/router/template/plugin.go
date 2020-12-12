@@ -300,13 +300,13 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 				if a.TargetRef != nil {
 					ep.TargetName = a.TargetRef.Name
 					if a.TargetRef.Kind == "Pod" {
-						ep.ID = fmt.Sprintf("pod:%s:%s:%s:%d", ep.TargetName, endpoints.Name, a.IP, p.Port)
+						ep.ID = fmt.Sprintf("pod:%s:%s:%s:%s:%d", ep.TargetName, endpoints.Name, p.Name, a.IP, p.Port)
 					} else {
-						ep.ID = fmt.Sprintf("ept:%s:%s:%d", endpoints.Name, a.IP, p.Port)
+						ep.ID = fmt.Sprintf("ept:%s:%s:%s:%d", endpoints.Name, p.Name, a.IP, p.Port)
 					}
 				} else {
-					ep.TargetName = ep.IP
-					ep.ID = fmt.Sprintf("ept:%s:%s:%d", endpoints.Name, a.IP, p.Port)
+					ep.TargetName = a.IP
+					ep.ID = fmt.Sprintf("ept:%s:%s:%s:%d", endpoints.Name, p.Name, a.IP, p.Port)
 				}
 
 				// IdHash contains an obfuscated internal IP address
