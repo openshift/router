@@ -26,6 +26,7 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/apiserver/pkg/server/healthz"
+	authoptions "k8s.io/apiserver/pkg/server/options"
 	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
@@ -524,6 +525,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			SubjectAccessReviewClient: client.SubjectAccessReviews(),
 			AllowCacheTTL:             2 * time.Minute,
 			DenyCacheTTL:              5 * time.Second,
+			WebhookRetryBackoff:       authoptions.DefaultAuthWebhookRetryBackoff(),
 		}.New()
 		if err != nil {
 			return err
@@ -536,6 +538,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			Anonymous:               true,
 			TokenAccessReviewClient: tokenClient.TokenReviews(),
 			CacheTTL:                10 * time.Second,
+			WebhookRetryBackoff:     authoptions.DefaultAuthWebhookRetryBackoff(),
 		}.New()
 		if err != nil {
 			return err
