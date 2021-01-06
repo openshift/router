@@ -34,6 +34,9 @@
 {{- $hstsPattern := printf `(?:%[1]s[;])*max-age=(?:\d+|"\d+")(?:[;]%[1]s)*`  $hstsOptionalTokenPattern -}}
 
 global
+{{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (env "ROUTER_HARD_STOP_AFTER")) }}
+  hard-stop-after {{$value}}
+{{- end}}
   maxconn {{env "ROUTER_MAX_CONNECTIONS" "20000"}}
 {{- $threads := env "ROUTER_THREADS" }}
 {{- if ne "" (firstMatch "[1-9][0-9]*" $threads) }}
