@@ -29,6 +29,19 @@ func TestDeleteServiceUnit(t *testing.T) {
 	router := NewFakeTemplateRouter()
 	suKey := ServiceUnitKey("ns/test")
 	router.CreateServiceUnit(suKey)
+	router.AddRoute(&routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "edge",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "edge-ns.foo.com",
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "test",
+			},
+		},
+	})
 
 	if _, ok := router.FindServiceUnit(suKey); !ok {
 		t.Errorf("Unable to find serivce unit %s after creation", suKey)
@@ -38,6 +51,11 @@ func TestDeleteServiceUnit(t *testing.T) {
 
 	if _, ok := router.FindServiceUnit(suKey); ok {
 		t.Errorf("Service unit %s was found in state after delete", suKey)
+	}
+
+	var expectedStateChanged = true
+	if expectedStateChanged != router.stateChanged {
+		t.Errorf("Expected router state change=%v, got=%v", expectedStateChanged, router.stateChanged)
 	}
 }
 
@@ -50,6 +68,22 @@ func TestAddEndpoints(t *testing.T) {
 	if _, ok := router.FindServiceUnit(suKey); !ok {
 		t.Errorf("Unable to find serivce unit %s after creation", suKey)
 	}
+
+	// Adding endpoints without an associated route will not
+	// result in a state change so create the associated route.
+	router.AddRoute(&routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "nsl",
+			Name:      "edge",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "edge-nsl.foo.com",
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "test",
+			},
+		},
+	})
 
 	endpoint := Endpoint{
 		ID:     "ep1",
@@ -88,6 +122,22 @@ func TestAddEndpointDuplicates(t *testing.T) {
 	if _, ok := router.FindServiceUnit(suKey); !ok {
 		t.Fatalf("Unable to find service unit %s after creation", suKey)
 	}
+
+	// Adding endpoints without an associated route will not
+	// result in a state change so create the associated route.
+	router.AddRoute(&routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "edge",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "edge-ns.foo.com",
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "test",
+			},
+		},
+	})
 
 	endpoint := Endpoint{
 		ID:   "ep1",
@@ -160,6 +210,23 @@ func TestDeleteEndpoints(t *testing.T) {
 	if _, ok := router.FindServiceUnit(suKey); !ok {
 		t.Errorf("Unable to find serivce unit %s after creation", suKey)
 	}
+
+	// Deleting endpoints without an associated route won't result
+	// in a state change so create an associated route for the
+	// service unit.
+	router.AddRoute(&routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "edge",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "edge-ns.foo.com",
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "test",
+			},
+		},
+	})
 
 	router.AddEndpoints(suKey, []Endpoint{
 		{

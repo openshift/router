@@ -576,15 +576,14 @@ func (r *templateRouter) FilterNamespaces(namespaces sets.String) {
 		r.serviceUnits = make(map[ServiceUnitKey]ServiceUnit)
 		r.stateChanged = true
 	}
-	for k := range r.serviceUnits {
+	for key, service := range r.serviceUnits {
 		// TODO: the id of a service unit should be defined inside this class, not passed in from the outside
 		//   remove the leak of the abstraction when we refactor this code
-		ns, _ := getPartsFromEndpointsKey(k)
+		ns, _ := getPartsFromEndpointsKey(key)
 		if namespaces.Has(ns) {
 			continue
 		}
-		delete(r.serviceUnits, k)
-		r.stateChanged = true
+		r.deleteServiceUnitInternal(key, service)
 	}
 
 	for k := range r.state {
@@ -622,7 +621,6 @@ func (r *templateRouter) createServiceUnitInternal(id ServiceUnitKey) {
 	}
 
 	r.serviceUnits[id] = service
-	r.stateChanged = true
 }
 
 // findMatchingServiceUnit finds the service with the given id - internal
@@ -645,13 +643,22 @@ func (r *templateRouter) DeleteServiceUnit(id ServiceUnitKey) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	_, ok := r.findMatchingServiceUnit(id)
+	service, ok := r.findMatchingServiceUnit(id)
 	if !ok {
 		return
 	}
 
+	r.deleteServiceUnitInternal(id, service)
+}
+
+// deleteServiceUnitInternal deletes the service with the given
+// id. It differs from DeleteServiceUnit() as it assumes the
+// caller has taken the lock.
+func (r *templateRouter) deleteServiceUnitInternal(id ServiceUnitKey, service ServiceUnit) {
 	delete(r.serviceUnits, id)
-	r.stateChanged = true
+	if len(service.ServiceAliasAssociations) > 0 {
+		r.stateChanged = true
+	}
 }
 
 // addServiceAliasAssociation adds a reference to the backend in the ServiceUnit config.
@@ -820,7 +827,9 @@ func (r *templateRouter) DeleteEndpoints(id ServiceUnitKey) {
 
 	r.serviceUnits[id] = service
 
-	r.stateChanged = true
+	if len(service.ServiceAliasAssociations) > 0 {
+		r.stateChanged = true
+	}
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
 }
 
@@ -1033,8 +1042,9 @@ func (r *templateRouter) AddEndpoints(id ServiceUnitKey, endpoints []Endpoint) {
 	r.serviceUnits[id] = frontend
 
 	configChanged := r.dynamicallyReplaceEndpoints(id, frontend, oldEndpoints)
-
-	r.stateChanged = true
+	if len(frontend.ServiceAliasAssociations) > 0 {
+		r.stateChanged = true
+	}
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
 }
 
