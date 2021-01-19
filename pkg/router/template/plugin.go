@@ -252,42 +252,62 @@ func getPartsFromEndpointsKey(key ServiceUnitKey) (string, string) {
 	return namespace, name
 }
 
+// subsetHasAddresses returns true if subsets has any addresses.
+func subsetHasAddresses(subsets []kapi.EndpointSubset) bool {
+	for i := range subsets {
+		if len(subsets[i].Addresses) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// serviceIsIdled return true if the service has been annotated with
+// unidlingapi.IdledAtAnnotation.
+func serviceIsIdled(service *kapi.Service) bool {
+	value, _ := service.Annotations[unidlingapi.IdledAtAnnotation]
+	return len(value) > 0
+}
+
 // createRouterEndpoints creates openshift router endpoints based on k8s endpoints
 func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc ServiceLookup) []Endpoint {
 	// check if this service is currently idled
 	wasIdled := false
 	subsets := endpoints.Subsets
-	if _, ok := endpoints.Annotations[unidlingapi.IdledAtAnnotation]; ok && len(endpoints.Subsets) == 0 {
+
+	if !subsetHasAddresses(subsets) {
 		service, err := lookupSvc.LookupService(endpoints)
 		if err != nil {
-			utilruntime.HandleError(fmt.Errorf("unable to find idled service corresponding to idled endpoints %s/%s: %v", endpoints.Namespace, endpoints.Name, err))
+			utilruntime.HandleError(fmt.Errorf("unable to find service %s/%s: %v", endpoints.Namespace, endpoints.Name, err))
 			return []Endpoint{}
 		}
 
-		if !isServiceIPSet(service) {
-			utilruntime.HandleError(fmt.Errorf("headless service %s/%s was marked as idled, but cannot setup unidling without a cluster IP", endpoints.Namespace, endpoints.Name))
-			return []Endpoint{}
-		}
-
-		svcSubset := kapi.EndpointSubset{
-			Addresses: []kapi.EndpointAddress{
-				{
-					IP: service.Spec.ClusterIP,
-				},
-			},
-		}
-
-		for _, port := range service.Spec.Ports {
-			endptPort := kapi.EndpointPort{
-				Name:     port.Name,
-				Port:     port.Port,
-				Protocol: port.Protocol,
+		if serviceIsIdled(service) {
+			if !isServiceIPSet(service) {
+				utilruntime.HandleError(fmt.Errorf("headless service %s/%s was marked as idled, but cannot setup unidling without a cluster IP", endpoints.Namespace, endpoints.Name))
+				return []Endpoint{}
 			}
-			svcSubset.Ports = append(svcSubset.Ports, endptPort)
-		}
 
-		subsets = []kapi.EndpointSubset{svcSubset}
-		wasIdled = true
+			svcSubset := kapi.EndpointSubset{
+				Addresses: []kapi.EndpointAddress{
+					{
+						IP: service.Spec.ClusterIP,
+					},
+				},
+			}
+
+			for _, port := range service.Spec.Ports {
+				endptPort := kapi.EndpointPort{
+					Name:     port.Name,
+					Port:     port.Port,
+					Protocol: port.Protocol,
+				}
+				svcSubset.Ports = append(svcSubset.Ports, endptPort)
+			}
+
+			subsets = []kapi.EndpointSubset{svcSubset}
+			wasIdled = true
+		}
 	}
 
 	out := make([]Endpoint, 0, len(endpoints.Subsets)*4)
