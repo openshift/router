@@ -143,7 +143,6 @@ func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Rou
 		switch eventType {
 		case watch.Added, watch.Modified:
 			if err := p.addRoute(route); err != nil {
-				log.Error(err, "route not admitted", "routeNameKey", routeNameKey(route))
 				return err
 			}
 
