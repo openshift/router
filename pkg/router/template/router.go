@@ -1044,7 +1044,7 @@ func (r *templateRouter) AddEndpoints(id ServiceUnitKey, endpoints []Endpoint) {
 
 	//only make the change if there is a difference
 	if reflect.DeepEqual(frontend.EndpointTable, endpoints) {
-		log.V(4).Info("ignoring change, endpoints are the same", "id", id)
+		log.V(4).Info("ignoring change, endpoints are the same", "id", id, "frontend", frontend.EndpointTable, "endpoints", endpoints)
 		return
 	}
 

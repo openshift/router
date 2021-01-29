@@ -284,11 +284,15 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 			return []Endpoint{}
 		}
 
+		log.V(2).Info("service has idle annotations", "namespace", endpoints.Namespace, "name", endpoints.Name, "annotations", service.Annotations)
+
 		if serviceIsIdled(service) {
 			if !isServiceIPSet(service) {
 				utilruntime.HandleError(fmt.Errorf("headless service %s/%s was marked as idled, but cannot setup unidling without a cluster IP", endpoints.Namespace, endpoints.Name))
 				return []Endpoint{}
 			}
+
+			log.V(2).Info("service is idled", "namespace", endpoints.Namespace, "name", endpoints.Name)
 
 			svcSubset := kapi.EndpointSubset{
 				Addresses: []kapi.EndpointAddress{
