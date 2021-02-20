@@ -147,8 +147,6 @@ defaults
   compression type {{env "ROUTER_COMPRESSION_MIME" "text/html text/plain text/css"}}
 {{- end }}
 
-  {{ if isTrue $router_disable_http2 }}no {{ end }}option http-use-htx
-
 {{- if isTrue (env "ROUTER_DONT_LOG_NULL") }}
   option dontlognull
 {{- end }}
