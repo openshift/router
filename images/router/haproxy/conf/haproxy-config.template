@@ -18,11 +18,14 @@
 {{- /* ipPattern: Match an IPv4 address; e.g. 192.168.21.23 */}}
 {{- $ipPattern := printf `(?:%s\.%s\.%s\.%s)` $quadPattern $quadPattern $quadPattern $quadPattern -}}
 
-{{- /* cidrPattern: Match an IP and network size in CIDR form; e.g. 192.168.21.23/24 */}}
+{{- /* ipv6Pattern: Match an Ipv6 CIDR, inspired by https://www.regexpal.com/93988 (replaced all capturing groups with non-capturing ones) */}}
+{{- $ipv6CidrPattern := "(?:(?:(?:(?:[0-9A-Fa-f]{1,4}:){7}(?:[0-9A-Fa-f]{1,4}|:))|(?:(?:[0-9A-Fa-f]{1,4}:){6}(?::[0-9A-Fa-f]{1,4}|(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(?:(?:[0-9A-Fa-f]{1,4}:){5}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,2})|:(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3})|:))|(?:(?:[0-9A-Fa-f]{1,4}:){4}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,3})|(?:(?::[0-9A-Fa-f]{1,4})?:(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(?:(?:[0-9A-Fa-f]{1,4}:){3}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,4})|(?:(?::[0-9A-Fa-f]{1,4}){0,2}:(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(?:(?:[0-9A-Fa-f]{1,4}:){2}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,5})|(?:(?::[0-9A-Fa-f]{1,4}){0,3}:(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(?:(?:[0-9A-Fa-f]{1,4}:){1}(?:(?:(?::[0-9A-Fa-f]{1,4}){1,6})|(?:(?::[0-9A-Fa-f]{1,4}){0,4}:(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:))|(?::(?:(?:(?::[0-9A-Fa-f]{1,4}){1,7})|(?:(?::[0-9A-Fa-f]{1,4}){0,5}:(?:(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)(?:.(?:25[0-5]|2[0-4]d|1dd|[1-9]?d)){3}))|:)))(?:/(?:[0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?)" -}}
+
+{{- /* cidrPattern: Match an IP and network size in CIDR form (IPv4 and IPv6); e.g. 192.168.21.23/24 or fc00::/7 */}}
 {{- $cidrPattern := printf `(?:%s(?:/(?:[0-9]|[1-2][0-9]|3[0-2]))?)` $ipPattern -}}
 
-{{- /* cidrListPattern: Match a space separated list of CIDRs; e.g. 192.168.21.23/24 192.10.2.12 */}}
-{{- $cidrListPattern := printf `(?:%s(?: +%s)*)` $cidrPattern $cidrPattern -}}
+{{- /* cidrListPattern: Match a space separated list of CIDRs (IPv4/IPv6); e.g. 192.168.21.23/24 192.10.2.12 fc00::/7 */}}
+{{- $cidrListPattern := printf `(?:(?:%s|%s)(?: +(?:%s|%s))*)` $cidrPattern $ipv6CidrPattern $cidrPattern $ipv6CidrPattern -}}
 
 {{- /* cookie name pattern: */}}
 {{- $cookieNamePattern := `[a-zA-Z0-9_-]+` -}}
@@ -31,7 +34,7 @@
 
 {{- /* hsts header in response: */}}
 {{- $hstsOptionalTokenPattern := `(?:includeSubDomains|preload)` }}
-{{- $hstsPattern := printf `(?:%[1]s[;])*max-age=(?:\d+|"\d+")(?:[;]%[1]s)*`  $hstsOptionalTokenPattern -}}
+{{- $hstsPattern := printf `(?:%[1]s[;])*max-age=(?:\d+|"\d+")(?:[;]%[1]s)*` $hstsOptionalTokenPattern -}}
 
 {{- /* setForwardedHeadersPattern matches valid options for how and when Forwarded: and X-Forwarded-*: headers are set. */}}
 {{- $setForwardedHeadersPattern := `(?:append|replace|if-none|never)` -}}
