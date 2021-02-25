@@ -334,6 +334,10 @@ frontend fe_sni
   http-request set-header X-SSL-Client-NotBefore %{+Q}[ssl_c_notbefore]
   http-request set-header X-SSL-Client-NotAfter  %{+Q}[ssl_c_notafter]
   http-request set-header X-SSL-Client-DER       %{+Q}[ssl_c_der,base64]
+  # For Tomcat SSL Valve
+  http-request set-header X-SSL-Cipher           %{+Q}[ssl_fc_cipher] 
+  http-request set-header X-SSL-Session-ID       %{+Q}[ssl_fc_session_id,hex]
+  http-request set-header X-SSL-Algo-KeySize     %{+Q}[ssl_fc_alg_keysize] 
   {{- end }}
 
   # map to backend
