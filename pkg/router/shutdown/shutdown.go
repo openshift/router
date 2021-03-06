@@ -27,3 +27,12 @@ func SetupSignalHandler() <-chan struct{} {
 
 	return stop
 }
+
+// RequestShutdown triggers shutdown by sending the shutdown handler a fake
+// signal.
+func RequestShutdown() {
+	select {
+	case shutdownHandler <- shutdownSignals[0]:
+	default:
+	}
+}
