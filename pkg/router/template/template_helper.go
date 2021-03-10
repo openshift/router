@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -31,9 +32,46 @@ func isTrue(s string) bool {
 	return v
 }
 
+// compiledRegexp is the store of already compiled regular
+// expressions.
+var compiledRegexp sync.Map
+
+// cachedRegexpCompile will compile pattern using regexp.Compile and
+// adds it to the compiledRegexp store if it is not already present.
+// It will return an error error if pattern is an invalid regular
+// expression. If pattern already exists in the store then no
+// compilation is necessary and the existing compiled regexp is
+// returned. This provides a huge performance improvement as repeated
+// calls to compiling a regular expression is enormous. See:
+// https://bugzilla.redhat.com/show_bug.cgi?id=1937972
+func cachedRegexpCompile(pattern string) (*regexp.Regexp, error) {
+	v, ok := compiledRegexp.Load(pattern)
+	if !ok {
+		log.V(7).Info("compiling regexp", "pattern", pattern)
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, err
+		}
+		compiledRegexp.Store(pattern, re)
+		return re, nil
+	}
+	return v.(*regexp.Regexp), nil
+}
+
+// matchString reports whether the string s contains any match in
+// pattern. Repeated re-compilations of the regular expression
+// (pattern) are avoided by utilising the cachedRegexpCompile store.
+func matchString(pattern string, s string) (bool, error) {
+	re, err := cachedRegexpCompile(pattern)
+	if err != nil {
+		return false, err
+	}
+	return re.MatchString(s), nil
+}
+
 func firstMatch(pattern string, values ...string) string {
 	log.V(7).Info("firstMatch called", "pattern", pattern, "values", values)
-	if re, err := regexp.Compile(`\A(?:` + pattern + `)\z`); err == nil {
+	if re, err := cachedRegexpCompile(`\A(?:` + pattern + `)\z`); err == nil {
 		for _, value := range values {
 			if re.MatchString(value) {
 				log.V(7).Info("firstMatch returning", "value", value)
@@ -80,7 +118,7 @@ func matchValues(s string, allowedValues ...string) bool {
 
 func matchPattern(pattern, s string) bool {
 	log.V(7).Info("matchPattern called", "pattern", pattern, "s", s)
-	status, err := regexp.MatchString(`\A(?:`+pattern+`)\z`, s)
+	status, err := matchString(`\A(?:`+pattern+`)\z`, s)
 	if err == nil {
 		log.V(7).Info("matchPattern returning", "foundMatch", status)
 		return status
