@@ -446,6 +446,7 @@ func (r *templateRouter) commitAndReload() error {
 		reloadStart := time.Now()
 		err := r.writeConfig()
 		r.metricWriteConfig.Observe(float64(time.Now().Sub(reloadStart)) / float64(time.Second))
+		log.V(4).Info("writeConfig", "duration", time.Now().Sub(reloadStart).String())
 		return err
 	}(); err != nil {
 		return err
