@@ -71,8 +71,10 @@ global
 
   # Increase the default request size to be comparable to modern cloud load balancers (ALB: 64kb), affects
   # total memory use when large numbers of connections are open.
-  tune.maxrewrite 8192
-  tune.bufsize 32768
+  # In OCP 4.8, this value is adjustable via the IngressController API.
+  # Cluster administrators are still encouraged to use the default values provided below.
+  tune.maxrewrite {{env "ROUTER_MAX_REWRITE_SIZE" "8192"}}
+  tune.bufsize {{env "ROUTER_BUF_SIZE" "32768"}}
 
   {{- range $idx, $adjustment := .HTTPHeaderNameCaseAdjustments }}
   h1-case-adjust {{ $adjustment.From }} {{ $adjustment.To }}
