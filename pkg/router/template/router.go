@@ -98,8 +98,8 @@ type templateRouter struct {
 	stateChanged bool
 	// metricReload tracks reloads
 	metricReload prometheus.Summary
-	// metricReloadFails tracks reload failures
-	metricReloadFails prometheus.Counter
+	// metricReloadFailure tracks reload failures
+	metricReloadFailure prometheus.Gauge
 	// metricWriteConfig tracks writing config
 	metricWriteConfig prometheus.Summary
 	// dynamicConfigManager configures route changes dynamically on the
@@ -180,12 +180,12 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		Help:      "Measures the time spent reloading the router in seconds.",
 	})
 	prometheus.MustRegister(metricsReload)
-	metricReloadFails := prometheus.NewCounter(prometheus.CounterOpts{
+	metricReloadFailure := prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "template_router",
-		Name:      "reload_fails",
-		Help:      "Tracks the number of failed router reloads",
+		Name:      "reload_failure",
+		Help:      "Metric to track the status of the most recent HAProxy reload",
 	})
-	prometheus.MustRegister(metricReloadFails)
+	prometheus.MustRegister(metricReloadFailure)
 	metricWriteConfig := prometheus.NewSummary(prometheus.SummaryOpts{
 		Namespace: "template_router",
 		Name:      "write_config_seconds",
@@ -214,9 +214,9 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		bindPortsAfterSync:       cfg.bindPortsAfterSync,
 		dynamicConfigManager:     cfg.dynamicConfigManager,
 
-		metricReload:      metricsReload,
-		metricReloadFails: metricReloadFails,
-		metricWriteConfig: metricWriteConfig,
+		metricReload:        metricsReload,
+		metricReloadFailure: metricReloadFailure,
+		metricWriteConfig:   metricWriteConfig,
 
 		rateLimitedCommitFunction: nil,
 	}
@@ -440,10 +440,13 @@ func (r *templateRouter) commitAndReload() error {
 		if r.dynamicConfigManager != nil {
 			r.dynamicConfigManager.Notify(RouterEventReloadError)
 		}
-		// Increment the failed reload counter when a reload fails
-		r.metricReloadFails.Inc()
+		// Set the metricReloadFailure metric to true when a reload fails.
+		r.metricReloadFailure.Set(float64(1))
 		return err
 	}
+
+	// Set the metricReloadFailure metric to false when a reload succeeds.
+	r.metricReloadFailure.Set(float64(0))
 
 	if r.dynamicConfigManager != nil {
 		r.dynamicConfigManager.Notify(RouterEventReloadEnd)
