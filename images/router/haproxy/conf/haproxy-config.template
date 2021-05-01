@@ -116,6 +116,14 @@ global
       {{- end }}
     {{- end }}
   {{- end }}
+  {{/*
+    The ssl-default-bind-ciphers option above configures ciphers for TLSv1.0,
+    TLSv1.1, and TLSv1.2; for TLSv1.3, cipher suites are configured using the
+    ssl-default-bind-ciphersuites option below.
+  */}}
+  {{- with $ciphersuites := (env "ROUTER_CIPHERSUITES") }}
+  ssl-default-bind-ciphersuites {{ $ciphersuites }}
+  {{- end }}
 
 defaults
   maxconn {{ env "ROUTER_MAX_CONNECTIONS" "20000" }}
