@@ -9,7 +9,7 @@ import (
 	"time"
 
 	kapi "k8s.io/api/core/v1"
-	discoveryv1beta1 "k8s.io/api/discovery/v1beta1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -140,10 +140,10 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 	if f.watchEndpoints {
 		f.registerSharedInformerEventHandlers(&kapi.Endpoints{}, rc.HandleEndpoints)
 	} else {
-		f.registerSharedInformerEventHandlers(&discoveryv1beta1.EndpointSlice{}, func(eventType watch.EventType, obj interface{}) {
-			eps := obj.(*discoveryv1beta1.EndpointSlice)
+		f.registerSharedInformerEventHandlers(&discoveryv1.EndpointSlice{}, func(eventType watch.EventType, obj interface{}) {
+			eps := obj.(*discoveryv1.EndpointSlice)
 			if serviceName := endpointSliceServiceName(eps); len(serviceName) == 0 {
-				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", discoveryv1beta1.LabelServiceName)
+				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", discoveryv1.LabelServiceName)
 			} else {
 				objMeta := eps.ObjectMeta.DeepCopy()
 				objMeta.Name = serviceName
@@ -160,13 +160,13 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 
 }
 
-func (f *RouterControllerFactory) aggregateEndpointSlice(namespace, name string) []discoveryv1beta1.EndpointSlice {
-	objType := reflect.TypeOf(&discoveryv1beta1.EndpointSlice{})
+func (f *RouterControllerFactory) aggregateEndpointSlice(namespace, name string) []discoveryv1.EndpointSlice {
+	objType := reflect.TypeOf(&discoveryv1.EndpointSlice{})
 	objs, _ := f.informers[objType].GetIndexer().ByIndex(ServiceNameIndex, path.Join(namespace, name))
-	fullSet := make([]discoveryv1beta1.EndpointSlice, len(objs), len(objs))
+	fullSet := make([]discoveryv1.EndpointSlice, len(objs), len(objs))
 
 	for i := range objs {
-		eps := objs[i].(*discoveryv1beta1.EndpointSlice)
+		eps := objs[i].(*discoveryv1.EndpointSlice)
 		fullSet[i] = *eps.DeepCopy()
 	}
 
@@ -217,8 +217,8 @@ func (f *RouterControllerFactory) processExistingItems(rc *routercontroller.Rout
 	} else {
 		processedServices := map[string]bool{}
 
-		for _, item := range f.informerStoreList(&discoveryv1beta1.EndpointSlice{}) {
-			eps := item.(*discoveryv1beta1.EndpointSlice)
+		for _, item := range f.informerStoreList(&discoveryv1.EndpointSlice{}) {
+			eps := item.(*discoveryv1.EndpointSlice)
 
 			serviceName := endpointSliceServiceName(eps)
 			if len(serviceName) == 0 {
@@ -391,15 +391,15 @@ func (r routeAge) Less(i, j int) bool {
 	return routeapihelpers.RouteLessThan(&r[i], &r[j])
 }
 
-func endpointSliceServiceName(eps *discoveryv1beta1.EndpointSlice) string {
-	if name, ok := eps.Labels[discoveryv1beta1.LabelServiceName]; ok && name != "" {
+func endpointSliceServiceName(eps *discoveryv1.EndpointSlice) string {
+	if name, ok := eps.Labels[discoveryv1.LabelServiceName]; ok && name != "" {
 		return name
 	}
 	return ""
 }
 
 func endpointSliceByServiceLabelIndexFunc(obj interface{}) ([]string, error) {
-	if eps, ok := obj.(*discoveryv1beta1.EndpointSlice); ok {
+	if eps, ok := obj.(*discoveryv1.EndpointSlice); ok {
 		if name := endpointSliceServiceName(eps); name != "" {
 			return []string{path.Join(eps.Namespace, name)}, nil
 		}
@@ -411,13 +411,13 @@ func (f *RouterControllerFactory) createEndpointSliceSharedInformer() {
 	// we do not scope endpointSlice by labels or fields because the route labels != endpoints labels
 	lw := &kcache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return f.KClient.DiscoveryV1beta1().EndpointSlices(f.Namespace).List(context.TODO(), options)
+			return f.KClient.DiscoveryV1().EndpointSlices(f.Namespace).List(context.TODO(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return f.KClient.DiscoveryV1beta1().EndpointSlices(f.Namespace).Watch(context.TODO(), options)
+			return f.KClient.DiscoveryV1().EndpointSlices(f.Namespace).Watch(context.TODO(), options)
 		},
 	}
-	eps := &discoveryv1beta1.EndpointSlice{}
+	eps := &discoveryv1.EndpointSlice{}
 	objType := reflect.TypeOf(eps)
 	informer := kcache.NewSharedIndexInformer(lw, eps, f.ResyncInterval, kcache.Indexers{
 		kcache.NamespaceIndex: kcache.MetaNamespaceIndexFunc,

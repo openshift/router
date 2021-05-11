@@ -1,22 +1,22 @@
 package endpointsubset
 
 import (
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/discovery/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 )
 
 // ConvertEndpointSlice converts items to a slice of EndpointSubset's.
-func ConvertEndpointSlice(items []v1beta1.EndpointSlice, addressOrderByFuncs []EndpointAddressLessFunc, portOrderByFuncs []EndpointPortLessFunc) []v1.EndpointSubset {
-	var subsets []v1.EndpointSubset
+func ConvertEndpointSlice(items []discoveryv1.EndpointSlice, addressOrderByFuncs []EndpointAddressLessFunc, portOrderByFuncs []EndpointPortLessFunc) []corev1.EndpointSubset {
+	var subsets []corev1.EndpointSubset
 
 	for i := range items {
-		var ports []v1.EndpointPort
-		var addresses []v1.EndpointAddress
-		var notReadyAddresses []v1.EndpointAddress
+		var ports []corev1.EndpointPort
+		var addresses []corev1.EndpointAddress
+		var notReadyAddresses []corev1.EndpointAddress
 
 		for j := range items[i].Endpoints {
 			for k := range items[i].Endpoints[j].Addresses {
-				epa := v1.EndpointAddress{
+				epa := corev1.EndpointAddress{
 					IP:        items[i].Endpoints[j].Addresses[k],
 					TargetRef: items[i].Endpoints[j].TargetRef,
 				}
@@ -33,7 +33,7 @@ func ConvertEndpointSlice(items []v1beta1.EndpointSlice, addressOrderByFuncs []E
 		}
 
 		for j := range items[i].Ports {
-			endpointPort := v1.EndpointPort{
+			endpointPort := corev1.EndpointPort{
 				AppProtocol: items[i].Ports[j].AppProtocol,
 			}
 			if items[i].Ports[j].Name != nil {
@@ -52,7 +52,7 @@ func ConvertEndpointSlice(items []v1beta1.EndpointSlice, addressOrderByFuncs []E
 		SortAddresses(notReadyAddresses, addressOrderByFuncs)
 		SortPorts(ports, portOrderByFuncs)
 
-		subsets = append(subsets, v1.EndpointSubset{
+		subsets = append(subsets, corev1.EndpointSubset{
 			Addresses:         addresses,
 			NotReadyAddresses: notReadyAddresses,
 			Ports:             ports,

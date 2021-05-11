@@ -9,7 +9,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	kapi "k8s.io/api/core/v1"
-	discoveryv1beta1 "k8s.io/api/discovery/v1beta1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -230,7 +230,7 @@ func (c *RouterController) HandleEndpoints(eventType watch.EventType, obj interf
 }
 
 // HandleEndpointSlice handles a single EndpointSlice event and refreshes the router backend.
-func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMeta metav1.ObjectMeta, items []discoveryv1beta1.EndpointSlice) {
+func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMeta metav1.ObjectMeta, items []discoveryv1.EndpointSlice) {
 	endpoints := &kapi.Endpoints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            objMeta.Name,
