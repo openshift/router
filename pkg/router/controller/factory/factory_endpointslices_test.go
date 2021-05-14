@@ -11,7 +11,7 @@ import (
 	fakeproject "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1/fake"
 	fakerouterclient "github.com/openshift/client-go/route/clientset/versioned/fake"
 	kapi "k8s.io/api/core/v1"
-	discoveryv1beta1 "k8s.io/api/discovery/v1beta1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -100,23 +100,23 @@ func TestEndpointSlicesAdd(t *testing.T) {
 	defer close(stopCh)
 
 	type testCase struct {
-		sliceToAdd              discoveryv1beta1.EndpointSlice
+		sliceToAdd              discoveryv1.EndpointSlice
 		expectedServiceName     string
 		expectedEventType       watch.EventType
 		expectedEndpointSubsets []kapi.EndpointSubset
 	}
 
 	testCases := []testCase{{
-		sliceToAdd: discoveryv1beta1.EndpointSlice{
+		sliceToAdd: discoveryv1.EndpointSlice{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "slice-1",
 				Namespace: "namespace-a",
 				Labels: map[string]string{
-					discoveryv1beta1.LabelServiceName: "service-a",
+					discoveryv1.LabelServiceName: "service-a",
 				},
 			},
-			AddressType: discoveryv1beta1.AddressTypeIPv4,
-			Endpoints: []discoveryv1beta1.Endpoint{{
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{{
 				Addresses: []string{
 					"192.168.0.1",
 					"10.0.0.1",
@@ -124,7 +124,7 @@ func TestEndpointSlicesAdd(t *testing.T) {
 				},
 				Hostname: stringPtr("service.com"),
 			}},
-			Ports: []discoveryv1beta1.EndpointPort{{
+			Ports: []discoveryv1.EndpointPort{{
 				Port: int32Ptr(8080),
 			}, {
 				Name:     stringPtr("https"),
@@ -162,22 +162,22 @@ func TestEndpointSlicesAdd(t *testing.T) {
 			}},
 		}},
 	}, {
-		sliceToAdd: discoveryv1beta1.EndpointSlice{
+		sliceToAdd: discoveryv1.EndpointSlice{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "slice-2",
 				Namespace: "namespace-a",
 				Labels: map[string]string{
-					discoveryv1beta1.LabelServiceName: "service-a",
+					discoveryv1.LabelServiceName: "service-a",
 				},
 			},
-			AddressType: discoveryv1beta1.AddressTypeIPv4,
-			Endpoints: []discoveryv1beta1.Endpoint{{
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{{
 				Addresses: []string{
 					"172.16.10.2",
 					"172.16.10.1",
 				},
 			}},
-			Ports: []discoveryv1beta1.EndpointPort{{
+			Ports: []discoveryv1.EndpointPort{{
 				Port: int32Ptr(101),
 			}, {
 				Port: int32Ptr(100),
@@ -220,12 +220,12 @@ func TestEndpointSlicesAdd(t *testing.T) {
 			}},
 		}},
 	}, {
-		sliceToAdd: discoveryv1beta1.EndpointSlice{
+		sliceToAdd: discoveryv1.EndpointSlice{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "slice-1",
 				Namespace: "namespace-b",
 				Labels: map[string]string{
-					discoveryv1beta1.LabelServiceName: "service-b",
+					discoveryv1.LabelServiceName: "service-b",
 				},
 			},
 		},
@@ -236,7 +236,7 @@ func TestEndpointSlicesAdd(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
-			if _, err := client.DiscoveryV1beta1().EndpointSlices(tc.sliceToAdd.Namespace).Create(context.TODO(), &tc.sliceToAdd, metav1.CreateOptions{}); err != nil {
+			if _, err := client.DiscoveryV1().EndpointSlices(tc.sliceToAdd.Namespace).Create(context.TODO(), &tc.sliceToAdd, metav1.CreateOptions{}); err != nil {
 				t.Fatalf("failed to create endpointslice %s: %v", tc.sliceToAdd.Name, err)
 			}
 
@@ -266,20 +266,20 @@ func TestEndpointSlicesAdd(t *testing.T) {
 func TestEndpointSlicesDelete(t *testing.T) {
 	defer leaktest.CheckTimeout(t, endpointSliceTestTimeout)()
 
-	eps1 := discoveryv1beta1.EndpointSlice{
+	eps1 := discoveryv1.EndpointSlice{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "endpointslices",
-			APIVersion: "discovery.k8s.io/v1beta1",
+			Kind:       "EndpointSlice",
+			APIVersion: "discovery.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "slice-1",
 			Namespace: "namespace-a",
 			Labels: map[string]string{
-				discoveryv1beta1.LabelServiceName: "service-a",
+				discoveryv1.LabelServiceName: "service-a",
 			},
 		},
-		AddressType: discoveryv1beta1.AddressTypeIPv4,
-		Endpoints: []discoveryv1beta1.Endpoint{{
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{{
 			Addresses: []string{
 				"192.168.0.1",
 				"10.0.0.1",
@@ -287,7 +287,7 @@ func TestEndpointSlicesDelete(t *testing.T) {
 			},
 			Hostname: stringPtr("service.com"),
 		}},
-		Ports: []discoveryv1beta1.EndpointPort{{
+		Ports: []discoveryv1.EndpointPort{{
 			Port: int32Ptr(8080),
 		}, {
 			Name:     stringPtr("https"),
@@ -300,26 +300,26 @@ func TestEndpointSlicesDelete(t *testing.T) {
 		}},
 	}
 
-	eps2 := discoveryv1beta1.EndpointSlice{
+	eps2 := discoveryv1.EndpointSlice{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "endpointslices",
-			APIVersion: "discovery.k8s.io/v1beta1",
+			Kind:       "EndpointSlice",
+			APIVersion: "discovery.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "slice-2",
 			Namespace: "namespace-a",
 			Labels: map[string]string{
-				discoveryv1beta1.LabelServiceName: "service-a",
+				discoveryv1.LabelServiceName: "service-a",
 			},
 		},
-		AddressType: discoveryv1beta1.AddressTypeIPv4,
-		Endpoints: []discoveryv1beta1.Endpoint{{
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{{
 			Addresses: []string{
 				"172.16.10.2",
 				"172.16.10.1",
 			},
 		}},
-		Ports: []discoveryv1beta1.EndpointPort{{
+		Ports: []discoveryv1.EndpointPort{{
 			Port: int32Ptr(101),
 		}, {
 			Port: int32Ptr(100),
@@ -333,8 +333,8 @@ func TestEndpointSlicesDelete(t *testing.T) {
 	client, stopCh := newEndpointSliceTestSetup(plugin)
 	defer close(stopCh)
 
-	for _, eps := range []discoveryv1beta1.EndpointSlice{eps1, eps2} {
-		if _, err := client.DiscoveryV1beta1().EndpointSlices(eps.Namespace).Create(context.TODO(), &eps, metav1.CreateOptions{}); err != nil {
+	for _, eps := range []discoveryv1.EndpointSlice{eps1, eps2} {
+		if _, err := client.DiscoveryV1().EndpointSlices(eps.Namespace).Create(context.TODO(), &eps, metav1.CreateOptions{}); err != nil {
 			t.Fatalf("failed to create endpointslice %s: %v", eps.Name, err)
 		}
 
@@ -347,7 +347,7 @@ func TestEndpointSlicesDelete(t *testing.T) {
 
 	type testCase struct {
 		description             string
-		sliceToDelete           discoveryv1beta1.EndpointSlice
+		sliceToDelete           discoveryv1.EndpointSlice
 		expectedEndpointSubsets []kapi.EndpointSubset
 		expectedEventType       watch.EventType
 		expectDeleteError       bool
@@ -381,7 +381,7 @@ func TestEndpointSlicesDelete(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
-			if err := client.DiscoveryV1beta1().EndpointSlices(tc.sliceToDelete.Namespace).Delete(context.TODO(), tc.sliceToDelete.Name, metav1.DeleteOptions{}); err != nil {
+			if err := client.DiscoveryV1().EndpointSlices(tc.sliceToDelete.Namespace).Delete(context.TODO(), tc.sliceToDelete.Name, metav1.DeleteOptions{}); err != nil {
 				if tc.expectDeleteError {
 					return
 				}
