@@ -2,6 +2,7 @@
 
 set -o nounset
 
+old_config_file=/tmp/haproxy.config.old
 config_file=/var/lib/haproxy/conf/haproxy.config
 pid_file=/var/lib/haproxy/run/haproxy.pid
 readonly timeout_opts="-m 1 --connect-timeout 1"
@@ -89,6 +90,12 @@ if [ -n "${ROUTER_SHUTDOWN-}" ]; then
   echo "error: Some processes did not exit within ${shutdown_wait_time}s"
   exit 1
 fi
+
+if [[ -e "$old_config_file" ]]; then
+  echo " - Diff of new haproxy.config to old one:"
+  /bin/diff -u "$old_config_file" "$config_file"
+fi
+/bin/cp -f "$config_file" "$old_config_file"
 
 reload_status=0
 if [ -n "$old_pids" ]; then
