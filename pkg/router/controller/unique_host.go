@@ -235,7 +235,8 @@ func ValidateHostName(route *routev1.Route) field.ErrorList {
 	}
 	hostPath := field.NewPath("spec.host")
 
-	result = routeapi.ValidateHost(route.Spec.Host, "false", hostPath)
+	lenient, _ := route.Annotations[routev1.AllowNonDNSCompliantHostAnnotation]
+	result = routeapi.ValidateHost(route.Spec.Host, lenient, hostPath)
 
 	return result
 }
