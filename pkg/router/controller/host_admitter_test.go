@@ -878,23 +878,23 @@ func TestDisableOwnershipChecksFuzzing(t *testing.T) {
 		ErrIf    sets.String
 	}{
 		// Wildcard and explicit allowed in different namespaces.
-		{Route: makeRoute("ns1", "r1", "server.org", "", true, makeTime(0*time.Second)), ErrIf: sets.NewString()},
-		{Route: makeRoute("ns1", "r2", "server.org", "/p1", false, makeTime(1*time.Second)), ErrIf: sets.NewString()},
+		{Route: makeRoute("ns1", "r1", "org", "", true, makeTime(0*time.Second)), ErrIf: sets.NewString()},
+		{Route: makeRoute("ns1", "r2", "org", "/p1", false, makeTime(1*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns1", "r3", "www.w3.org", "", false, makeTime(2*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns1", "r4", "www.w3.org", "/p1", true, makeTime(3*time.Second)), ErrIf: sets.NewString()},
-		{Route: makeRoute("ns1", "r5", "computer.info", "", false, makeTime(4*time.Second)), ErrIf: sets.NewString()},
-		{Route: makeRoute("ns2", "r1", "computer.info", "/p1", false, makeTime(10*time.Second)), ErrIf: sets.NewString()},
+		{Route: makeRoute("ns1", "r5", "info", "", false, makeTime(4*time.Second)), ErrIf: sets.NewString()},
+		{Route: makeRoute("ns2", "r1", "info", "/p1", false, makeTime(10*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns2", "r2", "www.server.info", "", false, makeTime(11*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns2", "r3", "www.server.info", "/p1", false, makeTime(12*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns2", "r4", "wild.server.info", "", true, makeTime(13*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns2", "r5", "wilder.server.info", "/p1", true, makeTime(14*time.Second)), ErrIf: sets.NewString()},
-		{Route: makeRoute("ns2", "r6", "server.org", "/other", false, makeTime(15*time.Second)), ErrIf: sets.NewString()},
+		{Route: makeRoute("ns2", "r6", "org", "/other", false, makeTime(15*time.Second)), ErrIf: sets.NewString()},
 
 		// Fails because of another wildcard/regular route
-		{Route: makeRoute("ns3", "r1", "server.org", "", true, makeTime(20*time.Second)), ErrIf: sets.NewString(`ns1/r1`)},
-		{Route: makeRoute("ns3", "r2", "server.org", "/p1", false, makeTime(21*time.Second)), ErrIf: sets.NewString(`ns1/r2`)},
-		{Route: makeRoute("ns3", "r3", "server.org", "", true, makeTime(22*time.Second)), ErrIf: sets.NewString(`ns1/r1`, `ns3/r1`)},
-		{Route: makeRoute("ns3", "r4", "computer.info", "", true, makeTime(23*time.Second)), ErrIf: sets.NewString(`ns1/r5`)},
+		{Route: makeRoute("ns3", "r1", "org", "", true, makeTime(20*time.Second)), ErrIf: sets.NewString(`ns1/r1`)},
+		{Route: makeRoute("ns3", "r2", "org", "/p1", false, makeTime(21*time.Second)), ErrIf: sets.NewString(`ns1/r2`)},
+		{Route: makeRoute("ns3", "r3", "org", "", true, makeTime(22*time.Second)), ErrIf: sets.NewString(`ns1/r1`, `ns3/r1`)},
+		{Route: makeRoute("ns3", "r4", "info", "", true, makeTime(23*time.Second)), ErrIf: sets.NewString(`ns1/r1`, `ns1/r5`, `ns3/r1`, `ns3/r3`)},
 
 		{Route: makeRoute("ns4", "r1", "www.server.info", "", false, makeTime(24*time.Second)), ErrIf: sets.NewString(`ns2/r2`)},
 		{Route: makeRoute("ns4", "r2", "www.server.info", "/p1", false, makeTime(25*time.Second)), ErrIf: sets.NewString(`ns2/r3`)},
@@ -903,7 +903,7 @@ func TestDisableOwnershipChecksFuzzing(t *testing.T) {
 		{Route: makeRoute("ns4", "r5", "wilder.server.info", "/p1", true, makeTime(28*time.Second)), ErrIf: sets.NewString(`ns2/r5`)},
 
 		// Works because of uniqueness.
-		{Route: makeRoute("ns5", "r1", "server.org", "/abc", true, makeTime(30*time.Second)), ErrIf: sets.NewString()},
+		{Route: makeRoute("ns5", "r1", "org", "/abc", true, makeTime(30*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("ns5", "r2", "www.server.info", "/xyz", false, makeTime(31*time.Second)), ErrIf: sets.NewString()},
 		{Route: makeRoute("p5", "r3", "www.server.info", "/abc/xyz", true, makeTime(32*time.Second)), ErrIf: sets.NewString()},
 
