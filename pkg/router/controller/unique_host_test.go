@@ -60,7 +60,7 @@ func TestValidateHostName(t *testing.T) {
 			expectedErrors: true,
 		},
 		{
-			name: "invalid-host-64-chars-label-cannot-be-overridden",
+			name: "invalid-host-64-chars-label-can-be-overridden",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -71,7 +71,7 @@ func TestValidateHostName(t *testing.T) {
 					Host: "name-namespace-1234567890-1234567890-1234567890-1234567890-12345.example.test",
 				},
 			},
-			expectedErrors: true,
+			expectedErrors: false,
 		},
 		{
 			name: "valid-name-253-chars",
@@ -115,7 +115,7 @@ func TestValidateHostName(t *testing.T) {
 			expectedErrors: true,
 		},
 		{
-			name: "invalid-name-one-label-cannot-be-overridden",
+			name: "invalid-name-one-label-can-be-overridden",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -126,7 +126,7 @@ func TestValidateHostName(t *testing.T) {
 					Host: "org",
 				},
 			},
-			expectedErrors: true,
+			expectedErrors: false,
 		},
 		{
 			name: "invalid-name-asterisk",
