@@ -185,15 +185,19 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 }
 
 type RouterStats struct {
-	StatsPortString string
-	StatsPassword   string
-	StatsUsername   string
+	StatsPortString   string
+	StatsPasswordFile string
+	StatsUsernameFile string
+	StatsPassword     string
+	StatsUsername     string
 
 	StatsPort int
 }
 
 func (o *RouterStats) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.StatsPortString, "stats-port", env("STATS_PORT", ""), "If the underlying router implementation can provide statistics this is a hint to expose it on this port. Ignored if listen-addr is specified.")
+	flag.StringVar(&o.StatsPasswordFile, "stats-password-file", env("STATS_PASSWORD_FILE", ""), "If the underlying router implementation can provide statistics this is the requested password file for auth.")
+	flag.StringVar(&o.StatsUsernameFile, "stats-user-file", env("STATS_USERNAME_FILE", ""), "If the underlying router implementation can provide statistics this is the requested username file for auth.")
 	flag.StringVar(&o.StatsPassword, "stats-password", env("STATS_PASSWORD", ""), "If the underlying router implementation can provide statistics this is the requested password for auth.")
 	flag.StringVar(&o.StatsUsername, "stats-user", env("STATS_USERNAME", ""), "If the underlying router implementation can provide statistics this is the requested username for auth.")
 }
@@ -543,10 +547,15 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
+
+		statsUsername, statsPassword, err := getStatsAuth(o.StatsUsernameFile, o.StatsPasswordFile, o.StatsUsername, o.StatsPassword)
+		if err != nil {
+			return err
+		}
 		l := metrics.Listener{
 			Addr:          o.ListenAddr,
-			Username:      o.StatsUsername,
-			Password:      o.StatsPassword,
+			Username:      statsUsername,
+			Password:      statsPassword,
 			Authenticator: authn,
 			Authorizer:    authz,
 			Record: authorizer.AttributesRecord{
@@ -610,6 +619,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		}
 	}
 
+	statsUsername, statsPassword, err := getStatsAuth(o.StatsUsernameFile, o.StatsPasswordFile, o.StatsUsername, o.StatsPassword)
+	if err != nil {
+		return err
+	}
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
@@ -621,8 +635,8 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		DefaultCertificateDir:         o.DefaultCertificateDir,
 		DefaultDestinationCAPath:      o.DefaultDestinationCAPath,
 		StatsPort:                     statsPort,
-		StatsUsername:                 o.StatsUsername,
-		StatsPassword:                 o.StatsPassword,
+		StatsUsername:                 statsUsername,
+		StatsPassword:                 statsPassword,
 		BindPortsAfterSync:            o.BindPortsAfterSync,
 		IncludeUDP:                    o.RouterSelection.IncludeUDP,
 		AllowWildcardRoutes:           o.RouterSelection.AllowWildcardRoutes,
@@ -797,4 +811,25 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		},
 		ClientAuth: tls.RequestClientCert,
 	}), nil
+}
+
+// getStatsAuth returns the available stats username and password.
+// If both statsUsernameFile and statsPasswordFile are non-empty, statsUsername
+// and statsPassword are ignored.
+// Returns the available stats username and password as strings, as well an error when appropriate.
+func getStatsAuth(statsUsernameFile, statsPasswordFile, statsUsername, statsPassword string) (string, string, error) {
+	if len(statsUsernameFile) > 0 && len(statsPasswordFile) > 0 {
+		usernameBytes, err := ioutil.ReadFile(statsUsernameFile)
+		if err != nil {
+			return "", "", err
+		}
+		passwordBytes, err := ioutil.ReadFile(statsPasswordFile)
+		if err != nil {
+			return "", "", err
+		}
+		statsUsername = string(usernameBytes)
+		statsPassword = string(passwordBytes)
+	}
+
+	return statsUsername, statsPassword, nil
 }
