@@ -7,11 +7,11 @@ import (
 	kapi "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	kvalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
-	routeapi "github.com/openshift/library-go/pkg/route/routeapihelpers"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller/hostindex"
@@ -100,7 +100,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 		return nil
 	}
 
-	// Validate that the route host name conforms to DNS requirements, same as openshift-apiserver.
+	// Validate that the route host name conforms to DNS requirements.
 	// Defends against routes created before validation rules were added for host names.
 	if errs := ValidateHostName(route); len(errs) > 0 {
 		log.V(4).Info("invalid host name", "routeName", routeName, "host", host)
@@ -227,15 +227,27 @@ func routeNameKey(route *routev1.Route) string {
 	return fmt.Sprintf("%s/%s", route.Namespace, route.Name)
 }
 
-// ValidateHostName checks that a route's host name meets DNS requirements.
+// ValidateHostName checks that a route's host name satisfies DNS requirements.
 func ValidateHostName(route *routev1.Route) field.ErrorList {
 	result := field.ErrorList{}
 	if len(route.Spec.Host) < 1 {
 		return result
 	}
-	hostPath := field.NewPath("spec.host")
 
-	result = routeapi.ValidateHost(route.Spec.Host, "false", hostPath)
+	specPath := field.NewPath("spec")
+	hostPath := specPath.Child("host")
+
+	if len(kvalidation.IsDNS1123Subdomain(route.Spec.Host)) != 0 {
+		result = append(result, field.Invalid(hostPath, route.Spec.Host, "host must conform to DNS 952 subdomain conventions"))
+	}
+
+	segments := strings.Split(route.Spec.Host, ".")
+	for _, s := range segments {
+		errs := kvalidation.IsDNS1123Label(s)
+		for _, e := range errs {
+			result = append(result, field.Invalid(hostPath, route.Spec.Host, e))
+		}
+	}
 
 	return result
 }
