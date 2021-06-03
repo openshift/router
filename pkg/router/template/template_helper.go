@@ -237,7 +237,7 @@ func validateHAProxyWhiteList(value string) bool {
 }
 
 // generateHAProxyWhiteListFile generates a whitelist file for use with an haproxy acl.
-func generateHAProxyWhiteListFile(workingDir, id, value string) string {
+func generateHAProxyWhiteListFile(workingDir string, id ServiceAliasConfigKey, value string) string {
 	name := path.Join(workingDir, whitelistDir, fmt.Sprintf("%s.txt", id))
 	cidrs, _ := haproxyutil.ValidateWhiteList(value)
 	data := []byte(strings.Join(cidrs, "\n") + "\n")
