@@ -177,10 +177,10 @@ func (p *TemplatePlugin) Stop() error {
 func (p *TemplatePlugin) HandleEndpoints(eventType watch.EventType, endpoints *kapi.Endpoints) error {
 	key := endpointsKey(endpoints)
 
-	log.V(4).Info("processing endpoints", "endpointCount", len(endpoints.Subsets), "namespace", endpoints.Namespace, "name", endpoints.Name, "eventType", eventType)
+	log.V(0).Info("processing endpoints", "endpointCount", len(endpoints.Subsets), "namespace", endpoints.Namespace, "name", endpoints.Name, "eventType", eventType)
 
 	for i, s := range endpoints.Subsets {
-		log.V(4).Info("processing subset", "index", i, "subset", s)
+		log.V(0).Info("processing subset", "index", i, "subset", s)
 	}
 
 	if _, ok := p.Router.FindServiceUnit(key); !ok {

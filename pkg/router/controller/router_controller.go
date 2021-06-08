@@ -187,7 +187,7 @@ func (c *RouterController) HandleNamespace(eventType watch.EventType, obj interf
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	log.V(4).Info("processing namespace", "namespace", ns.Name, "event", eventType)
+	log.V(0).Info("processing namespace", "namespace", ns.Name, "event", eventType)
 
 	c.processNamespace(eventType, ns)
 	c.Commit()
@@ -199,7 +199,7 @@ func (c *RouterController) HandleNode(eventType watch.EventType, obj interface{}
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	log.V(4).Info("processing node", "node", node.Name, "event", eventType)
+	log.V(0).Info("processing node", "node", node.Name, "event", eventType)
 
 	if err := c.Plugin.HandleNode(eventType, node); err != nil {
 		utilruntime.HandleError(err)
@@ -267,7 +267,7 @@ func (c *RouterController) Commit() {
 
 // processRoute logs and propagates a route event to the plugin
 func (c *RouterController) processRoute(eventType watch.EventType, route *routev1.Route) {
-	log.V(4).Info("processing route", "event", eventType, "route", route)
+	log.V(0).Info("processing route", "event", eventType, "route", route)
 
 	c.RecordNamespaceRoutes(eventType, route)
 	if err := c.Plugin.HandleRoute(eventType, route); err != nil {
