@@ -311,6 +311,8 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 	}
 
 	out := make([]Endpoint, 0, len(endpoints.Subsets)*4)
+	// For checking if the endpoints ID is duplicated.
+	duplicated := map[string]bool{}
 
 	// Return address as "[<address>]" if an IPv6 address,
 	// otherwise address is returned unadorned.
@@ -358,7 +360,13 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 				s := ep.ID
 				ep.IdHash = fmt.Sprintf("%x", md5.Sum([]byte(s)))
 
-				out = append(out, ep)
+				// Add only not duplicated endpoints.
+				if !duplicated[ep.ID] {
+					out = append(out, ep)
+					duplicated[ep.ID] = true
+				} else {
+					log.V(4).Info("skip a duplicated endpoints to add", ep.ID)
+				}
 			}
 		}
 	}
