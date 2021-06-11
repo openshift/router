@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -803,5 +805,69 @@ func TestClipHAProxyTimeoutValue(t *testing.T) {
 		if actual != tc.expected {
 			t.Errorf("clipHAProxyTimeoutValue yielded incorrect result: expected %s but got %s", tc.expected, actual)
 		}
+	}
+}
+
+func TestGenerateHAProxyWhiteListFile(t *testing.T) {
+	workDir := t.TempDir()
+
+	err := os.MkdirAll(path.Join(workDir, whitelistDir), 0740)
+	if err != nil {
+		t.Fatal("Unable to create the whitelist directory")
+	}
+
+	testCases := []struct {
+		name              string
+		workDir           string
+		id                ServiceAliasConfigKey
+		expectedWhiteList []string
+		failureExpected   bool
+	}{
+		{
+			name:    "Nominal",
+			workDir: workDir,
+			id:      ServiceAliasConfigKey("test1"),
+			expectedWhiteList: []string{
+				"192.168.0.1",
+				"192.168.0.2",
+				"192.168.0.3",
+			},
+		},
+		{
+			name:    "Nominal failure",
+			workDir: workDir + "-notexisting",
+			id:      ServiceAliasConfigKey("test2"),
+			expectedWhiteList: []string{
+				"192.168.0.1",
+				"192.168.0.2",
+				"192.168.0.3",
+			},
+			failureExpected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			file := generateHAProxyWhiteListFile(tc.workDir, tc.id, strings.Join(tc.expectedWhiteList, " "))
+			if tc.failureExpected {
+				if file != "" {
+					t.Fatal("Failure expected but didn't happen")
+				}
+				return
+			} else {
+				if file == "" {
+					t.Fatal("Unexpected failure")
+				}
+			}
+
+			contents, err := ioutil.ReadFile(file)
+			if err != nil {
+				t.Fatalf("Unable to read from the generated file: %v", err)
+			}
+			gotWhiteList := strings.Fields(string(contents))
+			if !reflect.DeepEqual(tc.expectedWhiteList, gotWhiteList) {
+				t.Errorf("Wrong whitelist written: expected %q, got %q", tc.expectedWhiteList, gotWhiteList)
+			}
+		})
 	}
 }
