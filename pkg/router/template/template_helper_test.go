@@ -871,3 +871,92 @@ func TestGenerateHAProxyWhiteListFile(t *testing.T) {
 		})
 	}
 }
+
+func TestParseIPList(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		expectedEmpty bool
+	}{
+		{
+			name:  "All mixed",
+			input: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+		},
+		{
+			name:  "IPs only",
+			input: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 64:ff9b::192.168.0.1 172.16.14.10",
+		},
+		{
+			name:  "CIDRs only",
+			input: "192.168.1.0/16 2001:0db8:85a3:0000:0000:8a2e:0370:7334/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
+		},
+		{
+			name:  "IPv6 only",
+			input: "2001:0db8:85a3:0000:0000:8a2e:0370:7334 2001:0db8:85a3::8a2e:370:10/64 2001:db8::2:1 ::ffff:192.168.0.1 2600:14a0::/40",
+		},
+		{
+			name:  "IPv4 only",
+			input: "192.168.10.10 10.168.12.10/8 8.8.8.8 172.16.0.0/24",
+		},
+		{
+			name:  "Single IP",
+			input: "192.168.15.15",
+		},
+		{
+			// as behavior as the previous (regexp) approach
+			name:          "Leading and trailing spaces",
+			input:         " 192.168.10.10  ",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Only white spaces",
+			input:         "   ",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Empty",
+			input:         "",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv4",
+			input:         "192.168.",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv6",
+			input:         "2001:0db8:",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv4 CIDR",
+			input:         "192.168.10.5/64",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv6 CIDR",
+			input:         "2600:14a0::/256",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IP in a list",
+			input:         "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 10.",
+			expectedEmpty: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parseIPList(tc.input)
+			if tc.expectedEmpty {
+				if got != "" {
+					t.Errorf("Expected empty got %q", got)
+				}
+				return
+			}
+			if got != tc.input {
+				t.Errorf("Failure: expected %q, got %q", tc.input, got)
+			}
+		})
+	}
+}
