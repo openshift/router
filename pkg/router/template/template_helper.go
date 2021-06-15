@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"path"
 	"regexp"
@@ -358,6 +359,35 @@ func clipHAProxyTimeoutValue(val string) string {
 	return val
 }
 
+// parseIPList parses white space separated list of IPs/CIDRs (IPv4/IPv6)
+// aims at providing the same behavior as the previous approach with regexp in the template file
+func parseIPList(list string) string {
+	log.V(7).Info("parseIPList called", "value", list)
+
+	trimmedList := strings.TrimSpace(list)
+	if trimmedList == "" {
+		return ""
+	}
+
+	// same behavior as the previous approach with regexp
+	if trimmedList != list {
+		log.V(7).Info("parseIPList leading/trailing spaces found")
+		return ""
+	}
+
+	ipList := strings.Fields(list)
+	for _, ip := range ipList {
+		if net.ParseIP(ip) == nil {
+			if _, _, err := net.ParseCIDR(ip); err != nil {
+				log.V(7).Info("parseIPList found not IP/CIDR item", "value", ip, "err", err)
+				return ""
+			}
+		}
+	}
+	log.V(7).Info("parseIPList parsed the list", "value", list)
+	return list
+}
+
 var helperFunctions = template.FuncMap{
 	"endpointsForAlias":        endpointsForAlias,        //returns the list of valid endpoints
 	"processEndpointsForAlias": processEndpointsForAlias, //returns the list of valid endpoints after processing them
@@ -382,4 +412,5 @@ var helperFunctions = template.FuncMap{
 	"generateHAProxyWhiteListFile": generateHAProxyWhiteListFile, //generates a haproxy whitelist file for use in an acl
 
 	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
+	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
 }
