@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,6 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -46,6 +50,8 @@ func (h *harness) nextUID() types.UID {
 }
 
 var h *harness
+
+var reloadInterval = time.Duration(100 * time.Millisecond)
 
 func TestMain(m *testing.M) {
 	logFlags := flag.FlagSet{}
@@ -94,7 +100,7 @@ func TestMain(m *testing.M) {
 		DefaultCertificateDir: workdir,
 		ReloadFn:              func(shutdown bool) error { return nil },
 		TemplatePath:          "../../images/router/haproxy/conf/haproxy-config.template",
-		ReloadInterval:        15 * time.Second,
+		ReloadInterval:        reloadInterval,
 	}
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {
@@ -147,6 +153,8 @@ func TestAdmissionEdgeCases(t *testing.T) {
 		},
 	}
 
+	defer cleanUpRoutes(t)
+
 	for name, expectations := range tests {
 		for _, expectation := range expectations {
 			err := expectation.Apply(h)
@@ -157,24 +165,102 @@ func TestAdmissionEdgeCases(t *testing.T) {
 	}
 }
 
+func TestConfigTemplateExecution(t *testing.T) {
+	// watching for errors
+	caughtErrors := []error{}
+	errCh, stopCh := make(chan error), make(chan struct{})
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func(ch chan error, stop chan struct{}, wg *sync.WaitGroup) {
+		defer wg.Done()
+		for {
+			select {
+			case err := <-ch:
+				caughtErrors = append(caughtErrors, err)
+			case <-stop:
+				return
+			}
+		}
+	}(errCh, stopCh, wg)
+
+	// adding custom handler which pipes to the error channel
+	errHandlersBefore := utilruntime.ErrorHandlers
+	utilruntime.ErrorHandlers = append(utilruntime.ErrorHandlers, (&pipeErrorHandler{errCh}).handle)
+	defer func() { utilruntime.ErrorHandlers = errHandlersBefore }()
+
+	// create routes whose settings would add some additional blocks to the conf
+	start := time.Now()
+	tests := map[string][]expectation{
+		"long whitelist of IPs": {
+			mustCreate{
+				name: "w",
+				host: "anotherexample.com",
+				path: "",
+				time: start,
+				annotations: map[string]string{
+					"haproxy.router.openshift.io/ip_whitelist": getDummyIPs(100),
+				},
+				tlsTermination: routev1.TLSTerminationEdge,
+			},
+		},
+	}
+
+	defer cleanUpRoutes(t)
+
+	for name, expectations := range tests {
+		for _, expectation := range expectations {
+			err := expectation.Apply(h)
+			if err != nil {
+				t.Fatalf("%s failed: %v", name, err)
+			}
+		}
+	}
+
+	// let the router reload
+	time.Sleep(reloadInterval * 2)
+
+	stopCh <- struct{}{}
+	wg.Wait()
+
+	// check for errors
+	for _, e := range caughtErrors {
+		if strings.Contains(e.Error(), "error executing template") {
+			t.Fatalf("Template execution failed: %v", e)
+		}
+	}
+}
+
 type expectation interface {
 	Apply(h *harness) error
 }
 
 type mustCreate struct {
-	name string
-	host string
-	path string
-	time time.Time
+	name           string
+	host           string
+	path           string
+	time           time.Time
+	annotations    map[string]string
+	tlsTermination routev1.TLSTerminationType
 }
 
 func (e mustCreate) Apply(h *harness) error {
+	annotations := map[string]string{}
+	if e.annotations != nil {
+		annotations = e.annotations
+	}
+	tlsConfig := &routev1.TLSConfig{}
+	if e.tlsTermination != "" {
+		tlsConfig = &routev1.TLSConfig{
+			Termination: routev1.TLSTerminationType(e.tlsTermination),
+		}
+	}
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: metav1.Time{Time: e.time},
 			Namespace:         h.namespace,
 			Name:              e.name,
 			UID:               h.nextUID(),
+			Annotations:       annotations,
 		},
 		Spec: routev1.RouteSpec{
 			Host: e.host,
@@ -184,6 +270,7 @@ func (e mustCreate) Apply(h *harness) error {
 				Weight: new(int32),
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
+			TLS:            tlsConfig,
 		},
 	}
 	_, err := h.routeClient.RouteV1().Routes(route.Namespace).Create(context.TODO(), route, metav1.CreateOptions{})
@@ -246,4 +333,34 @@ func assertAdmitted(h *harness, name string, admitted bool) error {
 		return fmt.Errorf("timed out waiting for route %s/%s to be admitted=%v", h.namespace, name, admitted)
 	}
 	return nil
+}
+
+type pipeErrorHandler struct {
+	pipe chan error
+}
+
+func (e *pipeErrorHandler) handle(err error) {
+	e.pipe <- err
+}
+
+func getDummyIPs(num int) string {
+	subnet := "192.168.0."
+	list := make([]string, 0, num)
+	for i := 0; i < num; i++ {
+		list = append(list, subnet+strconv.Itoa(i))
+	}
+	return strings.Join(list, " ")
+}
+
+func cleanUpRoutes(t *testing.T) {
+	routes, err := h.routeClient.RouteV1().Routes(h.namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to list routes: %v", err)
+		return
+	}
+	for _, r := range routes.Items {
+		if err := h.routeClient.RouteV1().Routes(h.namespace).Delete(context.TODO(), r.Name, metav1.DeleteOptions{}); err != nil {
+			t.Errorf("Failed to delete route: %v", err)
+		}
+	}
 }
