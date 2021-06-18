@@ -11,6 +11,7 @@ require (
 	github.com/getsentry/raven-go v0.2.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 	github.com/google/go-cmp v0.5.2
+	github.com/haproxytech/config-parser/v4 v4.0.0-rc1
 	github.com/openshift/api v0.0.0-20210414143350-f71e361ed3f4
 	github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
 	github.com/openshift/library-go v0.0.0-20201223214116-830765adf874

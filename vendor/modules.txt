@@ -58,6 +58,8 @@ github.com/go-openapi/swag
 # github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 ## explicit
 github.com/gocarina/gocsv
+# github.com/gofrs/flock v0.8.0
+github.com/gofrs/flock
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
@@ -81,6 +83,8 @@ github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
 # github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
+# github.com/google/renameio v0.1.1-0.20200217212219-353f81969824
+github.com/google/renameio
 # github.com/google/uuid v1.1.2
 github.com/google/uuid
 # github.com/googleapis/gnostic v0.4.1
@@ -89,6 +93,25 @@ github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/openapiv2
 # github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 github.com/grpc-ecosystem/go-grpc-prometheus
+# github.com/haproxytech/config-parser/v4 v4.0.0-rc1
+## explicit
+github.com/haproxytech/config-parser/v4
+github.com/haproxytech/config-parser/v4/common
+github.com/haproxytech/config-parser/v4/errors
+github.com/haproxytech/config-parser/v4/options
+github.com/haproxytech/config-parser/v4/params
+github.com/haproxytech/config-parser/v4/parsers
+github.com/haproxytech/config-parser/v4/parsers/extra
+github.com/haproxytech/config-parser/v4/parsers/filters
+github.com/haproxytech/config-parser/v4/parsers/http
+github.com/haproxytech/config-parser/v4/parsers/http/actions
+github.com/haproxytech/config-parser/v4/parsers/simple
+github.com/haproxytech/config-parser/v4/parsers/stats
+github.com/haproxytech/config-parser/v4/parsers/stats/settings
+github.com/haproxytech/config-parser/v4/parsers/tcp
+github.com/haproxytech/config-parser/v4/parsers/tcp/actions
+github.com/haproxytech/config-parser/v4/parsers/tcp/types
+github.com/haproxytech/config-parser/v4/types
 # github.com/hashicorp/golang-lru v0.5.1
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -220,7 +243,7 @@ golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20210225134936-a50acf3fe073
+# golang.org/x/sys v0.0.0-20210319071255-635bc2c9138d
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
