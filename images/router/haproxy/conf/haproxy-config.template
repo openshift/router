@@ -33,8 +33,9 @@
 {{- $timeSpecPattern := `[1-9][0-9]*(us|ms|s|m|h|d)?` }}
 
 {{- /* hsts header in response: */}}
+{{- /* Not fully compliant to RFC6797#6.1 yet: has to accept not conformant directives */}}
 {{- $hstsOptionalTokenPattern := `(?:includeSubDomains|preload)` }}
-{{- $hstsPattern := printf `(?:%[1]s[;])*max-age=(?:\d+|"\d+")(?:[;]%[1]s)*`  $hstsOptionalTokenPattern -}}
+{{- $hstsPattern := printf `(?i)(?:%[1]s\s*[;]\s*)*max-age\s*=\s*(?:\d+|"\d+")(?:\s*[;]\s*%[1]s)*`  $hstsOptionalTokenPattern -}}
 
 {{- /* setForwardedHeadersPattern matches valid options for how and when Forwarded: and X-Forwarded-*: headers are set. */}}
 {{- $setForwardedHeadersPattern := `(?:append|replace|if-none|never)` -}}
@@ -602,7 +603,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
 
         {{- if matchValues (print $cfg.TLSTermination) "edge" "reencrypt" }}
           {{- with $hsts := firstMatch $hstsPattern (index $cfg.Annotations "haproxy.router.openshift.io/hsts_header") }}
-  http-response set-header Strict-Transport-Security {{ $hsts }}
+  http-response set-header Strict-Transport-Security '{{ $hsts }}'
           {{- end }}{{/* hsts header */}}
         {{- end }}{{/* is "edge" or "reencrypt" */}}
 

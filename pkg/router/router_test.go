@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,6 +43,8 @@ type harness struct {
 
 	namespace string
 	uidCount  int
+	workdir   string
+	dirs      map[string]string
 }
 
 func (h *harness) nextUID() types.UID {
@@ -92,6 +95,13 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	fmt.Printf("router working directory: %s\n", workdir)
+
+	h.workdir = workdir
+	h.dirs = map[string]string{
+		"whitelist": filepath.Join(workdir, "router", "whitelists"),
+	}
+
+	createRouterDirs()
 
 	// The template plugin which is wrapped
 	svcFetcher := templateplugin.NewListWatchServiceLookup(client.CoreV1(), 60*time.Second, namespace)
@@ -165,7 +175,7 @@ func TestAdmissionEdgeCases(t *testing.T) {
 	}
 }
 
-func TestConfigTemplateExecution(t *testing.T) {
+func TestConfigTemplate(t *testing.T) {
 	// watching for errors
 	caughtErrors := []error{}
 	errCh, stopCh := make(chan error), make(chan struct{})
@@ -190,17 +200,144 @@ func TestConfigTemplateExecution(t *testing.T) {
 
 	// create routes whose settings would add some additional blocks to the conf
 	start := time.Now()
-	tests := map[string][]expectation{
-		"long whitelist of IPs": {
-			mustCreate{
-				name: "w",
-				host: "anotherexample.com",
-				path: "",
-				time: start,
-				annotations: map[string]string{
-					"haproxy.router.openshift.io/ip_whitelist": getDummyIPs(100),
+	tests := map[string][]mustCreateWithConfig{
+		"Long whitelist of IPs": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "a",
+					host: "aexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/ip_whitelist": getDummyIPs(100),
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				tlsTermination: routev1.TLSTerminationEdge,
+				configSnippet: "acl whitelist src -f " + filepath.Join(h.dirs["whitelist"], h.namespace+":a.txt"),
+			},
+		},
+		"Simple HSTS header": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "b",
+					host: "bexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=99999;includeSubDomains;preload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includeSubDomains;preload'`,
+			},
+		},
+		"Simple HSTS header 2": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "b2",
+					host: "b2example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=99999;includeSubDomains",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includeSubDomains'`,
+			},
+		},
+		"Case insensitive, with white spaces HSTS header": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "c",
+					host: "cexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=99999 ;  includesubdomains;  PREload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999 ;  includesubdomains;  PREload'`,
+			},
+		},
+		"Quotes in HSTS header": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "d",
+					host: "dexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": `max-age="99999"`,
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age="99999"'`,
+			},
+		},
+		"Equal sign with LWS in HSTS header": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "f",
+					host: "fexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": `max-age  =  "99999"`,
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age  =  "99999"'`,
+			},
+		},
+		"Required directive missing": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "g",
+					host: "gexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "min-age=99999",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'min-age=99999'`,
+				notFound:      true,
+			},
+		},
+		// test cases to be revised once HSTS pattern is fully compliant to RFC6797#section-6.1
+		"Wrong HSTS header directive": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "h",
+					host: "hexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=99999;includesubdomains;preload;wrongdirective",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includesubdomains;preload;wrongdirective'`,
+				notFound:      true,
+			},
+		},
+		"Typo in HSTS header directive": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "i",
+					host: "iexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=99999;includesubdomain",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includesubdomain'`,
+				notFound:      true,
 			},
 		},
 	}
@@ -226,6 +363,28 @@ func TestConfigTemplateExecution(t *testing.T) {
 	for _, e := range caughtErrors {
 		if strings.Contains(e.Error(), "error executing template") {
 			t.Fatalf("Template execution failed: %v", e)
+		}
+	}
+
+	// check the generated config
+	config := filepath.Join(h.workdir, "conf", "haproxy.config")
+	contents, err := ioutil.ReadFile(config)
+	if err != nil {
+		t.Fatalf("Failed to read the generated config: %v", err)
+	}
+
+	for name, expectations := range tests {
+		for _, expectation := range expectations {
+			t.Run(name, func(t *testing.T) {
+				contains := strings.Contains(string(contents), expectation.configSnippet)
+				if !contains && !expectation.notFound {
+					t.Fatalf("Snippet expected but not found: [%s]", expectation.configSnippet)
+				}
+
+				if contains && expectation.notFound {
+					t.Fatalf("Snippet unexpected but found: [%s]", expectation.configSnippet)
+				}
+			})
 		}
 	}
 }
@@ -275,6 +434,12 @@ func (e mustCreate) Apply(h *harness) error {
 	}
 	_, err := h.routeClient.RouteV1().Routes(route.Namespace).Create(context.TODO(), route, metav1.CreateOptions{})
 	return err
+}
+
+type mustCreateWithConfig struct {
+	mustCreate
+	configSnippet string
+	notFound      bool
 }
 
 type mustDelete []string
@@ -362,5 +527,12 @@ func cleanUpRoutes(t *testing.T) {
 		if err := h.routeClient.RouteV1().Routes(h.namespace).Delete(context.TODO(), r.Name, metav1.DeleteOptions{}); err != nil {
 			t.Errorf("Failed to delete route: %v", err)
 		}
+	}
+}
+
+// creates dirs used by the router, best effort for now (just to not see error logs)
+func createRouterDirs() {
+	for _, d := range h.dirs {
+		os.MkdirAll(d, 0775)
 	}
 }
