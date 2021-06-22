@@ -69,6 +69,18 @@ function haproxyHealthCheck() {
 }
 
 
+function adjustOomScores() {
+    for pid; do
+	old_score=$(< /proc/$pid/oom_score_adj)
+	new_score=$((old_score + 10))
+	# The maximum value for oom_score_adj is 1000.
+	[[ $new_score -gt 1000 ]] && continue
+	echo $new_score > /proc/$pid/oom_score_adj
+	echo " - Adjusted oom_score_adj for haproxy[$pid] from $old_score to $new_score."
+    done
+}
+
+
 old_pids=$(pidof haproxy)
 
 # If signaled, stop accepting new connections and drain the current processes
@@ -101,3 +113,4 @@ fi
 
 [ $reload_status -ne 0 ] && exit $reload_status
 haproxyHealthCheck
+adjustOomScores $old_pids
