@@ -216,6 +216,21 @@ func TestConfigTemplate(t *testing.T) {
 				configSnippet: "acl whitelist src -f " + filepath.Join(h.dirs["whitelist"], h.namespace+":a.txt"),
 			},
 		},
+		"Whitelist of mixed IPs": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "a1",
+					host: "a1example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/ip_whitelist": "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				configSnippet: "acl whitelist src 192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+			},
+		},
 		"Simple HSTS header": {
 			mustCreateWithConfig{
 				mustCreate: mustCreate{
