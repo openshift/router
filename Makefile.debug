@@ -8,7 +8,7 @@ HASH   := $(shell git rev-parse HEAD | colrm 8)
 DATE   := $(shell date +%H%M%S)
 TAG    := $(BRANCH)-g$(HASH)-$(DATE)
 
-IMAGE := frobware/cio
+IMAGE := amcdermo/cio
 TAG = latest
 
 REGISTRY := quay.io
