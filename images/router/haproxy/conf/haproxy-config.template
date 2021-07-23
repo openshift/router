@@ -44,7 +44,11 @@ global
 {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (env "ROUTER_HARD_STOP_AFTER")) }}
   hard-stop-after {{ $value }}
 {{- end }}
-  maxconn {{ env "ROUTER_MAX_CONNECTIONS" "20000" }}
+{{- with $value := env "ROUTER_MAX_CONNECTIONS" "20000" }}
+  {{- if isInteger $value }}
+  maxconn {{ $value }}
+  {{- end }}
+{{- end }}
 {{- $threads := env "ROUTER_THREADS" }}
 {{- if ne "" (firstMatch "[1-9][0-9]*" $threads) }}
   nbthread {{ $threads }}
@@ -118,7 +122,11 @@ global
   {{- end }}
 
 defaults
-  maxconn {{ env "ROUTER_MAX_CONNECTIONS" "20000" }}
+  {{- with $value := env "ROUTER_MAX_CONNECTIONS" "20000" }}
+    {{- if isInteger $value }}
+  maxconn {{ $value }}
+    {{- end }}
+  {{- end }}
 
   {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
     {{- if ne (env "ROUTER_SYSLOG_FORMAT") "" }}
