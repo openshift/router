@@ -201,7 +201,7 @@ frontend public
     {{- end }}
   {{- if isTrue (env "ROUTER_USE_PROXY_PROTOCOL") }} accept-proxy{{ end }}
   mode http
-  tcp-request inspect-delay {{ env "ROUTER_INSPECT_DELAY" "5s" }}
+  tcp-request inspect-delay {{ firstMatch $timeSpecPattern (env "ROUTER_INSPECT_DELAY") "5s" }}
   tcp-request content accept if HTTP
 
     {{- if (eq .StatsPort -1) }}
@@ -254,7 +254,7 @@ frontend public_ssl
   bind :{{ env "ROUTER_SERVICE_HTTPS_PORT" "443" }}
     {{- end }}
   {{- if isTrue (env "ROUTER_USE_PROXY_PROTOCOL") }} accept-proxy{{ end }}
-  tcp-request inspect-delay {{ env "ROUTER_INSPECT_DELAY" "5s" }}
+  tcp-request inspect-delay {{ firstMatch $timeSpecPattern (env "ROUTER_INSPECT_DELAY") "5s" }}
   tcp-request content accept if { req_ssl_hello_type 1 }
 
   # if the connection is SNI and the route is a passthrough don't use the termination backend, just use the tcp backend
