@@ -19,7 +19,7 @@
 {{- $cookieNamePattern := `[a-zA-Z0-9_-]+` -}}
 
 {{- /* balanceAlgoPattern matches valid options for the haproxy.router.openshift.io/balance annotation. */}}
-{{- $balanceAlgoPattern := "roundrobin|leastconn|source" -}}
+{{- $balanceAlgoPattern := "roundrobin|leastconn|source|random" -}}
 
 {{- $timeSpecPattern := `[1-9][0-9]*(us|ms|s|m|h|d)?` }}
 
