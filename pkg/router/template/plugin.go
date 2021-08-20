@@ -300,9 +300,10 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 
 			for _, port := range service.Spec.Ports {
 				endptPort := kapi.EndpointPort{
-					Name:     port.Name,
-					Port:     port.Port,
-					Protocol: port.Protocol,
+					Name:        port.Name,
+					Port:        port.Port,
+					Protocol:    port.Protocol,
+					AppProtocol: port.AppProtocol,
 				}
 				svcSubset.Ports = append(svcSubset.Ports, endptPort)
 			}
@@ -353,6 +354,10 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 				} else {
 					ep.TargetName = a.IP
 					ep.ID = fmt.Sprintf("ept:%s:%s:%s:%d", endpoints.Name, p.Name, a.IP, p.Port)
+				}
+
+				if p.AppProtocol != nil {
+					ep.AppProtocol = *p.AppProtocol
 				}
 
 				// IdHash contains an obfuscated internal IP address

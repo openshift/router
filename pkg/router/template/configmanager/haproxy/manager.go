@@ -473,6 +473,9 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 				// endpoint was unchanged.
 				delete(modifiedEndpoints, v2ep.ID)
 			}
+			if ep.AppProtocol != v2ep.AppProtocol && (ep.AppProtocol == "h2c" || v2ep.AppProtocol == "h2c") {
+				return fmt.Errorf("endpoint %s changed appProtocol from %q to %q, and dynamically updating proto is unsupported", ep.ID, ep.AppProtocol, v2ep.AppProtocol)
+			}
 		} else {
 			configChanged = true
 			deletedEndpoints[ep.ID] = ep
@@ -516,8 +519,8 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 
 		if ep, ok := modifiedEndpoints[relatedEndpointID]; ok {
 			configChanged = true
-			log.V(4).Info("enabling server for modified endpoint", "endpoint", relatedEndpointID, "server", s.Name, "ip", ep.IP, "port", ep.Port, "weight", weight)
-			backend.UpdateServerInfo(s.Name, ep.IP, ep.Port, weight, weightIsRelative)
+			log.V(4).Info("enabling server for modified endpoint", "endpoint", relatedEndpointID, "server", s.Name, "ip", ep.IP, "port", ep.Port, "appProtocol", ep.AppProtocol, "weight", weight)
+			backend.UpdateServerInfo(s.Name, ep.IP, ep.Port, ep.AppProtocol, weight, weightIsRelative)
 			backend.EnableServer(s.Name)
 
 			delete(modifiedEndpoints, relatedEndpointID)
@@ -543,8 +546,8 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		configChanged = true
 		entry.dynamicServerMap[name] = ep.ID
 
-		log.V(4).Info("enabling server for added endpoint", "endpoint", ep.ID, "server", name, "ip", ep.IP, "port", ep.Port, "weight", weight)
-		backend.UpdateServerInfo(name, ep.IP, ep.Port, weight, weightIsRelative)
+		log.V(4).Info("enabling server for added endpoint", "endpoint", ep.ID, "server", name, "ip", ep.IP, "port", ep.Port, "appProtocol", ep.AppProtocol, "weight", weight)
+		backend.UpdateServerInfo(name, ep.IP, ep.Port, ep.AppProtocol, weight, weightIsRelative)
 		backend.EnableServer(name)
 
 		delete(modifiedEndpoints, ep.ID)
