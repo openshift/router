@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,11 +22,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/apiserver/pkg/server/healthz"
+	authoptions "k8s.io/apiserver/pkg/server/options"
 	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
@@ -104,19 +105,27 @@ type TemplateRouterOptions struct {
 }
 
 type TemplateRouter struct {
-	WorkingDir               string
-	TemplateFile             string
-	ReloadScript             string
-	ReloadInterval           time.Duration
-	DefaultCertificate       string
-	DefaultCertificatePath   string
-	DefaultCertificateDir    string
-	DefaultDestinationCAPath string
-	BindPortsAfterSync       bool
-	MaxConnections           string
-	Ciphers                  string
-	StrictSNI                bool
-	MetricsType              string
+	WorkingDir                          string
+	TemplateFile                        string
+	ReloadScript                        string
+	ReloadInterval                      time.Duration
+	DefaultCertificate                  string
+	DefaultCertificatePath              string
+	DefaultCertificateDir               string
+	DefaultDestinationCAPath            string
+	BindPortsAfterSync                  bool
+	MaxConnections                      string
+	Ciphers                             string
+	StrictSNI                           bool
+	MetricsType                         string
+	CaptureHTTPRequestHeadersString     string
+	CaptureHTTPResponseHeadersString    string
+	CaptureHTTPCookieString             string
+	CaptureHTTPRequestHeaders           []templateplugin.CaptureHTTPHeader
+	CaptureHTTPResponseHeaders          []templateplugin.CaptureHTTPHeader
+	CaptureHTTPCookie                   *templateplugin.CaptureHTTPCookie
+	HTTPHeaderNameCaseAdjustmentsString string
+	HTTPHeaderNameCaseAdjustments       []templateplugin.HTTPHeaderNameCaseAdjustment
 
 	TemplateRouterConfigManager
 }
@@ -169,18 +178,26 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.BlueprintRouteLabelSelector, "blueprint-route-labels", env("ROUTER_BLUEPRINT_ROUTE_LABELS", ""), "A label selector to apply to the routes in the blueprint route namespace. These selected routes will serve as blueprints for the dynamic dynamic configuration manager.")
 	flag.IntVar(&o.BlueprintRoutePoolSize, "blueprint-route-pool-size", int(envInt("ROUTER_BLUEPRINT_ROUTE_POOL_SIZE", 10, 1)), "Specifies the size of the pre-allocated pool for each route blueprint managed by the router specific dynamic configuration manager. This can be overriden by an annotation router.openshift.io/pool-size on an individual route.")
 	flag.IntVar(&o.MaxDynamicServers, "max-dynamic-servers", int(envInt("ROUTER_MAX_DYNAMIC_SERVERS", 5, 1)), "Specifies the maximum number of dynamic servers added to a route for use by the router specific dynamic configuration manager.")
+	flag.StringVar(&o.CaptureHTTPRequestHeadersString, "capture-http-request-headers", env("ROUTER_CAPTURE_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
+	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
+	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
+	flag.StringVar(&o.HTTPHeaderNameCaseAdjustmentsString, "http-header-name-case-adjustments", env("ROUTER_H1_CASE_ADJUST", ""), "A comma-delimited list of HTTP header names that should have their case adjusted. Each item must be a valid HTTP header name and should have the desired capitalization.")
 }
 
 type RouterStats struct {
-	StatsPortString string
-	StatsPassword   string
-	StatsUsername   string
+	StatsPortString   string
+	StatsPasswordFile string
+	StatsUsernameFile string
+	StatsPassword     string
+	StatsUsername     string
 
 	StatsPort int
 }
 
 func (o *RouterStats) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.StatsPortString, "stats-port", env("STATS_PORT", ""), "If the underlying router implementation can provide statistics this is a hint to expose it on this port. Ignored if listen-addr is specified.")
+	flag.StringVar(&o.StatsPasswordFile, "stats-password-file", env("STATS_PASSWORD_FILE", ""), "If the underlying router implementation can provide statistics this is the requested password file for auth.")
+	flag.StringVar(&o.StatsUsernameFile, "stats-user-file", env("STATS_USERNAME_FILE", ""), "If the underlying router implementation can provide statistics this is the requested username file for auth.")
 	flag.StringVar(&o.StatsPassword, "stats-password", env("STATS_PASSWORD", ""), "If the underlying router implementation can provide statistics this is the requested password for auth.")
 	flag.StringVar(&o.StatsUsername, "stats-user", env("STATS_USERNAME", ""), "If the underlying router implementation can provide statistics this is the requested username for auth.")
 }
@@ -225,6 +242,104 @@ func NewCommandTemplateRouter(name string) *cobra.Command {
 	return cmd
 }
 
+// validTokenRE matches valid tokens as defined in section 2.2 of RFC 2616.
+// A token comprises 1 or more non-control and non-separator characters:
+//
+//   token          = 1*<any CHAR except CTLs or separators>
+//   CHAR           = <any US-ASCII character (octets 0 - 127)>
+//   CTL            = <any US-ASCII control character
+//                    (octets 0 - 31) and DEL (127)>
+//   separators     = "(" | ")" | "<" | ">" | "@"
+//                  | "," | ";" | ":" | "\" | <">
+//                  | "/" | "[" | "]" | "?" | "="
+//                  | "{" | "}" | SP | HT
+//   SP             = <US-ASCII SP, space (32)>
+//   HT             = <US-ASCII HT, horizontal-tab (9)>
+var validTokenRE *regexp.Regexp = regexp.MustCompile(`^[\x21\x23-\x27\x2a\x2b\x2d\x2e\x30-\x39\x41-\x5a\x5e-\x7a\x7c\x7e]+$`)
+
+func parseCaptureHeaders(in string) ([]templateplugin.CaptureHTTPHeader, error) {
+	var captureHeaders []templateplugin.CaptureHTTPHeader
+
+	if len(in) > 0 {
+		for _, header := range strings.Split(in, ",") {
+			parts := strings.Split(header, ":")
+			if len(parts) != 2 {
+				return captureHeaders, fmt.Errorf("invalid HTTP header capture specification: %v", header)
+			}
+			headerName := parts[0]
+			// RFC 2616, section 4.2, states that the header name
+			// must be a valid token.
+			if !validTokenRE.MatchString(headerName) {
+				return captureHeaders, fmt.Errorf("invalid HTTP header name: %v", headerName)
+			}
+			maxLength, err := strconv.Atoi(parts[1])
+			if err != nil {
+				return captureHeaders, err
+			}
+			capture := templateplugin.CaptureHTTPHeader{
+				Name:      headerName,
+				MaxLength: maxLength,
+			}
+			captureHeaders = append(captureHeaders, capture)
+		}
+	}
+
+	return captureHeaders, nil
+}
+
+func parseCaptureCookie(in string) (*templateplugin.CaptureHTTPCookie, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+
+	parts := strings.Split(in, ":")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid HTTP cookie capture specification: %v", in)
+	}
+	cookieName := parts[0]
+	matchType := templateplugin.CookieMatchTypePrefix
+	if strings.HasSuffix(cookieName, "=") {
+		cookieName = cookieName[:len(cookieName)-1]
+		matchType = templateplugin.CookieMatchTypeExact
+	}
+	// RFC 6265 section 4.1 states that the cookie name must be a
+	// valid token.
+	if !validTokenRE.MatchString(cookieName) {
+		return nil, fmt.Errorf("invalid HTTP cookie name: %v", cookieName)
+	}
+	maxLength, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	return &templateplugin.CaptureHTTPCookie{
+		Name:      cookieName,
+		MaxLength: maxLength,
+		MatchType: matchType,
+	}, nil
+}
+
+func parseHTTPHeaderNameCaseAdjustments(in string) ([]templateplugin.HTTPHeaderNameCaseAdjustment, error) {
+	var adjustments []templateplugin.HTTPHeaderNameCaseAdjustment
+
+	if len(in) > 0 {
+		for _, headerName := range strings.Split(in, ",") {
+			// RFC 2616, section 4.2, states that the header name
+			// must be a valid token.
+			if !validTokenRE.MatchString(headerName) {
+				return adjustments, fmt.Errorf("invalid HTTP header name: %v", headerName)
+			}
+			adjustment := templateplugin.HTTPHeaderNameCaseAdjustment{
+				From: strings.ToLower(headerName),
+				To:   headerName,
+			}
+			adjustments = append(adjustments, adjustment)
+		}
+	}
+
+	return adjustments, nil
+}
+
 func (o *TemplateRouterOptions) Complete() error {
 	routerSvcName := env("ROUTER_SERVICE_NAME", "")
 	routerSvcNamespace := env("ROUTER_SERVICE_NAMESPACE", "")
@@ -265,6 +380,30 @@ func (o *TemplateRouterOptions) Complete() error {
 	if nsecs := int(o.CommitInterval.Seconds()); nsecs < 1 {
 		return fmt.Errorf("invalid dynamic configuration manager commit interval: %v - must be a positive duration", nsecs)
 	}
+
+	captureHTTPRequestHeaders, err := parseCaptureHeaders(o.CaptureHTTPRequestHeadersString)
+	if err != nil {
+		return err
+	}
+	o.CaptureHTTPRequestHeaders = captureHTTPRequestHeaders
+
+	captureHTTPResponseHeaders, err := parseCaptureHeaders(o.CaptureHTTPResponseHeadersString)
+	if err != nil {
+		return err
+	}
+	o.CaptureHTTPResponseHeaders = captureHTTPResponseHeaders
+
+	captureHTTPCookie, err := parseCaptureCookie(o.CaptureHTTPCookieString)
+	if err != nil {
+		return err
+	}
+	o.CaptureHTTPCookie = captureHTTPCookie
+
+	httpHeaderNameCaseAdjustments, err := parseHTTPHeaderNameCaseAdjustments(o.HTTPHeaderNameCaseAdjustmentsString)
+	if err != nil {
+		return err
+	}
+	o.HTTPHeaderNameCaseAdjustments = httpHeaderNameCaseAdjustments
 
 	return o.RouterSelection.Complete()
 }
@@ -390,6 +529,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			SubjectAccessReviewClient: client.SubjectAccessReviews(),
 			AllowCacheTTL:             2 * time.Minute,
 			DenyCacheTTL:              5 * time.Second,
+			WebhookRetryBackoff:       authoptions.DefaultAuthWebhookRetryBackoff(),
 		}.New()
 		if err != nil {
 			return err
@@ -402,14 +542,20 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			Anonymous:               true,
 			TokenAccessReviewClient: tokenClient.TokenReviews(),
 			CacheTTL:                10 * time.Second,
+			WebhookRetryBackoff:     authoptions.DefaultAuthWebhookRetryBackoff(),
 		}.New()
+		if err != nil {
+			return err
+		}
+
+		statsUsername, statsPassword, err := getStatsAuth(o.StatsUsernameFile, o.StatsPasswordFile, o.StatsUsername, o.StatsPassword)
 		if err != nil {
 			return err
 		}
 		l := metrics.Listener{
 			Addr:          o.ListenAddr,
-			Username:      o.StatsUsername,
-			Password:      o.StatsPassword,
+			Username:      statsUsername,
+			Password:      statsPassword,
 			Authenticator: authn,
 			Authorizer:    authz,
 			Record: authorizer.AttributesRecord{
@@ -473,26 +619,35 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		}
 	}
 
+	statsUsername, statsPassword, err := getStatsAuth(o.StatsUsernameFile, o.StatsPasswordFile, o.StatsUsername, o.StatsPassword)
+	if err != nil {
+		return err
+	}
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
-		WorkingDir:               o.WorkingDir,
-		TemplatePath:             o.TemplateFile,
-		ReloadScriptPath:         o.ReloadScript,
-		ReloadInterval:           o.ReloadInterval,
-		ReloadCallbacks:          reloadCallbacks,
-		DefaultCertificate:       o.DefaultCertificate,
-		DefaultCertificatePath:   o.DefaultCertificatePath,
-		DefaultCertificateDir:    o.DefaultCertificateDir,
-		DefaultDestinationCAPath: o.DefaultDestinationCAPath,
-		StatsPort:                statsPort,
-		StatsUsername:            o.StatsUsername,
-		StatsPassword:            o.StatsPassword,
-		BindPortsAfterSync:       o.BindPortsAfterSync,
-		IncludeUDP:               o.RouterSelection.IncludeUDP,
-		AllowWildcardRoutes:      o.RouterSelection.AllowWildcardRoutes,
-		MaxConnections:           o.MaxConnections,
-		Ciphers:                  o.Ciphers,
-		StrictSNI:                o.StrictSNI,
-		DynamicConfigManager:     cfgManager,
+		WorkingDir:                    o.WorkingDir,
+		TemplatePath:                  o.TemplateFile,
+		ReloadScriptPath:              o.ReloadScript,
+		ReloadInterval:                o.ReloadInterval,
+		ReloadCallbacks:               reloadCallbacks,
+		DefaultCertificate:            o.DefaultCertificate,
+		DefaultCertificatePath:        o.DefaultCertificatePath,
+		DefaultCertificateDir:         o.DefaultCertificateDir,
+		DefaultDestinationCAPath:      o.DefaultDestinationCAPath,
+		StatsPort:                     statsPort,
+		StatsUsername:                 statsUsername,
+		StatsPassword:                 statsPassword,
+		BindPortsAfterSync:            o.BindPortsAfterSync,
+		IncludeUDP:                    o.RouterSelection.IncludeUDP,
+		AllowWildcardRoutes:           o.RouterSelection.AllowWildcardRoutes,
+		MaxConnections:                o.MaxConnections,
+		Ciphers:                       o.Ciphers,
+		StrictSNI:                     o.StrictSNI,
+		DynamicConfigManager:          cfgManager,
+		CaptureHTTPRequestHeaders:     o.CaptureHTTPRequestHeaders,
+		CaptureHTTPResponseHeaders:    o.CaptureHTTPResponseHeaders,
+		CaptureHTTPCookie:             o.CaptureHTTPCookie,
+		HTTPHeaderNameCaseAdjustments: o.HTTPHeaderNameCaseAdjustments,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
@@ -509,11 +664,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	var recorder controller.RejectionRecorder = controller.LogRejections
 	if o.UpdateStatus {
 		lease := writerlease.New(time.Minute, 3*time.Second)
-		go lease.Run(wait.NeverStop)
+		go lease.Run(stopCh)
 		informer := factory.CreateRoutesSharedInformer()
 		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
-		go tracker.Run(wait.NeverStop)
+		go tracker.Run(stopCh)
 		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
 		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
 		recorder = status
@@ -525,7 +680,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
-	controller := factory.Create(plugin, false)
+	controller := factory.Create(plugin, false, stopCh)
 	controller.Run()
 
 	if blueprintPlugin != nil {
@@ -535,11 +690,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		f.LabelSelector = o.BlueprintRouteLabelSelector
 		f.Namespace = o.BlueprintRouteNamespace
 		f.ResyncInterval = o.ResyncInterval
-		c := f.Create(blueprintPlugin, false)
+		c := f.Create(blueprintPlugin, false, stopCh)
 		c.Run()
 	}
 
-	proc.StartReaper()
+	proc.StartReaper(6 * time.Second)
 
 	select {
 	case <-stopCh:
@@ -656,4 +811,25 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		},
 		ClientAuth: tls.RequestClientCert,
 	}), nil
+}
+
+// getStatsAuth returns the available stats username and password.
+// If both statsUsernameFile and statsPasswordFile are non-empty, statsUsername
+// and statsPassword are ignored.
+// Returns the available stats username and password as strings, as well an error when appropriate.
+func getStatsAuth(statsUsernameFile, statsPasswordFile, statsUsername, statsPassword string) (string, string, error) {
+	if len(statsUsernameFile) > 0 && len(statsPasswordFile) > 0 {
+		usernameBytes, err := ioutil.ReadFile(statsUsernameFile)
+		if err != nil {
+			return "", "", err
+		}
+		passwordBytes, err := ioutil.ReadFile(statsPasswordFile)
+		if err != nil {
+			return "", "", err
+		}
+		statsUsername = string(usernameBytes)
+		statsPassword = string(passwordBytes)
+	}
+
+	return statsUsername, statsPassword, nil
 }

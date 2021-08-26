@@ -216,13 +216,61 @@ type ConfigManager interface {
 	Notify(event RouterEventType)
 
 	// ServerTemplateName returns the dynamic server template name.
-	ServerTemplateName(id string) string
+	ServerTemplateName(id ServiceAliasConfigKey) string
 
 	// ServerTemplateSize returns the dynamic server template size.
-	ServerTemplateSize(id string) string
+	ServerTemplateSize(id ServiceAliasConfigKey) string
 
 	// GenerateDynamicServerNames generates the dynamic server names.
-	GenerateDynamicServerNames(id string) []string
+	GenerateDynamicServerNames(id ServiceAliasConfigKey) []string
+}
+
+// CaptureHTTPHeader specifies an HTTP header that should be captured for access
+// logs.
+type CaptureHTTPHeader struct {
+	// Name specifies an HTTP header name.
+	Name string
+
+	// MaxLength specifies a maximum length for the header value.
+	MaxLength int
+}
+
+// CaptureHTTPCookie specifies an HTTP cookie that should be captured
+// for access logs.
+type CaptureHTTPCookie struct {
+	// Name specifies an HTTP cookie name.
+	Name string
+
+	// MaxLength specifies a maximum length for the cookie value.
+	MaxLength int
+
+	// MatchType specifies the type of match to be performed on the cookie
+	// name.
+	MatchType CookieMatchType
+}
+
+// CookieMatchType indicates the type of matching used against cookie names to
+// select a cookie for capture.
+type CookieMatchType string
+
+const (
+	// CookieMatchTypeExact indicates that an exact match should be performed.
+	CookieMatchTypeExact CookieMatchType = "exact"
+
+	// CookieMatchTypePrefix indicates that a prefix match should be performed.
+	CookieMatchTypePrefix CookieMatchType = "prefix"
+)
+
+// HTTPHeaderNameCaseAdjustment specifies an HTTP header that should have its
+// capitalization adjusted, and how the header should be adjusted.
+type HTTPHeaderNameCaseAdjustment struct {
+	// From specifies the original header name.  It must be a valid HTTP
+	// header name in lower case.
+	From string
+
+	// To specifies the desired header name.  It should be the same as From
+	// but with the desired capitalization.
+	To string
 }
 
 // RouterEventType indicates the type of event fired by the router.

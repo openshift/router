@@ -98,6 +98,8 @@ type templateRouter struct {
 	stateChanged bool
 	// metricReload tracks reloads
 	metricReload prometheus.Summary
+	// metricReloadFailure tracks reload failures
+	metricReloadFailure prometheus.Gauge
 	// metricWriteConfig tracks writing config
 	metricWriteConfig prometheus.Summary
 	// dynamicConfigManager configures route changes dynamically on the
@@ -106,27 +108,42 @@ type templateRouter struct {
 	// dynamicallyConfigured indicates whether all the [state] changes
 	// were also successfully applied via the dynamic config manager.
 	dynamicallyConfigured bool
+	// captureHTTPRequestHeaders specifies HTTP request headers
+	// that should be captured for logging.
+	captureHTTPRequestHeaders []CaptureHTTPHeader
+	// captureHTTPResponseHeaders specifies HTTP response headers
+	// that should be captured for logging.
+	captureHTTPResponseHeaders []CaptureHTTPHeader
+	// captureHTTPCookie specifies an HTTP cookie that should be
+	// captured for logging.
+	captureHTTPCookie *CaptureHTTPCookie
+	// httpHeaderNameCaseAdjustments specifies HTTP header name case adjustments.
+	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
 type templateRouterCfg struct {
-	dir                      string
-	templates                map[string]*template.Template
-	reloadScriptPath         string
-	reloadFn                 func(shutdown bool) error
-	reloadInterval           time.Duration
-	reloadCallbacks          []func()
-	defaultCertificate       string
-	defaultCertificatePath   string
-	defaultCertificateDir    string
-	defaultDestinationCAPath string
-	statsUser                string
-	statsPassword            string
-	statsPort                int
-	allowWildcardRoutes      bool
-	includeUDP               bool
-	bindPortsAfterSync       bool
-	dynamicConfigManager     ConfigManager
+	dir                           string
+	templates                     map[string]*template.Template
+	reloadScriptPath              string
+	reloadFn                      func(shutdown bool) error
+	reloadInterval                time.Duration
+	reloadCallbacks               []func()
+	defaultCertificate            string
+	defaultCertificatePath        string
+	defaultCertificateDir         string
+	defaultDestinationCAPath      string
+	statsUser                     string
+	statsPassword                 string
+	statsPort                     int
+	allowWildcardRoutes           bool
+	includeUDP                    bool
+	bindPortsAfterSync            bool
+	dynamicConfigManager          ConfigManager
+	captureHTTPRequestHeaders     []CaptureHTTPHeader
+	captureHTTPResponseHeaders    []CaptureHTTPHeader
+	captureHTTPCookie             *CaptureHTTPCookie
+	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -154,6 +171,18 @@ type templateData struct {
 	DynamicConfigManager ConfigManager
 	// DisableHTTP2 on the frontend and the backend when set "true"
 	DisableHTTP2 bool
+	// CaptureHTTPRequestHeaders specifies HTTP request headers
+	// that should be captured for logging.
+	CaptureHTTPRequestHeaders []CaptureHTTPHeader
+	// CaptureHTTPResponseHeaders specifies HTTP response headers
+	// that should be captured for logging.
+	CaptureHTTPResponseHeaders []CaptureHTTPHeader
+	// CaptureHTTPCookie specifies an HTTP cookie that should be
+	// captured for logging.
+	CaptureHTTPCookie *CaptureHTTPCookie
+	// HTTPHeaderNameCaseAdjustments specifies HTTP header name adjustments
+	// performed on HTTP headers.
+	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -178,6 +207,12 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		Help:      "Measures the time spent reloading the router in seconds.",
 	})
 	prometheus.MustRegister(metricsReload)
+	metricReloadFailure := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "template_router",
+		Name:      "reload_failure",
+		Help:      "Metric to track the status of the most recent HAProxy reload",
+	})
+	prometheus.MustRegister(metricReloadFailure)
 	metricWriteConfig := prometheus.NewSummary(prometheus.SummaryOpts{
 		Namespace: "template_router",
 		Name:      "write_config_seconds",
@@ -186,28 +221,33 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	prometheus.MustRegister(metricWriteConfig)
 
 	router := &templateRouter{
-		dir:                      dir,
-		templates:                cfg.templates,
-		reloadScriptPath:         cfg.reloadScriptPath,
-		reloadInterval:           cfg.reloadInterval,
-		reloadCallbacks:          cfg.reloadCallbacks,
-		reloadFn:                 cfg.reloadFn,
-		state:                    make(map[ServiceAliasConfigKey]ServiceAliasConfig),
-		serviceUnits:             make(map[ServiceUnitKey]ServiceUnit),
-		certManager:              certManager,
-		defaultCertificate:       cfg.defaultCertificate,
-		defaultCertificatePath:   cfg.defaultCertificatePath,
-		defaultCertificateDir:    cfg.defaultCertificateDir,
-		defaultDestinationCAPath: cfg.defaultDestinationCAPath,
-		statsUser:                cfg.statsUser,
-		statsPassword:            cfg.statsPassword,
-		statsPort:                cfg.statsPort,
-		allowWildcardRoutes:      cfg.allowWildcardRoutes,
-		bindPortsAfterSync:       cfg.bindPortsAfterSync,
-		dynamicConfigManager:     cfg.dynamicConfigManager,
+		dir:                           dir,
+		templates:                     cfg.templates,
+		reloadScriptPath:              cfg.reloadScriptPath,
+		reloadInterval:                cfg.reloadInterval,
+		reloadCallbacks:               cfg.reloadCallbacks,
+		reloadFn:                      cfg.reloadFn,
+		state:                         make(map[ServiceAliasConfigKey]ServiceAliasConfig),
+		serviceUnits:                  make(map[ServiceUnitKey]ServiceUnit),
+		certManager:                   certManager,
+		defaultCertificate:            cfg.defaultCertificate,
+		defaultCertificatePath:        cfg.defaultCertificatePath,
+		defaultCertificateDir:         cfg.defaultCertificateDir,
+		defaultDestinationCAPath:      cfg.defaultDestinationCAPath,
+		statsUser:                     cfg.statsUser,
+		statsPassword:                 cfg.statsPassword,
+		statsPort:                     cfg.statsPort,
+		allowWildcardRoutes:           cfg.allowWildcardRoutes,
+		bindPortsAfterSync:            cfg.bindPortsAfterSync,
+		dynamicConfigManager:          cfg.dynamicConfigManager,
+		captureHTTPRequestHeaders:     cfg.captureHTTPRequestHeaders,
+		captureHTTPResponseHeaders:    cfg.captureHTTPResponseHeaders,
+		captureHTTPCookie:             cfg.captureHTTPCookie,
+		httpHeaderNameCaseAdjustments: cfg.httpHeaderNameCaseAdjustments,
 
-		metricReload:      metricsReload,
-		metricWriteConfig: metricWriteConfig,
+		metricReload:        metricsReload,
+		metricReloadFailure: metricReloadFailure,
+		metricWriteConfig:   metricWriteConfig,
 
 		rateLimitedCommitFunction: nil,
 	}
@@ -217,14 +257,14 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	if err := router.writeDefaultCert(); err != nil {
 		return nil, err
 	}
+	if err := router.watchMutualTLSCert(); err != nil {
+		return nil, err
+	}
 	if router.dynamicConfigManager != nil {
 		log.V(0).Info("initializing dynamic config manager ... ")
 		router.dynamicConfigManager.Initialize(router, router.defaultCertificatePath)
 	}
-	log.V(4).Info("committing state")
-	// Bypass the rate limiter to ensure the first sync will be
-	// committed without delay.
-	router.commitAndReload()
+
 	return router, nil
 }
 
@@ -266,16 +306,18 @@ func secretToPem(secPath, outName string) error {
 	return ioutil.WriteFile(outName, pemBlock, 0444)
 }
 
-// watchSecretDir adds a watcher on the input directory that updates the output
-// PEM file when a change is detected.
-func (r *templateRouter) watchSecretDir(secPath, outName string) error {
+// watchVolumeMountDir adds a watcher on path, which should be a secret or
+// configmap volume mount, and calls reloadFn when a change is detected.
+func (r *templateRouter) watchVolumeMountDir(path string, reloadFn func()) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 
-	// We need to know when the content of tls.crt is updated, but tls.crt
-	// is really a symlink with a path that includes another symlink:
+	// Suppose path has the value "/etc/pki/private".  We need to know when
+	// the content of any file in /etc/pki/private is updated, but the files
+	// are really symlinks with a path that includes another symlink.  For
+	// example, a secret might have a tls.crt file:
 	//
 	//     tls.crt -> ..data/tls.crt
 	//     ..data -> ..YY_mm_dd-HH_MM_SS.NN
@@ -287,15 +329,15 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 	// which means that using the symlink when adding the watch would fail
 	// to tell us when the ..data symlink were changed to point to a new
 	// version of the secret.  Instead, we watch the directory that contains
-	// tls.crt and ..data, and when we get an event, we re-evaluate the
-	// symlink to see whether it has changed.
-	if err := watcher.Add(secPath); err != nil {
+	// ..data, and when we get an event, we re-evaluate the symlink to see
+	// whether it has changed.
+	if err := watcher.Add(path); err != nil {
 		return err
 	}
-	log.V(0).Info("watching for changes", "path", secPath)
+	log.V(0).Info("watching for changes", "path", path)
 
-	path := filepath.Join(secPath, "tls.crt")
-	currentRealPath, err := filepath.EvalSymlinks(path)
+	dataPath := filepath.Join(path, "..data")
+	currentDataPath, err := filepath.EvalSymlinks(dataPath)
 	if err != nil {
 		return err
 	}
@@ -308,34 +350,24 @@ func (r *templateRouter) watchSecretDir(secPath, outName string) error {
 					return
 				}
 
-				newRealPath, err := filepath.EvalSymlinks(path)
+				newDataPath, err := filepath.EvalSymlinks(dataPath)
 				if err != nil {
-					log.V(0).Info("watchSecretDir error", "error", err)
+					log.Error(err, "failed to resolve symlink", "path", dataPath)
 					continue
 				}
-				if newRealPath == currentRealPath {
+				if newDataPath == currentDataPath {
 					continue
 				}
-				currentRealPath = newRealPath
+				currentDataPath = newDataPath
 
-				log.V(0).Info("got watch event for update", "event", event, "name", outName)
-				os.Remove(outName)
-				if err := secretToPem(secPath, outName); err != nil {
-					log.V(0).Info("failed to update", "name", outName, "error", err)
-				}
-
-				r.lock.Lock()
-				r.stateChanged = true
-				r.dynamicallyConfigured = false
-				r.defaultCertificatePath = outName
-				r.lock.Unlock()
-				r.Commit()
+				log.V(0).Info("got watch event from fsnotify", "operation", event.Op.String(), "path", event.Name)
+				reloadFn()
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					log.V(0).Info("fsnotify channel closed")
 					return
 				}
-				log.V(0).Info("got error from fsnotify", "error", err)
+				log.Error(err, "received error from fsnotify")
 			}
 		}
 	}()
@@ -360,7 +392,17 @@ func (r *templateRouter) writeDefaultCert() error {
 		} else {
 			r.defaultCertificatePath = outPath
 		}
-		if err := r.watchSecretDir(r.defaultCertificateDir, outPath); err != nil {
+		reloadFn := func() {
+			log.V(0).Info("updating default certificate", "path", outPath)
+			os.Remove(outPath)
+			if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+				log.Error(err, "failed to update default certificate", "path", outPath)
+				return
+			}
+			log.V(0).Info("reloading to get updated default certificate")
+			r.rateLimitedCommitFunction.RegisterChange()
+		}
+		if err := r.watchVolumeMountDir(r.defaultCertificateDir, reloadFn); err != nil {
 			log.V(0).Info("failed to establish watch on certificate directory", "error", err)
 			return nil
 		}
@@ -374,6 +416,34 @@ func (r *templateRouter) writeDefaultCert() error {
 		return err
 	}
 	r.defaultCertificatePath = outPath
+	return nil
+}
+
+// watchMutualTLSCert watches the directory containing the certificates for
+// mutual TLS and reloads the router if the directory contents change.
+func (r *templateRouter) watchMutualTLSCert() error {
+	caPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CA")
+	if len(caPath) != 0 {
+		reloadFn := func() {
+			log.V(0).Info("reloading to get updated client CA", "name", caPath)
+			r.rateLimitedCommitFunction.RegisterChange()
+		}
+		if err := r.watchVolumeMountDir(filepath.Dir(caPath), reloadFn); err != nil {
+			log.V(0).Info("failed to establish watch on mTLS certificate directory", "error", err)
+			return nil
+		}
+	}
+	crlPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CRL")
+	if len(crlPath) != 0 && filepath.Dir(caPath) != filepath.Dir(crlPath) {
+		reloadFn := func() {
+			log.V(0).Info("reloading to get updated client CA CRL", "name", crlPath)
+			r.rateLimitedCommitFunction.RegisterChange()
+		}
+		if err := r.watchVolumeMountDir(filepath.Dir(crlPath), reloadFn); err != nil {
+			log.V(0).Info("failed to establish watch on mTLS certificate directory", "error", err)
+			return nil
+		}
+	}
 	return nil
 }
 
@@ -416,6 +486,7 @@ func (r *templateRouter) commitAndReload() error {
 		reloadStart := time.Now()
 		err := r.writeConfig()
 		r.metricWriteConfig.Observe(float64(time.Now().Sub(reloadStart)) / float64(time.Second))
+		log.V(4).Info("writeConfig", "duration", time.Now().Sub(reloadStart).String())
 		return err
 	}(); err != nil {
 		return err
@@ -434,8 +505,13 @@ func (r *templateRouter) commitAndReload() error {
 		if r.dynamicConfigManager != nil {
 			r.dynamicConfigManager.Notify(RouterEventReloadError)
 		}
+		// Set the metricReloadFailure metric to true when a reload fails.
+		r.metricReloadFailure.Set(float64(1))
 		return err
 	}
+
+	// Set the metricReloadFailure metric to false when a reload succeeds.
+	r.metricReloadFailure.Set(float64(0))
 
 	if r.dynamicConfigManager != nil {
 		r.dynamicConfigManager.Notify(RouterEventReloadEnd)
@@ -449,6 +525,7 @@ func (r *templateRouter) commitAndReload() error {
 func (r *templateRouter) writeConfig() error {
 	//write out any certificate files that don't exist
 	for k, cfg := range r.state {
+		cfg := cfg // avoid implicit memory aliasing (gosec G601)
 		if err := r.writeCertificates(&cfg); err != nil {
 			return fmt.Errorf("error writing certificates for %s: %v", k, err)
 		}
@@ -475,23 +552,30 @@ func (r *templateRouter) writeConfig() error {
 
 	for name, template := range r.templates {
 		filename := filepath.Join(r.dir, name)
+		if err := os.MkdirAll(filepath.Dir(filename), 0777); err != nil {
+			return fmt.Errorf("error creating path %q: %v", filepath.Dir(filename), err)
+		}
 		file, err := os.Create(filename)
 		if err != nil {
 			return fmt.Errorf("error creating config file %s: %v", filename, err)
 		}
 
 		data := templateData{
-			WorkingDir:           r.dir,
-			State:                r.state,
-			ServiceUnits:         r.serviceUnits,
-			DefaultCertificate:   r.defaultCertificatePath,
-			DefaultDestinationCA: r.defaultDestinationCAPath,
-			StatsUser:            r.statsUser,
-			StatsPassword:        r.statsPassword,
-			StatsPort:            r.statsPort,
-			BindPorts:            !r.bindPortsAfterSync || r.synced,
-			DynamicConfigManager: r.dynamicConfigManager,
-			DisableHTTP2:         disableHTTP2,
+			WorkingDir:                    r.dir,
+			State:                         r.state,
+			ServiceUnits:                  r.serviceUnits,
+			DefaultCertificate:            r.defaultCertificatePath,
+			DefaultDestinationCA:          r.defaultDestinationCAPath,
+			StatsUser:                     r.statsUser,
+			StatsPassword:                 r.statsPassword,
+			StatsPort:                     r.statsPort,
+			BindPorts:                     !r.bindPortsAfterSync || r.synced,
+			DynamicConfigManager:          r.dynamicConfigManager,
+			DisableHTTP2:                  disableHTTP2,
+			CaptureHTTPRequestHeaders:     r.captureHTTPRequestHeaders,
+			CaptureHTTPResponseHeaders:    r.captureHTTPResponseHeaders,
+			CaptureHTTPCookie:             r.captureHTTPCookie,
+			HTTPHeaderNameCaseAdjustments: r.httpHeaderNameCaseAdjustments,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
@@ -538,15 +622,14 @@ func (r *templateRouter) FilterNamespaces(namespaces sets.String) {
 		r.serviceUnits = make(map[ServiceUnitKey]ServiceUnit)
 		r.stateChanged = true
 	}
-	for k := range r.serviceUnits {
+	for key, service := range r.serviceUnits {
 		// TODO: the id of a service unit should be defined inside this class, not passed in from the outside
 		//   remove the leak of the abstraction when we refactor this code
-		ns, _ := getPartsFromEndpointsKey(k)
+		ns, _ := getPartsFromEndpointsKey(key)
 		if namespaces.Has(ns) {
 			continue
 		}
-		delete(r.serviceUnits, k)
-		r.stateChanged = true
+		r.deleteServiceUnitInternal(key, service)
 	}
 
 	for k := range r.state {
@@ -584,7 +667,6 @@ func (r *templateRouter) createServiceUnitInternal(id ServiceUnitKey) {
 	}
 
 	r.serviceUnits[id] = service
-	r.stateChanged = true
 }
 
 // findMatchingServiceUnit finds the service with the given id - internal
@@ -607,13 +689,22 @@ func (r *templateRouter) DeleteServiceUnit(id ServiceUnitKey) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	_, ok := r.findMatchingServiceUnit(id)
+	service, ok := r.findMatchingServiceUnit(id)
 	if !ok {
 		return
 	}
 
+	r.deleteServiceUnitInternal(id, service)
+}
+
+// deleteServiceUnitInternal deletes the service with the given
+// id. It differs from DeleteServiceUnit() as it assumes the
+// caller has taken the lock.
+func (r *templateRouter) deleteServiceUnitInternal(id ServiceUnitKey, service ServiceUnit) {
 	delete(r.serviceUnits, id)
-	r.stateChanged = true
+	if len(service.ServiceAliasAssociations) > 0 {
+		r.stateChanged = true
+	}
 }
 
 // addServiceAliasAssociation adds a reference to the backend in the ServiceUnit config.
@@ -782,7 +873,9 @@ func (r *templateRouter) DeleteEndpoints(id ServiceUnitKey) {
 
 	r.serviceUnits[id] = service
 
-	r.stateChanged = true
+	if len(service.ServiceAliasAssociations) > 0 {
+		r.stateChanged = true
+	}
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
 }
 
@@ -995,8 +1088,9 @@ func (r *templateRouter) AddEndpoints(id ServiceUnitKey, endpoints []Endpoint) {
 	r.serviceUnits[id] = frontend
 
 	configChanged := r.dynamicallyReplaceEndpoints(id, frontend, oldEndpoints)
-
-	r.stateChanged = true
+	if len(frontend.ServiceAliasAssociations) > 0 {
+		r.stateChanged = true
+	}
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
 }
 
@@ -1094,7 +1188,8 @@ func (r *templateRouter) SyncedAtLeastOnce() bool {
 // hasRequiredEdgeCerts ensures that at least a host certificate and key are provided.
 // a ca cert is not required because it may be something that is in the root cert chain
 func hasRequiredEdgeCerts(cfg *ServiceAliasConfig) bool {
-	hostCert, ok := cfg.Certificates[cfg.Host]
+	certKey := generateCertKey(cfg)
+	hostCert, ok := cfg.Certificates[certKey]
 	return ok && len(hostCert.Contents) > 0 && len(hostCert.PrivateKey) > 0
 }
 

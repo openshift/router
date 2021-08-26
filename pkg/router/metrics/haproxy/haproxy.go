@@ -355,9 +355,11 @@ func (e *Exporter) CollectNow() {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	now := time.Now()
+
 	e.resetMetrics()
 	e.scrape(true)
-	e.lastScrape = nil
+	e.lastScrape = &now
 }
 
 func fetchHTTP(uri string, timeout time.Duration) func() (io.ReadCloser, error) {
@@ -543,13 +545,17 @@ func knownServerSegment(value string) (string, string, string, bool) {
 	if i := strings.Index(value, ":"); i != -1 {
 		switch value[:i] {
 		case "ept":
-			if service, server, ok := parseNameSegment(value[i+1:]); ok {
-				return "", service, server, true
+			if service, remainder, ok := parseNameSegment(value[i+1:]); ok {
+				if _, server, ok := parseNameSegment(remainder); ok {
+					return "", service, server, true
+				}
 			}
 		case "pod":
 			if pod, remainder, ok := parseNameSegment(value[i+1:]); ok {
-				if service, server, ok := parseNameSegment(remainder); ok {
-					return pod, service, server, true
+				if service, remainder, ok := parseNameSegment(remainder); ok {
+					if _, server, ok := parseNameSegment(remainder); ok {
+						return pod, service, server, true
+					}
 				}
 			}
 		}

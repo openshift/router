@@ -6,7 +6,10 @@ import (
 	"sync"
 	"time"
 
+	routev1 "github.com/openshift/api/route/v1"
+	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	kapi "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -14,10 +17,9 @@ import (
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 
-	routev1 "github.com/openshift/api/route/v1"
-	projectclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/controller/endpointsubset"
 )
 
 var log = logf.Logger.WithName("controller")
@@ -225,6 +227,33 @@ func (c *RouterController) HandleEndpoints(eventType watch.EventType, obj interf
 		utilruntime.HandleError(err)
 	}
 	c.Commit()
+}
+
+// HandleEndpointSlice handles a single EndpointSlice event and refreshes the router backend.
+func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMeta metav1.ObjectMeta, items []discoveryv1.EndpointSlice) {
+	endpoints := &kapi.Endpoints{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            objMeta.Name,
+			Namespace:       objMeta.Namespace,
+			Labels:          objMeta.Labels,
+			Annotations:     objMeta.Annotations,
+			OwnerReferences: objMeta.OwnerReferences,
+			ClusterName:     objMeta.ClusterName,
+		},
+		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
+	}
+
+	// RecordNamespaceEndpoints and all HandleEndpoints
+	// implementations treat watch.Modified and watch.Added the
+	// same, so we can conflate watch.Modified and watch.Added
+	// here
+	if len(items) == 0 {
+		eventType = watch.Deleted
+	} else {
+		eventType = watch.Modified
+	}
+
+	c.HandleEndpoints(eventType, endpoints)
 }
 
 // Commit notifies the plugin that it is safe to commit state.

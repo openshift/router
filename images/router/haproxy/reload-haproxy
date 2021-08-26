@@ -25,35 +25,18 @@ function haproxyHealthCheck() {
   local retries=0
   local start_ts=$(date +"%s")
   local proxy_proto="${ROUTER_USE_PROXY_PROTOCOL-}"
+  local proxy_opts=''
   local end_ts=$((start_ts + wait_time))
 
-  # test with proxy protocol on
   if [[ "${proxy_proto}" == "TRUE" || "${proxy_proto}" == "true" ]]; then
-    echo " - Proxy protocol on, checking ${url} ..."
-    while true; do
-      local statusline=$(echo $'PROXY UNKNOWN\r\nGET / HTTP/1.1\r\n' | socat tcp-connect:localhost:${port} stdio | head -1)
-
-      if [[ "$statusline" == *" 503 "* ]]; then
-        echo " - Health check ok : $retries retry attempt(s)."
-        return 0
-      fi
-
-      if [ $(date +"%s") -ge $end_ts ]; then
-        echo " - Exceeded max wait time ($wait_time) in health check - $retries retry attempt(s)."
-        return 1
-      fi
-
-      sleep 0.5
-      retries=$((retries + 1))
-    done
-    return 0
+    proxy_opts='--haproxy-protocol'
   fi
 
-  echo " - Checking ${url} ..."
+  echo " - Checking ${url}${proxy_opts:+ using PROXY protocol} ..."
   while true; do
-    local httpcode=$(curl $timeout_opts -s -o /dev/null -I -H "Host: " -w "%{http_code}" ${url})
+    local httpcode=$(curl $timeout_opts $proxy_opts -s -o /dev/null -I -H "Host: " -w "%{http_code}" ${url})
 
-    if [ "$httpcode" == "503" ]; then
+    if [[ "$httpcode" = 503 || "$httpcode" = 404 ]]; then
       echo " - Health check ok : $retries retry attempt(s)."
       return 0
     fi

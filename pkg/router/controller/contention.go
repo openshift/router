@@ -7,6 +7,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	routev1 "github.com/openshift/api/route/v1"
 )
 
@@ -243,7 +246,10 @@ func (t *SimpleContentionTracker) Clear(id string, current *routev1.RouteIngress
 }
 
 func ingressEqual(a, b *routev1.RouteIngress) bool {
-	return a.Host == b.Host && a.RouterCanonicalHostname == b.RouterCanonicalHostname && a.WildcardPolicy == b.WildcardPolicy && a.RouterName == b.RouterName
+	// In addition to the RouteIngress' string fields, compare the available admission condition to determine
+	// if the given ingress' are equal. See https://bugzilla.redhat.com/show_bug.cgi?id=1908389.
+	return a.Host == b.Host && a.RouterCanonicalHostname == b.RouterCanonicalHostname && a.WildcardPolicy == b.WildcardPolicy && a.RouterName == b.RouterName &&
+		cmp.Equal(findCondition(a, routev1.RouteAdmitted), findCondition(b, routev1.RouteAdmitted), cmpopts.IgnoreFields(routev1.RouteIngressCondition{}, "LastTransitionTime"))
 }
 
 func ingressConditionTouched(ingress *routev1.RouteIngress) *metav1.Time {
@@ -260,14 +266,12 @@ func ingressConditionTouched(ingress *routev1.RouteIngress) *metav1.Time {
 }
 
 func ingressChanged(oldRoute, route *routev1.Route, routerName string) *routev1.RouteIngress {
-	var ingress *routev1.RouteIngress
 	for i := range route.Status.Ingress {
 		if route.Status.Ingress[i].RouterName == routerName {
-			ingress = &route.Status.Ingress[i]
-			for _, old := range oldRoute.Status.Ingress {
-				if old.RouterName == routerName {
-					if !ingressEqual(ingress, &old) {
-						return ingress
+			for j := range oldRoute.Status.Ingress {
+				if oldRoute.Status.Ingress[j].RouterName == routerName {
+					if !ingressEqual(&route.Status.Ingress[i], &oldRoute.Status.Ingress[j]) {
+						return &route.Status.Ingress[i]
 					}
 					return nil
 				}

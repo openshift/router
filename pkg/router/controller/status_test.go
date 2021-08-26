@@ -873,6 +873,10 @@ func (i *fakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEve
 	panic("not implemented")
 }
 
+func (i *fakeInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error {
+	panic("not implemented")
+}
+
 func (i *fakeInformer) GetStore() cache.Store {
 	panic("not implemented")
 }

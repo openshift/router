@@ -84,7 +84,7 @@ func TestGenerateWildcardDomainMapEntry(t *testing.T) {
 			path:     "",
 			wildcard: true,
 			expected: &HAProxyMapEntry{
-				Key:   `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+				Key:   `^[^\.]*\.wild\.test\.?(:[0-9]+)?(/.*)?$`,
 				Value: "1",
 			},
 		},
@@ -94,7 +94,7 @@ func TestGenerateWildcardDomainMapEntry(t *testing.T) {
 			path:     "/ac/es/wi/ld/te/st",
 			wildcard: true,
 			expected: &HAProxyMapEntry{
-				Key:   `^[^\.]*\.aces\.wild\.test(:[0-9]+)?(/.*)?$`,
+				Key:   `^[^\.]*\.aces\.wild\.test\.?(:[0-9]+)?(/.*)?$`,
 				Value: "1",
 			},
 		},
@@ -170,7 +170,7 @@ func TestGenerateHttpMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "host with path",
@@ -178,7 +178,7 @@ func TestGenerateHttpMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "/x/y/z",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?/x/y/z(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?/x/y/z(/.*)?$`,
 		},
 		{
 			name:        "wildcard host",
@@ -186,7 +186,7 @@ func TestGenerateHttpMapEntry(t *testing.T) {
 			hostname:    "www.wild.test",
 			path:        "",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^[^\.]*\.wild\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "wildcard host with path",
@@ -194,7 +194,7 @@ func TestGenerateHttpMapEntry(t *testing.T) {
 			hostname:    "path.aces.wild.test",
 			path:        "/path/to/resource",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.aces\.wild\.test(:[0-9]+)?/path/to/resource(/.*)?$`,
+			expectedKey: `^[^\.]*\.aces\.wild\.test\.?(:[0-9]+)?/path/to/resource(/.*)?$`,
 		},
 	}
 
@@ -290,7 +290,7 @@ func TestGenerateEdgeReencryptMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "host with path",
@@ -298,7 +298,7 @@ func TestGenerateEdgeReencryptMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "/x/y/z",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?/x/y/z(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?/x/y/z(/.*)?$`,
 		},
 		{
 			name:        "wildcard host",
@@ -306,7 +306,7 @@ func TestGenerateEdgeReencryptMapEntry(t *testing.T) {
 			hostname:    "www.wild.test",
 			path:        "",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^[^\.]*\.wild\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "wildcard host with path",
@@ -314,7 +314,7 @@ func TestGenerateEdgeReencryptMapEntry(t *testing.T) {
 			hostname:    "path.aces.wild.test",
 			path:        "/path/to/resource",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.aces\.wild\.test(:[0-9]+)?/path/to/resource(/.*)?$`,
+			expectedKey: `^[^\.]*\.aces\.wild\.test\.?(:[0-9]+)?/path/to/resource(/.*)?$`,
 		},
 	}
 
@@ -410,7 +410,7 @@ func TestGenerateHttpRedirectMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "host with path",
@@ -418,7 +418,7 @@ func TestGenerateHttpRedirectMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "/x/y/z",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?/x/y/z(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?/x/y/z(/.*)?$`,
 		},
 		{
 			name:        "wildcard host",
@@ -426,7 +426,7 @@ func TestGenerateHttpRedirectMapEntry(t *testing.T) {
 			hostname:    "www.wild.test",
 			path:        "",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^[^\.]*\.wild\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "wildcard host with path",
@@ -434,7 +434,7 @@ func TestGenerateHttpRedirectMapEntry(t *testing.T) {
 			hostname:    "path.aces.wild.test",
 			path:        "/path/to/resource",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.aces\.wild\.test(:[0-9]+)?/path/to/resource(/.*)?$`,
+			expectedKey: `^[^\.]*\.aces\.wild\.test\.?(:[0-9]+)?/path/to/resource(/.*)?$`,
 		},
 	}
 
@@ -529,7 +529,7 @@ func TestGenerateTCPMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^www\.example\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "host with path",
@@ -545,7 +545,7 @@ func TestGenerateTCPMapEntry(t *testing.T) {
 			hostname:    "www.wild.test",
 			path:        "",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^[^\.]*\.wild\.test\.?(:[0-9]+)?(/.*)?$`,
 		},
 		{
 			name:        "wildcard host with path",
@@ -652,7 +652,7 @@ func TestGenerateSNIPassthroughMapEntry(t *testing.T) {
 			hostname:    "www.example.test",
 			path:        "",
 			wildcard:    false,
-			expectedKey: `^www\.example\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^www\.example\.test$`,
 		},
 		{
 			name:        "host with path",
@@ -668,7 +668,7 @@ func TestGenerateSNIPassthroughMapEntry(t *testing.T) {
 			hostname:    "www.wild.test",
 			path:        "",
 			wildcard:    true,
-			expectedKey: `^[^\.]*\.wild\.test(:[0-9]+)?(/.*)?$`,
+			expectedKey: `^[^\.]*\.wild\.test$`,
 		},
 		{
 			name:        "wildcard host with path",
@@ -811,11 +811,7 @@ func TestGenerateCertConfigMapEntry(t *testing.T) {
 		}
 
 		certHost := templateutil.GenCertificateHostName(host, wildcard)
-		e := &HAProxyMapEntry{Key: key, Value: certHost}
-		if hascert {
-			e.SSLBindConfig = "[alpn h2,http/1.1]"
-		}
-		return e
+		return &HAProxyMapEntry{Key: key, Value: certHost}
 	}
 
 	for _, tt := range tests {

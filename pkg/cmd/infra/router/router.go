@@ -68,6 +68,10 @@ type RouterSelection struct {
 	ExtendedValidation bool
 
 	ListenAddr string
+
+	// WatchEndpoints when true will watch Endpoints instead of
+	// EndpointSlices.
+	WatchEndpoints bool
 }
 
 // Bind sets the appropriate labels
@@ -92,6 +96,7 @@ func (o *RouterSelection) Bind(flag *pflag.FlagSet) {
 	flag.Bool("enable-ingress", false, "Enable configuration via ingress resources.")
 	flag.MarkDeprecated("enable-ingress", "Ingress resources are now synchronized to routes automatically.")
 	flag.StringVar(&o.ListenAddr, "listen-addr", env("ROUTER_LISTEN_ADDR", ""), "The name of an interface to listen on to expose metrics and health checking. If not specified, will not listen. Overrides stats port.")
+	flag.BoolVar(&o.WatchEndpoints, "watch-endpoints", isTrue(env("ROUTER_WATCH_ENDPOINTS", "")), "Watch Endpoints instead of the EndpointSlice resource.")
 }
 
 // RouteUpdate updates the route before it is seen by the cache.
@@ -239,17 +244,17 @@ func (o *RouterSelection) Complete() error {
 
 // NewFactory initializes a factory that will watch the requested routes
 func (o *RouterSelection) NewFactory(routeclient routeclientset.Interface, projectclient projectclient.ProjectInterface, kc kclientset.Interface) *controllerfactory.RouterControllerFactory {
-	factory := controllerfactory.NewDefaultRouterControllerFactory(routeclient, projectclient, kc)
+	factory := controllerfactory.NewDefaultRouterControllerFactory(routeclient, projectclient, kc, o.WatchEndpoints)
 	factory.LabelSelector = o.LabelSelector
 	factory.FieldSelector = o.FieldSelector
 	factory.Namespace = o.Namespace
 	factory.ResyncInterval = o.ResyncInterval
 	switch {
 	case o.NamespaceLabels != nil:
-		log.V(0).Info("router is only using routes in namespaces matching labels", "labels", o.NamespaceLabels)
+		log.V(0).Info("router is only using routes in namespaces matching labels", "labels", o.NamespaceLabels.String())
 		factory.NamespaceLabels = o.NamespaceLabels
 	case o.ProjectLabels != nil:
-		log.V(0).Info("router is only using routes in projects matching labels", "labels", o.ProjectLabels)
+		log.V(0).Info("router is only using routes in projects matching labels", "labels", o.ProjectLabels.String())
 		factory.ProjectLabels = o.ProjectLabels
 	case len(factory.Namespace) > 0:
 		log.V(0).Info("router is only using resources in namespace", "namespace", factory.Namespace)

@@ -235,11 +235,11 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 func findMostRecentIngress(route *routev1.Route) string {
 	var newest string
 	var recent time.Time
-	for _, ingress := range route.Status.Ingress {
-		if condition := findCondition(&ingress, routev1.RouteAdmitted); condition != nil && condition.LastTransitionTime != nil {
+	for i := range route.Status.Ingress {
+		if condition := findCondition(&route.Status.Ingress[i], routev1.RouteAdmitted); condition != nil && condition.LastTransitionTime != nil {
 			if condition.LastTransitionTime.Time.After(recent) {
 				recent = condition.LastTransitionTime.Time
-				newest = ingress.RouterName
+				newest = route.Status.Ingress[i].RouterName
 			}
 		}
 	}

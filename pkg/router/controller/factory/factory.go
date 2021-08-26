@@ -3,11 +3,13 @@ package factory
 import (
 	"context"
 	"fmt"
+	"path"
 	"reflect"
 	"sort"
 	"time"
 
 	kapi "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +34,7 @@ import (
 
 const (
 	DefaultResyncInterval = 30 * time.Minute
+	ServiceNameIndex      = "service-name"
 )
 
 var log = logf.Logger.WithName("controller_factory")
@@ -52,25 +55,27 @@ type RouterControllerFactory struct {
 	ProjectLabels   labels.Selector
 	RouteModifierFn func(route *routev1.Route)
 
-	informers map[reflect.Type]kcache.SharedIndexInformer
+	informers      map[reflect.Type]kcache.SharedIndexInformer
+	watchEndpoints bool
 }
 
 // NewDefaultRouterControllerFactory initializes a default router controller factory.
-func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectclient.ProjectInterface, kc kclientset.Interface) *RouterControllerFactory {
+func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectclient.ProjectInterface, kc kclientset.Interface, watchEndpoints bool) *RouterControllerFactory {
 	return &RouterControllerFactory{
 		KClient:        kc,
 		RClient:        rc,
 		ProjectClient:  pc,
 		ResyncInterval: DefaultResyncInterval,
 
-		Namespace: metav1.NamespaceAll,
-		informers: map[reflect.Type]kcache.SharedIndexInformer{},
+		Namespace:      metav1.NamespaceAll,
+		informers:      map[reflect.Type]kcache.SharedIndexInformer{},
+		watchEndpoints: watchEndpoints,
 	}
 }
 
 // Create begins listing and watching against the API server for the desired route and endpoint
-// resources. It spawns child goroutines that cannot be terminated.
-func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool) *routercontroller.RouterController {
+// resources.
+func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, stopCh <-chan struct{}) *routercontroller.RouterController {
 	rc := &routercontroller.RouterController{
 		Plugin:     plugin,
 		WatchNodes: watchNodes,
@@ -94,17 +99,21 @@ func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool) 
 		rc.ProjectSyncInterval = f.ResyncInterval
 	}
 
-	f.initInformers(rc)
+	f.initInformers(rc, stopCh)
 	f.processExistingItems(rc)
 	f.registerInformerEventHandlers(rc)
 	return rc
 }
 
-func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterController) {
+func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterController, stopCh <-chan struct{}) {
 	if f.NamespaceLabels != nil {
 		f.createNamespacesSharedInformer()
 	}
-	f.createEndpointsSharedInformer()
+	if f.watchEndpoints {
+		f.createEndpointsSharedInformer()
+	} else {
+		f.createEndpointSliceSharedInformer()
+	}
 	f.CreateRoutesSharedInformer()
 
 	if rc.WatchNodes {
@@ -113,8 +122,9 @@ func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterContr
 
 	// Start informers
 	for _, informer := range f.informers {
-		go informer.Run(utilwait.NeverStop)
+		go informer.Run(stopCh)
 	}
+
 	// Wait for informers cache to be synced
 	for objType, informer := range f.informers {
 		if !kcache.WaitForCacheSync(utilwait.NeverStop, informer.HasSynced) {
@@ -127,13 +137,45 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 	if f.NamespaceLabels != nil {
 		f.registerSharedInformerEventHandlers(&kapi.Namespace{}, rc.HandleNamespace)
 	}
-	f.registerSharedInformerEventHandlers(&kapi.Endpoints{}, rc.HandleEndpoints)
+	if f.watchEndpoints {
+		f.registerSharedInformerEventHandlers(&kapi.Endpoints{}, rc.HandleEndpoints)
+	} else {
+		f.registerSharedInformerEventHandlers(&discoveryv1.EndpointSlice{}, func(eventType watch.EventType, obj interface{}) {
+			eps := obj.(*discoveryv1.EndpointSlice)
+			if serviceName := endpointSliceServiceName(eps); len(serviceName) == 0 {
+				log.V(4).Info("EndpointSlice has no service name", "namespace", eps.Namespace, "name", eps.Name, "label", discoveryv1.LabelServiceName)
+			} else {
+				objMeta := eps.ObjectMeta.DeepCopy()
+				objMeta.Name = serviceName
+				rc.HandleEndpointSlice(eventType, *objMeta, f.aggregateEndpointSlice(eps.Namespace, serviceName))
+			}
+		})
+	}
 
 	f.registerSharedInformerEventHandlers(&routev1.Route{}, rc.HandleRoute)
 
 	if rc.WatchNodes {
 		f.registerSharedInformerEventHandlers(&kapi.Node{}, rc.HandleNode)
 	}
+
+}
+
+func (f *RouterControllerFactory) aggregateEndpointSlice(namespace, name string) []discoveryv1.EndpointSlice {
+	objType := reflect.TypeOf(&discoveryv1.EndpointSlice{})
+	objs, _ := f.informers[objType].GetIndexer().ByIndex(ServiceNameIndex, path.Join(namespace, name))
+	fullSet := make([]discoveryv1.EndpointSlice, len(objs), len(objs))
+
+	for i := range objs {
+		eps := objs[i].(*discoveryv1.EndpointSlice)
+		fullSet[i] = *eps.DeepCopy()
+	}
+
+	// Make guarantees for all receivers/consumers.
+	sort.SliceStable(fullSet, func(i, j int) bool {
+		return path.Join(fullSet[i].Namespace, fullSet[i].Name) < path.Join(fullSet[j].Namespace, fullSet[j].Name)
+	})
+
+	return fullSet
 }
 
 func (f *RouterControllerFactory) informerStoreList(obj runtime.Object) []interface{} {
@@ -168,8 +210,30 @@ func (f *RouterControllerFactory) processExistingItems(rc *routercontroller.Rout
 		}
 	}
 
-	for _, item := range f.informerStoreList(&kapi.Endpoints{}) {
-		rc.HandleEndpoints(watch.Added, item.(*kapi.Endpoints))
+	if f.watchEndpoints {
+		for _, item := range f.informerStoreList(&kapi.Endpoints{}) {
+			rc.HandleEndpoints(watch.Added, item.(*kapi.Endpoints))
+		}
+	} else {
+		processedServices := map[string]bool{}
+
+		for _, item := range f.informerStoreList(&discoveryv1.EndpointSlice{}) {
+			eps := item.(*discoveryv1.EndpointSlice)
+
+			serviceName := endpointSliceServiceName(eps)
+			if len(serviceName) == 0 {
+				continue
+			}
+
+			serviceKey := path.Join(eps.Namespace, serviceName)
+			if !processedServices[serviceKey] {
+				log.V(4).Info("processing existing items", "namespace", eps.Namespace, "serviceName", serviceName)
+				objMeta := eps.ObjectMeta.DeepCopy()
+				objMeta.Name = serviceName
+				rc.HandleEndpointSlice(watch.Added, *objMeta, f.aggregateEndpointSlice(eps.Namespace, serviceName))
+				processedServices[serviceKey] = true
+			}
+		}
 	}
 
 	items := []routev1.Route{}
@@ -325,4 +389,39 @@ func (r routeAge) Len() int      { return len(r) }
 func (r routeAge) Swap(i, j int) { r[i], r[j] = r[j], r[i] }
 func (r routeAge) Less(i, j int) bool {
 	return routeapihelpers.RouteLessThan(&r[i], &r[j])
+}
+
+func endpointSliceServiceName(eps *discoveryv1.EndpointSlice) string {
+	if name, ok := eps.Labels[discoveryv1.LabelServiceName]; ok && name != "" {
+		return name
+	}
+	return ""
+}
+
+func endpointSliceByServiceLabelIndexFunc(obj interface{}) ([]string, error) {
+	if eps, ok := obj.(*discoveryv1.EndpointSlice); ok {
+		if name := endpointSliceServiceName(eps); name != "" {
+			return []string{path.Join(eps.Namespace, name)}, nil
+		}
+	}
+	return []string{}, nil
+}
+
+func (f *RouterControllerFactory) createEndpointSliceSharedInformer() {
+	// we do not scope endpointSlice by labels or fields because the route labels != endpoints labels
+	lw := &kcache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			return f.KClient.DiscoveryV1().EndpointSlices(f.Namespace).List(context.TODO(), options)
+		},
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return f.KClient.DiscoveryV1().EndpointSlices(f.Namespace).Watch(context.TODO(), options)
+		},
+	}
+	eps := &discoveryv1.EndpointSlice{}
+	objType := reflect.TypeOf(eps)
+	informer := kcache.NewSharedIndexInformer(lw, eps, f.ResyncInterval, kcache.Indexers{
+		kcache.NamespaceIndex: kcache.MetaNamespaceIndexFunc,
+		ServiceNameIndex:      endpointSliceByServiceLabelIndexFunc,
+	})
+	f.informers[objType] = informer
 }

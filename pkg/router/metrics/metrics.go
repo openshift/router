@@ -20,6 +20,7 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 
 	logf "github.com/openshift/router/log"
+	"github.com/openshift/router/pkg/router/shutdown"
 )
 
 var log = logf.Logger.WithName("metrics")
@@ -127,8 +128,8 @@ func (l Listener) Listen() {
 
 	tcpl, err := net.Listen("tcp", l.Addr)
 	if err != nil {
-		// TODO: This function should return an error.
-		panic(err)
+		log.Error(err, "listening on the metrics port failed")
+		shutdown.RequestShutdown()
 	}
 
 	// if a TLS connection was requested, set up a connection mux that will send TLS requests to
@@ -144,8 +145,8 @@ func (l Listener) Listen() {
 			Handler: handler,
 		}
 		if err := s.Serve(httpl); err != cmux.ErrListenerClosed {
-			// TODO: This function should return an error.
-			panic(err)
+			log.Error(err, "serving HTTP on the metrics port failed")
+			shutdown.RequestShutdown()
 		}
 	}()
 
@@ -159,8 +160,8 @@ func (l Listener) Listen() {
 				Handler: handler,
 			}
 			if err := s.Serve(tlsl); err != cmux.ErrListenerClosed {
-				// TODO: This function should return an error.
-				panic(err)
+				log.Error(err, "serving TLS on the metrics port failed")
+				shutdown.RequestShutdown()
 			}
 		}()
 	} else {
@@ -169,8 +170,8 @@ func (l Listener) Listen() {
 
 	go func() {
 		if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
-			// TODO: This function should return an error.
-			panic(err)
+			log.Error(err, "serving the metrics port failed")
+			shutdown.RequestShutdown()
 		}
 	}()
 }

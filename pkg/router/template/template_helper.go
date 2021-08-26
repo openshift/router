@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"path"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 
@@ -21,6 +24,8 @@ import (
 
 const (
 	certConfigMap = "cert_config.map"
+	// max timeout allowable by HAProxy
+	haproxyMaxTimeout = "2147483647ms"
 )
 
 func isTrue(s string) bool {
@@ -28,9 +33,46 @@ func isTrue(s string) bool {
 	return v
 }
 
+// compiledRegexp is the store of already compiled regular
+// expressions.
+var compiledRegexp sync.Map
+
+// cachedRegexpCompile will compile pattern using regexp.Compile and
+// adds it to the compiledRegexp store if it is not already present.
+// It will return an error error if pattern is an invalid regular
+// expression. If pattern already exists in the store then no
+// compilation is necessary and the existing compiled regexp is
+// returned. This provides a huge performance improvement as repeated
+// calls to compiling a regular expression is enormous. See:
+// https://bugzilla.redhat.com/show_bug.cgi?id=1937972
+func cachedRegexpCompile(pattern string) (*regexp.Regexp, error) {
+	v, ok := compiledRegexp.Load(pattern)
+	if !ok {
+		log.V(7).Info("compiling regexp", "pattern", pattern)
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return nil, err
+		}
+		compiledRegexp.Store(pattern, re)
+		return re, nil
+	}
+	return v.(*regexp.Regexp), nil
+}
+
+// matchString reports whether the string s contains any match in
+// pattern. Repeated re-compilations of the regular expression
+// (pattern) are avoided by utilising the cachedRegexpCompile store.
+func matchString(pattern string, s string) (bool, error) {
+	re, err := cachedRegexpCompile(pattern)
+	if err != nil {
+		return false, err
+	}
+	return re.MatchString(s), nil
+}
+
 func firstMatch(pattern string, values ...string) string {
 	log.V(7).Info("firstMatch called", "pattern", pattern, "values", values)
-	if re, err := regexp.Compile(`\A(?:` + pattern + `)\z`); err == nil {
+	if re, err := cachedRegexpCompile(`\A(?:` + pattern + `)\z`); err == nil {
 		for _, value := range values {
 			if re.MatchString(value) {
 				log.V(7).Info("firstMatch returning", "value", value)
@@ -77,7 +119,7 @@ func matchValues(s string, allowedValues ...string) bool {
 
 func matchPattern(pattern, s string) bool {
 	log.V(7).Info("matchPattern called", "pattern", pattern, "s", s)
-	status, err := regexp.MatchString(`\A(?:`+pattern+`)\z`, s)
+	status, err := matchString(`\A(?:`+pattern+`)\z`, s)
 	if err == nil {
 		log.V(7).Info("matchPattern returning", "foundMatch", status)
 		return status
@@ -123,7 +165,7 @@ func genCertificateHostName(hostname string, wildcard bool) string {
 // processEndpointsForAlias returns the list of endpoints for the given route's service
 // action argument further processes the list e.g. shuffle
 // The default action is in-order traversal of internal data structure that stores
-//   the endpoints (does not change the return order if the data structure did not mutate)
+// the endpoints (does not change the return order if the data structure did not mutate)
 func processEndpointsForAlias(alias ServiceAliasConfig, svc ServiceUnit, action string) []Endpoint {
 	endpoints := endpointsForAlias(alias, svc)
 	if strings.ToLower(action) == "shuffle" {
@@ -166,9 +208,11 @@ func backendConfig(name string, cfg ServiceAliasConfig, hascert bool) *haproxyut
 func generateHAProxyCertConfigMap(td templateData) []string {
 	lines := make([]string, 0)
 	for k, cfg := range td.State {
+		cfg := cfg // avoid implicit memory aliasing (gosec G601)
 		hascert := false
 		if len(cfg.Host) > 0 {
-			cert, ok := cfg.Certificates[cfg.Host]
+			certKey := generateCertKey(&cfg)
+			cert, ok := cfg.Certificates[certKey]
 			hascert = ok && len(cert.Contents) > 0
 		}
 
@@ -178,7 +222,7 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 			if td.DisableHTTP2 {
 				lines = append(lines, strings.Join([]string{fqCertPath, entry.Value}, " "))
 			} else {
-				lines = append(lines, strings.Join([]string{fqCertPath, entry.SSLBindConfig, entry.Value}, " "))
+				lines = append(lines, strings.Join([]string{fqCertPath, "[alpn h2,http/1.1]", entry.Value}, " "))
 			}
 		}
 	}
@@ -194,7 +238,7 @@ func validateHAProxyWhiteList(value string) bool {
 }
 
 // generateHAProxyWhiteListFile generates a whitelist file for use with an haproxy acl.
-func generateHAProxyWhiteListFile(workingDir, id, value string) string {
+func generateHAProxyWhiteListFile(workingDir string, id ServiceAliasConfigKey, value string) string {
 	name := path.Join(workingDir, whitelistDir, fmt.Sprintf("%s.txt", id))
 	cidrs, _ := haproxyutil.ValidateWhiteList(value)
 	data := []byte(strings.Join(cidrs, "\n") + "\n")
@@ -275,10 +319,80 @@ func generateHAProxyMap(name string, td templateData) []string {
 	return templateutil.SortMapPaths(lines, `^[^\.]*\.`)
 }
 
+
 // toList converts a given string with custom delimiter to list
 func toList(s string, delimiter string) []string {
 	v := strings.Split(s, delimiter)
 	return v
+}
+
+// clipHAProxyTimeoutValue prevents the HAProxy config file
+// from using timeout values specified via the haproxy.router.openshift.io/timeout
+// annotation that exceed the maximum value allowed by HAProxy.
+// Return the parameter string instead of an err in the event that a
+// timeout string value is not parsable as a valid time duration.
+func clipHAProxyTimeoutValue(val string) string {
+	// If the empty string is passed in,
+	// simply return the empty string.
+	if len(val) == 0 {
+		return val
+	}
+	endIndex := len(val) - 1
+	maxTimeout, err := time.ParseDuration(haproxyMaxTimeout)
+	if err != nil {
+		return val
+	}
+	// time.ParseDuration doesn't work with days
+	// despite HAProxy accepting timeouts that specify day units
+	if val[endIndex] == 'd' {
+		days, err := strconv.Atoi(val[:endIndex])
+		if err != nil {
+			return val
+		}
+		if maxTimeout.Hours() < float64(days*24) {
+			log.V(7).Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max")
+			return haproxyMaxTimeout
+		}
+	} else {
+		duration, err := time.ParseDuration(val)
+		if err != nil {
+			return val
+		}
+		if maxTimeout.Milliseconds() < duration.Milliseconds() {
+			log.V(7).Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max")
+			return haproxyMaxTimeout
+		}
+	}
+	return val
+}
+
+// parseIPList parses white space separated list of IPs/CIDRs (IPv4/IPv6)
+// aims at providing the same behavior as the previous approach with regexp in the template file
+func parseIPList(list string) string {
+	log.V(7).Info("parseIPList called", "value", list)
+
+	trimmedList := strings.TrimSpace(list)
+	if trimmedList == "" {
+		return ""
+	}
+
+	// same behavior as the previous approach with regexp
+	if trimmedList != list {
+		log.V(7).Info("parseIPList leading/trailing spaces found")
+		return ""
+	}
+
+	ipList := strings.Fields(list)
+	for _, ip := range ipList {
+		if net.ParseIP(ip) == nil {
+			if _, _, err := net.ParseCIDR(ip); err != nil {
+				log.V(7).Info("parseIPList found not IP/CIDR item", "value", ip, "err", err)
+				return ""
+			}
+		}
+	}
+	log.V(7).Info("parseIPList parsed the list", "value", list)
+	return list
 }
 
 var helperFunctions = template.FuncMap{
@@ -304,4 +418,6 @@ var helperFunctions = template.FuncMap{
 	"validateHAProxyWhiteList":     validateHAProxyWhiteList,     //validates a haproxy whitelist (acl) content
 	"generateHAProxyWhiteListFile": generateHAProxyWhiteListFile, //generates a haproxy whitelist file for use in an acl
 	"toList":	toList, //convert a given string with custom delimiter to list
+	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
+	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
 }

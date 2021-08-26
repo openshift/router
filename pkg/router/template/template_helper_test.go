@@ -1,8 +1,11 @@
 package templaterouter
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -434,9 +437,9 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	wildcardDomainOrder := []string{
-		`^[^\.]*\.foo\.wildcard\.test(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.foo\.wildcard\.test\.?(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
+		`^[^\.]*\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
 	}
 
 	lines := generateHAProxyMap("os_wildcard_domain.map", td)
@@ -501,8 +504,8 @@ func TestGenerateHAProxyMap(t *testing.T) {
 	}
 
 	sniPassthroughOrder := []string{
-		`^passthrough-prod\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
-		`^passthrough-dev\.127\.0\.0\.1\.nip\.io(:[0-9]+)?(/.*)?$`,
+		`^passthrough-prod\.127\.0\.0\.1\.nip\.io$`,
+		`^passthrough-dev\.127\.0\.0\.1\.nip\.io$`,
 	}
 
 	lines = generateHAProxyMap("os_sni_passthrough.map", td)
@@ -699,5 +702,261 @@ func TestGetPrimaryAliasKey(t *testing.T) {
 		if result != test.expected {
 			t.Errorf("getPrimaryAliasKey failed. When testing for %v got %v expected %v", test.name, result, test.expected)
 		}
+	}
+}
+
+func TestProcessEndpointsForAlias(t *testing.T) {
+	router := NewFakeTemplateRouter()
+	alias := buildServiceAliasConfig("api-route", "stg", "api-stg.127.0.0.1.nip.io", "", routev1.TLSTerminationEdge, routev1.InsecureEdgeTerminationPolicyRedirect, false)
+	suKey := ServiceUnitKey("stg/svc")
+	router.CreateServiceUnit(suKey)
+	ep1 := Endpoint{
+		ID:     "ep1",
+		IP:     "ip",
+		Port:   "foo",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep1ipport"))),
+	}
+	ep2 := Endpoint{
+		ID:     "ep2",
+		IP:     "ip",
+		Port:   "foo",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep2ipport"))),
+	}
+	ep3 := Endpoint{
+		ID:     "ep3",
+		IP:     "ip",
+		Port:   "bar",
+		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep3ipport"))),
+	}
+
+	testCases := []struct {
+		name           string
+		preferPort     string
+		endpoints      []Endpoint
+		expectedLength int
+	}{
+		{
+			name:           "2 basic endpoints with same Port string",
+			preferPort:     "foo",
+			endpoints:      []Endpoint{ep1, ep2},
+			expectedLength: 2,
+		},
+		{
+			name:           "3 basic endpoints with different Port string",
+			preferPort:     "foo",
+			endpoints:      []Endpoint{ep1, ep2, ep3},
+			expectedLength: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+		alias.PreferPort = tc.preferPort
+		endpointsCopy := make([]Endpoint, len(tc.endpoints))
+		for i := range tc.endpoints {
+			endpointsCopy[i] = tc.endpoints[i]
+		}
+		router.AddEndpoints(suKey, endpointsCopy)
+		svc, _ := router.FindServiceUnit(suKey)
+		endpoints := processEndpointsForAlias(alias, svc, "")
+		if len(endpoints) != tc.expectedLength {
+			t.Errorf("test %s: got wrong number of endpoints. Expected %d got %d", tc.name, tc.expectedLength, len(endpoints))
+		}
+		if len(tc.endpoints) == tc.expectedLength {
+			if !reflect.DeepEqual(tc.endpoints, endpoints) {
+				t.Errorf("test %s: endpoints out of order. Expected %v got %v", tc.name, tc.endpoints, endpoints)
+			}
+		}
+		router.DeleteEndpoints(suKey)
+	}
+}
+
+func TestClipHAProxyTimeoutValue(t *testing.T) {
+	testCases := []struct {
+		value    string
+		expected string
+	}{
+		{
+			value:    "",
+			expected: "",
+		},
+		{
+			value:    "10",
+			expected: "10",
+		},
+		{
+			value:    "10s",
+			expected: "10s",
+		},
+		{
+			value:    "10d",
+			expected: "10d",
+		},
+		{
+			value:    "100d",
+			expected: haproxyMaxTimeout,
+		},
+		{
+			value:    "1000h",
+			expected: haproxyMaxTimeout,
+		},
+	}
+	for _, tc := range testCases {
+		actual := clipHAProxyTimeoutValue(tc.value)
+		if actual != tc.expected {
+			t.Errorf("clipHAProxyTimeoutValue yielded incorrect result: expected %s but got %s", tc.expected, actual)
+		}
+	}
+}
+
+func TestGenerateHAProxyWhiteListFile(t *testing.T) {
+	workDir := t.TempDir()
+
+	err := os.MkdirAll(path.Join(workDir, whitelistDir), 0740)
+	if err != nil {
+		t.Fatal("Unable to create the whitelist directory")
+	}
+
+	testCases := []struct {
+		name              string
+		workDir           string
+		id                ServiceAliasConfigKey
+		expectedWhiteList []string
+		failureExpected   bool
+	}{
+		{
+			name:    "Nominal",
+			workDir: workDir,
+			id:      ServiceAliasConfigKey("test1"),
+			expectedWhiteList: []string{
+				"192.168.0.1",
+				"192.168.0.2",
+				"192.168.0.3",
+			},
+		},
+		{
+			name:    "Nominal failure",
+			workDir: workDir + "-notexisting",
+			id:      ServiceAliasConfigKey("test2"),
+			expectedWhiteList: []string{
+				"192.168.0.1",
+				"192.168.0.2",
+				"192.168.0.3",
+			},
+			failureExpected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			file := generateHAProxyWhiteListFile(tc.workDir, tc.id, strings.Join(tc.expectedWhiteList, " "))
+			if tc.failureExpected {
+				if file != "" {
+					t.Fatal("Failure expected but didn't happen")
+				}
+				return
+			} else {
+				if file == "" {
+					t.Fatal("Unexpected failure")
+				}
+			}
+
+			contents, err := ioutil.ReadFile(file)
+			if err != nil {
+				t.Fatalf("Unable to read from the generated file: %v", err)
+			}
+			gotWhiteList := strings.Fields(string(contents))
+			if !reflect.DeepEqual(tc.expectedWhiteList, gotWhiteList) {
+				t.Errorf("Wrong whitelist written: expected %q, got %q", tc.expectedWhiteList, gotWhiteList)
+			}
+		})
+	}
+}
+
+func TestParseIPList(t *testing.T) {
+	testCases := []struct {
+		name          string
+		input         string
+		expectedEmpty bool
+	}{
+		{
+			name:  "All mixed",
+			input: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+		},
+		{
+			name:  "IPs only",
+			input: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 64:ff9b::192.168.0.1 172.16.14.10",
+		},
+		{
+			name:  "CIDRs only",
+			input: "192.168.1.0/16 2001:0db8:85a3:0000:0000:8a2e:0370:7334/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
+		},
+		{
+			name:  "IPv6 only",
+			input: "2001:0db8:85a3:0000:0000:8a2e:0370:7334 2001:0db8:85a3::8a2e:370:10/64 2001:db8::2:1 ::ffff:192.168.0.1 2600:14a0::/40",
+		},
+		{
+			name:  "IPv4 only",
+			input: "192.168.10.10 10.168.12.10/8 8.8.8.8 172.16.0.0/24",
+		},
+		{
+			name:  "Single IP",
+			input: "192.168.15.15",
+		},
+		{
+			// as behavior as the previous (regexp) approach
+			name:          "Leading and trailing spaces",
+			input:         " 192.168.10.10  ",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Only white spaces",
+			input:         "   ",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Empty",
+			input:         "",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv4",
+			input:         "192.168.",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv6",
+			input:         "2001:0db8:",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv4 CIDR",
+			input:         "192.168.10.5/64",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IPv6 CIDR",
+			input:         "2600:14a0::/256",
+			expectedEmpty: true,
+		},
+		{
+			name:          "Wrong IP in a list",
+			input:         "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 10.",
+			expectedEmpty: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parseIPList(tc.input)
+			if tc.expectedEmpty {
+				if got != "" {
+					t.Errorf("Expected empty got %q", got)
+				}
+				return
+			}
+			if got != tc.input {
+				t.Errorf("Failure: expected %q, got %q", tc.input, got)
+			}
+		})
 	}
 }
