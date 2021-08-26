@@ -356,7 +356,7 @@ func TestHandleEndpoints(t *testing.T) {
 	}
 }
 
-// TestHandleCPEndpoints test endpoint watch events with UDP excluded
+// TestHandleTCPEndpoints test endpoint watch events with UDP excluded
 func TestHandleTCPEndpoints(t *testing.T) {
 	testCases := []struct {
 		name                string          //human readable name for test case
