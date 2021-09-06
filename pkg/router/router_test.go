@@ -31,6 +31,9 @@ import (
 
 	"k8s.io/klog"
 
+	haproxyconfparser "github.com/haproxytech/config-parser/v4"
+	haproxyconfparseroptions "github.com/haproxytech/config-parser/v4/options"
+	haproxyconfparsertypes "github.com/haproxytech/config-parser/v4/types"
 	routercmd "github.com/openshift/router/pkg/cmd/infra/router"
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
@@ -213,7 +216,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: "acl whitelist src -f " + filepath.Join(h.dirs["whitelist"], h.namespace+":a.txt"),
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "a"),
+					attribute:   "acl",
+					value:       "whitelist src -f " + filepath.Join(h.dirs["whitelist"], h.namespace+":a.txt"),
+				},
 			},
 		},
 		"Whitelist of mixed IPs": {
@@ -228,7 +236,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: "acl whitelist src 192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "a1"),
+					attribute:   "acl",
+					value:       "whitelist src 192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+				},
 			},
 		},
 		"Simple HSTS header": {
@@ -243,7 +256,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includeSubDomains;preload'`,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "b"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=99999;includeSubDomains;preload'`,
+				},
 			},
 		},
 		"Simple HSTS header 2": {
@@ -258,7 +276,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includeSubDomains'`,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "b2"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=99999;includeSubDomains'`,
+				},
 			},
 		},
 		"Case insensitive, with white spaces HSTS header": {
@@ -273,7 +296,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999 ;  includesubdomains;  PREload'`,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "c"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=99999 ;  includesubdomains;  PREload'`,
+				},
 			},
 		},
 		"Quotes in HSTS header": {
@@ -288,7 +316,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age="99999"'`,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "d"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age="99999"'`,
+				},
 			},
 		},
 		"Equal sign with LWS in HSTS header": {
@@ -303,7 +336,12 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age  =  "99999"'`,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "f"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age  =  "99999"'`,
+				},
 			},
 		},
 		"Required directive missing": {
@@ -318,8 +356,13 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'min-age=99999'`,
-				notFound:      true,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "g"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
 			},
 		},
 		// test cases to be revised once HSTS pattern is fully compliant to RFC6797#section-6.1
@@ -335,8 +378,13 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includesubdomains;preload;wrongdirective'`,
-				notFound:      true,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "h"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=99999;includesubdomains;preload;wrongdirective'`,
+					notFound:    true,
+				},
 			},
 		},
 		"Typo in HSTS header directive": {
@@ -351,8 +399,13 @@ func TestConfigTemplate(t *testing.T) {
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
-				configSnippet: `http-response set-header Strict-Transport-Security 'max-age=99999;includesubdomain'`,
-				notFound:      true,
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "i"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=99999;includesubdomain'`,
+					notFound:    true,
+				},
 			},
 		},
 	}
@@ -383,21 +436,16 @@ func TestConfigTemplate(t *testing.T) {
 
 	// check the generated config
 	config := filepath.Join(h.workdir, "conf", "haproxy.config")
-	contents, err := ioutil.ReadFile(config)
+	parser, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
 	if err != nil {
-		t.Fatalf("Failed to read the generated config: %v", err)
+		t.Fatalf("Failed to parse the generated config: %v", err)
 	}
 
 	for name, expectations := range tests {
 		for _, expectation := range expectations {
 			t.Run(name, func(t *testing.T) {
-				contains := strings.Contains(string(contents), expectation.configSnippet)
-				if !contains && !expectation.notFound {
-					t.Fatalf("Snippet expected but not found: [%s]", expectation.configSnippet)
-				}
-
-				if contains && expectation.notFound {
-					t.Fatalf("Snippet unexpected but found: [%s]", expectation.configSnippet)
+				if err := expectation.Match(parser); err != nil {
+					t.Fatalf(err.Error())
 				}
 			})
 		}
@@ -453,8 +501,62 @@ func (e mustCreate) Apply(h *harness) error {
 
 type mustCreateWithConfig struct {
 	mustCreate
-	configSnippet string
-	notFound      bool
+	mustMatchConfig
+}
+
+// mustMatchConfig uses HAProxy's config parser to find config snippets
+type mustMatchConfig struct {
+	section     string
+	sectionName string
+	attribute   string
+	value       string
+	notFound    bool
+}
+
+func (m mustMatchConfig) Match(parser haproxyconfparser.Parser) error {
+	data, err := parser.Get(haproxyconfparser.Section(m.section), m.sectionName, m.attribute)
+	if err != nil {
+		if m.notFound {
+			return nil
+		}
+		return fmt.Errorf("unable to find requested config attribute: [%s], error: %v", m, err)
+	}
+
+	contains := false
+	switch data := data.(type) {
+	case []haproxyconfparsertypes.HTTPAction:
+		for _, a := range data {
+			if a.String() == m.value {
+				contains = true
+				break
+			}
+		}
+	case []haproxyconfparsertypes.ACL:
+		for _, a := range data {
+			if a.Name+" "+a.Criterion+" "+a.Value == m.value {
+				contains = true
+				break
+			}
+		}
+	}
+
+	if !contains && !m.notFound {
+		return fmt.Errorf("config from section %s is expected but not found: [%s]", m.Section(), m)
+	}
+
+	if contains && m.notFound {
+		return fmt.Errorf("config from section %s is unexpected but found: [%s]", m.Section(), m)
+	}
+
+	return nil
+}
+
+func (m mustMatchConfig) Section() string {
+	return m.section + " " + m.sectionName
+}
+
+func (m mustMatchConfig) String() string {
+	return m.attribute + " " + m.value
 }
 
 type mustDelete []string
@@ -550,4 +652,9 @@ func createRouterDirs() {
 	for _, d := range h.dirs {
 		os.MkdirAll(d, 0775)
 	}
+}
+
+// edgeBackendName contructs the HAProxy config's backend name for an edge route
+func edgeBackendName(ns, route string) string {
+	return "be_edge_http:" + ns + ":" + route
 }
