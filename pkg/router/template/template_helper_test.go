@@ -479,12 +479,23 @@ func TestGenerateHAProxyMap(t *testing.T) {
 		t.Errorf("TestGenerateHAProxyMap os_edge_reencrypt_be.map error: %v", err)
 	}
 
+	// Need to add these as now we add all the routes in the redirect map which don't have Redirect policy
+	// but we differentiate them based on  values 1 and 0 where 1 means Redirect Policy is enabled.
 	httpRedirectOrder := []string{
-		"test:api-route",
-		"dev:reencrypt-route",
-		"prod:backend-route",
-		"stg:api-route",
-		"prod:api-route",
+		`^zzz-production\.wildcard\.test\.?(:[0-9]+)?(/.*)?$ 1`,
+		`^zed\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^reencrypt-dev\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 1`,
+		`^passthrough-prod\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^passthrough-dev\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^backend-app\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 1`,
+		`^api-stg\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 1`,
+		`^api-prod\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?/x/y/z(/.*)?$ 0`,
+		`^api-prod\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 1`,
+		`^3dev\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^3app-admin\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^[^\.]*\.foo\.wildcard\.test\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
+		`^[^\.]*\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$ 0`,
 	}
 
 	lines = generateHAProxyMap("os_route_http_redirect.map", td)
