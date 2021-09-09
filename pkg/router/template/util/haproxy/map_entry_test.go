@@ -444,15 +444,17 @@ func TestGenerateHttpRedirectMapEntry(t *testing.T) {
 		expectation *HAProxyMapEntry
 	}
 
-	buildTestExpectation := func(name, key string, policy routev1.InsecureEdgeTerminationPolicyType) *HAProxyMapEntry {
+	buildTestExpectation := func(hostname, name, key string, policy routev1.InsecureEdgeTerminationPolicyType) *HAProxyMapEntry {
 		if len(key) == 0 {
 			return nil
 		}
-
-		if policy == routev1.InsecureEdgeTerminationPolicyRedirect {
-			return &HAProxyMapEntry{Key: key, Value: name}
+		if len(hostname) != 0 {
+			if policy == routev1.InsecureEdgeTerminationPolicyRedirect {
+				return &HAProxyMapEntry{Key: key, Value: "1"}
+			} else {
+				return &HAProxyMapEntry{Key: key, Value: "0"}
+			}
 		}
-
 		return nil
 	}
 
@@ -464,7 +466,7 @@ func TestGenerateHttpRedirectMapEntry(t *testing.T) {
 					name: fmt.Sprintf("%s:termination=%s:policy=%s", tt.name, termination, policy),
 					cfg:  testBackendConfig(tt.backendKey, tt.hostname, tt.path, tt.wildcard, termination, policy, false),
 
-					expectation: buildTestExpectation(tt.backendKey, tt.expectedKey, policy),
+					expectation: buildTestExpectation(tt.hostname, tt.backendKey, tt.expectedKey, policy),
 				})
 			}
 		}

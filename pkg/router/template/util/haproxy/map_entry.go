@@ -58,13 +58,17 @@ func generateEdgeReencryptMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 
 // generateHttpRedirectMapEntry generates a map entry for redirecting insecure/http hosts.
 func generateHttpRedirectMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
-	if len(cfg.Host) > 0 && cfg.InsecurePolicy == routev1.InsecureEdgeTerminationPolicyRedirect {
-		return &HAProxyMapEntry{
+	if len(cfg.Host) > 0 {
+		haproxyMapEntry := &HAProxyMapEntry{
 			Key:   templateutil.GenerateRouteRegexp(cfg.Host, cfg.Path, cfg.IsWildcard),
-			Value: cfg.Name,
+			Value: "0",
 		}
+		switch cfg.InsecurePolicy {
+		case routev1.InsecureEdgeTerminationPolicyRedirect:
+			haproxyMapEntry.Value = "1"
+		}
+		return haproxyMapEntry
 	}
-
 	return nil
 }
 
