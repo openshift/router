@@ -282,11 +282,11 @@ frontend public_ssl
 # traffic
 ##########################################################################
 backend be_sni
-  server fe_sni 127.0.0.1:{{ env "ROUTER_SERVICE_SNI_PORT" "10444" }} weight 1 send-proxy
+  server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy
 
 frontend fe_sni
   # terminate ssl on edge
-  bind 127.0.0.1:{{ env "ROUTER_SERVICE_SNI_PORT" "10444" }} ssl
+  bind unix@/var/lib/haproxy/run/haproxy-sni.sock ssl
   {{- if isTrue (env "ROUTER_STRICT_SNI") }} strict-sni {{ end }}
     {{- "" }} crt {{firstMatch ".+" .DefaultCertificate "/var/lib/haproxy/conf/default_pub_keys.pem" }}
     {{- "" }} crt-list /var/lib/haproxy/conf/cert_config.map accept-proxy
@@ -371,11 +371,11 @@ frontend fe_sni
 ##########################################################################
 # backend for when sni does not exist, or ssl term needs to happen on the edge
 backend be_no_sni
-  server fe_no_sni 127.0.0.1:{{ env "ROUTER_SERVICE_NO_SNI_PORT" "10443" }} weight 1 send-proxy
+  server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy
 
 frontend fe_no_sni
   # terminate ssl on edge
-  bind 127.0.0.1:{{ env "ROUTER_SERVICE_NO_SNI_PORT" "10443" }} ssl crt {{ firstMatch ".+" .DefaultCertificate "/var/lib/haproxy/conf/default_pub_keys.pem" }} accept-proxy
+  bind unix@/var/lib/haproxy/run/haproxy-no-sni.sock ssl crt {{ firstMatch ".+" .DefaultCertificate "/var/lib/haproxy/conf/default_pub_keys.pem" }} accept-proxy
     {{- with (env "ROUTER_MUTUAL_TLS_AUTH") }}
       {{- "" }} verify {{. }}
     {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CA") }} ca-file {{. }} {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
