@@ -231,7 +231,7 @@ frontend public
     {{- end }}
 
   # check if we need to redirect/force using https.
-  acl secure_redirect base,map_reg(/var/lib/haproxy/conf/os_route_http_redirect.map) -m found
+  acl secure_redirect base,map_reg_int(/var/lib/haproxy/conf/os_route_http_redirect.map) -m bool
   redirect scheme https if secure_redirect
 
   use_backend %[base,map_reg(/var/lib/haproxy/conf/os_http_be.map)]
