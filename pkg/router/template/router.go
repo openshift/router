@@ -96,6 +96,8 @@ type templateRouter struct {
 	synced bool
 	// whether a state change has occurred
 	stateChanged bool
+	// metricReloadTotal tracks the total number of HAProxy reloads.
+	metricReloadTotal prometheus.Counter
 	// metricReload tracks reloads
 	metricReload prometheus.Summary
 	// metricReloadFailure tracks reload failures
@@ -219,6 +221,12 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		Help:      "Measures the time spent writing out the router configuration to disk in seconds.",
 	})
 	prometheus.MustRegister(metricWriteConfig)
+	metricsReloadTotal := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "template_router",
+		Name:      "reload_total",
+		Help:      "Metric to track the total number of HAProxy reloads.",
+	})
+	prometheus.MustRegister(metricsReloadTotal)
 
 	router := &templateRouter{
 		dir:                           dir,
@@ -245,6 +253,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		captureHTTPCookie:             cfg.captureHTTPCookie,
 		httpHeaderNameCaseAdjustments: cfg.httpHeaderNameCaseAdjustments,
 
+		metricReloadTotal:   metricsReloadTotal,
 		metricReload:        metricsReload,
 		metricReloadFailure: metricReloadFailure,
 		metricWriteConfig:   metricWriteConfig,
@@ -509,6 +518,7 @@ func (r *templateRouter) commitAndReload() error {
 		r.metricReloadFailure.Set(float64(1))
 		return err
 	}
+	r.metricReloadTotal.Inc()
 
 	// Set the metricReloadFailure metric to false when a reload succeeds.
 	r.metricReloadFailure.Set(float64(0))
