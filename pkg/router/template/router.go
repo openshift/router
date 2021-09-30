@@ -96,6 +96,8 @@ type templateRouter struct {
 	synced bool
 	// whether a state change has occurred
 	stateChanged bool
+	// metricConfigChanges tracks occurrences of route_{add,delete,modified}
+	metricConfigChanges prometheus.CounterVec
 	// metricReloadTotal tracks the total number of HAProxy reloads.
 	metricReloadTotal prometheus.Counter
 	// metricReload tracks reloads
@@ -227,6 +229,15 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		Help:      "Metric to track the total number of HAProxy reloads.",
 	})
 	prometheus.MustRegister(metricsReloadTotal)
+	metricsConfigChanges := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "template_router",
+			Name:      "config",
+			Help:      "Metric to track the occurrences of adding, deleting and modifying routes.",
+		},
+		[]string{"operation"},
+	)
+	prometheus.MustRegister(metricsConfigChanges)
 
 	router := &templateRouter{
 		dir:                           dir,
@@ -253,6 +264,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		captureHTTPCookie:             cfg.captureHTTPCookie,
 		httpHeaderNameCaseAdjustments: cfg.httpHeaderNameCaseAdjustments,
 
+		metricConfigChanges: *metricsConfigChanges,
 		metricReloadTotal:   metricsReloadTotal,
 		metricReload:        metricsReload,
 		metricReloadFailure: metricReloadFailure,
@@ -1011,6 +1023,7 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 		}
 
 		log.V(4).Info("updating route", "namespace", route.Namespace, "name", route.Name)
+		r.metricConfigChanges.WithLabelValues("route_modified").Inc()
 
 		// Delete the route first, because modify is to be treated as delete+add
 		r.removeRouteInternal(route)
@@ -1021,6 +1034,7 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 		// is having stale service units accumulate with the attendant
 		// cost to router memory usage.
 	} else {
+		r.metricConfigChanges.WithLabelValues("route_added").Inc()
 		log.V(4).Info("adding route", "namespace", route.Namespace, "name", route.Name)
 	}
 
@@ -1045,6 +1059,7 @@ func (r *templateRouter) RemoveRoute(route *routev1.Route) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	r.metricConfigChanges.WithLabelValues("route_deleted").Inc()
 	r.removeRouteInternal(route)
 }
 

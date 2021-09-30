@@ -1,5 +1,7 @@
 package templaterouter
 
+import "github.com/prometheus/client_golang/prometheus"
+
 // NewFakeTemplateRouter provides an empty template router with a simple certificate manager
 // backed by a fake cert writer for testing
 func NewFakeTemplateRouter() *templateRouter {
@@ -9,6 +11,7 @@ func NewFakeTemplateRouter() *templateRouter {
 		serviceUnits:              make(map[ServiceUnitKey]ServiceUnit),
 		certManager:               fakeCertManager,
 		rateLimitedCommitFunction: nil,
+		metricConfigChanges:       *prometheus.NewCounterVec(prometheus.CounterOpts{}, []string{"operation"}),
 	}
 }
 
