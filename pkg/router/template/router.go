@@ -654,8 +654,9 @@ func (r *templateRouter) CreateServiceUnit(id ServiceUnitKey) {
 	r.createServiceUnitInternal(id)
 }
 
-// CreateServiceUnit creates a new service named with the given id - internal
-// lockless form, caller needs to ensure lock acquisition [and release].
+// createServiceUnitInternal creates a new service named with the given id -
+// internal lockless form, caller needs to ensure lock acquisition [and
+// release].
 func (r *templateRouter) createServiceUnitInternal(id ServiceUnitKey) {
 	namespace, name := getPartsFromEndpointsKey(id)
 	service := ServiceUnit{

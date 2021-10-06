@@ -103,6 +103,7 @@ type Endpoint struct {
 	PortName      string
 	IdHash        string
 	NoHealthCheck bool
+	AppProtocol   string
 }
 
 // certificateManager provides the ability to write certificates for a ServiceAliasConfig

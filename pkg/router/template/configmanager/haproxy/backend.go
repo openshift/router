@@ -258,7 +258,7 @@ func (b *Backend) Servers() ([]BackendServerInfo, error) {
 }
 
 // UpdateServerInfo updates the information for a haproxy backend server.
-func (b *Backend) UpdateServerInfo(id, ipaddr, port string, weight int32, relativeWeight bool) error {
+func (b *Backend) UpdateServerInfo(id, ipaddr, port, appProtocol string, weight int32, relativeWeight bool) error {
 	server, err := b.FindServer(id)
 	if err != nil {
 		return err
@@ -269,6 +269,9 @@ func (b *Backend) UpdateServerInfo(id, ipaddr, port string, weight int32, relati
 	}
 	if n, err := strconv.Atoi(port); err == nil && n > 0 {
 		server.updatedPort = n
+	}
+	if appProtocol == "h2c" {
+		return errors.New("dynamically updating proto is unsupported")
 	}
 	if weight > -1 {
 		suffix := ""
