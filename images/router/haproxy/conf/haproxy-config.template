@@ -58,7 +58,7 @@ global
 
   daemon
 {{- with (env "ROUTER_SYSLOG_ADDRESS") }}
-  log {{ . }} {{ env "ROUTER_LOG_FACILITY" "local1" }} {{ env "ROUTER_LOG_LEVEL" "warning" }}
+  log {{ . }} len {{ env "ROUTER_LOG_MAX_LENGTH" "1024" }} {{ env "ROUTER_LOG_FACILITY" "local1" }} {{ env "ROUTER_LOG_LEVEL" "warning" }}
   log-send-hostname
 {{- end }}
   ca-base /etc/ssl
