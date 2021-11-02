@@ -299,7 +299,7 @@ jhPti4b2Fie0LeuvgaOdKjCpQQNrYthZHXeVlOLRhMTSk3qUczenkKTOhvP7IS9q
 +Dzv5hqgSfvMG392KWh5f8xXfJNs4W5KLbZyl901MeReiLrPH3w=
 -----END CERTIFICATE-----`
 
-	testIntCACertificateChain = `-----BEGIN CERTIFICATE-----
+	testIntCACertificateIntermediate = `-----BEGIN CERTIFICATE-----
 MIIFqjCCA5KgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwYDELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
 aWZ0MyB0ZXN0IENBMRQwEgYDVQQDDAtyb290LmNhLm9yZzAeFw0xNjExMDMwMDE3
@@ -332,76 +332,9 @@ EodWld0L6StnRQ1kAIif0wAuQ//JVOBpCi93wykYPbdJ15A8qmqiS4bAbFdKCXph
 sP3gunYZT8RCrfAqJG/Is1RgChq2USckxvD4h8Q65J4VVRDkxvuLpjSh8ZJlI1xG
 r2RUXNnvSmi8ubzDBls=
 -----END CERTIFICATE-----
+`
 
-
------BEGIN CERTIFICATE-----
-MIIFpjCCA46gAwIBAgIJANRKflwkpS0cMA0GCSqGSIb3DQEBCwUAMGAxCzAJBgNV
-BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxGzAZBgNVBAsM
-Ek9wZW5TaGlmdDMgdGVzdCBDQTEUMBIGA1UEAwwLcm9vdC5jYS5vcmcwHhcNMTYx
-MTAzMDAxNzEyWhcNMzYxMTAzMDAxNzEyWjBgMQswCQYDVQQGEwJVUzELMAkGA1UE
-CAwCQ0ExETAPBgNVBAoMCFNlY3VyaXR5MRswGQYDVQQLDBJPcGVuU2hpZnQzIHRl
-c3QgQ0ExFDASBgNVBAMMC3Jvb3QuY2Eub3JnMIICIjANBgkqhkiG9w0BAQEFAAOC
-Ag8AMIICCgKCAgEAojn1uV7bB37377bjZdwFvZpdk69fUgYGM2MlT/bdKGgLFXIx
-8kUSjk8H84RiiZiPlyE+orTOdzv8umicW92qGF1y+rlLIAgTCdpEaiRvELCD4hsl
-5fLK2686SbB1lQZzhi1ounFph7q0R6plfG762xdnGMLnsXDaYYz1kWWyDbJbd5DL
-grttZxfDsRwIDwiHVEsu5thOkL/C06/ipHQC9iDgnaeIeAp2UhLUblitgoeBLKLH
-+zu4cgKvQnSosIBIT11mQGrPe3B72/HBXSNAl7yuiCYnTantnLQxEHV4y9iQzmZ+
-/F9ryZuBWMU49KKA952C5InDtjAjZjgdoqPRmiHMDoYqlnZdoMgYZPmEGhCnNMni
-pvB6qSwFa6l1xC4nlcYjyfkZzdg30P7dZwbtwG52e8tXHxwTm9LKbb3sCj2EAZSo
-6h87NKxZX4o1WZbwPaNPVEVrlev7mdJsjZt9Qthzurm1Vcs9b1kDwEmyty4ssmPW
-F+UhPxSDZR28utTzFv99g94qmnjxzBoiAip2wAGdU4tzc1Cvh1njQYXhElJZpjlU
-RBQAeRvhKRQjnuripuZvTs29sIzLRuBKuY2u4xkDXVpvl3H+3CoFsN9oQ38qyZo/
-uEeMHLuSMVDQycKHXJolMZOTHdB2O6CbhmYOkViG2cGHBpswLZ4IlgJ6ARsCAwEA
-AaNjMGEwHQYDVR0OBBYEFFL2ecAAhQTuUYRxNfCEnqWyd2dJMB8GA1UdIwQYMBaA
-FFL2ecAAhQTuUYRxNfCEnqWyd2dJMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/
-BAQDAgGGMA0GCSqGSIb3DQEBCwUAA4ICAQAcDKBGtSxnt/hZpRjrti2NDlwcn9SS
-ojkkKHnu4GdtO+8AHPfCHfUA5Ba1ydiddpxcR3tvjPCsfWTtmpoQ4wVFPGsMELqu
-elC/H3jEZxn1I+FdLFRB3QvBFQ3VvtbS6NemvMupWBxmimlOmp0woMW3wfH9MnPt
-EF5OFkcjhRKq1/bkzpKLkBpCQ/IIAm9ATgJmc9rADQxXbGvwHVpjORLOD55jOAl0
-m5nFvawpKnJUVGKQ40MbHAz6tI5crSFJnA7VUWPfeCuQT04X9t3GNARUYnFxNBex
-/K7A/Of6CPqMNlXgeYieQyVJ/rbNtDLXne8uZhSUGd55B35QJ1HUxOJ/KcTC1Fw9
-1jUBMkyco1wBvv/xtBUulzKpMOh7Dq5ABGa+lh9mANP822CmLO1DrQDmsjPiTEU0
-n81Ir0FXVt12gXYtmWqDyILPrbcKImuiSojoH3rAD2sdnTNmgFQcBWQj/6TG+5Tm
-tSefyc9/CCsmIw0zrOVLfxs23k/Wts1acqTldWP5dY3MEyWrVOW6XakgYvPHdZa2
-AkefO2oUf6dnu9JScZiEztIcr8IMfY7q+YOQKjDuH3gG2+SE6PPC46ajq0MoFeJU
-qA0au8ygoLaCLhYK+HnzGRVAYqc4hb4LKNhIbAveHLOTUKNeAFADxq8REsPkpeM7
-G0k/6pTJTZwfsA==
------END CERTIFICATE-----`
-
-	testIntCACertificateChainCanonical = `-----BEGIN CERTIFICATE-----
-MIIFqjCCA5KgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwYDELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
-aWZ0MyB0ZXN0IENBMRQwEgYDVQQDDAtyb290LmNhLm9yZzAeFw0xNjExMDMwMDE3
-MTNaFw0zNjExMDMwMDE3MTNaMGgxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJDQTER
-MA8GA1UECgwIU2VjdXJpdHkxGzAZBgNVBAsMEk9wZW5TaGlmdDMgdGVzdCBDQTEc
-MBoGA1UEAwwTaW50ZXJtZWRpYXRlLmNhLm9yZzCCAiIwDQYJKoZIhvcNAQEBBQAD
-ggIPADCCAgoCggIBALrPYF7ah6vwSknXQj9IeoCXGnsMtin0UCFb5jsvDnoKrYqh
-46/XMfiPGz/gr6wqkAis2n31/7H2oHUxgI5AjnWOzpyRRl2/NurVXYDaLCKiMsTm
-nt54d90VG5Yl4oFwzT7Az2xBBeJMTUyW4tB+66RCenlAq3AxO3Sp50Z4N1Cm34qI
-hg0/Wbs6VuzdKsyU5Tux0LrplF656A9BkpcOqvJmO6g9dKTA4KmhRyC+fxAk0p8d
-+WLuvumYQ19ta2ZjJxdCoVpaNMIsQ+ZyUTuq2VtIFLJVl/7Q5oZX1LDurtf0Ho/O
-TQq4L4sWQjYFXTCibU+logeg+qhPtO3kSuXcJBlaO1NqteA8sVQ2AQY48HNIr8VN
-ZsGFX+gmAZYesL62kFckKm39fsbuYQ/4mPHdgzYCuiNGFceoHcA/RBc42A4F7v9X
-Owm/OVccOnQTAZsZUUKj5cq16Is8K8j7hYJPIyfR2RIE7X52C1U7KLyra+Ld20ix
-JO1j59TmyQhBElEz1OZq3qX2TbpHG1sVjHyhZmbAjJDwpXCwZOPt/Icg9Qs6125X
-Rrr1zyTU/jr3TBBmdcBn4BFvtkWvAGndzNC1kun05vwEfqyQIfY/hbAWyZlPkWqP
-DETVGCN7ZQ21BPSaDsT29mD519FyMAbPAZxlou+yk//VeSgRh+N58SFKU/G/AgMB
-AAGjZjBkMB0GA1UdDgQWBBSJpW4a7QM2MkPIdhDrAIEEGc2RgzAfBgNVHSMEGDAW
-gBRS9nnAAIUE7lGEcTXwhJ6lsndnSTASBgNVHRMBAf8ECDAGAQH/AgEAMA4GA1Ud
-DwEB/wQEAwIBhjANBgkqhkiG9w0BAQsFAAOCAgEAcKzpwgek+Bq+xLo77wQAL84V
-ezU1d+/bHWn/1pICbBpAmK6uuyeAKal/gZv7LVcpue4Wk+/WbAx8jUXi53pN7Qp+
-oYMLF4eXiqolOO9lgSEoYyiO6qjXWKuiFlGOYsDzLeEWv6FhP3gpMXvMNidSFmLt
-qsUcsEtlFU9+Aub6msOsjKdsSQQMnj0Pfd4m35D6T3ZqW7swaEcvd72kbT6rkI2T
-aVt6dfEQS1qQrMOBYTr/5DUxkCaysYOGAd/eqfK3h00JcsllpoM1F8nYKSqrilLI
-Zts8rZg7GFbF76vJTEsYagrarhEg76p4Hdl2ZRr54+JA5Y7IEJBtA7UscXFiYR03
-+2+1x9bYIcXR3uDa2WK20NsbDznO8rfbrX5m/X9McT7fbn+TE9MjKGaOMqwGoZdS
-1hxwUeDqu6hf5qdETkqCaKCjIGBb8fg1cKmQXAAKTIS+6iI3iaF/bRTTa3gICZN7
-FDdPRjMJDZ/k4cicAipzjKx2NQkiA59Q8z2aa5ahTWF2kz0YcdHtVDjIeDDR/KzT
-EodWld0L6StnRQ1kAIif0wAuQ//JVOBpCi93wykYPbdJ15A8qmqiS4bAbFdKCXph
-sP3gunYZT8RCrfAqJG/Is1RgChq2USckxvD4h8Q65J4VVRDkxvuLpjSh8ZJlI1xG
-r2RUXNnvSmi8ubzDBls=
------END CERTIFICATE-----
------BEGIN CERTIFICATE-----
+	testIntCACertificateCA = `-----BEGIN CERTIFICATE-----
 MIIFpjCCA46gAwIBAgIJANRKflwkpS0cMA0GCSqGSIb3DQEBCwUAMGAxCzAJBgNV
 BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxGzAZBgNVBAsM
 Ek9wZW5TaGlmdDMgdGVzdCBDQTEUMBIGA1UEAwwLcm9vdC5jYS5vcmcwHhcNMTYx
@@ -472,7 +405,8 @@ j24WPpiLJDgfUZ9S1y+4N8enlLFRQ0VwvGySsqYPenuHA9v8LHDV3iVIL0gvKNI7
 ymKGlQBFj8kERKljuA7ihAWLwGC2S1wgjUVcDyufV2GoEtzKLXQ6SeuucYsXqWH9
 iP3E3dsMBWrtdVjLwFOsglJVTTv8JUkCzl2AOxFpgeorfi1hyBoS5qDBkET6xXhC
 OyxyJrGdmLclqzBEW1Zv3j5ywA==
------END CERTIFICATE-----`
+-----END CERTIFICATE-----
+`
 
 	testPrivateKeyWithIntCA = `-----BEGIN RSA PRIVATE KEY-----
 MIIJKQIBAAKCAgEAmOeXDjwfxh194VHaYrKbVrvvBsYvgwDKwsD9XtuZB2IdtCHA
@@ -1262,7 +1196,22 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testCertificateWithIntCA,
 						Key:           testPrivateKeyWithIntCA,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "intermedite included in cert chain not ca",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.ca.test",
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						Certificate:   testCertificateWithIntCA + testIntCACertificateIntermediate,
+						Key:           testPrivateKeyWithIntCA,
+						CACertificate: testIntCACertificateCA,
 					},
 				},
 			},
@@ -1277,7 +1226,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testCertificateWithIntCA,
 						Key:           testPrivateKeyWithIntCA,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 					},
 				},
 			},
@@ -1292,7 +1241,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testExpiredCertificateWithIntCA,
 						Key:           testExpiredCertificateKey,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 					},
 				},
 			},
@@ -1307,7 +1256,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testExpiredCertificateWithIntCA,
 						Key:           testExpiredCertificateKey,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 					},
 				},
 			},
@@ -1322,7 +1271,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testFutureValidCertificateWithIntCA,
 						Key:           testFutureValidCertificateKey,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 					},
 				},
 			},
@@ -1337,7 +1286,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testFutureValidCertificateWithIntCA,
 						Key:           testFutureValidCertificateKey,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 					},
 				},
 			},
@@ -1356,7 +1305,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 2,
+			expectedErrors: 1,
 		},
 		{
 			name: "another invalid CA with private key",
@@ -1371,7 +1320,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 2,
+			expectedErrors: 1,
 		},
 		{
 			name: "invalid CA malformed certificate",
@@ -1386,7 +1335,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 2,
+			expectedErrors: 1,
 		},
 		{
 			name: "invalid destination CA with csr",
@@ -1442,7 +1391,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChain,
+						DestinationCACertificate: testIntCACertificateIntermediate + "\n\n" + testIntCACertificateCA,
 					},
 				},
 			},
@@ -1454,7 +1403,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChain,
+						DestinationCACertificate: testIntCACertificateIntermediate + "\n\n" + testIntCACertificateCA,
 						Key:                      "-----BEGIN UNRECOGNIZED-----\n-----END UNRECOGNIZED-----\n",
 					},
 				},
@@ -1463,7 +1412,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChainCanonical,
+						DestinationCACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 						Key:                      "",
 					},
 				},
@@ -1476,7 +1425,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChain,
+						DestinationCACertificate: testIntCACertificateIntermediate + "\n\n" + testIntCACertificateCA,
 						Key:                      "-----BEGIN UNRECOGNIZED-----\n----END UNRECOGNIZED-----\n",
 					},
 				},
@@ -1485,7 +1434,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChainCanonical,
+						DestinationCACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 						Key:                      "",
 					},
 				},
@@ -1498,7 +1447,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChain,
+						DestinationCACertificate: testIntCACertificateIntermediate + "\n\n" + testIntCACertificateCA,
 						Key:                      "-----BEGIN EC PARAMETERS-----\n-----END EC PARAMETERS-----\n",
 					},
 				},
@@ -1507,7 +1456,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						DestinationCACertificate: testIntCACertificateChainCanonical,
+						DestinationCACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 						Key:                      "",
 					},
 				},
@@ -1520,7 +1469,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + "\n\n" + testIntCACertificateCA,
 						Key:           "-----BEGIN EC PARAMETERS-----\n-----END EC PARAMETERS-----\n",
 					},
 				},
@@ -1529,7 +1478,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						CACertificate: testIntCACertificateChainCanonical,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 						Key:           "",
 					},
 				},
@@ -1542,7 +1491,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						CACertificate: testIntCACertificateChain,
+						CACertificate: testIntCACertificateIntermediate + "\n\n" + testIntCACertificateCA,
 						Key:           "-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----\n",
 					},
 				},
@@ -1551,7 +1500,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						CACertificate: testIntCACertificateChainCanonical,
+						CACertificate: testIntCACertificateIntermediate + testIntCACertificateCA,
 						Key:           "",
 					},
 				},

@@ -173,33 +173,24 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 	//       break, so disable the hostname validation for now.
 	// hostname := route.Spec.Host
 	hostname := ""
-	var verifyOptions *x509.VerifyOptions
+	var caCerts []*x509.Certificate
 
 	if len(tlsConfig.CACertificate) > 0 {
-		certPool := x509.NewCertPool()
 		if certs, err := cert.ParseCertsPEM([]byte(tlsConfig.CACertificate)); err != nil {
 			errmsg := fmt.Sprintf("failed to parse CA certificate: %v", err)
 			result = append(result, field.Invalid(tlsFieldPath.Child("caCertificate"), "redacted ca certificate data", errmsg))
 		} else {
-			for _, cert := range certs {
-				certPool.AddCert(cert)
-			}
+			caCerts = certs
 			if data, err := sanitizePEM([]byte(tlsConfig.CACertificate)); err != nil {
 				result = append(result, field.Invalid(tlsFieldPath.Child("caCertificate"), "redacted ca certificate data", err.Error()))
 			} else {
 				tlsConfig.CACertificate = string(data)
 			}
 		}
-
-		verifyOptions = &x509.VerifyOptions{
-			DNSName:       hostname,
-			Intermediates: certPool,
-			Roots:         certPool,
-		}
 	}
 
 	if len(tlsConfig.Certificate) > 0 {
-		if _, err := validateCertificatePEM(tlsConfig.Certificate, verifyOptions); err != nil {
+		if _, err := validateCertificatePEM(tlsConfig.Certificate, hostname, caCerts); err != nil {
 			result = append(result, field.Invalid(tlsFieldPath.Child("certificate"), "redacted certificate data", err.Error()))
 		} else {
 			if data, err := sanitizePEM([]byte(tlsConfig.Certificate)); err != nil {
@@ -338,8 +329,8 @@ func validateInsecureEdgeTerminationPolicy(tls *routev1.TLSConfig, fldPath *fiel
 }
 
 // validateCertificatePEM checks if a certificate PEM is valid and
-// optionally verifies the certificate using the options.
-func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x509.Certificate, error) {
+// optionally verifies the certificate chain using the ca certificates.
+func validateCertificatePEM(certPEM string, hostname string, caCerts []*x509.Certificate) ([]*x509.Certificate, error) {
 	certs, err := cert.ParseCertsPEM([]byte(certPEM))
 	if err != nil {
 		return nil, err
@@ -349,7 +340,28 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 		return nil, fmt.Errorf("invalid/empty certificate data")
 	}
 
-	if options != nil {
+	if caCerts != nil {
+		intermediates := x509.NewCertPool()
+		roots := x509.NewCertPool()
+
+		// Any certificates after the leaf certificate should be considered intermediate.
+		for _, cert := range certs[1:] {
+			intermediates.AddCert(cert)
+		}
+
+		// Consider everything in CACertificate to be an intermediate and a root, Verify will
+		// sort it out for us later and users may include their intermediates in this field.
+		for _, cert := range caCerts {
+			intermediates.AddCert(cert)
+			roots.AddCert(cert)
+		}
+
+		options := &x509.VerifyOptions{
+			DNSName:       hostname,
+			Intermediates: intermediates,
+			Roots:         roots,
+		}
+
 		// Ensure we don't report errors for expired certs or if
 		// the validity is in the future.
 		// Not that this can be for the actual certificate or any
