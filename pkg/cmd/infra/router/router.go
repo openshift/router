@@ -39,6 +39,7 @@ type RouterSelection struct {
 	UpdateStatus bool
 
 	HostnameTemplate string
+	RouterDomain     string
 	OverrideHostname bool
 	OverrideDomains  []string
 	RedactedDomains  sets.String
@@ -81,6 +82,7 @@ func (o *RouterSelection) Bind(flag *pflag.FlagSet) {
 	flag.BoolVar(&o.UpdateStatus, "update-status", isTrue(env("ROUTER_UPDATE_STATUS", "true")), "If true, the router will update admitted route status.")
 	flag.DurationVar(&o.ResyncInterval, "resync-interval", controllerfactory.DefaultResyncInterval, "The interval at which the route list should be fully refreshed")
 	flag.StringVar(&o.HostnameTemplate, "hostname-template", env("ROUTER_SUBDOMAIN", ""), "If specified, a template that should be used to generate the hostname for a route without spec.host (e.g. '${name}-${namespace}.myapps.mycompany.com')")
+	flag.StringVar(&o.RouterDomain, "router-domain", env("ROUTER_DOMAIN", ""), "If specified, a domain that should be used to generate the hostname for a route with spec.subdomain and without spec.host (e.g. 'apps.mycluster.com')")
 	flag.BoolVar(&o.OverrideHostname, "override-hostname", isTrue(env("ROUTER_OVERRIDE_HOSTNAME", "")), "Override the spec.host value for a route with --hostname-template")
 	flag.StringSliceVar(&o.OverrideDomains, "override-domains", envVarAsStrings("ROUTER_OVERRIDE_DOMAINS", "", ","), "List of comma separated domains to override if present in any routes. This overrides the spec.host value in any matching routes with --hostname-template")
 	flag.StringVar(&o.LabelSelector, "labels", env("ROUTE_LABELS", ""), "A label selector to apply to the routes to watch")
@@ -101,6 +103,11 @@ func (o *RouterSelection) Bind(flag *pflag.FlagSet) {
 
 // RouteUpdate updates the route before it is seen by the cache.
 func (o *RouterSelection) RouteUpdate(route *routev1.Route) {
+	// If the route specifies a subdomain and no host name and we a router
+	// domain, set the host field using the subdomain and domain.
+	if len(route.Spec.Host) == 0 && len(route.Spec.Subdomain) > 0 && len(o.RouterDomain) != 0 {
+		route.Spec.Host = fmt.Sprintf("%s.%s", route.Spec.Subdomain, o.RouterDomain)
+	}
 	if len(o.HostnameTemplate) == 0 {
 		return
 	}
