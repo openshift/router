@@ -1,8 +1,11 @@
 package templaterouter
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -962,5 +965,159 @@ func TestCalculateServiceWeights(t *testing.T) {
 			router.DeleteEndpoints(suKey)
 			router.DeleteServiceUnit(suKey)
 		}
+	}
+}
+
+const (
+	testWildcardCertificate = `-----BEGIN CERTIFICATE-----
+MIIFJjCCAw4CCQCLGB4wxqgxHjANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJV
+UzELMAkGA1UECAwCTkMxEjAQBgNVBAoMCU9wZW5TaGlmdDEMMAoGA1UECwwDRW5n
+MRAwDgYDVQQDDAdleGFtcGxlMB4XDTIxMTExMjAwMTI0M1oXDTIyMTExMjAwMTI0
+M1owXDELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAk5DMRIwEAYDVQQKDAlPcGVuU2hp
+ZnQxDDAKBgNVBAsMA0VuZzEeMBwGA1UEAwwVKi5hcHBzLm15Y2x1c3Rlci50ZXN0
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA24KR3M6HgM2j+dpNEwEt
+/dAh5x1vNbFX6C2rZcY9FHpkRR4BCJJr9pl8BeemOqR/adRoVZZCCcp2ylRLLR+N
+HvqKcBlsKt/2EZOhmpWI6I7vFMO6lt3OlyDgdmvrR5/W7c/bN7MZtL6F5hvtcD4G
+XXGt8I00ok5OO3V4n8stWSHRS7cwKRDGT9A0TOSNtmSCqHZKF94fEseKGR+sZZeO
+FE9qeJ+d+GFwuv/s9TvsEM0s9A/bVqEAoOKaXXQ6jUEtgXAW2lJgDgUqdisbpUEE
+XvClvBMKnGgbWfs1J3U4yllA5/2wzJ8F2MWMq70nMCmJl1LaNII1sPbLQC1ppsDh
+p//XviCT2zXxzNl43w5kQ8AUgvIpIlrZJU4UyWCihRJ5W6RI+kXXl0ewjkhhrWmc
+9kpuNzFsby3JwWAUPDoVtgzOOICqgsGWYvGjxHH77Ia+NnAkT5kyiwWnwQm5bsV/
+52MBlMBVl31h7v/SZwbkSnoF5FkjcQLRpYm48wI3lae2IAqxEDvZpoQlKKhWUJwc
+Huz3JNdCJHyyIyMNQXg0DQSq3elqv1Dewl39tOpEWs5SrXiFhQeUVs1csdNC69NI
+Bg7RGtLdJnaDYkwGanxvtaiRPj+HnPLLRpGBNPBHkFCZZVuFfoQPY69KVxiYfzDv
+UfLPjrEwY7q3tE+PtPDjIMECAwEAATANBgkqhkiG9w0BAQsFAAOCAgEAS0F33vLP
+5AFasmUeZXDtDYHCgaEPo4/8M8B4t2eS402Ylx3tqzRW1gkZbLRj0/NkOMyVReIN
+lxBZueHiUwj5/+hDzZ2mGuydy3a1K/Ae4oxGcJ3LpYJWEjtpxUck+acgGTYvaSIX
+jmzuoajpENBDmCvakJjUTLR/VQtHoD2lSKh1aMisQkjkPdDN1WR9k8SeRzWUjQxq
+r58TYOCBX8K7G0tGJ2CDLaI4HB2Dxnjrbwver9CEYRuKWOlMT5FMTdQ1k68oYaVb
+B9loy0z042fI27S6Vmvhrcqd4LIlWUEvn7xeqUapucbj1lZA1IZDUKiRIMhs+fDn
+zlFcnaYireTX2gB+5N8S4ZdSKLkphPHwCXEGo0WAqFZnCXs1JvPTlPuEyOw6EZ8/
+g18F+gpwHz2ZZ5goFrUukBpyI9CTR3UsYAKPCpFHq6IfsVEZqY5lJljWfsACG27q
+FWvcB3JChAjSvji5G36HnhiCaDYdWqkfkJOUFgFM5j3tKcfllMZFH+R5P9WssxY+
+sczR6elkJu9LU2f8PevBKxeqYiWfnzS7+no+FU7lJo4hoUeXwc5rz7OIlEUc+zex
+6Q2TjLNa9Vi7lFOr1vX3U7Z5eZPhyrgYV/ChV82EE+Y7IUMwYJG8WUE0VwPZTv2z
+2OvpOlxkzfR4ZknnMSBoCd8bPDs2F3RsVIk=
+-----END CERTIFICATE-----`
+	testWildcardCertificateKey = `-----BEGIN PRIVATE KEY-----
+MIIJRQIBADANBgkqhkiG9w0BAQEFAASCCS8wggkrAgEAAoICAQDbgpHczoeAzaP5
+2k0TAS390CHnHW81sVfoLatlxj0UemRFHgEIkmv2mXwF56Y6pH9p1GhVlkIJynbK
+VEstH40e+opwGWwq3/YRk6GalYjoju8Uw7qW3c6XIOB2a+tHn9btz9s3sxm0voXm
+G+1wPgZdca3wjTSiTk47dXifyy1ZIdFLtzApEMZP0DRM5I22ZIKodkoX3h8Sx4oZ
+H6xll44UT2p4n534YXC6/+z1O+wQzSz0D9tWoQCg4ppddDqNQS2BcBbaUmAOBSp2
+KxulQQRe8KW8EwqcaBtZ+zUndTjKWUDn/bDMnwXYxYyrvScwKYmXUto0gjWw9stA
+LWmmwOGn/9e+IJPbNfHM2XjfDmRDwBSC8ikiWtklThTJYKKFEnlbpEj6RdeXR7CO
+SGGtaZz2Sm43MWxvLcnBYBQ8OhW2DM44gKqCwZZi8aPEcfvshr42cCRPmTKLBafB
+CbluxX/nYwGUwFWXfWHu/9JnBuRKegXkWSNxAtGlibjzAjeVp7YgCrEQO9mmhCUo
+qFZQnBwe7Pck10IkfLIjIw1BeDQNBKrd6Wq/UN7CXf206kRazlKteIWFB5RWzVyx
+00Lr00gGDtEa0t0mdoNiTAZqfG+1qJE+P4ec8stGkYE08EeQUJllW4V+hA9jr0pX
+GJh/MO9R8s+OsTBjure0T4+08OMgwQIDAQABAoICAQDN25yZXCKdu7zc80o22XNd
+RZSV3vfNfdx4BGRqFMhxbPqeCy5i8JZJdNVn4D/3XQ+UmzuhkEGsVvCifPzne2Bo
+PgQYbu8PImvtPetfQn9bwbgbXBefprI47v8yb7D9wbvZ2IW4rcEczVRbYbOCANkN
+RzAdmP9Ue2VIw7j0+qEzptBWVpzW1kF01khGGE2CUK5r+EsyKQAxJ2qudxLBT6lS
+CMxMBT0rk44aASsjLSgM9a4D0N8dVe518y1bGUZT9F0Nt6Xm5zvnyhZxLapGhzvn
+IX38bEsWNVf5Qeoub/NraNrC9hqZO0VLbrCm2sRmmX3MqUmz1q0tobUpIa2kUd0M
+aHp3OZ1ltzs/kPykduPQ+nNlVgmy+ZmcG2EyK2FsupSXk/kpCuPRim2V8qxpU5fF
+PgoQBlz3AvAwIjboiYusxavfGrG1wyYm8BACdx2wMGbJlter2kahycy3AWlwFlX8
+5wzZE9FuUszJASpiQCLp+wvNF3XOKaK7kVci7AnaMY0HT6w65L3d2ktA/h5ANIT6
+OQH9HaV60EmS/SRqbqy2rkOQlZWmjySmsZHay2y56nkjB1bBjrMT787c+ISPdXwW
+ufK2JsFdHGf5XCOM0c0keit/Z9FUPfsbL+C1hnt9RaHbgDWMje8p87T18S9+XESh
+8MsQ1csEqXhZaKR/skjY1QKCAQEA+FBu/nvo9Dl7+/Ka6DRj/M4HLn3DcOiLekS3
+jCFWsAF8Crz6m+gd/ybdr9hVoiw1Kcb5g+WFOrZlL7go/6/j0lswnUt0+wN+UhMO
+BaQahI7YTKUnxsukHe4OEnBdtqmWBK1wFRClei+3MjAL9iDa79tCkNORh/fMl83R
+6zGsN37n8lk3xf2naJm8erZgn7qVO4Et1AXw003pVhSa/lfqjkG5LjYGhoo4tgbd
+ITD2o5UGq/ucAZe8yq4HKSGHkN6NIqPH1F/Ig0t2xpubvQM7PTUwKbtymKWeEBDp
+m4m4ipEukwCYLc1/X9yxHJbG5weVvAyT7OukunxBg/wrRkrXbwKCAQEA4k3mmydb
+OO504IXH+hWRI3hVfxaq2E9i6bIZMz6oWv2EzbA/rNBvzm/42FaTsA9/JZAWCRMu
+V9x2P8iMIoi/5lmz8ZRonsZ3fBYBqeRng/DW0d18sW6abfTiQwMIyWb62zDzWHmD
+qWfTUjZXRd+uApwPLWUBO7GeYaGrgSARkZuG7pBB2ojG0m6BmklerqxowBeou4pf
+h+9F32rfEZyRPt/f1mh9tQ2kTN0ppNCs1159hgr5kvxi81rjTDw9qxLuIvK7NwF4
+7vgzervWoqAa8C5TmxyEUwK2DRIN0FHyiwbWwvu7H+xHp/Cp1Aw32rsSCGX2gIaQ
+OSNB11XOtMjyzwKCAQEA7vaQ6kyakbVkUMFXPBF3C8nF9YLH+7d+yqqorK1EvFqh
+YcAduL33aB2iB+C8ADZk7xBx/PF7dlYjKHok0nMVXtGtBiKgsBPbk+aMfvc/IcRJ
++fCSR+ifxsHaPvpt5SRsn5G9JDiB1wVmWmEMkc9qgptSAwfnrJ7XAFvtIVcLMdjq
+JDqhxuLlIW+Zh8pNUEoB5WLalIknCmKXI+Tuh8hZjI9JQ2RwgTcxflM6qP9yy1fW
+NNoNdybsY2x4rad7y/mwft54pzOKRnfwFQ+ZH5ulfbDa6b5fePEhHLr55VnzAz7W
+QFe5G5MAemNq+mVLgve0rGS6Uq0vONvtPLQHfTz29wKCAQEAwDAaPP/Cd+oC9j6H
+I3q3ZOEn8qNkegmJXiBzSFLZFVUiOLCKkw/9M9tiARAdorK2b0cbf597hwBiqC5/
+3EA4gL8Dk5FO/DBeftINnaOsyZ96QIaSA/mDSwhiMzjbeHdtaUL8FtIzn2XeUH53
+xY59sBeqyAl0b6abdByhkyqR4Q+tGuMGGjp4Z3OTu1y9/SfMWf59vK96C+6Hb4LK
+aKGHtFbaOLNKtr0cIG7ek+roLos/nNurMkoHGtbAHBk44hVUifeMSN2GP6Qny/7D
+/B5uYjVlqWAhfIHb6+O+OYGusqUfND4mn6jA/f3jrIKn2KlwWhOFsYcV6oBnxSFJ
+R700fwKCAQEAkYm32CKoEQS9X+AjG1yZVgWEB0K0Coa07CDeUxrrOPYU7d0By5Dn
+i57eo3vixuAGeB5FIcREq6frugotSngRBr4DFb9ap2LeCKQKE2RR+X0/3STcb9f0
+yxuZw3NF5NGhlPlIoiRlA2bNqci2vhoXo0yDfnXgdNV+d22V0tb1IzIE6V8CvENf
+srBHXGTXeyM8kwW00vmc2z0SZPsRRxod02dhMDRToP1ZwxdC1oLvKS3P1aLpjsEB
+PvLh6xz/pOTes1tToLDlL7xe8GoiXRwRukTm5T8BYJ5Ih1RYKAIUHR2oIp8OUJKH
+R3C+ByKc8zehNP33niYeMjRdaIZ/1q5skw==
+-----END PRIVATE KEY-----`
+)
+
+// TestSecretToPem verifies that secretToPem correctly reads in the provided
+// certificate and key and writes out a the expected PEM file for HAProxy.
+func TestSecretToPem(t *testing.T) {
+	tests := []struct {
+		name        string
+		cert, key   []byte
+		expectedPEM []byte
+		expectError bool
+	}{
+		{
+			name:        "empty input",
+			cert:        []byte(nil),
+			key:         []byte(nil),
+			expectError: false,
+			expectedPEM: []byte(nil),
+		},
+		{
+			name:        "normal input",
+			cert:        []byte(testWildcardCertificate + "\n"),
+			key:         []byte(testWildcardCertificateKey + "\n"),
+			expectError: false,
+			expectedPEM: []byte(testWildcardCertificate + "\n" + testWildcardCertificateKey + "\n"),
+		},
+		{
+			name:        "missing line endings",
+			cert:        []byte(testWildcardCertificate),
+			key:         []byte(testWildcardCertificateKey),
+			expectError: false,
+			expectedPEM: []byte(testWildcardCertificate + "\n" + testWildcardCertificateKey + "\n"),
+		},
+	}
+	var (
+		secPath = t.TempDir()
+		crtPath = filepath.Join(secPath, "tls.crt")
+		keyPath = filepath.Join(secPath, "tls.key")
+		outPath = filepath.Join(secPath, "cert.pem")
+	)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := ioutil.WriteFile(crtPath, tc.cert, 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := ioutil.WriteFile(keyPath, tc.key, 0644); err != nil {
+				t.Fatal(err)
+			}
+			// secretToPem uses file mode 0444, and non-root users
+			// cannot write to files with mode 0444.  The router
+			// runs as root, but tests do not, so we need to create
+			// the file with mode 0644 before calling secretToPem so
+			// that it doesn't create a file that it cannot then
+			// write to.
+			if err := ioutil.WriteFile(outPath, nil, 0644); err != nil {
+				t.Fatal(err)
+			}
+			switch err := secretToPem(secPath, outPath); {
+			case !tc.expectError && err != nil:
+				t.Fatalf("%q: unexpected error: %v", tc.name, err)
+			case tc.expectError && err == nil:
+				t.Fatalf("%q: expected error, got nil", tc.name)
+			}
+			if actualPEM, err := ioutil.ReadFile(outPath); err != nil {
+				t.Fatalf("%q: %v", tc.name, err)
+			} else if !bytes.Equal(actualPEM, tc.expectedPEM) {
+				t.Fatalf("%q: unexpected PEM; expected:\n%s\ngot:\n%s\n", tc.name, tc.expectedPEM, actualPEM)
+			}
+		})
 	}
 }
