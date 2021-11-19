@@ -291,6 +291,9 @@ func secretToPem(secPath, outName string) error {
 	if err != nil {
 		return err
 	}
+	if len(pemBlock) > 0 && pemBlock[len(pemBlock)-1] != byte('\n') {
+		pemBlock = append(pemBlock, byte('\n'))
+	}
 	keys, err := privateKeysFromPEM(pemBlock)
 	if err != nil {
 		return err
@@ -300,6 +303,9 @@ func secretToPem(secPath, outName string) error {
 		keyBlock, err := ioutil.ReadFile(fileKeyName)
 		if err != nil {
 			return err
+		}
+		if len(keyBlock) > 0 && keyBlock[len(keyBlock)-1] != byte('\n') {
+			keyBlock = append(keyBlock, byte('\n'))
 		}
 		pemBlock = append(pemBlock, keyBlock...)
 	}
