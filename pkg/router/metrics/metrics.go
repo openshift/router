@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"strings"
 
 	"github.com/cockroachdb/cmux"
@@ -129,7 +130,7 @@ func (l Listener) Listen() {
 	tcpl, err := net.Listen("tcp", l.Addr)
 	if err != nil {
 		log.Error(err, "listening on the metrics port failed")
-		shutdown.RequestShutdown()
+		os.Exit(1)
 	}
 
 	// if a TLS connection was requested, set up a connection mux that will send TLS requests to
