@@ -29,7 +29,7 @@ import (
 
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	haproxyconfparser "github.com/haproxytech/config-parser/v4"
 	haproxyconfparseroptions "github.com/haproxytech/config-parser/v4/options"

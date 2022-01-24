@@ -526,7 +526,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			return err
 		}
 		authz, err := authorizerfactory.DelegatingAuthorizerConfig{
-			SubjectAccessReviewClient: client.SubjectAccessReviews(),
+			SubjectAccessReviewClient: client,
 			AllowCacheTTL:             2 * time.Minute,
 			DenyCacheTTL:              5 * time.Second,
 			WebhookRetryBackoff:       authoptions.DefaultAuthWebhookRetryBackoff(),
@@ -540,7 +540,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		}
 		authn, _, err := authenticatorfactory.DelegatingAuthenticatorConfig{
 			Anonymous:               true,
-			TokenAccessReviewClient: tokenClient.TokenReviews(),
+			TokenAccessReviewClient: tokenClient,
 			CacheTTL:                10 * time.Second,
 			WebhookRetryBackoff:     authoptions.DefaultAuthWebhookRetryBackoff(),
 		}.New()

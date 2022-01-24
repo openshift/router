@@ -1,7 +1,7 @@
 package log
 
 import (
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2/klogr"
 )
 
 // Logger is the root logger which should be used by all

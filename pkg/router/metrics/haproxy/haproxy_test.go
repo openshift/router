@@ -15,7 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	client_model "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func TestExporter_scrape(t *testing.T) {
