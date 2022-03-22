@@ -1286,6 +1286,18 @@ func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int3
 // The above assumes roundRobin scheduling.
 func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32) map[ServiceUnitKey]int32 {
 	serviceUnitNames := make(map[ServiceUnitKey]int32)
+
+	// If there is only 1 service unit, then always set the weight 1 for all the endpoints.
+	// Scaling the weight to 256 is redundant and causes haproxy to allocate more memory on startup.
+	if len(serviceUnits) == 1 {
+		for key := range serviceUnits {
+			if r.numberOfEndpoints(key) > 0 {
+				serviceUnitNames[key] = 1
+			}
+		}
+		return serviceUnitNames
+	}
+
 	// portion of service weight for each endpoint
 	epWeight := make(map[ServiceUnitKey]float32)
 	// maximum endpoint weight
