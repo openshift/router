@@ -513,9 +513,6 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			return fmt.Errorf("error: %v", err)
 		}
 		checkBackend := metrics.HTTPBackendAvailable(probehttp.NewWithSocket(healthzSocketPath), u)
-		if isTrue(env("ROUTER_USE_PROXY_PROTOCOL", "")) {
-			checkBackend = metrics.ProxyProtocolHTTPBackendAvailable(u)
-		}
 		checkSync, err := metrics.HasSynced(&ptrTemplatePlugin)
 		if err != nil {
 			return err
