@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -34,6 +35,12 @@ import (
 
 var log = logf.Logger.WithName("metrics_probehttp")
 
+type unixDialer struct {
+	socketPath string
+
+	net.Dialer
+}
+
 type Result string
 
 const (
@@ -42,9 +49,21 @@ const (
 	Unknown Result = "unknown"
 )
 
+// overriding net.Dialer.Dial to force unix socket connection
+func (d *unixDialer) Dial(_, _ string) (net.Conn, error) {
+	return d.Dialer.Dial("unix", d.socketPath)
+}
+
 func New() HTTPProber {
 	tlsConfig := &tls.Config{InsecureSkipVerify: true}
 	return NewWithTLSConfig(tlsConfig)
+}
+
+func NewWithSocket(socketPath string) HTTPProber {
+	return httpProber{&http.Transport{
+		Dial:              (&unixDialer{socketPath: socketPath}).Dial,
+		DisableKeepAlives: true,
+	}}
 }
 
 // NewWithTLSConfig takes tls config as parameter.

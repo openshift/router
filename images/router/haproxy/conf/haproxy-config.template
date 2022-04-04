@@ -122,12 +122,6 @@ global
   {{- end }}
 
 defaults
-  {{- with $value := env "ROUTER_MAX_CONNECTIONS" "20000" }}
-    {{- if isInteger $value }}
-  maxconn {{ $value }}
-    {{- end }}
-  {{- end }}
-
   {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
     {{- if ne (env "ROUTER_SYSLOG_FORMAT") "" }}
   log-format {{ env "ROUTER_SYSLOG_FORMAT" }}
@@ -171,8 +165,15 @@ defaults
   option h1-case-adjust-bogus-client
   {{- end }}
 
+listen healthz
+  maxconn 5
+  mode http
+  bind unix@/var/lib/haproxy/run/haproxy-healthz.sock
+  monitor-uri /_______internal_router_healthz_sock
+
   {{ if (gt .StatsPort -1) }}
 listen stats
+  maxconn 5
   bind :{{ if (gt .StatsPort 0) }}{{ .StatsPort }}{{ else }}1936{{ end }}
   mode http
   # Health check monitoring uri.
@@ -191,6 +192,7 @@ listen stats
 
   {{ if .BindPorts -}}
 frontend public
+    maxconn 19990
     {{ if eq "v4v6" $router_ip_v4_v6_mode }}
   bind :{{ env "ROUTER_SERVICE_HTTP_PORT" "80" }}
   bind :::{{ env "ROUTER_SERVICE_HTTP_PORT" "80" }} v6only
@@ -242,6 +244,7 @@ frontend public
 # determined by the next backend in the chain which may be an app backend (passthrough termination) or a backend
 # that terminates encryption in this router (edge)
 frontend public_ssl
+    maxconn 19990
     {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
   option tcplog
     {{- end }}
@@ -285,6 +288,7 @@ backend be_sni
   server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy
 
 frontend fe_sni
+    maxconn 19990
   # terminate ssl on edge
   bind unix@/var/lib/haproxy/run/haproxy-sni.sock ssl
   {{- if isTrue (env "ROUTER_STRICT_SNI") }} strict-sni {{ end }}
@@ -374,6 +378,7 @@ backend be_no_sni
   server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy
 
 frontend fe_no_sni
+    maxconn 19990
   # terminate ssl on edge
   bind unix@/var/lib/haproxy/run/haproxy-no-sni.sock ssl crt {{ firstMatch ".+" .DefaultCertificate "/var/lib/haproxy/conf/default_pub_keys.pem" }} accept-proxy
     {{- with (env "ROUTER_MUTUAL_TLS_AUTH") }}

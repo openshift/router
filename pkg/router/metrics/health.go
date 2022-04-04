@@ -37,10 +37,9 @@ func ProcessRunning(stopCh <-chan struct{}) healthz.HealthChecker {
 
 // HTTPBackendAvailable returns a healthz check that verifies a backend responds to a GET to
 // the provided URL with 2xx or 3xx response.
-func HTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
-	p := probehttp.New()
+func HTTPBackendAvailable(prober probehttp.HTTPProber, u *url.URL) healthz.HealthChecker {
 	return healthz.NamedCheck("backend-http", func(r *http.Request) error {
-		result, _, err := p.Probe(u, nil, 2*time.Second)
+		result, _, err := prober.Probe(u, nil, 2*time.Second)
 		if err != nil {
 			return err
 		}

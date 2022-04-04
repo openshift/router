@@ -41,6 +41,7 @@ import (
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
+	"github.com/openshift/router/pkg/router/metrics/probehttp"
 	"github.com/openshift/router/pkg/router/shutdown"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
@@ -54,6 +55,10 @@ const defaultReloadInterval = 5
 // defaultCommitInterval is how often (in seconds) to commit the "in-memory"
 // router changes made using the dynamic configuration manager.
 const defaultCommitInterval = 60 * 60
+
+// Path to the unix domain socket that serves health check
+// connections.
+const healthzSocketPath = "/var/lib/haproxy/run/haproxy-healthz.sock"
 
 var routerLong = heredoc.Doc(`
 	Start a router
@@ -503,7 +508,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		if err != nil {
 			return fmt.Errorf("ROUTER_METRICS_READY_HTTP_URL must be a valid URL or empty: %v", err)
 		}
-		checkBackend := metrics.HTTPBackendAvailable(u)
+		u, err = url.Parse("http://localhost/_______internal_router_healthz_sock")
+		if err != nil {
+			return fmt.Errorf("error: %v", err)
+		}
+		checkBackend := metrics.HTTPBackendAvailable(probehttp.NewWithSocket(healthzSocketPath), u)
 		if isTrue(env("ROUTER_USE_PROXY_PROTOCOL", "")) {
 			checkBackend = metrics.ProxyProtocolHTTPBackendAvailable(u)
 		}
