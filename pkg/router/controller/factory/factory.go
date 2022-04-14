@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	kclientset "k8s.io/client-go/kubernetes"
 	kcache "k8s.io/client-go/tools/cache"
@@ -127,7 +126,7 @@ func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterContr
 
 	// Wait for informers cache to be synced
 	for objType, informer := range f.informers {
-		if !kcache.WaitForCacheSync(utilwait.NeverStop, informer.HasSynced) {
+		if !kcache.WaitForCacheSync(stopCh, informer.HasSynced) {
 			utilruntime.HandleError(fmt.Errorf("failed to sync cache for %+v shared informer", objType))
 		}
 	}
