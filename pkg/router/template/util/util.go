@@ -51,6 +51,14 @@ func GenerateRouteRegexp(hostname, path string, wildcard bool) string {
 		subpathRE = "(/.*)?"
 	}
 
+	// The path could contain space characters, which must be escaped in
+	// HAProxy map files.  See
+	// <https://bugzilla.redhat.com/show_bug.cgi?id=2074304>.
+	pathRE = strings.ReplaceAll(pathRE, ` `, `\x20`)
+	pathRE = strings.ReplaceAll(pathRE, "\t", `\t`)
+	pathRE = strings.ReplaceAll(pathRE, "\r", `\r`)
+	pathRE = strings.ReplaceAll(pathRE, "\n", `\n`)
+
 	return "^" + hostRE + portRE + pathRE + subpathRE + "$"
 }
 
