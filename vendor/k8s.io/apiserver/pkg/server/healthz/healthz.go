@@ -255,8 +255,12 @@ func handleRootHealth(name string, firstTimeHealthy func(), checks ...HealthChec
 		// always be verbose on failure
 		if len(failedChecks) > 0 {
 			klog.V(2).Infof("%s check failed: %s\n%v", strings.Join(failedChecks, ","), name, failedVerboseLogOutput.String())
+			klog.Infof("%s check failed: %s\n%v", strings.Join(failedChecks, ","), name, failedVerboseLogOutput.String())
+			fmt.Printf("#### %s check failed: %s\n%v\n", strings.Join(failedChecks, ","), name, failedVerboseLogOutput.String())
 			http.Error(responsewriter.GetOriginal(w), fmt.Sprintf("%s%s check failed", individualCheckOutput.String(), name), http.StatusInternalServerError)
 			return
+		} else{
+			fmt.Printf("#### check PASSED\n")
 		}
 
 		// signal first time this is healthy
