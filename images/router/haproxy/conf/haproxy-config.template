@@ -282,7 +282,7 @@ frontend public_ssl
 # traffic
 ##########################################################################
 backend be_sni
-  server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy
+  server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy-v2
 
 frontend fe_sni
   # terminate ssl on edge
@@ -371,7 +371,7 @@ frontend fe_sni
 ##########################################################################
 # backend for when sni does not exist, or ssl term needs to happen on the edge
 backend be_no_sni
-  server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy
+  server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy-v2
 
 frontend fe_no_sni
   # terminate ssl on edge
