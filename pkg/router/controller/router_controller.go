@@ -238,7 +238,6 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 			Labels:          objMeta.Labels,
 			Annotations:     objMeta.Annotations,
 			OwnerReferences: objMeta.OwnerReferences,
-			ClusterName:     objMeta.ClusterName,
 		},
 		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
 	}
