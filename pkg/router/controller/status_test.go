@@ -896,3 +896,7 @@ func (i *fakeInformer) HasSynced() bool {
 func (i *fakeInformer) LastSyncResourceVersion() string {
 	panic("not implemented")
 }
+
+func (i *fakeInformer) SetTransform(handler cache.TransformFunc) error {
+	panic("not implemented")
+}
