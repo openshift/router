@@ -32,6 +32,10 @@ func main() {
 	klog.InitFlags(&logFlags)
 	cmd.PersistentFlags().AddGoFlagSet(&logFlags)
 
+	if logLevel := os.Getenv("CONTROLLER_LOG_LEVEL"); logLevel != "" {
+		logFlags.Set("v", logLevel)
+	}
+
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
