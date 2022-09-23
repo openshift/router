@@ -244,6 +244,26 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"Forced persistence on down servers": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "p",
+					host: "pexample.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/persist": "true",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "p"),
+					attribute:   "option",
+					value:       "persist",
+				},
+			},
+		},
 		"Simple HSTS header": {
 			mustCreateWithConfig{
 				mustCreate: mustCreate{
@@ -514,6 +534,18 @@ type mustMatchConfig struct {
 }
 
 func (m mustMatchConfig) Match(parser haproxyconfparser.Parser) error {
+	if m.attribute == "option" {
+		cfg := fmt.Sprintf("%s", parser)
+		start := strings.Index(cfg, m.sectionName)
+		backends := cfg[start:]
+		end := strings.Index(backends, "backend")
+		backend := backends[:end]
+		if strings.Contains(backend, "option "+m.value) {
+			return nil
+		}
+		return fmt.Errorf("unable to find option [%s]", m.value)
+	}
+
 	data, err := parser.Get(haproxyconfparser.Section(m.section), m.sectionName, m.attribute)
 	if err != nil {
 		if m.notFound {

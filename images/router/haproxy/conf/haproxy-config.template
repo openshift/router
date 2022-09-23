@@ -472,6 +472,9 @@ backend openshift_default
 backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   mode http
   option redispatch
+        {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/persist") }}
+  option persist
+        {{- end }}
         {{- with $setHeaders := firstMatch $setForwardedHeadersPattern (index $cfg.Annotations $setForwardedHeadersAnnotation) $setForwardedHeadersDefaultValue }}
           {{- if eq $setHeaders "append" }}
   option forwardfor
