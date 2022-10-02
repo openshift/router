@@ -83,8 +83,8 @@ func (p *UniqueHost) HandleNode(eventType watch.EventType, node *kapi.Node) erro
 
 // HandleRoute processes watch events on the Route resource.
 // TODO: this function can probably be collapsed with the router itself, as a function that
-//   determines which component needs to be recalculated (which template) and then does so
-//   on demand.
+// determines which component needs to be recalculated (which template) and then does so
+// on demand.
 func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	if p.allowedNamespaces != nil && !p.allowedNamespaces.Has(route.Namespace) {
 		return nil

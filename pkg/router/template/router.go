@@ -732,7 +732,7 @@ func (r *templateRouter) removeServiceAliasAssociation(id ServiceUnitKey, alias 
 
 // dynamicallyAddRoute attempts to dynamically add a route.
 // Note: The config should have been synced at least once initially and
-//       the caller needs to acquire a lock [and release it].
+// the caller needs to acquire a lock [and release it].
 func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, route *routev1.Route, backend *ServiceAliasConfig) bool {
 	if r.dynamicConfigManager == nil {
 		return false
@@ -781,7 +781,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 
 // dynamicallyRemoveRoute attempts to dynamically remove a route.
 // Note: The config should have been synced at least once initially and
-//       the caller needs to acquire a lock [and release it].
+// the caller needs to acquire a lock [and release it].
 func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey, route *routev1.Route) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
@@ -800,7 +800,7 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey
 // dynamicallyReplaceEndpoints attempts to dynamically replace endpoints
 // on all the routes associated with a given service.
 // Note: The config should have been synced at least once initially and
-//       the caller needs to acquire a lock [and release it].
+// the caller needs to acquire a lock [and release it].
 func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service ServiceUnit, oldEndpoints []Endpoint) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
@@ -841,7 +841,7 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 // dynamicallyRemoveEndpoints attempts to dynamically remove endpoints on
 // all the routes associated with a given service.
 // Note: The config should have been synced at least once initially and
-//       the caller needs to acquire a lock [and release it].
+// the caller needs to acquire a lock [and release it].
 func (r *templateRouter) dynamicallyRemoveEndpoints(service ServiceUnit, endpoints []Endpoint) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
