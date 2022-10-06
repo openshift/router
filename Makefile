@@ -23,7 +23,7 @@ GO_LD_EXTRAFLAGS ?=
 GO_LDFLAGS ?=-ldflags "-s -w $(call version-ldflags,$(PACKAGE)/pkg/version) $(GO_LD_EXTRAFLAGS)"
 
 GO=GO111MODULE=on GOFLAGS=-mod=vendor go
-GO_BUILD_RECIPE=CGO_ENABLED=0 $(GO) build -o $(BIN) $(GO_GCFLAGS) $(GO_LDFLAGS) $(MAIN_PACKAGE)
+GO_BUILD_RECIPE=CGO_ENABLED=1 $(GO) build -o $(BIN) $(GO_GCFLAGS) $(GO_LDFLAGS) $(MAIN_PACKAGE)
 
 all: build
 
@@ -37,7 +37,7 @@ images/router/*/Dockerfile.rhel: images/router/base/Dockerfile.rhel
 	imagebuilder -t registry.svc.ci.openshift.org/ocp/4.0:`basename $(@D)`-router -f images/router/`basename $(@D)`/Dockerfile.rhel .
 
 check:
-	$(GO) test -race ./...
+	CGO_ENABLED=1 $(GO) test -race ./...
 
 .PHONY: verify
 verify:
