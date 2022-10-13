@@ -44,7 +44,7 @@ global
 {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (env "ROUTER_HARD_STOP_AFTER")) }}
   hard-stop-after {{ $value }}
 {{- end }}
-{{- with $value := env "ROUTER_MAX_CONNECTIONS" "20000" }}
+{{- with $value := env "ROUTER_MAX_CONNECTIONS" "50000" }}
   {{- if isInteger $value }}
   maxconn {{ $value }}
   {{- end }}
@@ -122,7 +122,7 @@ global
   {{- end }}
 
 defaults
-  {{- with $value := env "ROUTER_MAX_CONNECTIONS" "20000" }}
+  {{- with $value := env "ROUTER_MAX_CONNECTIONS" "50000" }}
     {{- if isInteger $value }}
   maxconn {{ $value }}
     {{- end }}
