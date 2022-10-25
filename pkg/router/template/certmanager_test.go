@@ -223,11 +223,11 @@ func TestCertManagerConfig(t *testing.T) {
 		config     *certificateManagerConfig
 		shouldPass bool
 	}{
-		"valid":                          {shouldPass: true, config: validCfg},
-		"missing certificateKeyFunc":     {shouldPass: false, config: missingCertKeyCfg},
-		"missing caCertificateKeyFunc":   {shouldPass: false, config: missingCACertKeyCfg},
-		"missing destCertificateKeyFunc": {shouldPass: false, config: missingDestCertKeyCfg},
-		"missing 	certificateDir": {shouldPass: false, config: missingCertDirCfg},
+		"valid":                                    {shouldPass: true, config: validCfg},
+		"missing certificateKeyFunc":               {shouldPass: false, config: missingCertKeyCfg},
+		"missing caCertificateKeyFunc":             {shouldPass: false, config: missingCACertKeyCfg},
+		"missing destCertificateKeyFunc":           {shouldPass: false, config: missingDestCertKeyCfg},
+		"missing 	certificateDir":                  {shouldPass: false, config: missingCertDirCfg},
 		"missing caCertificateDir":                 {shouldPass: false, config: missingCACertDirCfg},
 		"matching certificateDir/caCertificateDir": {shouldPass: false, config: matchingCertDirCfg},
 	}

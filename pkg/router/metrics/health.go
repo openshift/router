@@ -54,7 +54,7 @@ func HTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 // HasSynced returns a healthz check that verifies the router has been synced at least
 // once.
 // routerPtr is a pointer because it may not yet be defined (there's a chicken-and-egg problem
-//   with when the health checker and router object are set up).
+// with when the health checker and router object are set up).
 func HasSynced(routerPtr **templateplugin.TemplatePlugin) (healthz.HealthChecker, error) {
 	if routerPtr == nil {
 		return nil, fmt.Errorf("Nil routerPtr passed to HasSynced")

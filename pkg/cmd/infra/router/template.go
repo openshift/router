@@ -245,16 +245,16 @@ func NewCommandTemplateRouter(name string) *cobra.Command {
 // validTokenRE matches valid tokens as defined in section 2.2 of RFC 2616.
 // A token comprises 1 or more non-control and non-separator characters:
 //
-//   token          = 1*<any CHAR except CTLs or separators>
-//   CHAR           = <any US-ASCII character (octets 0 - 127)>
-//   CTL            = <any US-ASCII control character
-//                    (octets 0 - 31) and DEL (127)>
-//   separators     = "(" | ")" | "<" | ">" | "@"
-//                  | "," | ";" | ":" | "\" | <">
-//                  | "/" | "[" | "]" | "?" | "="
-//                  | "{" | "}" | SP | HT
-//   SP             = <US-ASCII SP, space (32)>
-//   HT             = <US-ASCII HT, horizontal-tab (9)>
+//	token          = 1*<any CHAR except CTLs or separators>
+//	CHAR           = <any US-ASCII character (octets 0 - 127)>
+//	CTL            = <any US-ASCII control character
+//	                 (octets 0 - 31) and DEL (127)>
+//	separators     = "(" | ")" | "<" | ">" | "@"
+//	               | "," | ";" | ":" | "\" | <">
+//	               | "/" | "[" | "]" | "?" | "="
+//	               | "{" | "}" | SP | HT
+//	SP             = <US-ASCII SP, space (32)>
+//	HT             = <US-ASCII HT, horizontal-tab (9)>
 var validTokenRE *regexp.Regexp = regexp.MustCompile(`^[\x21\x23-\x27\x2a\x2b\x2d\x2e\x30-\x39\x41-\x5a\x5e-\x7a\x7c\x7e]+$`)
 
 func parseCaptureHeaders(in string) ([]templateplugin.CaptureHTTPHeader, error) {

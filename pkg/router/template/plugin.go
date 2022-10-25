@@ -210,8 +210,8 @@ func (p *TemplatePlugin) HandleNode(eventType watch.EventType, node *kapi.Node) 
 
 // HandleRoute processes watch events on the Route resource.
 // TODO: this function can probably be collapsed with the router itself, as a function that
-//   determines which component needs to be recalculated (which template) and then does so
-//   on demand.
+// determines which component needs to be recalculated (which template) and then does so
+// on demand.
 func (p *TemplatePlugin) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	switch eventType {
 	case watch.Added, watch.Modified:
