@@ -844,37 +844,47 @@ func TestFilterNamespaces(t *testing.T) {
 // TestCalculateServiceWeights tests calculating the service
 // endpoint weights
 func TestCalculateServiceWeights(t *testing.T) {
-	router := NewFakeTemplateRouter()
-
 	suKey1 := ServiceUnitKey("ns/svc1")
 	suKey2 := ServiceUnitKey("ns/svc2")
 	ep1 := Endpoint{
-		ID:     "ep1",
-		IP:     "ip",
-		Port:   "port",
-		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep1ipport"))),
+		ID:       "ep1",
+		IP:       "ip",
+		Port:     "8080",
+		PortName: "port",
+		IdHash:   fmt.Sprintf("%x", md5.Sum([]byte("ep1ipport"))),
 	}
 	ep2 := Endpoint{
-		ID:     "ep2",
-		IP:     "ip",
-		Port:   "port",
-		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep2ipport"))),
+		ID:       "ep2",
+		IP:       "ip",
+		Port:     "8080",
+		PortName: "port",
+		IdHash:   fmt.Sprintf("%x", md5.Sum([]byte("ep2ipport"))),
 	}
 	ep3 := Endpoint{
-		ID:     "ep3",
-		IP:     "ip",
-		Port:   "port",
-		IdHash: fmt.Sprintf("%x", md5.Sum([]byte("ep3ipport"))),
+		ID:       "ep3",
+		IP:       "ip",
+		Port:     "8080",
+		PortName: "port",
+		IdHash:   fmt.Sprintf("%x", md5.Sum([]byte("ep3ipport"))),
+	}
+	ep4 := Endpoint{
+		ID:       "ep4",
+		IP:       "ip2",
+		Port:     "8081",
+		PortName: "port2",
+		IdHash:   fmt.Sprintf("%x", md5.Sum([]byte("ep3ipport"))),
 	}
 
 	testCases := []struct {
 		name            string
 		serviceUnits    map[ServiceUnitKey][]Endpoint
+		routePort       string
 		serviceWeights  map[ServiceUnitKey]int32
 		expectedWeights map[ServiceUnitKey]int32
 	}{
 		{
-			name: "equally weighted services with same number of endpoints",
+			name:      "equally weighted services with same number of endpoints",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1},
 				suKey2: {ep2},
@@ -889,7 +899,8 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
-			name: "unequally weighted services with same number of endpoints",
+			name:      "unequally weighted services with same number of endpoints",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1},
 				suKey2: {ep2},
@@ -904,7 +915,8 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
-			name: "services with equal weights and a different number of endpoints",
+			name:      "services with equal weights and a different number of endpoints",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1, ep2},
 				suKey2: {ep3},
@@ -919,7 +931,8 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
-			name: "services with unequal weights and a different number of endpoints",
+			name:      "services with unequal weights and a different number of endpoints",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1, ep2},
 				suKey2: {ep3},
@@ -934,7 +947,8 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
-			name: "services with equal weights and a different number of endpoints, one of which is common",
+			name:      "services with equal weights and a different number of endpoints, one of which is common",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1, ep2},
 				suKey2: {ep2},
@@ -949,7 +963,8 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
-			name: "a single service with a single endpoint",
+			name:      "a single service with a single endpoint",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1},
 			},
@@ -961,7 +976,8 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
-			name: "a single service with a multiple endpoints",
+			name:      "a single service with a multiple endpoints",
+			routePort: "8080",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {ep1, ep2},
 			},
@@ -973,13 +989,103 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 		},
 		{
+			name:      "a single service with multiple endpoints, but no endpoint ports match the route port",
+			routePort: "9090",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{},
+		},
+		{
+			name:      "services with multiple endpoints with different ports",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep4},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 256,
+				suKey2: 256,
+			},
+		},
+		{
+			name:      "services with multiple endpoints with different ports and route port is portName",
+			routePort: "port",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep4},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 256,
+				suKey2: 256,
+			},
+		},
+		{
+			name: "services with multiple endpoints with different ports and route has no port",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep4},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 128, // counts endpoints of all ports
+				suKey2: 256,
+			},
+		},
+		{
+			name: "services with multiple endpoints and route has no port",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 50,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 128, // counts endpoints of all ports
+				suKey2: 256,
+			},
+		},
+		{
+			name: "services with too many endpoints to achieve desired weight",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2, ep2, ep3, ep3},
+				suKey2: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 3,   // less than number of endpoints
+				suKey2: 256, // maxed out at 256
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 1,
+				suKey2: 256,
+			},
+		},
+		{
 			name:            "no services with no endpoints",
+			routePort:       "port",
 			serviceUnits:    map[ServiceUnitKey][]Endpoint{},
 			serviceWeights:  map[ServiceUnitKey]int32{},
 			expectedWeights: map[ServiceUnitKey]int32{},
 		},
 		{
-			name: "service with no endpoint",
+			name:      "service with no endpoint",
+			routePort: "port",
 			serviceUnits: map[ServiceUnitKey][]Endpoint{
 				suKey1: {},
 			},
@@ -991,20 +1097,18 @@ func TestCalculateServiceWeights(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		for suKey, eps := range tc.serviceUnits {
-			router.CreateServiceUnit(suKey)
-			router.AddEndpoints(suKey, eps)
-		}
-		endpointWeights := router.calculateServiceWeights(tc.serviceWeights)
-		if !reflect.DeepEqual(endpointWeights, tc.expectedWeights) {
-			t.Errorf("test %s: expected endpointWeights to be %v, got %v", tc.name, tc.expectedWeights, endpointWeights)
-		}
-		// Remove endpoints and service units so the same sample template router
-		// can be re-used.
-		for suKey := range tc.serviceUnits {
-			router.DeleteEndpoints(suKey)
-			router.DeleteServiceUnit(suKey)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			router := NewFakeTemplateRouter()
+
+			for suKey, eps := range tc.serviceUnits {
+				router.CreateServiceUnit(suKey)
+				router.AddEndpoints(suKey, eps)
+			}
+			endpointWeights := router.calculateServiceWeights(tc.serviceWeights, tc.routePort)
+			if !reflect.DeepEqual(endpointWeights, tc.expectedWeights) {
+				t.Errorf("expected endpointWeights to be %v, got %v", tc.expectedWeights, endpointWeights)
+			}
+		})
 	}
 }
 
