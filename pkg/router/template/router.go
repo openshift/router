@@ -124,6 +124,10 @@ type templateRouter struct {
 	haveClientCA bool
 	// haveCRLs specifies if the crl file has been generated for client auth
 	haveCRLs bool
+	// httpResponseHeaders allows users to set or delete custom HTTP response headers.
+	httpResponseHeaders []HTTPHeader
+	// httpRequestHeaders allows users to set or delete custom HTTP request headers.
+	httpRequestHeaders []HTTPHeader
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
@@ -149,6 +153,8 @@ type templateRouterCfg struct {
 	captureHTTPResponseHeaders    []CaptureHTTPHeader
 	captureHTTPCookie             *CaptureHTTPCookie
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
+	httpResponseHeaders           []HTTPHeader
+	httpRequestHeaders            []HTTPHeader
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -192,6 +198,10 @@ type templateData struct {
 	HaveClientCA bool
 	// HaveCRLs specifies if the crl file is present
 	HaveCRLs bool
+	// HTTPResponseHeaders allows users to set/delete custom HTTP response
+	HTTPResponseHeaders []HTTPHeader
+	// HTTPRequestHeaders allows users to set/delete custom HTTP request
+	HTTPRequestHeaders []HTTPHeader
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -253,6 +263,8 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		captureHTTPResponseHeaders:    cfg.captureHTTPResponseHeaders,
 		captureHTTPCookie:             cfg.captureHTTPCookie,
 		httpHeaderNameCaseAdjustments: cfg.httpHeaderNameCaseAdjustments,
+		httpResponseHeaders:           cfg.httpResponseHeaders,
+		httpRequestHeaders:            cfg.httpRequestHeaders,
 
 		metricReload:        metricsReload,
 		metricReloadFailure: metricReloadFailure,
@@ -599,6 +611,8 @@ func (r *templateRouter) writeConfig() error {
 			HTTPHeaderNameCaseAdjustments: r.httpHeaderNameCaseAdjustments,
 			HaveClientCA:                  r.haveClientCA,
 			HaveCRLs:                      r.haveCRLs,
+			HTTPResponseHeaders:           r.httpResponseHeaders,
+			HTTPRequestHeaders:            r.httpRequestHeaders,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
@@ -939,16 +953,27 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 			activeServiceUnits++
 		}
 	}
+	var httpResponseHeadersList []HTTPHeader
+	var httpRequestHeadersList []HTTPHeader
+	if route.Spec.HTTPHeaders != nil && len(route.Spec.HTTPHeaders.Actions.Response) != 0 {
+		httpResponseHeadersList = getHeadersList(route.Spec.HTTPHeaders.Actions.Response)
+	}
+
+	if route.Spec.HTTPHeaders != nil && len(route.Spec.HTTPHeaders.Actions.Request) != 0 {
+		httpRequestHeadersList = getHeadersList(route.Spec.HTTPHeaders.Actions.Request)
+	}
 
 	config := ServiceAliasConfig{
-		Name:               route.Name,
-		Namespace:          route.Namespace,
-		Host:               route.Spec.Host,
-		Path:               route.Spec.Path,
-		IsWildcard:         wildcard,
-		Annotations:        route.Annotations,
-		ServiceUnits:       serviceUnits,
-		ActiveServiceUnits: activeServiceUnits,
+		Name:                route.Name,
+		Namespace:           route.Namespace,
+		Host:                route.Spec.Host,
+		Path:                route.Spec.Path,
+		IsWildcard:          wildcard,
+		Annotations:         route.Annotations,
+		ServiceUnits:        serviceUnits,
+		ActiveServiceUnits:  activeServiceUnits,
+		HTTPResponseHeaders: httpResponseHeadersList,
+		HTTPRequestHeaders:  httpRequestHeadersList,
 	}
 
 	if route.Spec.Port != nil {
@@ -1005,6 +1030,35 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 	}
 
 	return &config
+}
+
+func getHeadersList(httpHeaderList []routev1.RouteHTTPHeader) []HTTPHeader {
+	var httpHeadersList []HTTPHeader
+	for _, value := range httpHeaderList {
+		if value.Action.Type == routev1.Set && value.Action.Set != nil && len(value.Name) != 0 && len(value.Action.Set.Value) != 0 {
+			setHeaderValue := SanitizeHeaderValue(value.Action.Set.Value)
+
+			setValue := HTTPHeader{
+				Name:   value.Name,
+				Value:  setHeaderValue,
+				Action: value.Action.Type,
+			}
+			httpHeadersList = append(httpHeadersList, setValue)
+		}
+		if value.Action.Type == routev1.Delete && len(value.Name) != 0 {
+			deleteValue := HTTPHeader{
+				Name:   value.Name,
+				Action: value.Action.Type,
+			}
+			httpHeadersList = append(httpHeadersList, deleteValue)
+		}
+	}
+	return httpHeadersList
+}
+
+func SanitizeHeaderValue(headerValue string) string {
+	sanitizeHeaderValue := strings.ReplaceAll(headerValue, "'", `'\''`)
+	return "'" + sanitizeHeaderValue + "'"
 }
 
 // AddRoute adds the given route to the router state if the route
@@ -1393,6 +1447,8 @@ func configsAreEqual(config1, config2 *ServiceAliasConfig) bool {
 		config1.RoutingKeyName == config2.RoutingKeyName &&
 		config1.IsWildcard == config2.IsWildcard &&
 		config1.VerifyServiceHostname == config2.VerifyServiceHostname &&
+		reflect.DeepEqual(config1.HTTPResponseHeaders, config2.HTTPResponseHeaders) &&
+		reflect.DeepEqual(config1.HTTPRequestHeaders, config2.HTTPRequestHeaders) &&
 		reflect.DeepEqual(config1.Annotations, config2.Annotations) &&
 		reflect.DeepEqual(config1.ServiceUnits, config2.ServiceUnits)
 }

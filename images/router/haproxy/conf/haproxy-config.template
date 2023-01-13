@@ -235,6 +235,22 @@ frontend public
   acl secure_redirect base,map_reg_int(/var/lib/haproxy/conf/os_route_http_redirect.map) -m bool
   redirect scheme https if secure_redirect
 
+    {{- range $idx, $http_request_header := .HTTPRequestHeaders }}
+      {{- if eq $http_request_header.Action "Set" }}
+  http-request set-header {{ $http_request_header.Name }} {{ $http_request_header.Value }}
+      {{- else if eq $http_request_header.Action "Delete" }}
+  http-request del-header {{ $http_request_header.Name }}
+      {{- end }}
+    {{- end }}
+
+    {{- range $idx, $http_response_header := .HTTPResponseHeaders }}
+      {{- if eq $http_response_header.Action "Set" }}
+  http-response set-header {{ $http_response_header.Name }} {{ $http_response_header.Value }}
+      {{- else if eq $http_response_header.Action "Delete" }}
+  http-response del-header {{ $http_response_header.Name }}
+      {{- end }}
+    {{- end }}
+
   use_backend %[base,map_reg(/var/lib/haproxy/conf/os_http_be.map)]
 
   default_backend openshift_default
@@ -355,6 +371,22 @@ frontend fe_sni
   http-request set-header X-SSL-Client-DER       %{+Q}[ssl_c_der,base64]
     {{- end }}
 
+    {{- range $idx, $http_request_header := .HTTPRequestHeaders }}
+      {{- if eq $http_request_header.Action "Set" }}
+  http-request set-header {{ $http_request_header.Name }} {{ $http_request_header.Value }}
+      {{- else if eq $http_request_header.Action "Delete" }}
+  http-request del-header {{ $http_request_header.Name }}
+      {{- end }}
+    {{- end }}
+
+    {{- range $idx, $http_response_header := .HTTPResponseHeaders }}
+      {{- if eq $http_response_header.Action "Set" }}
+  http-response set-header {{ $http_response_header.Name }} {{ $http_response_header.Value }}
+      {{- else if eq $http_response_header.Action "Delete" }}
+  http-response del-header {{ $http_response_header.Name }}
+      {{- end }}
+    {{- end }}
+
   # map to backend
   # Search from most specific to general path (host case).
   # Note: If no match, haproxy uses the default_backend, no other
@@ -437,6 +469,22 @@ frontend fe_no_sni
   http-request set-header X-SSL-Client-NotBefore %{+Q}[ssl_c_notbefore]
   http-request set-header X-SSL-Client-NotAfter  %{+Q}[ssl_c_notafter]
   http-request set-header X-SSL-Client-DER       %{+Q}[ssl_c_der,base64]
+    {{- end }}
+
+    {{- range $idx, $http_request_header := .HTTPRequestHeaders }}
+      {{- if eq $http_request_header.Action "Set" }}
+  http-request set-header {{ $http_request_header.Name }} {{ $http_request_header.Value }}
+      {{- else if eq $http_request_header.Action "Delete" }}
+  http-request del-header {{ $http_request_header.Name }}
+      {{- end }}
+    {{- end }}
+
+    {{- range $idx, $http_response_header := .HTTPResponseHeaders }}
+      {{- if eq $http_response_header.Action "Set" }}
+  http-response set-header {{ $http_response_header.Name }} {{ $http_response_header.Value }}
+      {{- else if eq $http_response_header.Action "Delete" }}
+  http-response del-header {{ $http_response_header.Name }}
+      {{- end }}
     {{- end }}
 
   # map to backend
@@ -623,6 +671,21 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-response set-header Strict-Transport-Security '{{ $hsts }}'
           {{- end }}{{/* hsts header */}}
         {{- end }}{{/* is "edge" or "reencrypt" */}}
+
+          {{- range $idx, $http_request_header := $cfg.HTTPRequestHeaders }}
+            {{- if eq $http_request_header.Action "Set" }}
+  http-request set-header {{ $http_request_header.Name }} {{ $http_request_header.Value }}
+            {{- else if eq $http_request_header.Action "Delete" }}
+  http-request del-header {{ $http_request_header.Name }}
+            {{- end }}
+          {{- end }}
+          {{- range $idx, $http_response_header := $cfg.HTTPResponseHeaders }}
+            {{- if eq $http_response_header.Action "Set" }}
+  http-response set-header {{ $http_response_header.Name }} {{ $http_response_header.Value }}
+            {{- else if eq $http_response_header.Action "Delete" }}
+  http-response del-header {{ $http_response_header.Name }}
+            {{- end }}
+          {{- end }}
 
         {{- range $serviceUnitName, $weight := $cfg.ServiceUnitNames }}
           {{- if ge $weight 0 }}{{/* weight=0 is reasonable to keep existing connections to backends with cookies as we can see the HTTP headers */}}

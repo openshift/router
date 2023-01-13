@@ -126,6 +126,10 @@ type TemplateRouter struct {
 	CaptureHTTPCookie                   *templateplugin.CaptureHTTPCookie
 	HTTPHeaderNameCaseAdjustmentsString string
 	HTTPHeaderNameCaseAdjustments       []templateplugin.HTTPHeaderNameCaseAdjustment
+	HTTPResponseHeadersString           string
+	HTTPResponseHeaders                 []templateplugin.HTTPHeader
+	HTTPRequestHeadersString            string
+	HTTPRequestHeaders                  []templateplugin.HTTPHeader
 
 	TemplateRouterConfigManager
 }
@@ -182,6 +186,8 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
 	flag.StringVar(&o.HTTPHeaderNameCaseAdjustmentsString, "http-header-name-case-adjustments", env("ROUTER_H1_CASE_ADJUST", ""), "A comma-delimited list of HTTP header names that should have their case adjusted. Each item must be a valid HTTP header name and should have the desired capitalization.")
+	flag.StringVar(&o.HTTPResponseHeadersString, "set-delete-http-response-header", env("ROUTER_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and values that should be set/deleted.")
+	flag.StringVar(&o.HTTPRequestHeadersString, "set-delete-http-request-header", env("ROUTER_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and values that should be set/deleted.")
 }
 
 type RouterStats struct {
@@ -285,6 +291,99 @@ func parseCaptureHeaders(in string) ([]templateplugin.CaptureHTTPHeader, error) 
 	}
 
 	return captureHeaders, nil
+}
+
+func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error) {
+	var captureHeaders []templateplugin.HTTPHeader
+	var capture templateplugin.HTTPHeader
+	var err error
+	if len(in) == 0 {
+		return captureHeaders, fmt.Errorf("encoded header string not present.")
+	}
+	if len(in) > 0 {
+		for _, header := range strings.Split(in, ",") {
+			parts := strings.Split(header, ":")
+			num := len(parts)
+			switch num {
+			default:
+				return captureHeaders, fmt.Errorf("invalid HTTP header input specification: %v", header)
+			case 3:
+				{
+					headerName, err := url.QueryUnescape(parts[0])
+					if err != nil {
+						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[0])
+					}
+					err = checkValidHeaderName(headerName)
+					if err != nil {
+						return captureHeaders, err
+					}
+					headerValue, err := url.QueryUnescape(parts[1])
+					if err != nil {
+						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[1])
+					}
+					sanitizedHeaderValue := templateplugin.SanitizeHeaderValue(headerValue)
+					action, err := url.QueryUnescape(parts[2])
+					if err != nil {
+						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[2])
+					}
+					err = checkValidAction(action)
+					if err != nil {
+						return captureHeaders, err
+					}
+					capture = templateplugin.HTTPHeader{
+						Name:   headerName,
+						Value:  sanitizedHeaderValue,
+						Action: routev1.RouteHTTPHeaderActionType(action),
+					}
+					captureHeaders = append(captureHeaders, capture)
+				}
+			case 2:
+				{
+					headerName, err := url.QueryUnescape(parts[0])
+					if err != nil {
+						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[0])
+					}
+					err = checkValidHeaderName(headerName)
+					if err != nil {
+						return captureHeaders, err
+					}
+					action, err := url.QueryUnescape(parts[1])
+					if err != nil {
+						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[1])
+					}
+					err = checkValidAction(action)
+					if err != nil {
+						return captureHeaders, err
+					}
+					capture = templateplugin.HTTPHeader{
+						Name:   headerName,
+						Action: routev1.RouteHTTPHeaderActionType(action),
+					}
+					captureHeaders = append(captureHeaders, capture)
+				}
+			}
+		}
+	}
+
+	return captureHeaders, err
+}
+
+func checkValidAction(action string) error {
+	if action != string(routev1.Set) && action != string(routev1.Delete) {
+		return fmt.Errorf("invalid action %s", action)
+	} else {
+		return nil
+	}
+}
+
+func checkValidHeaderName(headerName string) error {
+	// RFC 2616, section 4.2, states that the header name
+	// must be a valid token.
+	if !validTokenRE.MatchString(headerName) {
+		return fmt.Errorf("invalid HTTP header name: %s", headerName)
+	} else {
+		return nil
+	}
 }
 
 func parseCaptureCookie(in string) (*templateplugin.CaptureHTTPCookie, error) {
@@ -392,6 +491,22 @@ func (o *TemplateRouterOptions) Complete() error {
 		return err
 	}
 	o.CaptureHTTPResponseHeaders = captureHTTPResponseHeaders
+
+	if len(o.HTTPResponseHeadersString) != 0 {
+		httpResponseHeaders, err := parseHeadersToBeSetOrDeleted(o.HTTPResponseHeadersString)
+		if err != nil {
+			return err
+		}
+		o.HTTPResponseHeaders = httpResponseHeaders
+	}
+
+	if len(o.HTTPRequestHeadersString) != 0 {
+		httpRequestHeaders, err := parseHeadersToBeSetOrDeleted(o.HTTPRequestHeadersString)
+		if err != nil {
+			return err
+		}
+		o.HTTPRequestHeaders = httpRequestHeaders
+	}
 
 	captureHTTPCookie, err := parseCaptureCookie(o.CaptureHTTPCookieString)
 	if err != nil {
@@ -648,6 +763,8 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		CaptureHTTPResponseHeaders:    o.CaptureHTTPResponseHeaders,
 		CaptureHTTPCookie:             o.CaptureHTTPCookie,
 		HTTPHeaderNameCaseAdjustments: o.HTTPHeaderNameCaseAdjustments,
+		HTTPResponseHeaders:           o.HTTPResponseHeaders,
+		HTTPRequestHeaders:            o.HTTPRequestHeaders,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)

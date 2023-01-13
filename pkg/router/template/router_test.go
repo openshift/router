@@ -9,11 +9,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	routev1 "github.com/openshift/api/route/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	routev1 "github.com/openshift/api/route/v1"
 )
 
 // TestCreateServiceUnit tests creating a service unit and finding it in router state
@@ -360,6 +361,9 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 	serviceName := "TestService"
 	serviceWeight := int32(0)
 
+	var headerNameXFrame string = "X-Frame-Options"
+	var headerNameXSS string = "X-XSS-Protection"
+
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -382,6 +386,93 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 				CACertificate:            "ghi",
 				DestinationCACertificate: "jkl",
 			},
+			HTTPHeaders: &routev1.RouteHTTPHeaders{
+
+				Actions: routev1.RouteHTTPHeaderActions{
+					Response: []routev1.RouteHTTPHeader{
+						{
+							Name: headerNameXFrame,
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Set,
+								Set: &routev1.RouteSetHTTPHeader{
+									Value: "DENY",
+								},
+							},
+						},
+						{
+							Name: headerNameXSS,
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Set,
+								Set: &routev1.RouteSetHTTPHeader{
+									Value: "1;mode=block",
+								},
+							},
+						},
+						{
+
+							Name: headerNameXFrame,
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Delete,
+							},
+						},
+						{
+
+							Name: headerNameXSS,
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Delete,
+							},
+						},
+						{},
+					},
+					Request: []routev1.RouteHTTPHeader{
+						{
+							Name: "Accept",
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Set,
+								Set: &routev1.RouteSetHTTPHeader{
+									Value: "text/plain,text/html",
+								},
+							},
+						},
+						{
+							Name: "x-client",
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Set,
+								Set: &routev1.RouteSetHTTPHeader{
+									Value: `"abc"\ 'def'`,
+								},
+							},
+						},
+						{
+
+							Name: "Accept-Encoding",
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Delete,
+							},
+						},
+						// blank object.
+						{},
+						// no value provided.
+						{
+							Name: "Accept",
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Set,
+								Set:  &routev1.RouteSetHTTPHeader{},
+							},
+						},
+						// invalid value provided.
+						{
+							Name: "Accept",
+							Action: routev1.RouteHTTPHeaderActionUnion{
+								Type: routev1.Set,
+								Set: &routev1.RouteSetHTTPHeader{
+									Value: "text/}plain,text/html{",
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -391,11 +482,16 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 	expectedSUs := map[ServiceUnitKey]int32{
 		suName: serviceWeight,
 	}
+	httpResponseHeadersList := []HTTPHeader{{Name: "X-Frame-Options", Value: "'DENY'", Action: "Set"}, {Name: "X-XSS-Protection", Value: "'1;mode=block'", Action: "Set"},
+		{Name: "X-Frame-Options", Action: "Delete"}, {Name: "X-XSS-Protection", Action: "Delete"}}
+	httpRequestHeadersList := []HTTPHeader{{Name: "Accept", Value: "'text/plain,text/html'", Action: "Set"}, {Name: "x-client", Value: `'"abc"\ '\''def'\'''`, Action: "Set"}, {Name: "Accept-Encoding", Action: "Delete"}, {Name: "Accept", Value: "'text/}plain,text/html{'", Action: "Set"}}
 
 	// Basic sanity, validate more fields as necessary
 	if config.Host != route.Spec.Host || config.Path != route.Spec.Path || !compareTLS(route, config, t) ||
 		config.PreferPort != route.Spec.Port.TargetPort.String() || !reflect.DeepEqual(expectedSUs, config.ServiceUnits) ||
-		config.ActiveServiceUnits != 0 {
+		config.ActiveServiceUnits != 0 ||
+		!cmp.Equal(config.HTTPResponseHeaders, httpResponseHeadersList) ||
+		!cmp.Equal(config.HTTPRequestHeaders, httpRequestHeadersList) {
 		t.Errorf("Route %v did not match service alias config %v", route, config)
 	}
 
