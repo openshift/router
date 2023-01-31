@@ -538,10 +538,10 @@ func (r *templateRouter) writeConfig() error {
 
 		// calculate the server weight for the endpoints in each service
 		// called here to make sure we have the actual number of endpoints.
-		cfg.ServiceUnitNames = r.calculateServiceWeights(cfg.ServiceUnits)
+		cfg.ServiceUnitNames = r.calculateServiceWeights(cfg.ServiceUnits, cfg.PreferPort)
 
 		// Calculate the number of active endpoints for the route.
-		cfg.ActiveEndpoints = r.getActiveEndpoints(cfg.ServiceUnits)
+		cfg.ActiveEndpoints = r.getActiveEndpoints(cfg.ServiceUnits, cfg.PreferPort)
 
 		cfg.Status = ServiceAliasConfigStatusSaved
 		r.state[k] = cfg
@@ -757,7 +757,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 	oldEndpoints := []Endpoint{}
 
 	// As the endpoints have changed, recalculate the weights.
-	newWeights := r.calculateServiceWeights(backend.ServiceUnits)
+	newWeights := r.calculateServiceWeights(backend.ServiceUnits, backend.PreferPort)
 	for key := range backend.ServiceUnits {
 		if service, ok := r.findMatchingServiceUnit(key); ok {
 			newEndpoints := endpointsForAlias(*backend, service)
@@ -819,7 +819,7 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 		newEndpoints := endpointsForAlias(cfg, service)
 
 		// As the endpoints have changed, recalculate the weights.
-		newWeights := r.calculateServiceWeights(cfg.ServiceUnits)
+		newWeights := r.calculateServiceWeights(cfg.ServiceUnits, cfg.PreferPort)
 
 		// Get the weight for this service unit.
 		weight, ok := newWeights[id]
@@ -1067,12 +1067,21 @@ func (r *templateRouter) removeRouteInternal(route *routev1.Route) {
 }
 
 // numberOfEndpoints returns the number of endpoints
+// If port parameter is non-empty string, then only endpoints matching port will be counted.
 // Must be called while holding r.lock
-func (r *templateRouter) numberOfEndpoints(id ServiceUnitKey) int32 {
+func (r *templateRouter) numberOfEndpoints(id ServiceUnitKey, port string) int32 {
 	var eps = 0
 	svc, ok := r.findMatchingServiceUnit(id)
 	if ok && len(svc.EndpointTable) > eps {
-		eps = len(svc.EndpointTable)
+		if len(port) == 0 {
+			eps = len(svc.EndpointTable)
+		} else {
+			for _, ep := range svc.EndpointTable {
+				if ep.Port == port || ep.PortName == port {
+					eps += 1
+				}
+			}
+		}
 	}
 	return int32(eps)
 }
@@ -1263,12 +1272,13 @@ func getServiceUnitWeight(weightRef *int32) int32 {
 
 // getActiveEndpoints calculates the number of endpoints that are not associated
 // with service units with a zero weight and returns the count.
-func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int32) int {
+// The port parameter, if set, will only count endpoints matching that port.
+func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int32, port string) int {
 	var activeEndpoints int32 = 0
 
 	for key, weight := range serviceUnits {
 		if weight > 0 {
-			activeEndpoints += r.numberOfEndpoints(key)
+			activeEndpoints += r.numberOfEndpoints(key, port)
 		}
 	}
 
@@ -1280,18 +1290,19 @@ func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int3
 // For each service, the requests are distributed among the endpoints.
 // Each endpoint gets weight/numberOfEndpoints portion of the requests.
 // The largest weight per endpoint is scaled to 256 to permit better
-// percision results.  The remainder are scaled using the same scale factor.
+// precision results.  The remainder are scaled using the same scale factor.
 // Inaccuracies occur when converting float32 to int32 and when the scaled
 // weight per endpoint is less than 1.0, the minimum.
 // The above assumes roundRobin scheduling.
-func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32) map[ServiceUnitKey]int32 {
+// The port parameter, if set, will only count endpoints matching that port.
+func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32, port string) map[ServiceUnitKey]int32 {
 	serviceUnitNames := make(map[ServiceUnitKey]int32)
 
 	// If there is only 1 service unit, then always set the weight 1 for all the endpoints.
 	// Scaling the weight to 256 is redundant and causes haproxy to allocate more memory on startup.
 	if len(serviceUnits) == 1 {
 		for key := range serviceUnits {
-			if r.numberOfEndpoints(key) > 0 {
+			if r.numberOfEndpoints(key, port) > 0 {
 				serviceUnitNames[key] = 1
 			}
 		}
@@ -1306,7 +1317,7 @@ func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey
 	// distribute service weight over the service's endpoints
 	// to get weight per endpoint
 	for key, units := range serviceUnits {
-		numEp := r.numberOfEndpoints(key)
+		numEp := r.numberOfEndpoints(key, port)
 		if numEp > 0 {
 			epWeight[key] = float32(units) / float32(numEp)
 		}
@@ -1337,7 +1348,7 @@ func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey
 		serviceUnitNames[key] = int32(weight * scaleWeight)
 		if weight > 0.0 && serviceUnitNames[key] < 1 {
 			serviceUnitNames[key] = 1
-			numEp := r.numberOfEndpoints(key)
+			numEp := r.numberOfEndpoints(key, port)
 			log.V(4).Info("WARNING: Too many service endpoints to achieve desired weight for route.",
 				"key", key, "maxEndpoints", int32(weight*float32(numEp)), "actualEndpoints", numEp)
 		}
