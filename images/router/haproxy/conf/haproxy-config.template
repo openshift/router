@@ -508,7 +508,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   timeout tunnel  {{ $value }}
         {{- end }}
         {{- with $azureFrontDoorAnnotation := index $cfg.Annotations "haproxy.router.openshift.io/azure-front-door-id" }}
-  acl azurefrontdoor req.hdr(A-Azure-FDID) -m str {{ $azureFrontDoorAnnotation }}
+  acl azurefrontdoor req.hdr(X-Azure-FDID) -m str {{ $azureFrontDoorAnnotation }}
   http-request deny unless azurefrontdoor
         {{- end }}
 
