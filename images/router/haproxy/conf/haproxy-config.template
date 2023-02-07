@@ -9,6 +9,8 @@
 {{- $dynamicConfigManager := .DynamicConfigManager }}
 {{- $router_ip_v4_v6_mode := env "ROUTER_IP_V4_V6_MODE" "v4" }}
 {{- $router_disable_http2 := env "ROUTER_DISABLE_HTTP2" "false" }}
+{{- $haveClientCA := .HaveClientCA }}
+{{- $haveCRLs := .HaveCRLs }}
 
 
 {{- /* A bunch of regular expressions.  Each should be wrapped in (?:) so that it is safe to include bare */}}
@@ -290,8 +292,13 @@ frontend fe_sni
     {{- "" }} crt-list /var/lib/haproxy/conf/cert_config.map accept-proxy
     {{- with (env "ROUTER_MUTUAL_TLS_AUTH") }}
       {{- "" }} verify {{. }}
-    {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CA") }} ca-file {{. }} {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
-    {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CRL") }} crl-file {{. }} {{ end }}
+      {{- if (ne (env "ROUTER_MUTUAL_TLS_AUTH_CRL") "") }}
+        {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CA") }} ca-file {{. }} {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
+        {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CRL") }} crl-file {{. }} {{ end }}
+      {{- else }}
+        {{- if $haveClientCA }} ca-file /var/lib/haproxy/mtls/latest/ca-bundle.pem {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
+        {{- if $haveCRLs }} crl-file /var/lib/haproxy/mtls/latest/crls.pem {{ end }}
+      {{- end }}
     {{- end }}
   mode http
 
@@ -376,8 +383,13 @@ frontend fe_no_sni
   bind unix@/var/lib/haproxy/run/haproxy-no-sni.sock ssl crt {{ firstMatch ".+" .DefaultCertificate "/var/lib/haproxy/conf/default_pub_keys.pem" }} accept-proxy
     {{- with (env "ROUTER_MUTUAL_TLS_AUTH") }}
       {{- "" }} verify {{. }}
-    {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CA") }} ca-file {{. }} {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
-    {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CRL") }} crl-file {{. }} {{ end }}
+      {{- if (ne (env "ROUTER_MUTUAL_TLS_AUTH_CRL") "") }}
+        {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CA") }} ca-file {{. }} {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
+        {{- with (env "ROUTER_MUTUAL_TLS_AUTH_CRL") }} crl-file {{. }} {{ end }}
+      {{- else }}
+        {{- if $haveClientCA }} ca-file /var/lib/haproxy/mtls/latest/ca-bundle.pem {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
+        {{- if $haveCRLs }} crl-file /var/lib/haproxy/mtls/latest/crls.pem {{ end }}
+      {{- end }}
     {{- end }}
   mode http
 
