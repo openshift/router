@@ -24,6 +24,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	logf "github.com/openshift/router/log"
+	"github.com/openshift/router/pkg/router/crl"
 	"github.com/openshift/router/pkg/router/template/limiter"
 )
 
@@ -119,6 +120,10 @@ type templateRouter struct {
 	captureHTTPCookie *CaptureHTTPCookie
 	// httpHeaderNameCaseAdjustments specifies HTTP header name case adjustments.
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
+	// haveClientCA specifies if the user provided their own CA for client auth in mTLS
+	haveClientCA bool
+	// haveCRLs specifies if the crl file has been generated for client auth
+	haveCRLs bool
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
@@ -183,6 +188,10 @@ type templateData struct {
 	// HTTPHeaderNameCaseAdjustments specifies HTTP header name adjustments
 	// performed on HTTP headers.
 	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
+	// HaveClientCA specifies if the user provided their own CA for client auth in mTLS
+	HaveClientCA bool
+	// HaveCRLs specifies if the crl file is present
+	HaveCRLs bool
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -430,23 +439,29 @@ func (r *templateRouter) writeDefaultCert() error {
 func (r *templateRouter) watchMutualTLSCert() error {
 	caPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CA")
 	if len(caPath) != 0 {
-		reloadFn := func() {
-			log.V(0).Info("reloading to get updated client CA", "name", caPath)
+		r.haveClientCA = true
+		if err := crl.InitMTLSDirectory(caPath); err != nil {
+			return err
+		}
+		haveCRLs, err := crl.CABundleHasCRLs(caPath)
+		if err != nil {
+			log.V(0).Error(err, "failed to parse CA Bundle", "path", caPath)
+			return err
+		}
+		r.haveCRLs = haveCRLs
+		caUpdateChannel := make(chan struct{})
+		crlReloadFn := func(haveCRLs bool) {
+			r.haveCRLs = haveCRLs
+			log.V(0).Info("reloading to get updated client CA CRL", "name", crl.CRLFilename, "have CRLs", haveCRLs)
 			r.rateLimitedCommitFunction.RegisterChange()
 		}
-		if err := r.watchVolumeMountDir(filepath.Dir(caPath), reloadFn); err != nil {
-			log.V(0).Info("failed to establish watch on mTLS certificate directory", "error", err)
-			return nil
+		crl.ManageCRLs(caPath, caUpdateChannel, crlReloadFn)
+		caReloadFn := func() {
+			// Send signal to CRL management goroutine that client CA has been changed
+			caUpdateChannel <- struct{}{}
 		}
-	}
-	crlPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CRL")
-	if len(crlPath) != 0 && filepath.Dir(caPath) != filepath.Dir(crlPath) {
-		reloadFn := func() {
-			log.V(0).Info("reloading to get updated client CA CRL", "name", crlPath)
-			r.rateLimitedCommitFunction.RegisterChange()
-		}
-		if err := r.watchVolumeMountDir(filepath.Dir(crlPath), reloadFn); err != nil {
-			log.V(0).Info("failed to establish watch on mTLS certificate directory", "error", err)
+		if err := r.watchVolumeMountDir(filepath.Dir(caPath), caReloadFn); err != nil {
+			log.V(0).Error(err, "failed to establish watch on mTLS certificate directory")
 			return nil
 		}
 	}
@@ -582,6 +597,8 @@ func (r *templateRouter) writeConfig() error {
 			CaptureHTTPResponseHeaders:    r.captureHTTPResponseHeaders,
 			CaptureHTTPCookie:             r.captureHTTPCookie,
 			HTTPHeaderNameCaseAdjustments: r.httpHeaderNameCaseAdjustments,
+			HaveClientCA:                  r.haveClientCA,
+			HaveCRLs:                      r.haveCRLs,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
