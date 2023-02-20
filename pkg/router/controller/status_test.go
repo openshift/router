@@ -865,11 +865,16 @@ func (i *fakeInformer) Update(old, obj interface{}) {
 	}
 }
 
-func (i *fakeInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+func (i *fakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	i.handlers = append(i.handlers, handler)
+	return nil, nil
 }
 
-func (i *fakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) {
+func (i *fakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+	panic("not implemented")
+}
+
+func (i *fakeInformer) RemoveEventHandler(handler cache.ResourceEventHandlerRegistration) error {
 	panic("not implemented")
 }
 
@@ -898,5 +903,9 @@ func (i *fakeInformer) LastSyncResourceVersion() string {
 }
 
 func (i *fakeInformer) SetTransform(handler cache.TransformFunc) error {
+	panic("not implemented")
+}
+
+func (i *fakeInformer) IsStopped() bool {
 	panic("not implemented")
 }
