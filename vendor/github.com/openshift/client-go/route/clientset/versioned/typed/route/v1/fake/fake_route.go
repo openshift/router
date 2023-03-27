@@ -4,8 +4,11 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
 	routev1 "github.com/openshift/api/route/v1"
+	applyconfigurationsroutev1 "github.com/openshift/client-go/route/applyconfigurations/route/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -101,7 +104,7 @@ func (c *FakeRoutes) UpdateStatus(ctx context.Context, route *routev1.Route, opt
 // Delete takes name of the route and deletes it. Returns an error if one occurs.
 func (c *FakeRoutes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(routesResource, c.ns, name), &routev1.Route{})
+		Invokes(testing.NewDeleteActionWithOptions(routesResource, c.ns, name, opts), &routev1.Route{})
 
 	return err
 }
@@ -118,6 +121,51 @@ func (c *FakeRoutes) DeleteCollection(ctx context.Context, opts v1.DeleteOptions
 func (c *FakeRoutes) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *routev1.Route, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(routesResource, c.ns, name, pt, data, subresources...), &routev1.Route{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*routev1.Route), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied route.
+func (c *FakeRoutes) Apply(ctx context.Context, route *applyconfigurationsroutev1.RouteApplyConfiguration, opts v1.ApplyOptions) (result *routev1.Route, err error) {
+	if route == nil {
+		return nil, fmt.Errorf("route provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(route)
+	if err != nil {
+		return nil, err
+	}
+	name := route.Name
+	if name == nil {
+		return nil, fmt.Errorf("route.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(routesResource, c.ns, *name, types.ApplyPatchType, data), &routev1.Route{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*routev1.Route), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeRoutes) ApplyStatus(ctx context.Context, route *applyconfigurationsroutev1.RouteApplyConfiguration, opts v1.ApplyOptions) (result *routev1.Route, err error) {
+	if route == nil {
+		return nil, fmt.Errorf("route provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(route)
+	if err != nil {
+		return nil, err
+	}
+	name := route.Name
+	if name == nil {
+		return nil, fmt.Errorf("route.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(routesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &routev1.Route{})
 
 	if obj == nil {
 		return nil, err
