@@ -258,6 +258,8 @@ func commitCACRLUpdate(stagingDirectory, caBundleFilename string, stagingCRLUpda
 	return nil
 }
 
+var existingCRLs map[string]*x509.RevocationList
+
 // writeCRLFile reads the CA bundle at caBundleFilename, and makes sure all CRLs specified in the CA bundle are written
 // into the crl file at newCRLFilename. If any of the specified CRLs are in existingCRLFilename and have not expired,
 // writeCRLFile will prefer to use those over downloading them again from their distribution points.
@@ -270,16 +272,12 @@ func writeCRLFile(caBundleFilename, existingCRLFilename, newCRLFilename string) 
 		return time.Time{}, false, err
 	}
 
-	existingCRLs, err := parseExistingCRLs(existingCRLFilename)
-	if err != nil {
-		log.Error(err, "failed to parse existing CRLs")
-		existingCRLs = nil
-	}
-
 	crls, nextCRLUpdate, updated, err := downloadMissingCRLs(existingCRLs, clientCAData)
 	if err != nil {
 		return time.Time{}, false, err
 	}
+
+	existingCRLs = crls
 
 	if len(crls) == 0 {
 		// If there are no CRLs, still write out dummyCRL as a placeholder.
@@ -307,42 +305,6 @@ func writeCRLFile(caBundleFilename, existingCRLFilename, newCRLFilename string) 
 	}
 
 	return nextCRLUpdate, updated, nil
-}
-
-// parseExistingCRLs reads the file at crlFilename if it exists, and returns a map of all CRLs found there, indexed by
-// their subject key ID. Returns an error if file read or parsing fails.
-func parseExistingCRLs(crlFilename string) (map[string]*x509.RevocationList, error) {
-	crlData, err := os.ReadFile(crlFilename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// If crlFilename does not exist, there are no existing CRLs to parse, so just return a nil map
-			return nil, nil
-		}
-		return nil, err
-	}
-	crlMap := make(map[string]*x509.RevocationList)
-	for len(crlData) > 0 {
-		block, data := pem.Decode(crlData)
-		if block == nil {
-			break
-		}
-		crl, err := x509.ParseRevocationList(block.Bytes)
-		if err != nil {
-			return crlMap, err
-		}
-		for _, ext := range crl.Extensions {
-			if ext.Id.Equal(authorityKeyIdentifierOID) {
-				var authKeyId authorityKeyIdentifier
-				if _, err := asn1.Unmarshal(ext.Value, &authKeyId); err != nil {
-					return crlMap, err
-				}
-				subjectKeyId := hex.EncodeToString(authKeyId.KeyIdentifier)
-				crlMap[subjectKeyId] = crl
-			}
-		}
-		crlData = data
-	}
-	return crlMap, nil
 }
 
 // downloadMissingCRLs parses the certificates in the CA bundle, clientCAData, and returns a map of all CRLs that were
