@@ -1,5 +1,5 @@
 .PHONY: all build check images/router/*/Dockerfile images/router/*/Dockerfile.rhel
-
+#test
 PACKAGE=github.com/openshift/router
 MAIN_PACKAGE=$(PACKAGE)/cmd/openshift-router
 
