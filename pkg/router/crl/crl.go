@@ -3,6 +3,7 @@ package crl
 import (
 	"bytes"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
@@ -258,7 +259,7 @@ func commitCACRLUpdate(stagingDirectory, caBundleFilename string, stagingCRLUpda
 	return nil
 }
 
-var existingCRLs map[string]*x509.RevocationList
+var existingCRLs map[string]*pkix.CertificateList
 
 // writeCRLFile reads the CA bundle at caBundleFilename, and makes sure all CRLs specified in the CA bundle are written
 // into the crl file at newCRLFilename. If any of the specified CRLs are in existingCRLFilename and have not expired,
@@ -291,9 +292,13 @@ func writeCRLFile(caBundleFilename, existingCRLFilename, newCRLFilename string) 
 
 	buf := &bytes.Buffer{}
 	for subjectKeyId, crl := range crls {
+		asn1Data, err := asn1.Marshal(*crl)
+		if err != nil {
+			return time.Time{}, false, fmt.Errorf("failed to encode ASN.1 for CRL for certificate key %s: %w", subjectKeyId, err)
+		}
 		block := &pem.Block{
 			Type:  "X509 CRL",
-			Bytes: crl.Raw,
+			Bytes: asn1Data,
 		}
 		if err := pem.Encode(buf, block); err != nil {
 			return time.Time{}, false, fmt.Errorf("failed to encode PEM for CRL for certificate key %s: %w", subjectKeyId, err)
@@ -319,9 +324,9 @@ func writeCRLFile(caBundleFilename, existingCRLFilename, newCRLFilename string) 
 //     existingCRLs are no longer required
 //
 // Returns an error if CRL downloading or parsing fails.
-func downloadMissingCRLs(existingCRLs map[string]*x509.RevocationList, clientCAData []byte) (map[string]*x509.RevocationList, time.Time, bool, error) {
+func downloadMissingCRLs(existingCRLs map[string]*pkix.CertificateList, clientCAData []byte) (map[string]*pkix.CertificateList, time.Time, bool, error) {
 	var nextCRLUpdate time.Time
-	crls := make(map[string]*x509.RevocationList)
+	crls := make(map[string]*pkix.CertificateList)
 	updated := false
 	now := time.Now()
 	for len(clientCAData) > 0 {
@@ -343,12 +348,12 @@ func downloadMissingCRLs(existingCRLs map[string]*x509.RevocationList, clientCAD
 			continue
 		}
 		if crl, ok := existingCRLs[subjectKeyId]; ok {
-			if crl.NextUpdate.Before(now) {
-				log.Info("certificate revocation list has expired", "subject key identifier", subjectKeyId, "next update", crl.NextUpdate.Format(time.RFC3339))
+			if crl.TBSCertList.NextUpdate.Before(now) {
+				log.Info("certificate revocation list has expired", "subject key identifier", subjectKeyId, "next update", crl.TBSCertList.NextUpdate.Format(time.RFC3339))
 			} else {
 				crls[subjectKeyId] = existingCRLs[subjectKeyId]
-				if nextCRLUpdate.IsZero() || crl.NextUpdate.Before(nextCRLUpdate) {
-					nextCRLUpdate = crl.NextUpdate
+				if nextCRLUpdate.IsZero() || crl.TBSCertList.NextUpdate.Before(nextCRLUpdate) {
+					nextCRLUpdate = crl.TBSCertList.NextUpdate
 				}
 				continue
 			}
@@ -360,9 +365,9 @@ func downloadMissingCRLs(existingCRLs map[string]*x509.RevocationList, clientCAD
 			return nil, time.Time{}, false, fmt.Errorf("failed to get certificate revocation list for certificate key %s: %w", subjectKeyId, err)
 		} else {
 			crls[subjectKeyId] = crl
-			log.Info("new certificate revocation list", "subject key identifier", subjectKeyId, "next update", crl.NextUpdate.Format(time.RFC3339))
-			if nextCRLUpdate.IsZero() || crl.NextUpdate.Before(nextCRLUpdate) {
-				nextCRLUpdate = crl.NextUpdate
+			log.Info("new certificate revocation list", "subject key identifier", subjectKeyId, "next update", crl.TBSCertList.NextUpdate.Format(time.RFC3339))
+			if nextCRLUpdate.IsZero() || crl.TBSCertList.NextUpdate.Before(nextCRLUpdate) {
+				nextCRLUpdate = crl.TBSCertList.NextUpdate
 			}
 			updated = true
 		}
@@ -382,7 +387,7 @@ func downloadMissingCRLs(existingCRLs map[string]*x509.RevocationList, clientCAD
 
 // getCRL gets a certificate revocation list using the provided distribution points and returns the certificate list.
 // Returns an error if the CRL could not be downloaded.
-func getCRL(distributionPoints []string, now time.Time) (*x509.RevocationList, error) {
+func getCRL(distributionPoints []string, now time.Time) (*pkix.CertificateList, error) {
 	var errs []error
 	for _, distributionPoint := range distributionPoints {
 		// The distribution point is typically a URL with the "http" scheme.  "https" is generally not used because the
@@ -399,8 +404,8 @@ func getCRL(distributionPoints []string, now time.Time) (*x509.RevocationList, e
 				errs = append(errs, fmt.Errorf("error getting %q: %w", distributionPoint, err))
 				continue
 			}
-			if crl.NextUpdate.Before(now) {
-				log.Info("CRL expired. trying next distribution point", "nextUpdate", crl.NextUpdate.Format(time.RFC3339))
+			if crl.TBSCertList.NextUpdate.Before(now) {
+				log.Info("CRL expired. trying next distribution point", "nextUpdate", crl.TBSCertList.NextUpdate.Format(time.RFC3339))
 				errs = append(errs, fmt.Errorf("retrieved expired CRL from %s", distributionPoint))
 				continue
 			}
@@ -415,7 +420,7 @@ func getCRL(distributionPoints []string, now time.Time) (*x509.RevocationList, e
 
 // getHTTPCRL gets a certificate revocation list using the provided HTTP URL. Returns an error if the CRL could not be
 // downloaded, or if parsing the CRL fails.
-func getHTTPCRL(url string) (*x509.RevocationList, error) {
+func getHTTPCRL(url string) (*pkix.CertificateList, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("http.Get failed: %w", err)
@@ -440,7 +445,7 @@ func getHTTPCRL(url string) (*x509.RevocationList, error) {
 			return nil, fmt.Errorf("error parsing response: file is not CRL type")
 		}
 	}
-	crl, err := x509.ParseRevocationList(crlBytes)
+	crl, err := x509.ParseCRL(crlBytes)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response: %w", err)
 	}
