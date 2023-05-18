@@ -385,7 +385,7 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 		},
 	}
 
-	config := *router.createServiceAliasConfig(route, "foo")
+	config, _ := router.createServiceAliasConfig(route, "foo")
 
 	suName := endpointsKeyFromParts(namespace, serviceName)
 	expectedSUs := map[ServiceUnitKey]int32{
@@ -393,7 +393,7 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 	}
 
 	// Basic sanity, validate more fields as necessary
-	if config.Host != route.Spec.Host || config.Path != route.Spec.Path || !compareTLS(route, config, t) ||
+	if config.Host != route.Spec.Host || config.Path != route.Spec.Path || !compareTLS(route, *config, t) ||
 		config.PreferPort != route.Spec.Port.TargetPort.String() || !reflect.DeepEqual(expectedSUs, config.ServiceUnits) ||
 		config.ActiveServiceUnits != 0 {
 		t.Errorf("Route %v did not match service alias config %v", route, config)

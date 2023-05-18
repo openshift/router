@@ -19,12 +19,14 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/prometheus/client_golang/prometheus"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
 
 	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/crl"
+	"github.com/openshift/router/pkg/router/monitor"
 	"github.com/openshift/router/pkg/router/template/limiter"
 )
 
@@ -64,6 +66,7 @@ type templateRouter struct {
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
 	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
+	secretManager    monitor.Manager
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
 	// usually a wildcard certificate for a cloud domain such as *.mypaas.com to allow applications to create app.mypaas.com
@@ -149,6 +152,7 @@ type templateRouterCfg struct {
 	captureHTTPResponseHeaders    []CaptureHTTPHeader
 	captureHTTPCookie             *CaptureHTTPCookie
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
+	secretManager                 monitor.Manager
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -239,6 +243,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		state:                         make(map[ServiceAliasConfigKey]ServiceAliasConfig),
 		serviceUnits:                  make(map[ServiceUnitKey]ServiceUnit),
 		certManager:                   certManager,
+		secretManager:                 cfg.secretManager,
 		defaultCertificate:            cfg.defaultCertificate,
 		defaultCertificatePath:        cfg.defaultCertificatePath,
 		defaultCertificateDir:         cfg.defaultCertificateDir,
@@ -924,7 +929,7 @@ func getPartsFromRouteKey(key ServiceAliasConfigKey) (string, string) {
 
 // createServiceAliasConfig creates a ServiceAliasConfig from a route and the router state.
 // The router state is not modified in the process, so referenced ServiceUnits may not exist.
-func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendKey ServiceAliasConfigKey) *ServiceAliasConfig {
+func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendKey ServiceAliasConfigKey) (*ServiceAliasConfig, error) {
 	wantsWildcardSupport := (route.Spec.WildcardPolicy == routev1.WildcardPolicySubdomain)
 
 	// The router config trumps what the route asks for/wants.
@@ -971,7 +976,27 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		if tls.Termination != routev1.TLSTerminationPassthrough {
 			config.Certificates = make(map[string]Certificate)
 
-			if len(tls.Certificate) > 0 {
+			if len(tls.Certificate) == 0 && len(tls.CertificateRef.Name) > 0 {
+				obj, err := r.secretManager.Get(route.Namespace, tls.CertificateRef.Name)
+				if err != nil {
+					return nil, err
+				}
+
+				secret, ok := obj.(*corev1.Secret)
+				if !ok {
+					return nil, fmt.Errorf("unexpected type %s in secret manager", reflect.TypeOf(obj))
+				}
+
+				certKey := generateCertKey(&config)
+				cert := Certificate{
+					ID: string(backendKey),
+					// TODO: handle both stringdata and data parsing
+					Contents:   string(secret.Data["tls.crt"]),
+					PrivateKey: string(secret.Data["tls.key"]),
+				}
+				config.Certificates[certKey] = cert
+
+			} else if len(tls.Certificate) > 0 && len(tls.CertificateRef.Name) == 0 {
 				certKey := generateCertKey(&config)
 				cert := Certificate{
 					ID:         string(backendKey),
@@ -1004,7 +1029,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		}
 	}
 
-	return &config
+	return &config, nil
 }
 
 // AddRoute adds the given route to the router state if the route
@@ -1012,7 +1037,11 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 func (r *templateRouter) AddRoute(route *routev1.Route) {
 	backendKey := routeKey(route)
 
-	newConfig := r.createServiceAliasConfig(route, backendKey)
+	newConfig, err := r.createServiceAliasConfig(route, backendKey)
+	if err != nil {
+		log.V(4).Error(err, "failed to add route", "namespace", route.Namespace, "name", route.Name)
+		return
+	}
 
 	// We have to call the internal form of functions after this
 	// because we are holding the state lock.
@@ -1028,6 +1057,8 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 
 		// Delete the route first, because modify is to be treated as delete+add
 		r.removeRouteInternal(route)
+
+		// TODO do we need to unregisterroute from secretManager
 
 		// TODO - clean up service units that are no longer
 		// referenced.  This may be challenging if a service unit can
@@ -1060,6 +1091,7 @@ func (r *templateRouter) RemoveRoute(route *routev1.Route) {
 	defer r.lock.Unlock()
 
 	r.removeRouteInternal(route)
+	r.secretManager.Unregister(route, monitor.GetSecretsReferenced)
 }
 
 // removeRouteInternal removes the given route - internal

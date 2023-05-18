@@ -27,8 +27,10 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
 	"k8s.io/apiserver/pkg/server/healthz"
 	authoptions "k8s.io/apiserver/pkg/server/options"
+	"k8s.io/client-go/kubernetes"
 	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/client-go/util/workqueue"
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned"
@@ -41,6 +43,7 @@ import (
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
+	"github.com/openshift/router/pkg/router/monitor"
 	"github.com/openshift/router/pkg/router/shutdown"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
@@ -624,6 +627,8 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
+	secretManager := monitor.NewSecretMonitor(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
@@ -644,6 +649,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		Ciphers:                       o.Ciphers,
 		StrictSNI:                     o.StrictSNI,
 		DynamicConfigManager:          cfgManager,
+		SecretManager:                 secretManager,
 		CaptureHTTPRequestHeaders:     o.CaptureHTTPRequestHeaders,
 		CaptureHTTPResponseHeaders:    o.CaptureHTTPResponseHeaders,
 		CaptureHTTPCookie:             o.CaptureHTTPCookie,
@@ -674,6 +680,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		recorder = status
 		plugin = status
 	}
+
+	plugin = controller.NewSecretManagerLoader(plugin, secretManager, recorder)
+
 	if o.ExtendedValidation {
 		plugin = controller.NewExtendedValidator(plugin, recorder)
 	}

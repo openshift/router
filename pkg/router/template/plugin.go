@@ -17,6 +17,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 
+	"github.com/openshift/router/pkg/router/monitor"
 	unidlingapi "github.com/openshift/router/pkg/router/unidling"
 )
 
@@ -66,6 +67,7 @@ type TemplatePluginConfig struct {
 	CaptureHTTPResponseHeaders    []CaptureHTTPHeader
 	CaptureHTTPCookie             *CaptureHTTPCookie
 	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
+	SecretManager                 monitor.Manager
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation
@@ -160,6 +162,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		captureHTTPResponseHeaders:    cfg.CaptureHTTPResponseHeaders,
 		captureHTTPCookie:             cfg.CaptureHTTPCookie,
 		httpHeaderNameCaseAdjustments: cfg.HTTPHeaderNameCaseAdjustments,
+		secretManager:                 cfg.SecretManager,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
