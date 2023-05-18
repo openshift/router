@@ -330,6 +330,7 @@ func (d *DiscoveryClient) downloadAPIs() (
 		}
 	}
 
+<<<<<<< HEAD
 	return apiGroupList, resourcesByGV, failedGVs, nil
 }
 

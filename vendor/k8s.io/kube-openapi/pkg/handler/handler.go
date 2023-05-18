@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/NYTimes/gziphandler"
@@ -162,6 +161,15 @@ func (o *OpenAPIService) RegisterOpenAPIVersionedService(servePath string, handl
 					mutex.Unlock()
 					if result.Err != nil {
 						klog.Errorf("Error in OpenAPI handler: %s", result.Err)
+||||||| parent of 8102327d (go mod update k8s 1.27 (temp))
+					data, etag, lastModified, err := accepts.GetDataAndETag()
+					if err != nil {
+						klog.Errorf("Error in OpenAPI handler: %s", err)
+=======
+					result := accepts.GetDataAndEtag.Get()
+					if result.Err != nil {
+						klog.Errorf("Error in OpenAPI handler: %s", result.Err)
+>>>>>>> 8102327d (go mod update k8s 1.27 (temp))
 						// only return a 503 if we have no older cache data to serve
 						if result.Data.spec == nil {
 							w.WriteHeader(http.StatusServiceUnavailable)

@@ -3,7 +3,7 @@ module github.com/openshift/router
 go 1.20
 
 require (
-	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e
+	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bcicen/go-haproxy v0.0.0-20180203142132-ff5824fe38be
 	github.com/cockroachdb/cmux v0.0.0-20170110192607-30d10be49292
 	github.com/fortytw2/leaktest v1.3.0
@@ -113,3 +113,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/openshift/api => github.com/thejasn/api v0.0.0-20230515094541-743d23d7a931
