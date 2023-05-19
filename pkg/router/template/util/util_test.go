@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"regexp"
 	"testing"
 
@@ -254,5 +255,102 @@ func TestGenerateBackendNamePrefix(t *testing.T) {
 		if prefix != tc.expectedPrefix {
 			t.Errorf("TestGenerateBackendNamePrefix: expected %s to get %s, but got %s", tc.name, tc.expectedPrefix, prefix)
 		}
+	}
+}
+
+func TestLeadingInt(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected uint64
+		rem      string
+		err      error
+	}{{
+		name:     "BasicNumber",
+		input:    "123",
+		expected: 123,
+		rem:      "",
+		err:      nil,
+	}, {
+		name:     "EmptyString",
+		input:    "",
+		expected: 0,
+		rem:      "",
+		err:      nil,
+	}, {
+		name:     "MaxInt64",
+		input:    "9223372036854775807",
+		expected: 9223372036854775807,
+		rem:      "",
+		err:      nil,
+	}, {
+		name:     "NearOverflowWith6",
+		input:    "9223372036854775806",
+		expected: 9223372036854775806,
+		rem:      "",
+		err:      nil,
+	}, {
+		name:     "NearOverflowWith7",
+		input:    "9223372036854775807",
+		expected: 9223372036854775807,
+		rem:      "",
+		err:      nil,
+	}, {
+		name:     "NearOverflowWithNonDigit",
+		input:    "922337203685477580a",
+		expected: 922337203685477580,
+		rem:      "a",
+		err:      nil,
+	}, {
+		name:     "NearOverflowWithSpace",
+		input:    "922337203685477580 ",
+		expected: 922337203685477580,
+		rem:      " ",
+		err:      nil,
+	}, {
+		name:     "NegativeNumber",
+		input:    "-12345",
+		expected: 0,
+		rem:      "-12345",
+		err:      nil,
+	}, {
+		name:     "NumberWithNonNumericSuffix",
+		input:    "123abc",
+		expected: 123,
+		rem:      "abc",
+		err:      nil,
+	}, {
+		name:     "Overflow1",
+		input:    "9223372036854775808",
+		expected: 0,
+		rem:      "",
+		err:      OverflowError{errors.New("value too large to be represented as duration")},
+	}, {
+		name:     "OverflowWithMultipleTrailingText",
+		input:    "9223372036854775808abc",
+		expected: 0,
+		rem:      "abc",
+		err:      OverflowError{errors.New("value too large to be represented as duration")},
+	}, {
+		name:     "OverflowWithSingleTrailingText",
+		input:    "9223372036854775808a",
+		expected: 0,
+		rem:      "a",
+		err:      OverflowError{errors.New("value too large to be represented as duration")},
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, rem, err := leadingInt(tc.input)
+			if got != tc.expected {
+				t.Errorf("For input %q got: %v, expected: %v", tc.input, got, tc.expected)
+			}
+			if rem != tc.rem {
+				t.Errorf("For input %q remainder got: %q, expected: %q", tc.input, rem, tc.rem)
+			}
+			if (err != nil && tc.err == nil) || (err == nil && tc.err != nil) || (err != nil && err.Error() != tc.err.Error()) {
+				t.Errorf("For input %q error got: %v, expected: %v", tc.input, err, tc.err)
+			}
+		})
 	}
 }
