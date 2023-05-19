@@ -13,10 +13,8 @@ import (
 	"strings"
 	"sync"
 	"text/template"
-	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
-
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
 	haproxyutil "github.com/openshift/router/pkg/router/template/util/haproxy"
@@ -24,8 +22,6 @@ import (
 
 const (
 	certConfigMap = "cert_config.map"
-	// max timeout allowable by HAProxy
-	haproxyMaxTimeout = "2147483647ms"
 )
 
 func isTrue(s string) bool {
@@ -321,8 +317,8 @@ func generateHAProxyMap(name string, td templateData) []string {
 
 // clipHAProxyTimeoutValue prevents the HAProxy config file
 // from using timeout values specified via the haproxy.router.openshift.io/timeout
-// annotation that exceed the maximum value allowed by HAProxy.
-// Return the parameter string instead of an err in the event that a
+// annotation that exceed the maximum value allowed by HAProxy, or by time.ParseDuration.
+// Return the empty string instead of an err in the event that a
 // timeout string value is not parsable as a valid time duration.
 func clipHAProxyTimeoutValue(val string) string {
 	// If the empty string is passed in,
@@ -330,31 +326,28 @@ func clipHAProxyTimeoutValue(val string) string {
 	if len(val) == 0 {
 		return val
 	}
-	endIndex := len(val) - 1
-	maxTimeout, err := time.ParseDuration(haproxyMaxTimeout)
+
+	// First check to see if the timeout will fit into a time.Duration
+	duration, err := templateutil.ParseHAProxyDuration(val)
 	if err != nil {
-		return val
+		switch err.(type) {
+		case templateutil.OverflowError:
+			log.Info("route annotation timeout exceeds maximum allowable by HAProxy, clipping to max", "max", templateutil.HaproxyMaxTimeout)
+			return templateutil.HaproxyMaxTimeout
+		case templateutil.InvalidInputError:
+			log.Error(err, "route annotation timeout removed because input is invalid")
+			return ""
+		default:
+			// This is not used at the moment
+			log.Info("invalid route annotation timeout, setting to", "default", templateutil.HaproxyDefaultTimeout)
+			return templateutil.HaproxyDefaultTimeout
+		}
 	}
-	// time.ParseDuration doesn't work with days
-	// despite HAProxy accepting timeouts that specify day units
-	if val[endIndex] == 'd' {
-		days, err := strconv.Atoi(val[:endIndex])
-		if err != nil {
-			return val
-		}
-		if maxTimeout.Hours() < float64(days*24) {
-			log.V(7).Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max")
-			return haproxyMaxTimeout
-		}
-	} else {
-		duration, err := time.ParseDuration(val)
-		if err != nil {
-			return val
-		}
-		if maxTimeout.Milliseconds() < duration.Milliseconds() {
-			log.V(7).Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max")
-			return haproxyMaxTimeout
-		}
+
+	// Then check to see if the timeout is larger than what HAProxy allows
+	if templateutil.HaproxyMaxTimeoutDuration < duration {
+		log.Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max", "max", templateutil.HaproxyMaxTimeout)
+		return templateutil.HaproxyMaxTimeout
 	}
 	return val
 }
