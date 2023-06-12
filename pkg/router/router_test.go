@@ -445,7 +445,7 @@ func TestConfigTemplate(t *testing.T) {
 		for _, expectation := range expectations {
 			t.Run(name, func(t *testing.T) {
 				if err := expectation.Match(parser); err != nil {
-					t.Fatalf(err.Error())
+					t.Fatal(err.Error())
 				}
 			})
 		}
