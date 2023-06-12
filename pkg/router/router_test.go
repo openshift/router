@@ -445,6 +445,11 @@ func TestConfigTemplate(t *testing.T) {
 		for _, expectation := range expectations {
 			t.Run(name, func(t *testing.T) {
 				if err := expectation.Match(parser); err != nil {
+					if content, err := ioutil.ReadFile(config); err != nil {
+						t.Error(err)
+					} else {
+						t.Log("haproxy.config:", string(content))
+					}
 					t.Fatal(err.Error())
 				}
 			})
