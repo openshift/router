@@ -114,6 +114,16 @@ func TestMain(m *testing.M) {
 		ReloadFn:              func(shutdown bool) error { return nil },
 		TemplatePath:          "../../images/router/haproxy/conf/haproxy-config.template",
 		ReloadInterval:        reloadInterval,
+		HTTPResponseHeaders: []templateplugin.HTTPHeader{{
+			Name:   "x-foo",
+			Value:  "'bar'",
+			Action: "Set",
+		}},
+		HTTPRequestHeaders: []templateplugin.HTTPHeader{{
+			Name:   "x-quoted",
+			Value:  `'"shouldn'\''t break"'`,
+			Action: "Set",
+		}},
 	}
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {
@@ -408,6 +418,110 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"Simple global HTTP request header": {
+			mustCreateWithConfig{
+				mustMatchConfig: mustMatchConfig{
+					section:     "frontend",
+					sectionName: "public",
+					attribute:   "http-response",
+					value:       `set-header x-foo 'bar'`,
+				},
+			},
+		},
+		"Quotes in global HTTP response header": {
+			mustCreateWithConfig{
+				mustMatchConfig: mustMatchConfig{
+					section:     "frontend",
+					sectionName: "public",
+					attribute:   "http-request",
+					value:       `set-header x-quoted '"shouldn'\''t break"'`,
+				},
+			},
+		},
+		"Route HTTP request header with a format": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "j",
+					host: "jexample.com",
+					httpHeaders: routev1.RouteHTTPHeaders{
+						Actions: routev1.RouteHTTPHeaderActions{
+							Request: []routev1.RouteHTTPHeader{{
+								Name: "X-SSL-Client-Cert",
+								Action: routev1.RouteHTTPHeaderActionUnion{
+									Type: "Set",
+									Set: &routev1.RouteSetHTTPHeader{
+										Value: "%{+Q}[ssl_c_der,base64]",
+									},
+								},
+							}},
+						},
+					},
+					time: start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "j"),
+					attribute:   "http-request",
+					value:       `set-header X-SSL-Client-Cert '%{+Q}[ssl_c_der,base64]'`,
+				},
+			},
+		},
+		"Route HTTP response header with 'if'": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "k",
+					host: "kexample.com",
+					httpHeaders: routev1.RouteHTTPHeaders{
+						Actions: routev1.RouteHTTPHeaderActions{
+							Response: []routev1.RouteHTTPHeader{{
+								Name: "x-foo",
+								Action: routev1.RouteHTTPHeaderActionUnion{
+									Type: "Set",
+									Set: &routev1.RouteSetHTTPHeader{
+										Value: "foo if bar",
+									},
+								},
+							}},
+						},
+					},
+					time: start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "k"),
+					attribute:   "http-response",
+					value:       `set-header x-foo 'foo if bar'`,
+				},
+			},
+		},
+		"Route HTTP response header with apostrophe, double-quotes, and backslash": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "l",
+					host: "lexample.com",
+					httpHeaders: routev1.RouteHTTPHeaders{
+						Actions: routev1.RouteHTTPHeaderActions{
+							Response: []routev1.RouteHTTPHeader{{
+								Name: "x-quoted",
+								Action: routev1.RouteHTTPHeaderActionUnion{
+									Type: "Set",
+									Set: &routev1.RouteSetHTTPHeader{
+										Value: `"shouldn't break"\`,
+									},
+								},
+							}},
+						},
+					},
+					time: start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "l"),
+					attribute:   "http-response",
+					value:       `set-header x-quoted '"shouldn'\''t break"\'`,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
@@ -461,16 +575,30 @@ type expectation interface {
 	Apply(h *harness) error
 }
 
+// mustCreate represents a route that gets created in a unit test.
 type mustCreate struct {
-	name           string
-	host           string
-	path           string
-	time           time.Time
-	annotations    map[string]string
+	// name is the metadata.name of the route.  If name is empty, no route
+	// is created.
+	name string
+	// host is the spec.host of the route.
+	host string
+	// path is the spec.path of the route.
+	path string
+	// time is the metadata.creationTimestamp of the route.
+	time time.Time
+	// annotations is the metadata.annotations of the route.
+	annotations map[string]string
+	// tlsTermination is the spec.tls.type of the route.  If this is empty,
+	// spec.tls will be nil.
 	tlsTermination routev1.TLSTerminationType
+	// httpHeaders is the spec.httpHeaders of the route.
+	httpHeaders routev1.RouteHTTPHeaders
 }
 
 func (e mustCreate) Apply(h *harness) error {
+	if e.name == "" {
+		return nil
+	}
 	annotations := map[string]string{}
 	if e.annotations != nil {
 		annotations = e.annotations
@@ -498,6 +626,7 @@ func (e mustCreate) Apply(h *harness) error {
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
 			TLS:            tlsConfig,
+			HTTPHeaders:    &e.httpHeaders,
 		},
 	}
 	_, err := h.routeClient.RouteV1().Routes(route.Namespace).Create(context.TODO(), route, metav1.CreateOptions{})
@@ -662,4 +791,10 @@ func createRouterDirs() {
 // edgeBackendName contructs the HAProxy config's backend name for an edge route
 func edgeBackendName(ns, route string) string {
 	return "be_edge_http:" + ns + ":" + route
+}
+
+// insecureBackendName contructs the HAProxy config's backend name for an
+// insecure route.
+func insecureBackendName(ns, route string) string {
+	return "be_http:" + ns + ":" + route
 }
