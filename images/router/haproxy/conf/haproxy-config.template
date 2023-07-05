@@ -122,6 +122,13 @@ global
   {{- with $ciphersuites := (env "ROUTER_CIPHERSUITES") }}
   ssl-default-bind-ciphersuites {{ $ciphersuites }}
   {{- end }}
+  {{- with $captureCookie := .CaptureHTTPCookie }}
+    {{- if $captureCookie.MaxLength }}
+      tune.http.cookielen {{ $captureCookie.MaxLength }}
+    {{- else }}
+      tune.http.cookielen 63
+    {{- end }}
+  {{- end }}
 
 defaults
   {{- with $value := env "ROUTER_MAX_CONNECTIONS" "50000" }}
