@@ -1,34 +1,26 @@
 package controller
 
 import (
-	"fmt"
-	"sync"
-
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/library-go/pkg/route/secret"
 	"github.com/openshift/router/pkg/router"
-	"github.com/openshift/router/pkg/router/monitor"
 )
 
 type SecretManagerLoader struct {
 	// plugin is the next plugin in the chain.
 	plugin router.Plugin
 
-	secretManager monitor.Manager
-
-	state map[string]*routev1.Route
-
-	// lock is a mutex used to prevent concurrent router reloads.
-	lock sync.Mutex
+	secretManager *secret.Manager
 
 	// recorder is an interface for indicating route rejections.
 	recorder RejectionRecorder
 }
 
-func NewSecretManagerLoader(plugin router.Plugin, secretmanager monitor.Manager, recorder RejectionRecorder) *SecretManagerLoader {
+func NewSecretManagerLoader(plugin router.Plugin, secretmanager *secret.Manager, recorder RejectionRecorder) *SecretManagerLoader {
 	return &SecretManagerLoader{
 		plugin:        plugin,
 		secretManager: secretmanager,
@@ -38,39 +30,21 @@ func NewSecretManagerLoader(plugin router.Plugin, secretmanager monitor.Manager,
 
 func (sm *SecretManagerLoader) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 
-	// We have to call the internal form of functions after this
-	// because we are holding the state lock.
-	sm.lock.Lock()
-	defer sm.lock.Unlock()
-
-	key := fmt.Sprintf("%s/%s", route.Namespace, route.Name)
+	dummyFunc := func(r *routev1.Route) sets.String { return sets.NewString() }
 	switch eventType {
 	case watch.Modified:
 		if len(route.Spec.TLS.Certificate) > 0 && len(route.Spec.TLS.CertificateRef.Name) == 0 {
-			if _, exists := sm.state[key]; exists {
-				sm.secretManager.Unregister(route, monitor.GetSecretsReferenced)
-				delete(sm.state, key)
-			}
+			sm.secretManager.UnregisterRoute(route, dummyFunc)
 		} else if len(route.Spec.TLS.Certificate) == 0 && len(route.Spec.TLS.CertificateRef.Name) > 0 {
-			if old, exists := sm.state[key]; exists {
-				if old.Spec.TLS.CertificateRef.Name != route.Spec.TLS.CertificateRef.Name {
-					sm.secretManager.Unregister(old, monitor.GetSecretsReferenced)
-					sm.secretManager.Register(route, monitor.GetSecretsReferenced)
-				}
-			} else {
-				sm.secretManager.Register(route, monitor.GetSecretsReferenced)
-			}
-			sm.state[key] = route
+			sm.secretManager.RegisterRoute(route, dummyFunc)
 		}
 	case watch.Added:
 		if len(route.Spec.TLS.Certificate) == 0 && len(route.Spec.TLS.CertificateRef.Name) > 0 {
-			sm.secretManager.Register(route, monitor.GetSecretsReferenced)
-			sm.state[key] = route
+			sm.secretManager.RegisterRoute(route, dummyFunc)
 		}
 	case watch.Deleted:
 		if len(route.Spec.TLS.Certificate) == 0 && len(route.Spec.TLS.CertificateRef.Name) > 0 {
-			sm.secretManager.Unregister(route, monitor.GetSecretsReferenced)
-			delete(sm.state, key)
+			sm.secretManager.UnregisterRoute(route, dummyFunc)
 		}
 	}
 

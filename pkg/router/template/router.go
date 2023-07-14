@@ -19,14 +19,13 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/prometheus/client_golang/prometheus"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/library-go/pkg/route/secret"
 
 	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/crl"
-	"github.com/openshift/router/pkg/router/monitor"
 	"github.com/openshift/router/pkg/router/template/limiter"
 )
 
@@ -66,7 +65,7 @@ type templateRouter struct {
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
 	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
-	secretManager    monitor.Manager
+	secretManager    *secret.Manager
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
 	// usually a wildcard certificate for a cloud domain such as *.mypaas.com to allow applications to create app.mypaas.com
@@ -152,7 +151,7 @@ type templateRouterCfg struct {
 	captureHTTPResponseHeaders    []CaptureHTTPHeader
 	captureHTTPCookie             *CaptureHTTPCookie
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
-	secretManager                 monitor.Manager
+	secretManager                 *secret.Manager
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -977,20 +976,14 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 			config.Certificates = make(map[string]Certificate)
 
 			if len(tls.Certificate) == 0 && len(tls.CertificateRef.Name) > 0 {
-				obj, err := r.secretManager.Get(route.Namespace, tls.CertificateRef.Name)
+				secret, err := r.secretManager.GetSecret(route, route.Namespace, tls.CertificateRef.Name)
 				if err != nil {
 					return nil, err
 				}
 
-				secret, ok := obj.(*corev1.Secret)
-				if !ok {
-					return nil, fmt.Errorf("unexpected type %s in secret manager", reflect.TypeOf(obj))
-				}
-
 				certKey := generateCertKey(&config)
 				cert := Certificate{
-					ID: string(backendKey),
-					// TODO: handle both stringdata and data parsing
+					ID:         string(backendKey),
 					Contents:   string(secret.Data["tls.crt"]),
 					PrivateKey: string(secret.Data["tls.key"]),
 				}
@@ -1091,7 +1084,6 @@ func (r *templateRouter) RemoveRoute(route *routev1.Route) {
 	defer r.lock.Unlock()
 
 	r.removeRouteInternal(route)
-	r.secretManager.Unregister(route, monitor.GetSecretsReferenced)
 }
 
 // removeRouteInternal removes the given route - internal

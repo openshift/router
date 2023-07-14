@@ -38,12 +38,12 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
+	routesecret "github.com/openshift/library-go/pkg/route/secret"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
-	"github.com/openshift/router/pkg/router/monitor"
 	"github.com/openshift/router/pkg/router/shutdown"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
@@ -627,7 +627,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	secretManager := monitor.NewSecretMonitor(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
+	// secretManager := monitor.NewSecretMonitor(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
+
+	secretManager := routesecret.NewManager(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
 
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,
