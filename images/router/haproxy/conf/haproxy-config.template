@@ -177,6 +177,9 @@ defaults
   {{- if .HTTPHeaderNameCaseAdjustments }}
   option h1-case-adjust-bogus-client
   {{- end }}
+  {{- if isTrue (env "ROUTER_HAPROXY_CONTSTATS") }}
+  option contstats
+  {{- end }}
 
   {{ if (gt .StatsPort -1) }}
 listen stats
