@@ -1094,6 +1094,51 @@ func TestCalculateServiceWeights(t *testing.T) {
 			},
 			expectedWeights: map[ServiceUnitKey]int32{},
 		},
+		{
+			name:      "a single service with weight 0 with multiple endpoints",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+			},
+		},
+		{
+			name:      "services with one of weight 0",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 50,
+				suKey2: 0,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 256,
+				suKey2: 0,
+			},
+		},
+		{
+			name:      "services with all weight 0",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+				suKey2: 0,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+				suKey2: 0,
+			},
+		},
 	}
 
 	for _, tc := range testCases {
