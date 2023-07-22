@@ -1315,12 +1315,17 @@ func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int3
 func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32, port string) map[ServiceUnitKey]int32 {
 	serviceUnitNames := make(map[ServiceUnitKey]int32)
 
-	// If there is only 1 service unit, then always set the weight 1 for all the endpoints.
+	// If there is only 1 service unit, then always set the weight 1
+	// for all the endpoints, except when the service weight is 0.
 	// Scaling the weight to 256 is redundant and causes haproxy to allocate more memory on startup.
 	if len(serviceUnits) == 1 {
-		for key := range serviceUnits {
+		for key, weight := range serviceUnits {
 			if r.numberOfEndpoints(key, port) > 0 {
-				serviceUnitNames[key] = 1
+				if weight == 0 {
+					serviceUnitNames[key] = 0
+				} else {
+					serviceUnitNames[key] = 1
+				}
 			}
 		}
 		return serviceUnitNames
@@ -1333,10 +1338,10 @@ func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey
 
 	// distribute service weight over the service's endpoints
 	// to get weight per endpoint
-	for key, units := range serviceUnits {
+	for key, weight := range serviceUnits {
 		numEp := r.numberOfEndpoints(key, port)
 		if numEp > 0 {
-			epWeight[key] = float32(units) / float32(numEp)
+			epWeight[key] = float32(weight) / float32(numEp)
 		}
 		if epWeight[key] > maxEpWeight {
 			maxEpWeight = epWeight[key]
