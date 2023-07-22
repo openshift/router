@@ -1318,9 +1318,13 @@ func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey
 	// If there is only 1 service unit, then always set the weight 1 for all the endpoints.
 	// Scaling the weight to 256 is redundant and causes haproxy to allocate more memory on startup.
 	if len(serviceUnits) == 1 {
-		for key := range serviceUnits {
+		for key, weight := range serviceUnits {
+			var newWeight int32 = 1
+			if weight == 0 {
+				newWeight = 0
+			}
 			if r.numberOfEndpoints(key, port) > 0 {
-				serviceUnitNames[key] = 1
+				serviceUnitNames[key] = newWeight
 			}
 		}
 		return serviceUnitNames
