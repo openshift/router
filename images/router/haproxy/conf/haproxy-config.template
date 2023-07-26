@@ -173,23 +173,12 @@ defaults
   option h1-case-adjust-bogus-client
   {{- end }}
 
-  {{ if (gt .StatsPort -1) }}
 listen stats
-  bind :{{ if (gt .StatsPort 0) }}{{ .StatsPort }}{{ else }}1936{{ end }}
+  bind :1937
   mode http
-  # Health check monitoring uri.
-  monitor-uri /healthz
-
-    {{- if and (and (ne .StatsUser "") (ne .StatsPassword "")) (gt .StatsPort 0) }}
-  # Add your custom health check monitoring failure condition here.
-  # monitor fail if <condition>
   stats enable
-  stats hide-version
-  stats realm Haproxy\ Statistics
+  stats refresh 15s
   stats uri /
-  stats auth {{ .StatsUser }}:{{ .StatsPassword }}
-    {{- end }}
-  {{- end }}
 
   {{ if .BindPorts -}}
 frontend public
