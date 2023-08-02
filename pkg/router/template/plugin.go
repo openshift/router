@@ -16,8 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/library-go/pkg/route/secret"
 
+	"github.com/openshift/router/pkg/router/controller"
 	unidlingapi "github.com/openshift/router/pkg/router/unidling"
 )
 
@@ -67,7 +67,7 @@ type TemplatePluginConfig struct {
 	CaptureHTTPResponseHeaders    []CaptureHTTPHeader
 	CaptureHTTPCookie             *CaptureHTTPCookie
 	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
-	SecretManager                 *secret.Manager
+	SecretManager                 controller.Manager
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation

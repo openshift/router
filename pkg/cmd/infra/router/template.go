@@ -38,7 +38,6 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
-	routesecret "github.com/openshift/library-go/pkg/route/secret"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
@@ -629,7 +628,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	// secretManager := monitor.NewSecretMonitor(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
 
-	secretManager := routesecret.NewManager(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
+	secretManager := controller.NewSecretManager(kc.(*kubernetes.Clientset), workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
 
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,

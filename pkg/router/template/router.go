@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/library-go/pkg/route/secret"
 
 	logf "github.com/openshift/router/log"
+	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/crl"
 	"github.com/openshift/router/pkg/router/template/limiter"
 )
@@ -65,7 +65,7 @@ type templateRouter struct {
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
 	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
-	secretManager    *secret.Manager
+	secretManager    controller.Manager
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
 	// usually a wildcard certificate for a cloud domain such as *.mypaas.com to allow applications to create app.mypaas.com
@@ -151,7 +151,7 @@ type templateRouterCfg struct {
 	captureHTTPResponseHeaders    []CaptureHTTPHeader
 	captureHTTPCookie             *CaptureHTTPCookie
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
-	secretManager                 *secret.Manager
+	secretManager                 controller.Manager
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -975,8 +975,8 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		if tls.Termination != routev1.TLSTerminationPassthrough {
 			config.Certificates = make(map[string]Certificate)
 
-			if len(tls.Certificate) == 0 && len(tls.CertificateRef.Name) > 0 {
-				secret, err := r.secretManager.GetSecret(route, route.Namespace, tls.CertificateRef.Name)
+			if len(tls.Certificate) == 0 && len(tls.ExternalCertificate.Name) > 0 {
+				secret, err := r.secretManager.GetSecret(route, route.Namespace, tls.ExternalCertificate.Name)
 				if err != nil {
 					return nil, err
 				}
@@ -989,7 +989,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 				}
 				config.Certificates[certKey] = cert
 
-			} else if len(tls.Certificate) > 0 && len(tls.CertificateRef.Name) == 0 {
+			} else if len(tls.Certificate) > 0 && len(tls.ExternalCertificate.Name) == 0 {
 				certKey := generateCertKey(&config)
 				cert := Certificate{
 					ID:         string(backendKey),
