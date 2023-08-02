@@ -29,6 +29,7 @@ import (
 	authoptions "k8s.io/apiserver/pkg/server/options"
 	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/client-go/util/workqueue"
 
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned"
@@ -221,6 +222,7 @@ func NewCommandTemplateRouter(name string) *cobra.Command {
 					options.TemplateRouter.DefaultDestinationCAPath = ""
 				}
 			}
+
 			if err := options.Complete(); err != nil {
 				return err
 			}
@@ -624,6 +626,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	routeController := controller.NewRouteController(queue)
+
+	// secretManager := routesecret.NewManager(kc.(*kubernetes.Clientset), queue)
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
@@ -658,7 +665,10 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	ptrTemplatePlugin = templatePlugin
 
 	factory := o.RouterSelection.NewFactory(routeclient, projectclient.ProjectV1().Projects(), kc)
+	factory.WithExternalRouteController(routeController)
 	factory.RouteModifierFn = o.RouteUpdate
+
+	ctx := context.Background()
 
 	var plugin router.Plugin = templatePlugin
 	var recorder controller.RejectionRecorder = controller.LogRejections
@@ -681,7 +691,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
 	controller := factory.Create(plugin, false, stopCh)
-	controller.Run()
+	controller.Run(ctx, stopCh)
 
 	if blueprintPlugin != nil {
 		// f is like factory but filters the routes based on the
@@ -691,7 +701,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		f.Namespace = o.BlueprintRouteNamespace
 		f.ResyncInterval = o.ResyncInterval
 		c := f.Create(blueprintPlugin, false, stopCh)
-		c.Run()
+		c.Run(ctx, stopCh)
 	}
 
 	proc.StartReaper(6 * time.Second)

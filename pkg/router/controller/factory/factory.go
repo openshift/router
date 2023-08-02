@@ -54,8 +54,9 @@ type RouterControllerFactory struct {
 	ProjectLabels   labels.Selector
 	RouteModifierFn func(route *routev1.Route)
 
-	informers      map[reflect.Type]kcache.SharedIndexInformer
-	watchEndpoints bool
+	informers       map[reflect.Type]kcache.SharedIndexInformer
+	routecontroller *routercontroller.RouteController
+	watchEndpoints  bool
 }
 
 // NewDefaultRouterControllerFactory initializes a default router controller factory.
@@ -70,6 +71,10 @@ func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectcl
 		informers:      map[reflect.Type]kcache.SharedIndexInformer{},
 		watchEndpoints: watchEndpoints,
 	}
+}
+
+func (f *RouterControllerFactory) WithExternalRouteController(controller *routercontroller.RouteController) {
+	f.routecontroller = controller
 }
 
 // Create begins listing and watching against the API server for the desired route and endpoint
@@ -88,6 +93,7 @@ func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, 
 		ProjectLabels:       f.ProjectLabels,
 		ProjectWaitInterval: 10 * time.Second,
 		ProjectRetries:      5,
+		RouteController:     f.routecontroller,
 	}
 
 	// Check projects a bit more often than we resync events, so that we aren't always waiting
@@ -113,12 +119,14 @@ func (f *RouterControllerFactory) initInformers(rc *routercontroller.RouterContr
 	} else {
 		f.createEndpointSliceSharedInformer()
 	}
-	f.CreateRoutesSharedInformer()
+
+	f.routecontroller.WithSharedInformer(f.CreateRoutesSharedInformer())
 
 	if rc.WatchNodes {
 		f.createNodesSharedInformer()
 	}
 
+	// TODO skip starting informers
 	// Start informers
 	for _, informer := range f.informers {
 		go informer.Run(stopCh)
@@ -151,7 +159,8 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 		})
 	}
 
-	f.registerSharedInformerEventHandlers(&routev1.Route{}, rc.HandleRoute)
+	// f.registerSharedInformerEventHandlers(&routev1.Route{}, rc.HandleRoute)
+	f.routecontroller.WithHandleFunc(rc.HandleRoute)
 
 	if rc.WatchNodes {
 		f.registerSharedInformerEventHandlers(&kapi.Node{}, rc.HandleNode)

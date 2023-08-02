@@ -130,7 +130,7 @@ func TestMain(m *testing.M) {
 
 	// Start the controller
 	c := factory.Create(plugin, false, wait.NeverStop)
-	c.Run()
+	c.Run(context.TODO(), wait.NeverStop)
 
 	exitCode := m.Run()
 	os.RemoveAll(workdir)

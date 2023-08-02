@@ -11,13 +11,13 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 	github.com/google/go-cmp v0.5.9
 	github.com/haproxytech/config-parser/v4 v4.0.0-rc1
-	github.com/openshift/api v0.0.0-20230120195050-6ba31fa438f2
-	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
-	github.com/openshift/library-go v0.0.0-20230120202744-256994f916c4
+	github.com/openshift/api v0.0.0-20230613151523-ba04973d3ed1
+	github.com/openshift/client-go v0.0.0-20230503144108-75015d2347cb
+	github.com/openshift/library-go v0.0.0-20230714173235-d8d3f3f8a9e4
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
@@ -40,6 +40,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
@@ -69,6 +70,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/profile v1.3.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
+	github.com/robfig/cron v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.7 // indirect
@@ -107,9 +109,13 @@ require (
 	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/kms v0.27.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
-	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
+	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/openshift/api => github.com/thejasn/api v0.0.0-20230515094541-743d23d7a931
+
+replace github.com/openshift/library-go => github.com/thejasn/library-go v0.0.0-20230714064811-7eb91adac575

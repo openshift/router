@@ -47,16 +47,20 @@ type RouterController struct {
 	ProjectRetries      int
 
 	WatchNodes bool
+
+	RouteController *RouteController
 }
 
 // Run begins watching and syncing.
-func (c *RouterController) Run() {
+func (c *RouterController) Run(ctx context.Context, stopCh <-chan struct{}) {
 	log.V(4).Info("running router controller")
 	if c.ProjectLabels != nil {
 		c.HandleProjects()
 		go utilwait.Forever(c.HandleProjects, c.ProjectSyncInterval)
 	}
 	c.handleFirstSync()
+
+	go c.RouteController.Run(ctx, stopCh)
 }
 
 func (c *RouterController) HandleProjects() {
