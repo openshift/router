@@ -1208,6 +1208,213 @@ func TestCalculateServiceWeights(t *testing.T) {
 	}
 }
 
+// Test_configsAreEqual verifies that configsAreEqual behaves correctly.
+func Test_configsAreEqual(t *testing.T) {
+	makeConfig := func() *ServiceAliasConfig {
+		return &ServiceAliasConfig{
+			Name:           "example-route",
+			Namespace:      "ns",
+			Host:           "example-route.apps.mycluster.com",
+			Path:           "",
+			TLSTermination: routev1.TLSTerminationEdge,
+			Certificates: map[string]Certificate{
+				"id_route1-ns.apps.mycluster.com": {
+					ID:       "id_example-route.apps.mycluster.com",
+					Contents: "abcdefghijklmnopqrstuvwxyz",
+				},
+			},
+			VerifyServiceHostname:         false,
+			Status:                        "",
+			PreferPort:                    "https",
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyNone,
+			RoutingKeyName:                "xyz",
+			IsWildcard:                    true,
+			Annotations: map[string]string{
+				"foo": "bar",
+			},
+			ServiceUnits: map[ServiceUnitKey]int32{
+				endpointsKeyFromParts("ns", "svc1"): 20,
+				endpointsKeyFromParts("ns", "svc2"): 60,
+			},
+			ServiceUnitNames: map[ServiceUnitKey]int32{
+				endpointsKeyFromParts("ns", "svc1"): 42,
+				endpointsKeyFromParts("ns", "svc2"): 256,
+			},
+			ActiveServiceUnits: 2,
+			ActiveEndpoints:    3,
+			HTTPResponseHeaders: []HTTPHeader{{
+				Action: "Set",
+				Name:   "x-foo",
+				Value:  "bar",
+			}, {
+				Action: "Delete",
+				Name:   "x-bar",
+			}},
+			HTTPRequestHeaders: []HTTPHeader{{
+				Action: "Set",
+				Name:   "x-baz",
+				Value:  "quux",
+			}, {
+				Action: "Delete",
+				Name:   "x-fooby",
+			}},
+		}
+	}
+	// The configsAreEqual function does not check the ServiceUnitNames,
+	// ActiveServiceUnits, or ActiveEndpoints fields, which is fine because
+	// if any of these fields did change, then the ServiceUnits field would
+	// change as well, and configsAreEqual does check the ServiceUnit field.
+	// For this reason, it isn't necessary to have test cases in which only
+	// ServiceUnitNames, ActiveServiceUnits, or ActiveEndpoints changes.
+	testCases := []struct {
+		name   string
+		mutate func(config *ServiceAliasConfig)
+		expect bool
+	}{{
+		name:   "equal",
+		mutate: func(_ *ServiceAliasConfig) {},
+		expect: true,
+	}, {
+		name: "name changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Name = "route2"
+		},
+		expect: false,
+	}, {
+		name: "namespace changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Namespace = "ns2"
+		},
+		expect: false,
+	}, {
+		name: "host changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Host = "custom-name.apps.mycluster.com"
+		},
+		expect: false,
+	}, {
+		name: "path changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Path = "/foo"
+		},
+		expect: false,
+	}, {
+		name: "TLS termination changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.TLSTermination = routev1.TLSTerminationPassthrough
+		},
+		expect: false,
+	}, {
+		name: "certificate changes",
+		mutate: func(config *ServiceAliasConfig) {
+			cert := config.Certificates["id_route1-ns.apps.mycluster.com"]
+			cert.Contents = "zyxwvutsrqponmlkjihgfedcba"
+			config.Certificates["id_route1-ns.apps.mycluster.com"] = cert
+		},
+		expect: false,
+	}, {
+		name: "equal even if certificate status differs",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Status = ServiceAliasConfigStatusSaved
+		},
+		expect: true,
+	}, {
+		name: "preferred port changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.PreferPort = "https2"
+		},
+		expect: false,
+	}, {
+		name: "insecure edge termination policy changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.InsecureEdgeTerminationPolicy = routev1.InsecureEdgeTerminationPolicyAllow
+		},
+		expect: false,
+	}, {
+		name: "router key name changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.RoutingKeyName = "zyx"
+		},
+		expect: false,
+	}, {
+		name: "IsWildcard changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.IsWildcard = false
+		},
+		expect: false,
+	}, {
+		name: "VerifyServiceHostname changes",
+		mutate: func(config *ServiceAliasConfig) {
+			config.VerifyServiceHostname = true
+			// In theory, config.VerifyServiceHostname shouldn't
+			// change unless config.TLSTermination is changed to
+			// "reencrypt", but for the purposes of this test, we
+			// want to verify that changing just
+			// VerifyServiceHostname causes configsAreEqual to
+			// return false.
+		},
+		expect: false,
+	}, {
+		name: "annotation added",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Annotations["baz"] = "quux"
+		},
+		expect: false,
+	}, {
+		name: "annotations cleared",
+		mutate: func(config *ServiceAliasConfig) {
+			config.Annotations = map[string]string{}
+		},
+		expect: false,
+	}, {
+		name: "service unit deleted",
+		mutate: func(config *ServiceAliasConfig) {
+			config.ServiceUnits = map[ServiceUnitKey]int32{
+				endpointsKeyFromParts("ns", "svc1"): 20,
+			}
+			// In theory, if config.ServiceUnits changes, then so
+			// should config.ServiceUnitNames, but for the purposes
+			// of this test, we want to verify that changing just
+			// ServiceUnits causes configsAreEqual to return false.
+		},
+		expect: false,
+	}, {
+		name: "reversed response header actions",
+		mutate: func(config *ServiceAliasConfig) {
+			config.HTTPResponseHeaders[0], config.HTTPResponseHeaders[1] = config.HTTPResponseHeaders[1], config.HTTPResponseHeaders[0]
+		},
+		expect: false,
+	}, {
+		name: "additional response header action",
+		mutate: func(config *ServiceAliasConfig) {
+			config.HTTPResponseHeaders = append(config.HTTPResponseHeaders, HTTPHeader{
+				Action: "Delete",
+				Name:   "x-barby",
+			})
+		},
+		expect: false,
+	}, {
+		name: "additional request header action",
+		mutate: func(config *ServiceAliasConfig) {
+			config.HTTPRequestHeaders = append(config.HTTPRequestHeaders, HTTPHeader{
+				Action: "Delete",
+				Name:   "x-barby",
+			})
+		},
+		expect: false,
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			a := makeConfig()
+			b := makeConfig()
+			tc.mutate(b)
+			if actual := configsAreEqual(a, b); actual != tc.expect {
+				t.Fatalf("expected %t, got %t\nconfig1:\n%v\nconfig2:\n%v", tc.expect, actual, a, b)
+			}
+		})
+	}
+}
+
 const (
 	testWildcardCertificate = `-----BEGIN CERTIFICATE-----
 MIIFJjCCAw4CCQCLGB4wxqgxHjANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJV

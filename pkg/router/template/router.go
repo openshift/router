@@ -1431,7 +1431,15 @@ func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey
 
 // configsAreEqual determines whether the given service alias configs can be considered equal.
 // This may be useful in determining whether a new service alias config is the same as an
-// existing one or represents an update to its state.
+// existing one or represents an update to its state.  This function should only be used for
+// route updates.
+//
+// This function does not check the ServiceUnitNames or ActiveServiceUnits fields because if
+// either of these fields did change, then the ServiceUnits field would change as well, and
+// this function does check the ServiceUnits field.  Similarly, the ActiveEndpoints field
+// cannot change as a result of a route update unless ServiceUnits changes too.  Note that
+// ActiveEndpoints could change as the result of an endpoints update, but configsAreEqual is
+// only used when handling route updates.
 func configsAreEqual(config1, config2 *ServiceAliasConfig) bool {
 	return config1.Name == config2.Name &&
 		config1.Namespace == config2.Namespace &&
