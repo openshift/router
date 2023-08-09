@@ -1039,7 +1039,7 @@ func getHeadersList(httpHeaderList []routev1.RouteHTTPHeader) []HTTPHeader {
 			setHeaderValue := SanitizeHeaderValue(value.Action.Set.Value)
 
 			setValue := HTTPHeader{
-				Name:   value.Name,
+				Name:   SanitizeHeaderValue(value.Name),
 				Value:  setHeaderValue,
 				Action: value.Action.Type,
 			}
@@ -1047,7 +1047,7 @@ func getHeadersList(httpHeaderList []routev1.RouteHTTPHeader) []HTTPHeader {
 		}
 		if value.Action.Type == routev1.Delete && len(value.Name) != 0 {
 			deleteValue := HTTPHeader{
-				Name:   value.Name,
+				Name:   SanitizeHeaderValue(value.Name),
 				Action: value.Action.Type,
 			}
 			httpHeadersList = append(httpHeadersList, deleteValue)

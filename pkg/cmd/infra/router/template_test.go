@@ -19,7 +19,7 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 			description: "should percent decode the single header value",
 			inputValue:  "Accept:text%2Fplain%2C+text%2Fhtml:Set",
 			expectedValue: []templateplugin.HTTPHeader{
-				{Name: "Accept", Value: "'text/plain, text/html'", Action: routev1.Set},
+				{Name: "'Accept'", Value: "'text/plain, text/html'", Action: routev1.Set},
 			},
 			expectErrorMessage: "",
 		},
@@ -33,9 +33,9 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 			description: "should percent decode the multiple response header values",
 			inputValue:  "X-Frame-Options:DENY:Set,X-XSS-Protection:1%3Bmode%3Dblock:Set,x-forwarded-client-cert:%25%7B%2BQ%7D%5Bssl_c_der%2Cbase64%5D:Set",
 			expectedValue: []templateplugin.HTTPHeader{
-				{Name: "X-Frame-Options", Value: "'DENY'", Action: routev1.Set},
-				{Name: "X-XSS-Protection", Value: "'1;mode=block'", Action: routev1.Set},
-				{Name: "x-forwarded-client-cert", Value: "'%{+Q}[ssl_c_der,base64]'", Action: routev1.Set},
+				{Name: "'X-Frame-Options'", Value: "'DENY'", Action: routev1.Set},
+				{Name: "'X-XSS-Protection'", Value: "'1;mode=block'", Action: routev1.Set},
+				{Name: "'x-forwarded-client-cert'", Value: "'%{+Q}[ssl_c_der,base64]'", Action: routev1.Set},
 			},
 			expectErrorMessage: "",
 		},
@@ -44,8 +44,8 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 			description: "should percent decode the multiple request header values",
 			inputValue:  "Accept:text%2Fplain%2C+text%2Fhtml:Set,Accept-Encoding:Delete",
 			expectedValue: []templateplugin.HTTPHeader{
-				{Name: "Accept", Value: "'text/plain, text/html'", Action: routev1.Set},
-				{Name: "Accept-Encoding", Action: routev1.Delete},
+				{Name: "'Accept'", Value: "'text/plain, text/html'", Action: routev1.Set},
+				{Name: "'Accept-Encoding'", Action: routev1.Delete},
 			},
 			expectErrorMessage: "",
 		},
@@ -53,7 +53,7 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 			description: "should percent decode the multiple header values with simple non encoded strings",
 			inputValue:  "X-Frame-Options:DENY:Set",
 			expectedValue: []templateplugin.HTTPHeader{
-				{Name: "X-Frame-Options", Value: "'DENY'", Action: routev1.Set},
+				{Name: "'X-Frame-Options'", Value: "'DENY'", Action: routev1.Set},
 			},
 			expectErrorMessage: "",
 		},

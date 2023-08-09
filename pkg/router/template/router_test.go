@@ -482,9 +482,9 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 	expectedSUs := map[ServiceUnitKey]int32{
 		suName: serviceWeight,
 	}
-	httpResponseHeadersList := []HTTPHeader{{Name: "X-Frame-Options", Value: "'DENY'", Action: "Set"}, {Name: "X-XSS-Protection", Value: "'1;mode=block'", Action: "Set"},
-		{Name: "X-Frame-Options", Action: "Delete"}, {Name: "X-XSS-Protection", Action: "Delete"}}
-	httpRequestHeadersList := []HTTPHeader{{Name: "Accept", Value: "'text/plain,text/html'", Action: "Set"}, {Name: "x-client", Value: `'"abc"\ '\''def'\'''`, Action: "Set"}, {Name: "Accept-Encoding", Action: "Delete"}, {Name: "Accept", Value: "'text/}plain,text/html{'", Action: "Set"}}
+	httpResponseHeadersList := []HTTPHeader{{Name: "'X-Frame-Options'", Value: "'DENY'", Action: "Set"}, {Name: "'X-XSS-Protection'", Value: "'1;mode=block'", Action: "Set"},
+		{Name: "'X-Frame-Options'", Action: "Delete"}, {Name: "'X-XSS-Protection'", Action: "Delete"}}
+	httpRequestHeadersList := []HTTPHeader{{Name: "'Accept'", Value: "'text/plain,text/html'", Action: "Set"}, {Name: "'x-client'", Value: `'"abc"\ '\''def'\'''`, Action: "Set"}, {Name: "'Accept-Encoding'", Action: "Delete"}, {Name: "'Accept'", Value: "'text/}plain,text/html{'", Action: "Set"}}
 
 	// Basic sanity, validate more fields as necessary
 	if config.Host != route.Spec.Host || config.Path != route.Spec.Path || !compareTLS(route, config, t) ||

@@ -317,6 +317,7 @@ func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error
 					if err != nil {
 						return captureHeaders, err
 					}
+					sanitizedHeaderName := templateplugin.SanitizeHeaderValue(headerName)
 					headerValue, err := url.QueryUnescape(parts[1])
 					if err != nil {
 						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[1])
@@ -331,7 +332,7 @@ func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error
 						return captureHeaders, err
 					}
 					capture = templateplugin.HTTPHeader{
-						Name:   headerName,
+						Name:   sanitizedHeaderName,
 						Value:  sanitizedHeaderValue,
 						Action: routev1.RouteHTTPHeaderActionType(action),
 					}
@@ -347,6 +348,7 @@ func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error
 					if err != nil {
 						return captureHeaders, err
 					}
+					sanitizedHeaderName := templateplugin.SanitizeHeaderValue(headerName)
 					action, err := url.QueryUnescape(parts[1])
 					if err != nil {
 						return captureHeaders, fmt.Errorf("failed to decode percent encoding: %v", parts[1])
@@ -356,7 +358,7 @@ func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error
 						return captureHeaders, err
 					}
 					capture = templateplugin.HTTPHeader{
-						Name:   headerName,
+						Name:   sanitizedHeaderName,
 						Action: routev1.RouteHTTPHeaderActionType(action),
 					}
 					captureHeaders = append(captureHeaders, capture)
