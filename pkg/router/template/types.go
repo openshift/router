@@ -74,6 +74,12 @@ type ServiceAliasConfig struct {
 
 	// ActiveEndpoints is a count of the route endpoints that are part of a service unit with a non-zero weight
 	ActiveEndpoints int
+
+	// HTTPResponseHeaders has route-specific custom HTTP response headers.
+	HTTPResponseHeaders []HTTPHeader
+
+	// HTTPResponseHeaders has route-specific custom HTTP request headers.
+	HTTPRequestHeaders []HTTPHeader
 }
 
 type ServiceAliasConfigStatus string
@@ -234,6 +240,18 @@ type CaptureHTTPHeader struct {
 
 	// MaxLength specifies a maximum length for the header value.
 	MaxLength int
+}
+
+// HTTPHeader specifies an HTTP header that should be set or deleted.
+type HTTPHeader struct {
+	// Name specifies an HTTP header name.
+	Name string
+
+	// Value specifies the header value.
+	Value string
+
+	// Action specifies the action to be performed.
+	Action routev1.RouteHTTPHeaderActionType
 }
 
 // CaptureHTTPCookie specifies an HTTP cookie that should be captured

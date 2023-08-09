@@ -66,6 +66,8 @@ type TemplatePluginConfig struct {
 	CaptureHTTPResponseHeaders    []CaptureHTTPHeader
 	CaptureHTTPCookie             *CaptureHTTPCookie
 	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
+	HTTPResponseHeaders           []HTTPHeader
+	HTTPRequestHeaders            []HTTPHeader
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation
@@ -160,6 +162,8 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		captureHTTPResponseHeaders:    cfg.CaptureHTTPResponseHeaders,
 		captureHTTPCookie:             cfg.CaptureHTTPCookie,
 		httpHeaderNameCaseAdjustments: cfg.HTTPHeaderNameCaseAdjustments,
+		httpResponseHeaders:           cfg.HTTPResponseHeaders,
+		httpRequestHeaders:            cfg.HTTPRequestHeaders,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
