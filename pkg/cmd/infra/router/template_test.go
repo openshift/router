@@ -1,10 +1,10 @@
 package router
 
 import (
-	routev1 "github.com/openshift/api/route/v1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	routev1 "github.com/openshift/api/route/v1"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 )
 
@@ -79,13 +79,13 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 			description:        "invalid Action when header input spec has 3 parts",
 			inputValue:         "X-Frame-Options:DENY:Bad",
 			expectedValue:      nil,
-			expectErrorMessage: "invalid action Bad",
+			expectErrorMessage: "invalid action: Bad",
 		},
 		{
 			description:        "invalid Action when header input spec has 2 parts",
 			inputValue:         "X-Frame-Options:Bad",
 			expectedValue:      nil,
-			expectErrorMessage: "invalid action Bad",
+			expectErrorMessage: "invalid action: Bad",
 		},
 		{
 			description:        "should not allow specifying headers with no action or value",
@@ -96,7 +96,7 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 			description:        "should not allow blank values for headers",
 			inputValue:         "",
 			expectedValue:      nil,
-			expectErrorMessage: "encoded header string not present.",
+			expectErrorMessage: "encoded header string not present",
 		},
 		{
 			description:        "should fail with incorrect header name when HTTP header input specification has 3 parts",

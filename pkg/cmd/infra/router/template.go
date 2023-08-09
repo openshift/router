@@ -298,7 +298,7 @@ func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error
 	var capture templateplugin.HTTPHeader
 	var err error
 	if len(in) == 0 {
-		return captureHeaders, fmt.Errorf("encoded header string not present.")
+		return captureHeaders, fmt.Errorf("encoded header string not present")
 	}
 	if len(in) > 0 {
 		for _, header := range strings.Split(in, ",") {
@@ -370,16 +370,21 @@ func parseHeadersToBeSetOrDeleted(in string) ([]templateplugin.HTTPHeader, error
 
 func checkValidAction(action string) error {
 	if action != string(routev1.Set) && action != string(routev1.Delete) {
-		return fmt.Errorf("invalid action %s", action)
+		return fmt.Errorf("invalid action: %s", action)
 	} else {
 		return nil
 	}
 }
 
+// permittedHeaderNameRE is a compiled regexp to match an HTTP header name
+// as specified in RFC 2616, section 4.2.
+// Any changes made to regex of header name in route type in openshift/api and `validation.go` file in library-go must be reflected here and
+// vice versa.
+var permittedHeaderNameRE = regexp.MustCompile("^[-!#$%&'*+.0-9A-Z^_`a-z|~]+$")
+
+// checkValidHeaderName verifies that the given HTTP header name is valid.
 func checkValidHeaderName(headerName string) error {
-	// RFC 2616, section 4.2, states that the header name
-	// must be a valid token.
-	if !validTokenRE.MatchString(headerName) {
+	if !permittedHeaderNameRE.MatchString(headerName) {
 		return fmt.Errorf("invalid HTTP header name: %s", headerName)
 	} else {
 		return nil
