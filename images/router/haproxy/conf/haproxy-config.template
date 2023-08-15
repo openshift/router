@@ -227,6 +227,9 @@ frontend public
   capture cookie {{ $captureCookie.Name }}{{ if eq $captureCookie.MatchType "exact" }}={{ end }} len {{ $captureCookie.MaxLength }}
     {{- end }}
 
+  # Mitigate CVE-2023-40225 (Proxy forwards malformed empty Content-Length headers)
+  http-request deny if { hdr_len(content-length) 0 }
+
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
@@ -336,6 +339,9 @@ frontend fe_sni
   capture cookie {{ $captureCookie.Name }}{{ if eq $captureCookie.MatchType "exact" }}={{ end }} len {{ $captureCookie.MaxLength }}
     {{- end }}
 
+  # Mitigate CVE-2023-40225 (Proxy forwards malformed empty Content-Length headers)
+  http-request deny if { hdr_len(content-length) 0 }
+
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
@@ -442,6 +448,9 @@ frontend fe_no_sni
     {{- with $captureCookie := .CaptureHTTPCookie }}
   capture cookie {{ $captureCookie.Name }}{{ if eq $captureCookie.MatchType "exact" }}={{ end }} len {{ $captureCookie.MaxLength }}
     {{- end }}
+
+  # Mitigate CVE-2023-40225 (Proxy forwards malformed empty Content-Length headers)
+  http-request deny if { hdr_len(content-length) 0 }
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
