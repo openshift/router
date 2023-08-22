@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	kapi "k8s.io/api/core/v1"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller/hostindex"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
 )
 
 // RouteHostFunc returns a host for a route. It may return an empty string.
@@ -163,7 +165,42 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 			nestedErr = p.plugin.HandleRoute(eventType, other)
 		}
 
-		// displaced routes must be deleted in nested plugins
+		// This algorithm governs the logic for handling
+		// incoming routes and resolving conflicts when
+		// multiple routes share the same hostname. In the
+		// event of a conflict, identify the "true"
+		// conflicting route, log it, and record an
+		// appropriate route rejection message.
+		//
+		// 1. Iterate over the displaced routes that this new
+		//    route would affect.
+		//
+		// 2. If the displaced route is different from the
+		//    current route (`other != route`), record its
+		//    rejection and try to delete it. Skip to the next
+		//    iteration.
+		//
+		// 3. If the displaced route is the current route
+		//    (`other == route`), then it means the route
+		//    cannot be added due to a conflict. Try to
+		//    identify the conflicting route (`owner`) by:
+		//
+		//    1. Fetching all routes with the same host.
+		//    2. Sorting these routes based on their
+		//       timestamps, newest to oldest.
+		//    3. Searching for a conflicting route based on
+		//       the same path.
+		//    4. If no conflicting route with the same path is
+		//       found, fall back to the first (newest) route.
+		//
+		// 4. If an `owner` (conflicting route) is identified,
+		//    proceed to log the conflict and record the route
+		//    rejection.
+		//
+		// 5. If the current route is not a new route (i.e.,
+		//    it was seen before), notify the lower-level
+		//    plugins to hide it by sending a `watch.Deleted`
+		//    event for this route.
 		for _, other := range changes.GetDisplaced() {
 			// adding this route displaced others
 			if other != route {
@@ -179,10 +216,18 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 			// we were not added because another route is covering us
 			var owner *routev1.Route
 			if old, ok := p.index.RoutesForHost(host); ok && len(old) > 0 {
-				owner = old[0]
-			} else {
-				owner = &routev1.Route{}
-				owner.Name = "<unknown>"
+				sort.SliceStable(old, func(i, j int) bool {
+					return !routeapihelpers.RouteLessThan(old[i], old[j])
+				})
+				for _, existingRoute := range old {
+					if existingRoute.Spec.Path == route.Spec.Path {
+						owner = existingRoute
+						break
+					}
+				}
+				if owner == nil {
+					owner = old[0]
+				}
 			}
 			log.V(4).Info("route cannot take claimed host", "routeName", routeName, "host", host, "ownerNamespace", owner.Namespace, "ownerName", owner.Name)
 			if owner.Namespace == route.Namespace {
