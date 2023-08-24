@@ -18,6 +18,7 @@ import (
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
 	haproxyutil "github.com/openshift/router/pkg/router/template/util/haproxy"
+	"github.com/openshift/router/pkg/router/template/util/haproxytime"
 )
 
 const (
@@ -328,13 +329,13 @@ func clipHAProxyTimeoutValue(val string) string {
 	}
 
 	// First check to see if the timeout will fit into a time.Duration
-	duration, err := templateutil.ParseHAProxyDuration(val)
+	_, err := haproxytime.ParseDuration(val)
 	if err != nil {
-		switch err.(type) {
-		case templateutil.OverflowError:
+		switch err {
+		case haproxytime.OverflowError:
 			log.Info("route annotation timeout exceeds maximum allowable by HAProxy, clipping to max", "max", templateutil.HaproxyMaxTimeout)
 			return templateutil.HaproxyMaxTimeout
-		case templateutil.InvalidInputError:
+		case haproxytime.SyntaxError:
 			log.Error(err, "route annotation timeout removed because input is invalid")
 			return ""
 		default:
@@ -344,11 +345,6 @@ func clipHAProxyTimeoutValue(val string) string {
 		}
 	}
 
-	// Then check to see if the timeout is larger than what HAProxy allows
-	if templateutil.HaproxyMaxTimeoutDuration < duration {
-		log.Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max", "max", templateutil.HaproxyMaxTimeout)
-		return templateutil.HaproxyMaxTimeout
-	}
 	return val
 }
 
