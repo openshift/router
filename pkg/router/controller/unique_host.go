@@ -89,7 +89,7 @@ func (p *UniqueHost) HandleNode(eventType watch.EventType, node *kapi.Node) erro
 // on demand.
 func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	if p.allowedNamespaces != nil && !p.allowedNamespaces.Has(route.Namespace) {
-		return nil
+		return p.plugin.HandleRoute(watch.Deleted, route)
 	}
 
 	routeName := routeNameKey(route)
@@ -98,7 +98,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 	if len(host) == 0 {
 		log.V(4).Info("route has no host value", "namespace", route.Namespace, "name", route.Name)
 		p.recorder.RecordRouteRejection(route, "NoHostValue", "no host value was defined for the route")
-		p.plugin.HandleRoute(watch.Deleted, route)
+		p.plugin.HandleRoute(watch.Error, route)
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 
 		err := fmt.Errorf("host name validation errors: %s", strings.Join(errMessages, ", "))
 		p.recorder.RecordRouteRejection(route, "InvalidHost", err.Error())
-		p.plugin.HandleRoute(watch.Deleted, route)
+		p.plugin.HandleRoute(watch.Error, route)
 		return err
 	}
 
@@ -121,7 +121,7 @@ func (p *UniqueHost) HandleRoute(eventType watch.EventType, route *routev1.Route
 	// other routes being exposed, notify the lower plugin. Report back to the end user when
 	// their route does not get exposed.
 	switch eventType {
-	case watch.Deleted:
+	case watch.Deleted, watch.Error:
 		log.V(4).Info("deleting route", "routeName", routeName)
 
 		changes := p.index.Remove(route)

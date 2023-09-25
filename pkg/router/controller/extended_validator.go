@@ -51,7 +51,7 @@ func (p *ExtendedValidator) HandleRoute(eventType watch.EventType, route *routev
 		log.Error(err, "skipping route due to invalid configuration", "route", routeName)
 
 		p.recorder.RecordRouteRejection(route, "ExtendedValidationFailed", err.Error())
-		p.plugin.HandleRoute(watch.Deleted, route)
+		p.plugin.HandleRoute(watch.Error, route)
 		return fmt.Errorf("invalid route configuration")
 	}
 

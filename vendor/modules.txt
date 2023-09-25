@@ -232,6 +232,9 @@ github.com/pkg/errors
 # github.com/pkg/profile v1.3.0
 ## explicit
 github.com/pkg/profile
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.14.0
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
@@ -265,6 +268,9 @@ github.com/spf13/pflag
 # github.com/stoewer/go-strcase v1.2.0
 ## explicit; go 1.11
 github.com/stoewer/go-strcase
+# github.com/stretchr/testify v1.8.1
+## explicit; go 1.13
+github.com/stretchr/testify/assert
 # go.etcd.io/etcd/api/v3 v3.5.7
 ## explicit; go 1.17
 go.etcd.io/etcd/api/v3/authpb

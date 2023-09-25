@@ -3,10 +3,11 @@ package controller
 import (
 	"fmt"
 	"math/rand"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1037,83 +1038,88 @@ func TestHandleNamespaceProcessing(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		namespace string
-		host      string
-		policy    routev1.WildcardPolicyType
-		expected  bool
+		routeName   string
+		namespace   string
+		host        string
+		policy      routev1.WildcardPolicyType
+		expectEvent watch.EventType
+		expectErr   bool
 	}{
+		// WARNING: These test cases MUST be run together; otherwise, some will fail.
 		{
-			name:      "expected",
-			namespace: "ns1",
-			host:      "update.expected.test",
-			policy:    routev1.WildcardPolicyNone,
-			expected:  true,
+			routeName:   "expected",
+			namespace:   "ns1",
+			host:        "update.expected.test",
+			policy:      routev1.WildcardPolicyNone,
+			expectEvent: watch.Added,
 		},
 		{
-			name:      "not-expected",
-			namespace: "updatemenot",
-			host:      "no-update.expected.test",
-			policy:    routev1.WildcardPolicyNone,
-			expected:  false,
+			routeName:   "not-expected",
+			namespace:   "updatemenot",
+			host:        "no-update.expected.test",
+			policy:      routev1.WildcardPolicyNone,
+			expectEvent: watch.Deleted,
 		},
 		{
-			name:      "expected-wild",
-			namespace: "ns1",
-			host:      "update.wild.expected.test",
-			policy:    routev1.WildcardPolicySubdomain,
-			expected:  true,
+			routeName:   "expected-wild",
+			namespace:   "ns1",
+			host:        "update.wild.expected.test",
+			policy:      routev1.WildcardPolicySubdomain,
+			expectEvent: watch.Added,
 		},
 		{
-			name:      "not-expected-wild-not-owner",
-			namespace: "nsx",
-			host:      "second.wild.expected.test",
-			policy:    routev1.WildcardPolicySubdomain,
-			expected:  false,
+			routeName:   "not-expected-wild-not-owner",
+			namespace:   "nsx",
+			host:        "second.wild.expected.test",
+			policy:      routev1.WildcardPolicySubdomain,
+			expectEvent: watch.Added,
+			expectErr:   true,
 		},
 		{
-			name:      "not-expected-wild",
-			namespace: "otherns",
-			host:      "noupdate.wild.expected.test",
-			policy:    routev1.WildcardPolicySubdomain,
-			expected:  false,
+			routeName:   "not-expected-wild",
+			namespace:   "otherns",
+			host:        "noupdate.wild.expected.test",
+			policy:      routev1.WildcardPolicySubdomain,
+			expectEvent: watch.Deleted,
 		},
 		{
-			name:      "expected-wild-other-subdomain",
-			namespace: "nsx",
-			host:      "host.third.wild.expected.test",
-			policy:    routev1.WildcardPolicySubdomain,
-			expected:  true,
+			routeName:   "expected-wild-other-subdomain",
+			namespace:   "nsx",
+			host:        "host.third.wild.expected.test",
+			policy:      routev1.WildcardPolicySubdomain,
+			expectEvent: watch.Added,
 		},
 		{
-			name:      "not-expected-plain-2",
-			namespace: "notallowed",
-			host:      "not.allowed.expected.test",
-			policy:    routev1.WildcardPolicyNone,
-			expected:  false,
+			routeName:   "not-expected-plain-2",
+			namespace:   "notallowed",
+			host:        "not.allowed.expected.test",
+			policy:      routev1.WildcardPolicyNone,
+			expectEvent: watch.Deleted,
 		},
 		{
-			name:      "not-expected-blocked",
-			namespace: "nsx",
-			host:      "blitz.domain.blocked.test",
-			policy:    routev1.WildcardPolicyNone,
-			expected:  false,
+			routeName:   "not-expected-blocked",
+			namespace:   "nsx",
+			host:        "blitz.domain.blocked.test",
+			policy:      routev1.WildcardPolicyNone,
+			expectEvent: watch.Error,
+			expectErr:   true,
 		},
 		{
-			name:      "not-expected-blocked-wildcard",
-			namespace: "ns2",
-			host:      "wild.blocked.domain.blocked.test",
-			policy:    routev1.WildcardPolicySubdomain,
-			expected:  false,
+			routeName:   "not-expected-blocked-wildcard",
+			namespace:   "ns2",
+			host:        "wild.blocked.domain.blocked.test",
+			policy:      routev1.WildcardPolicySubdomain,
+			expectEvent: watch.Error,
+			expectErr:   true,
 		},
 	}
 
 	for _, tc := range tests {
 		route := &routev1.Route{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      tc.name,
+				Name:      tc.routeName,
 				Namespace: tc.namespace,
-				UID:       types.UID(tc.name),
+				UID:       types.UID(tc.routeName),
 			},
 			Spec: routev1.RouteSpec{
 				Host:           tc.host,
@@ -1132,15 +1138,11 @@ func TestHandleNamespaceProcessing(t *testing.T) {
 		}
 
 		err := admitter.HandleRoute(watch.Added, route)
-		if tc.expected {
-			if err != nil {
-				t.Fatalf("test case %s unexpected error: %v", tc.name, err)
-			}
-			if !reflect.DeepEqual(p.route, route) {
-				t.Fatalf("test case %s expected route to be processed: %+v", tc.name, route)
-			}
-		} else if err == nil && reflect.DeepEqual(p.route, route) {
-			t.Fatalf("test case %s did not expected route to be processed: %+v", tc.name, route)
+		assert.Equal(t, p.event, tc.expectEvent, "route: "+tc.routeName)
+		if tc.expectErr && err == nil {
+			t.Fatalf("route %s expected error, but did not receive one", tc.routeName)
+		} else if !tc.expectErr && err != nil {
+			t.Fatalf("route %s unexpected error: %v", tc.routeName, err)
 		}
 	}
 }

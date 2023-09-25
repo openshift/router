@@ -78,10 +78,12 @@ var nowFn = getRfc3339Timestamp
 func (a *StatusAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	switch eventType {
 	case watch.Added, watch.Modified:
-		performIngressConditionUpdate("admit", a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{
+		performIngressConditionUpdate("admit", eventType, a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, &routev1.RouteIngressCondition{
 			Type:   routev1.RouteAdmitted,
 			Status: corev1.ConditionTrue,
 		})
+	case watch.Deleted:
+		performIngressConditionUpdate("delete", eventType, a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, nil)
 	}
 	return a.plugin.HandleRoute(eventType, route)
 }
@@ -104,7 +106,7 @@ func (a *StatusAdmitter) Commit() error {
 
 // RecordRouteRejection attempts to update the route status with a reason for a route being rejected.
 func (a *StatusAdmitter) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	performIngressConditionUpdate("reject", a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{
+	performIngressConditionUpdate("reject", watch.Error, a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, &routev1.RouteIngressCondition{
 		Type:    routev1.RouteAdmitted,
 		Status:  corev1.ConditionFalse,
 		Reason:  reason,
@@ -113,15 +115,29 @@ func (a *StatusAdmitter) RecordRouteRejection(route *routev1.Route, reason, mess
 }
 
 // performIngressConditionUpdate updates the route to the appropriate status for the provided condition.
-func performIngressConditionUpdate(action string, lease writerlease.Lease, tracker ContentionTracker, oc client.RoutesGetter, lister routelisters.RouteLister, route *routev1.Route, routerName, hostName string, condition routev1.RouteIngressCondition) {
+func performIngressConditionUpdate(action string, eventType watch.EventType, lease writerlease.Lease, tracker ContentionTracker, oc client.RoutesGetter, lister routelisters.RouteLister, route *routev1.Route, routerName, hostName string, condition *routev1.RouteIngressCondition) {
 	key := string(route.UID)
 	routeNamespace, routeName := route.Namespace, route.Name
 
 	lease.Try(key, func() (writerlease.WorkResult, bool) {
-		route, err := lister.Routes(routeNamespace).Get(routeName)
-		if err != nil {
-			return writerlease.None, false
+		var routeUpdated *routev1.Route
+		var err error
+		switch eventType {
+		case watch.Deleted:
+			// If route has been deleted from the cache, then we can't use the cache to retrieve it, but we still want
+			// to process it further to remove the admitted status.
+			if routeUpdated, err = oc.Routes(route.Namespace).Get(context.TODO(), routeName, metav1.GetOptions{}); err != nil {
+				return writerlease.None, false
+			}
+		default:
+			// Otherwise, use the cache for all other events.
+			routeUpdated, err = lister.Routes(routeNamespace).Get(routeName)
+			if err != nil {
+				return writerlease.None, false
+			}
 		}
+		route = routeUpdated
+
 		if string(route.UID) != key {
 			log.V(4).Info("skipped update due to route UID changing (likely delete and recreate)", "action", action, "namespace", route.Namespace, "name", route.Name)
 			return writerlease.None, false
@@ -167,14 +183,20 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 	})
 }
 
-// recordIngressCondition updates the matching ingress on the route (or adds a new one) with the specified
+// recordIngressCondition adds, updates, or removes the matching ingress on the route with the specified
 // condition, returning whether the route was updated or created, the time assigned to the condition, and
 // a pointer to the current ingress record.
-func recordIngressCondition(route *routev1.Route, name, hostName string, condition routev1.RouteIngressCondition) (changed, created bool, at time.Time, latest, original *routev1.RouteIngress) {
+func recordIngressCondition(route *routev1.Route, name, hostName string, condition *routev1.RouteIngressCondition) (changed, created bool, at time.Time, latest, original *routev1.RouteIngress) {
 	for i := range route.Status.Ingress {
 		existing := &route.Status.Ingress[i]
 		if existing.RouterName != name {
 			continue
+		}
+
+		// If condition is nil, remove the ingress condition.
+		if condition == nil {
+			route.Status.Ingress = append(route.Status.Ingress[:i], route.Status.Ingress[i+1:]...)
+			return true, false, time.Time{}, nil, nil
 		}
 
 		// check whether the ingress is out of date without modifying it
@@ -185,7 +207,7 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 		existingCondition := findCondition(existing, condition.Type)
 		if existingCondition != nil {
 			condition.LastTransitionTime = existingCondition.LastTransitionTime
-			if *existingCondition != condition {
+			if *existingCondition != *condition {
 				changed = true
 			}
 		}
@@ -202,15 +224,20 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 		existing.WildcardPolicy = route.Spec.WildcardPolicy
 		existing.RouterCanonicalHostname = hostName
 		if existingCondition == nil {
-			existing.Conditions = append(existing.Conditions, condition)
+			existing.Conditions = append(existing.Conditions, *condition)
 			existingCondition = &existing.Conditions[len(existing.Conditions)-1]
 		} else {
-			*existingCondition = condition
+			*existingCondition = *condition
 		}
 		now := nowFn()
 		existingCondition.LastTransitionTime = &now
 
 		return true, false, now.Time, existing, &original
+	}
+
+	// If we didn't find a matching ingress, but condition was nil, don't do anything.
+	if condition == nil {
+		return false, false, time.Time{}, nil, nil
 	}
 
 	// add a new ingress
@@ -220,7 +247,7 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 		WildcardPolicy:          route.Spec.WildcardPolicy,
 		RouterCanonicalHostname: hostName,
 		Conditions: []routev1.RouteIngressCondition{
-			condition,
+			*condition,
 		},
 	})
 	ingress := &route.Status.Ingress[len(route.Status.Ingress)-1]

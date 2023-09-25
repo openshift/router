@@ -127,15 +127,15 @@ func (p *HostAdmitter) HandleEndpoints(eventType watch.EventType, endpoints *kap
 // HandleRoute processes watch events on the Route resource.
 func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	if p.allowedNamespaces != nil && !p.allowedNamespaces.Has(route.Namespace) {
-		// Ignore routes we don't need to "service" due to namespace
-		// restrictions (ala for sharding).
-		return nil
+		// Routes that we don't need to "service" due to namespace
+		// restrictions (ala for sharding) should be deleted/cleared.
+		return p.plugin.HandleRoute(watch.Deleted, route)
 	}
 
 	if err := p.admitter(route); err != nil {
 		log.V(4).Info("route not admitted", "namespace", route.Namespace, "name", route.Name, "error", err.Error())
 		p.recorder.RecordRouteRejection(route, "RouteNotAdmitted", err.Error())
-		p.plugin.HandleRoute(watch.Deleted, route)
+		p.plugin.HandleRoute(watch.Error, route)
 		return err
 	}
 

@@ -635,7 +635,8 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("unexpected rejection: %#v", rejections)
 	}
 
-	plugin.HandleRoute(watch.Deleted, fooDupe3)
+	// Error and Delete are equivalent for unique_host plugin. Confirm Error deletes.
+	plugin.HandleRoute(watch.Error, fooDupe3)
 
 	if plugin.HostLen() != 1 {
 		t.Fatalf("did not clear claimed route: %#v", plugin)

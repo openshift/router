@@ -46,13 +46,13 @@ func (_ noopLease) Remove(key string) {
 }
 
 type fakePlugin struct {
-	t     watch.EventType
+	event watch.EventType
 	route *routev1.Route
 	err   error
 }
 
 func (p *fakePlugin) HandleRoute(t watch.EventType, route *routev1.Route) error {
-	p.t, p.route = t, route
+	p.event, p.route = t, route
 	return p.err
 }
 
@@ -173,6 +173,69 @@ func TestStatusNoOp(t *testing.T) {
 	}
 	if len(c.Actions()) > 0 {
 		t.Fatalf("unexpected actions: %#v", c.Actions())
+	}
+}
+
+// Test_StatusErrorNoOp tests that a watch.Error event should do nothing to route status.
+func Test_StatusErrorNoOp(t *testing.T) {
+	p := &fakePlugin{}
+	c := fake.NewSimpleClientset()
+	tracker := &fakeTracker{}
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+		Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+		Status: routev1.RouteStatus{
+			Ingress: []routev1.RouteIngress{},
+		},
+	}
+	lister := &routeLister{items: []*routev1.Route{route}}
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "a.b.c.d", noopLease{}, tracker)
+	err := admitter.HandleRoute(watch.Error, route)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(c.Actions()) > 0 {
+		t.Fatalf("unexpected actions: %#v", c.Actions())
+	}
+}
+
+// Test_StatusDelete tests that a watch.Delete event deletes/clears the route status.
+func Test_StatusDelete(t *testing.T) {
+	now := nowFn()
+	touched := metav1.Time{Time: now.Add(-time.Minute)}
+	p := &fakePlugin{}
+	c := fake.NewSimpleClientset()
+	tracker := &fakeTracker{}
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+		Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+		Status: routev1.RouteStatus{
+			Ingress: []routev1.RouteIngress{
+				{
+					Host:                    "route1.test.local",
+					RouterName:              "test",
+					RouterCanonicalHostname: "a.b.c.d",
+					Conditions: []routev1.RouteIngressCondition{
+						{
+							Type:               routev1.RouteAdmitted,
+							Status:             corev1.ConditionTrue,
+							LastTransitionTime: &touched,
+						},
+					},
+				},
+			},
+		},
+	}
+	lister := &routeLister{items: []*routev1.Route{route}}
+	admitter := NewStatusAdmitter(p, c.RouteV1(), lister, "test", "a.b.c.d", noopLease{}, tracker)
+	err := admitter.HandleRoute(watch.Deleted, route)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	routeProcessed := c.Actions()[0].(clientgotesting.UpdateAction).GetObject().(*routev1.Route)
+	ingress := findIngressForRoute(routeProcessed, "test")
+	if ingress != nil {
+		t.Fatalf("unexpected ingress found: %#v", routeProcessed)
 	}
 }
 

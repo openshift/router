@@ -125,11 +125,11 @@ func (c *RouterController) processNamespace(eventType watch.EventType, ns *kapi.
 					}
 				}
 			}
+		}
 
-			if routeMap, ok := c.NamespaceRoutes[ns.Name]; ok {
-				for _, route := range routeMap {
-					c.processRoute(watch.Modified, route)
-				}
+		if routeMap, ok := c.NamespaceRoutes[ns.Name]; ok {
+			for _, route := range routeMap {
+				c.processRoute(watch.Modified, route)
 			}
 		}
 	}
