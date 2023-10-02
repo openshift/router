@@ -2,19 +2,16 @@ package haproxytime
 
 import (
 	"errors"
+	"math"
 	"regexp"
 	"strconv"
 	"time"
 )
 
-// MaxTimeout defines the maximum duration that can be represented in
-// HAProxy's configuration.
-const MaxTimeout = 2147483647 * time.Millisecond
-
 var (
 	// OverflowError is returned when the parsed value exceeds the
 	// maximum allowed.
-	OverflowError = errors.New("value out of range")
+	OverflowError = errors.New("overflow")
 
 	// SyntaxError is returned when the input string doesn't match
 	// HAProxy's duration format.
@@ -24,11 +21,12 @@ var (
 )
 
 // ParseDuration takes a string representing a duration in HAProxy's
-// specific format and converts it into a time.Duration value. The
-// string can include an optional unit suffix, such as "us", "ms",
-// "s", "m", "h", or "d". If no suffix is provided, milliseconds are
-// assumed. The function returns an OverflowError if the value exceeds
-// MaxTimeout, or a SyntaxError if the input string doesn't match the
+// specific format, which permits days ("d"), and converts it into a
+// time.Duration value. The input string can include an optional unit
+// suffix, such as "us", "ms", "s", "m", "h", or "d". If no suffix is
+// provided, milliseconds are assumed. The function returns an
+// OverflowError if the value would result in a 64-bit integer
+// overflow, or a SyntaxError if the input string doesn't match the
 // expected format.
 func ParseDuration(input string) (time.Duration, error) {
 	matches := durationRE.FindStringSubmatch(input)
@@ -60,19 +58,14 @@ func ParseDuration(input string) (time.Duration, error) {
 		unit = 24 * time.Hour
 	}
 
-	value, err := strconv.ParseInt(numericPart, 10, 32)
+	value, err := strconv.ParseInt(numericPart, 10, 64)
 	if err != nil {
-		// ParseInt is documented to return only ErrSyntax or
-		// ErrRange when an error occurs. As we've already
-		// covered the ErrSyntax case with the regex, we can
-		// assume this is ErrRange.
 		return 0, OverflowError
 	}
 
-	duration := time.Duration(value) * unit
-	if duration > MaxTimeout {
+	if value > math.MaxInt64/int64(unit) {
 		return 0, OverflowError
 	}
 
-	return duration, nil
+	return time.Duration(value) * unit, nil
 }
