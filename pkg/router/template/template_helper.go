@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
@@ -24,6 +25,23 @@ import (
 const (
 	certConfigMap = "cert_config.map"
 )
+
+// haproxyMaxTimeout stores the maximum timeout value parsed from the
+// HAProxy configuration. It is initialised in the init() function to
+// ensure that the value is a valid HAProxy duration.
+var haproxyMaxTimeout time.Duration
+
+// init initializes the haproxyMaxTimeout variable by parsing the
+// value of templateutil.HaproxyMaxTimeout. It panics if the value is
+// not a valid HAProxy time duration, serving as a safeguard against
+// invalid configuration changes.
+func init() {
+	duration, err := haproxytime.ParseDuration(templateutil.HaproxyMaxTimeout)
+	if err != nil {
+		panic(err)
+	}
+	haproxyMaxTimeout = duration
+}
 
 func isTrue(s string) bool {
 	v, _ := strconv.ParseBool(s)
@@ -329,7 +347,7 @@ func clipHAProxyTimeoutValue(val string) string {
 	}
 
 	// First check to see if the timeout will fit into a time.Duration
-	_, err := haproxytime.ParseDuration(val)
+	duration, err := haproxytime.ParseDuration(val)
 	if err != nil {
 		switch err {
 		case haproxytime.OverflowError:
@@ -343,6 +361,12 @@ func clipHAProxyTimeoutValue(val string) string {
 			log.Info("invalid route annotation timeout, setting to", "default", templateutil.HaproxyDefaultTimeout)
 			return templateutil.HaproxyDefaultTimeout
 		}
+	}
+
+	// Then check to see if the timeout is larger than what HAProxy allows.
+	if duration > haproxyMaxTimeout {
+		log.Info("Route annotation timeout exceeds maximum allowable by HAProxy, clipping to max", "max", templateutil.HaproxyMaxTimeout)
+		return templateutil.HaproxyMaxTimeout
 	}
 
 	return val
