@@ -17,6 +17,7 @@ func Test_ParseDuration(t *testing.T) {
 		{" 1m", 0, haproxytime.SyntaxError},
 		{"1m ", 0, haproxytime.SyntaxError},
 		{"1 m", 0, haproxytime.SyntaxError},
+		{"0", 0, haproxytime.SyntaxError},
 		{"m", 0, haproxytime.SyntaxError},
 		{"", 0, haproxytime.SyntaxError},
 		{"+100", 0, haproxytime.SyntaxError},
