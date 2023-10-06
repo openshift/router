@@ -7,14 +7,17 @@ import (
 	"github.com/openshift/router/pkg/router/template/util/haproxytime"
 )
 
-func TestParseDuration(t *testing.T) {
+func Test_ParseDuration(t *testing.T) {
 	tests := []struct {
 		input            string
 		expectedDuration time.Duration
 		expectedErr      error
 	}{
 		// Syntax error test cases.
-		{" spaces are invalid", 0, haproxytime.SyntaxError},
+		{" 1m", 0, haproxytime.SyntaxError},
+		{"1m ", 0, haproxytime.SyntaxError},
+		{"1 m", 0, haproxytime.SyntaxError},
+		{"m", 0, haproxytime.SyntaxError},
 		{"", 0, haproxytime.SyntaxError},
 		{"+100", 0, haproxytime.SyntaxError},
 		{"-100", 0, haproxytime.SyntaxError},
@@ -24,20 +27,14 @@ func TestParseDuration(t *testing.T) {
 		{"invalid", 0, haproxytime.SyntaxError},
 
 		// Validate default unit.
-		{"0", 0 * time.Millisecond, nil},
+		{"1", 1 * time.Millisecond, nil},
 
 		// Small values for each unit.
-		{"0us", 0 * time.Microsecond, nil},
 		{"1us", 1 * time.Microsecond, nil},
-		{"0ms", 0 * time.Millisecond, nil},
 		{"1ms", 1 * time.Millisecond, nil},
-		{"0s", 0 * time.Second, nil},
 		{"1s", 1 * time.Second, nil},
-		{"0m", 0 * time.Minute, nil},
 		{"1m", 1 * time.Minute, nil},
-		{"0h", 0 * time.Hour, nil},
 		{"1h", 1 * time.Hour, nil},
-		{"0d", 0 * time.Hour, nil},
 		{"1d", 24 * time.Hour, nil},
 
 		// The maximum duration that can be represented in a

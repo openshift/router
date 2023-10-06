@@ -332,26 +332,25 @@ func clipHAProxyTimeoutValue(val string) string {
 		return val
 	}
 
-	// First check to see if the timeout will fit into a time.Duration
+	// First check to see if the value is syntactically correct and fits into a time.Duration.
 	duration, err := haproxytime.ParseDuration(val)
-	if err != nil {
-		switch err {
-		case haproxytime.OverflowError:
-			log.Info("route annotation timeout exceeds maximum allowable format, clipping to " + templateutil.HaproxyMaxTimeout, "input", val)
-			return templateutil.HaproxyMaxTimeout
-		case haproxytime.SyntaxError:
-			log.Error(err, "route annotation timeout removed because input is invalid", "input", val)
-			return ""
-		default:
-			// This is not used at the moment
-			log.Info("invalid route annotation timeout, setting to " + templateutil.HaproxyDefaultTimeout , "input", val)
-			return templateutil.HaproxyDefaultTimeout
-		}
+	switch err {
+	case nil:
+	case haproxytime.OverflowError:
+		log.Info("route annotation timeout exceeds maximum allowable format, clipping to "+templateutil.HaproxyMaxTimeout, "input", val)
+		return templateutil.HaproxyMaxTimeout
+	case haproxytime.SyntaxError:
+		log.Error(err, "route annotation timeout ignored because value is invalid", "input", val)
+		return ""
+	default:
+		// This is not used at the moment
+		log.Info("invalid route annotation timeout, setting to "+templateutil.HaproxyDefaultTimeout, "input", val)
+		return templateutil.HaproxyDefaultTimeout
 	}
 
 	// Then check to see if the timeout is larger than what HAProxy allows
-	if templateutil.HaproxyMaxTimeoutDuration < duration {
-		log.Info("route annotation timeout exceeds maximum allowable by HAProxy, clipping to " + templateutil.HaproxyMaxTimeout, "input", val)
+	if duration > templateutil.HaproxyMaxTimeoutDuration {
+		log.Info("route annotation timeout exceeds maximum allowable by HAProxy, clipping to "+templateutil.HaproxyMaxTimeout, "input", val)
 		return templateutil.HaproxyMaxTimeout
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
+	"github.com/openshift/router/pkg/router/template/util/haproxytime"
 
 	logf "github.com/openshift/router/log"
 )
@@ -20,6 +21,15 @@ const (
 	// timeout value is not parseable for reasons other than it is too large.
 	HaproxyDefaultTimeout = "5s"
 )
+
+// HaproxyMaxTimeoutDuration is HaproxyMaxTimeout as a time.Duration value.
+var HaproxyMaxTimeoutDuration = func() time.Duration {
+	d, err := haproxytime.ParseDuration(HaproxyMaxTimeout)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}()
 
 var log = logf.Logger.WithName("util")
 
@@ -103,12 +113,3 @@ func GenerateBackendNamePrefix(termination routev1.TLSTerminationType) string {
 
 	return prefix
 }
-
-// HaproxyMaxTimeoutDuration is HaproxyMaxTimeout as a time.Duration value.
-var HaproxyMaxTimeoutDuration = func() time.Duration {
-	d, err := time.ParseDuration(HaproxyMaxTimeout)
-	if err != nil {
-		panic(err)
-	}
-	return d
-}()

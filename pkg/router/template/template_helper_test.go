@@ -792,13 +792,54 @@ func TestClipHAProxyTimeoutValue(t *testing.T) {
 			expected: "",
 		},
 		{
-			value:    "0",
-			expected: "0",
-		},
-		{
 			value:    "s",
 			expected: "",
-			// Invalid input produces blank output
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "0",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "01s",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "1.5.8.9",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "1.5s",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "+-+",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "24d1",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "1d12h",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "foo",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "2562047.99h",
+			expected: "",
+			// Invalid input produces blank output.
 		},
 		{
 			value:    "10",
@@ -813,86 +854,58 @@ func TestClipHAProxyTimeoutValue(t *testing.T) {
 			expected: "10d",
 		},
 		{
-			value:    "100d",
-			expected: templateutil.HaproxyMaxTimeout,
-		},
-		{
-			value:    "1000h",
-			expected: templateutil.HaproxyMaxTimeout,
-		},
-		{
-			value:    "+-+",
-			expected: "",
-			// Invalid input produces blank output
-		},
-		{
-			value:    "1.5.8.9",
-			expected: "",
-			// Invalid input produces blank output
-		},
-		{
-			value:    "1.5s",
-			expected: "",
-			// Invalid input produces blank output
-		},
-		{
-			value:    "9223372036855ms",
-			expected: templateutil.HaproxyMaxTimeout,
-			// Exceeds the time.ParseDuration maximum
+			value:    "24d",
+			expected: "24d",
 		},
 		{
 			value:    "2147483647ms",
 			expected: "2147483647ms",
 		},
 		{
-			value:    "922337203685477581ms",
+			value:    "100d",
 			expected: templateutil.HaproxyMaxTimeout,
-			// Overflow error > 1<<63/10 + 1
+			// Exceeds the HAProxy maximum.
 		},
 		{
-			value:    "9223372036854775807", // max int64 without unit
+			value:    "1000h",
 			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the HAProxy maximum.
 		},
 		{
-			value:    "2562047.99h",
-			expected: "",
-			// Invalid input produces blank output
+			value:    "2147483648",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the HAProxy maximum and has no unit.
+		},
+		{
+			value:    "9223372036855ms",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "9223372036854776us",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
 		},
 		{
 			value:    "100000000000s",
 			expected: templateutil.HaproxyMaxTimeout,
-			// Exceeds the time.ParseDuration maximum
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "922337203685477581ms",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "9223372036854775807",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the int64 maximum and has no unit.
 		},
 		{
 			value:    "9999999999999999",
 			expected: templateutil.HaproxyMaxTimeout,
-			// Exceeds the time.ParseDuration maximum and has no unit
+			// Exceeds the haproxytime.ParseDuration maximum and has no unit.
 		},
-		{
-			value:    "25d",
-			expected: templateutil.HaproxyMaxTimeout,
-			// Exceeds the HAProxy maximum
-		},
-		{
-			value:    "24d",
-			expected: "24d",
-		},
-		{
-			value:    "24d1",
-			expected: "",
-			// Invalid input produces blank output
-		},
-		{
-			value:    "1d12h",
-			expected: "",
-			// Invalid input produces blank output
-		},
-		{
-			value:    "foo",
-			expected: "",
-			// Invalid input produces blank output
-		},
-
 	}
 	for _, tc := range testCases {
 		actual := clipHAProxyTimeoutValue(tc.value)
