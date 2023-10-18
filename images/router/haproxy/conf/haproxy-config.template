@@ -43,6 +43,9 @@
 {{- $pathRewriteTargetPattern := `^/.*$` -}}
 
 global
+  # Drop resource limit checks to mitigate https://issues.redhat.com/browse/OCPBUGS-21803 in HAProxy 2.6.
+  no strict-limits
+
 {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (env "ROUTER_HARD_STOP_AFTER")) }}
   hard-stop-after {{ $value }}
 {{- end }}
