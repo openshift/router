@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
+	templateutil "github.com/openshift/router/pkg/router/template/util"
 )
 
 func buildServiceAliasConfig(name, namespace, host, path string, termination routev1.TLSTerminationType, policy routev1.InsecureEdgeTerminationPolicyType, wildcard bool) ServiceAliasConfig {
@@ -791,6 +792,56 @@ func TestClipHAProxyTimeoutValue(t *testing.T) {
 			expected: "",
 		},
 		{
+			value:    "s",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "0",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "01s",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "1.5.8.9",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "1.5s",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "+-+",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "24d1",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "1d12h",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "foo",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
+			value:    "2562047.99h",
+			expected: "",
+			// Invalid input produces blank output.
+		},
+		{
 			value:    "10",
 			expected: "10",
 		},
@@ -803,12 +854,57 @@ func TestClipHAProxyTimeoutValue(t *testing.T) {
 			expected: "10d",
 		},
 		{
+			value:    "24d",
+			expected: "24d",
+		},
+		{
+			value:    "2147483647ms",
+			expected: "2147483647ms",
+		},
+		{
 			value:    "100d",
-			expected: haproxyMaxTimeout,
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the HAProxy maximum.
 		},
 		{
 			value:    "1000h",
-			expected: haproxyMaxTimeout,
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the HAProxy maximum.
+		},
+		{
+			value:    "2147483648",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the HAProxy maximum and has no unit.
+		},
+		{
+			value:    "9223372036855ms",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "9223372036854776us",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "100000000000s",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "922337203685477581ms",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum.
+		},
+		{
+			value:    "9223372036854775807",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the int64 maximum and has no unit.
+		},
+		{
+			value:    "9999999999999999",
+			expected: templateutil.HaproxyMaxTimeout,
+			// Exceeds the haproxytime.ParseDuration maximum and has no unit.
 		},
 	}
 	for _, tc := range testCases {
