@@ -681,9 +681,9 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
         {{- with $pathRewriteTarget := firstMatch $pathRewriteTargetPattern (index $cfg.Annotations "haproxy.router.openshift.io/rewrite-target") }}
   # Path rewrite target
           {{- if eq $pathRewriteTarget "/" }}
-  http-request replace-path ^{{ $cfg.Path }}/?(.*)$ {{ $pathRewriteTarget }}\1
+  http-request replace-path ^{{ $cfg.Path }}/?(.*)$ '{{ processRewriteTarget $pathRewriteTarget }}'
           {{- else }}
-  http-request replace-path ^{{ $cfg.Path }}(.*)$ {{ $pathRewriteTarget }}\1
+  http-request replace-path ^{{ $cfg.Path }}(.*)$ '{{ processRewriteTarget $pathRewriteTarget }}'
           {{- end }}
         {{- end }}{{/* rewrite target */}}
   
