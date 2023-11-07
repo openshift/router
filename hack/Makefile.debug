@@ -5,14 +5,15 @@ export GOOS=linux
 REGISTRY ?= quay.io
 IMAGE ?= openshift/openshift-router
 TAG ?= latest
+IMAGEBUILDER ?= podman
 
 new-openshift-router-image:
 	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-	imagebuilder -t $(IMAGE):$(TAG) -f hack/Dockerfile.debug .
+	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f hack/Dockerfile.debug .
 
 push:
-	docker tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
-	docker push $(REGISTRY)/$(IMAGE):$(TAG)
+	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
+	$(IMAGEBUILDER) push $(REGISTRY)/$(IMAGE):$(TAG)
 
 set-image:
 	oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
