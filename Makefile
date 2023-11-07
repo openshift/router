@@ -25,6 +25,13 @@ GO_LDFLAGS ?=-ldflags "-s -w $(call version-ldflags,$(PACKAGE)/pkg/version) $(GO
 GO=GO111MODULE=on GOFLAGS=-mod=vendor go
 GO_BUILD_RECIPE=CGO_ENABLED=1 $(GO) build -o $(BIN) $(GO_GCFLAGS) $(GO_LDFLAGS) $(MAIN_PACKAGE)
 
+# Get all the packages with benchmark tests defined to prevent
+# "go test" from entering all existing packages when "./.." is used.
+BENCH_PKGS ?= $(shell \grep -lR '^func Benchmark' | xargs -I {} dirname {} | sed 's|^|./|' | paste -sd ' ')
+BENCH_TEST ?= .
+BENCH_TIME ?= 2s
+BENCH_COUNT ?= 5
+
 all: build
 
 build:
@@ -38,6 +45,11 @@ images/router/*/Dockerfile.rhel: images/router/base/Dockerfile.rhel
 
 check:
 	CGO_ENABLED=1 $(GO) test -race ./...
+
+.PHONY: bench
+bench:
+	@# -run flag is added to avoid running unit tests
+	CGO_ENABLED=1 $(GO) test -bench=$(BENCH_TEST) -run='^#' -benchtime=$(BENCH_TIME) -count=$(BENCH_COUNT) -benchmem $(BENCH_PKGS)
 
 .PHONY: verify
 verify:

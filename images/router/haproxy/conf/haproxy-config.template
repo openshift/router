@@ -9,6 +9,8 @@
 {{- $dynamicConfigManager := .DynamicConfigManager }}
 {{- $router_ip_v4_v6_mode := env "ROUTER_IP_V4_V6_MODE" "v4" }}
 {{- $router_disable_http2 := env "ROUTER_DISABLE_HTTP2" "false" }}
+{{- $routerDefaultServerTimeout := env "ROUTER_DEFAULT_SERVER_TIMEOUT" "30s" }}
+{{- $routerDefaultTunnelTimeout := env "ROUTER_DEFAULT_TUNNEL_TIMEOUT" "1h" }}
 {{- $haveClientCA := .HaveClientCA }}
 {{- $haveCRLs := .HaveCRLs }}
 
@@ -41,6 +43,9 @@
 
 {{- /* pathRewriteTargetPattern: Match path rewrite-Target */}}
 {{- $pathRewriteTargetPattern := `^/.*$` -}}
+
+{{- /* Maximum timeout among all the routes, required to be set on the middle backends to avoid warning message about missing server timeout.  */}}
+{{- $routerMaxServerTimeout := maxTimeoutFirstMatchedAndClipped .State "haproxy.router.openshift.io/timeout" $timeSpecPattern $routerDefaultServerTimeout }}
 
 global
   # Drop resource limit checks to mitigate https://issues.redhat.com/browse/OCPBUGS-21803 in HAProxy 2.6.
@@ -158,13 +163,9 @@ defaults
   timeout connect {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_CONNECT_TIMEOUT") "5s" }}
   timeout client {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_CLIENT_TIMEOUT") "30s" }}
   timeout client-fin {{ firstMatch $timeSpecPattern (env "ROUTER_CLIENT_FIN_TIMEOUT") "1s" }}
-  timeout server {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s" }}
   timeout server-fin {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_FIN_TIMEOUT") "1s" }}
   timeout http-request {{ firstMatch $timeSpecPattern (env "ROUTER_SLOWLORIS_TIMEOUT") "10s" }}
   timeout http-keep-alive {{ firstMatch $timeSpecPattern (env "ROUTER_SLOWLORIS_HTTP_KEEPALIVE") "300s" }}
-
-  # Long timeout for WebSocket connections.
-  timeout tunnel {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_TUNNEL_TIMEOUT") "1h" }}
 
   {{- if isTrue (env "ROUTER_ENABLE_COMPRESSION") }}
   compression algo gzip
@@ -318,6 +319,7 @@ frontend public_ssl
 # traffic
 ##########################################################################
 backend be_sni
+  timeout server {{ $routerMaxServerTimeout }}
   server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy
 
 frontend fe_sni
@@ -434,6 +436,7 @@ frontend fe_sni
 ##########################################################################
 # backend for when sni does not exist, or ssl term needs to happen on the edge
 backend be_no_sni
+  timeout server {{ $routerMaxServerTimeout }}
   server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy
 
 frontend fe_no_sni
@@ -593,11 +596,11 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
   tcp-request content reject if !whitelist
         {{- end }}
-        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
-  timeout server  {{ $value }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout") $routerDefaultServerTimeout) }}
+  timeout server {{ $value }}
         {{- end }}
-        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel")) }}
-  timeout tunnel  {{ $value }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") $routerDefaultTunnelTimeout) }}
+  timeout tunnel {{ $value }}
         {{- end }}
 
         {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections") }}
@@ -797,8 +800,11 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
   tcp-request content reject if !whitelist
         {{- end }}
-        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
-  timeout tunnel  {{ $value }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout") $routerDefaultServerTimeout) }}
+  timeout server {{ $value }}
+        {{- end }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") (index $cfg.Annotations "haproxy.router.openshift.io/timeout") $routerDefaultTunnelTimeout) }}
+  timeout tunnel {{ $value }}
         {{- end }}
 
         {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections") }}
