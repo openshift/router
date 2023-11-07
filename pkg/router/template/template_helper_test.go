@@ -1067,3 +1067,105 @@ func TestParseIPList(t *testing.T) {
 		})
 	}
 }
+
+func TestMaxTimeoutFirstMatchedAndClipped(t *testing.T) {
+	testCases := []struct {
+		name       string
+		state      map[ServiceAliasConfigKey]ServiceAliasConfig
+		annotation string
+		pattern    string
+		values     []string
+		expected   string
+	}{
+		{
+			name: "Route timeout is maximum",
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
+				"test:route1": {
+					Annotations: map[string]string{
+						"haproxy.router.openshift.io/timeout": "5m",
+					},
+				},
+				"test:route2": {
+					Annotations: map[string]string{
+						"haproxy.router.openshift.io/timeout": "35s",
+					},
+				},
+				"test:route3": {
+					Annotations: map[string]string{
+						"haproxy.router.openshift.io/timeout-tunnel": "10m",
+					},
+				},
+				"test:route4": {},
+			},
+			annotation: "haproxy.router.openshift.io/timeout",
+			pattern:    `[1-9][0-9]*(us|ms|s|m|h|d)?`,
+			values:     []string{"30s"},
+			expected:   "5m",
+		},
+		{
+			name: "Default timeout is maximum",
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
+				"test:route1": {},
+				"test:route2": {},
+				"test:route3": {},
+			},
+			annotation: "haproxy.router.openshift.io/timeout",
+			pattern:    `[1-9][0-9]*(us|ms|s|m|h|d)?`,
+			values:     []string{"30s"},
+			expected:   "30s",
+		},
+		{
+			name: "Maximum default timeout is choosen",
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
+				"test:route1": {},
+				"test:route2": {},
+				"test:route3": {},
+			},
+			annotation: "haproxy.router.openshift.io/timeout",
+			pattern:    `[1-9][0-9]*(us|ms|s|m|h|d)?`,
+			values:     []string{"40s", "30s"},
+			expected:   "40s",
+		},
+		{
+			name: "Route timeout doesn't match",
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
+				"test:route1": {
+					Annotations: map[string]string{
+						"haproxy.router.openshift.io/timeout": "5minutes",
+					},
+				},
+				"test:route2": {
+					Annotations: map[string]string{
+						"haproxy.router.openshift.io/timeout": "35s",
+					},
+				},
+			},
+			annotation: "haproxy.router.openshift.io/timeout",
+			pattern:    `[1-9][0-9]*(us|ms|s|m|h|d)?`,
+			values:     []string{"30s"},
+			expected:   "35s",
+		},
+		{
+			name: "Route timeout clipped",
+			state: map[ServiceAliasConfigKey]ServiceAliasConfig{
+				"test:route1": {
+					Annotations: map[string]string{
+						"haproxy.router.openshift.io/timeout": "999999999s",
+					},
+				},
+			},
+			annotation: "haproxy.router.openshift.io/timeout",
+			pattern:    `[1-9][0-9]*(us|ms|s|m|h|d)?`,
+			values:     []string{"30s"},
+			expected:   "2147483647ms",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := maxTimeoutFirstMatchedAndClipped(tc.state, tc.annotation, tc.pattern, tc.values...)
+			if got != tc.expected {
+				t.Errorf("Failure: expected %q, got %q", tc.expected, got)
+			}
+		})
+	}
+}
