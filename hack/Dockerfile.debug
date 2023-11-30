@@ -1,6 +1,9 @@
 FROM centos:8
-RUN yum install -y https://github.com/frobware/haproxy-hacks/raw/master/RPMs/haproxy24-2.4.1-1.el8.x86_64.rpm
-RUN haproxy -vv
+RUN cd /etc/yum.repos.d/ && \
+    sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-* && \
+    yum update -y
+RUN yum install -y https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.11-rhel-8/haproxy22-2.2.24-4.rhaos4.11.el8.x86_64.rpm
 RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
