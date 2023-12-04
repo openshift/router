@@ -604,7 +604,11 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
 
           {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http")) }}
+            {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http-code")) }}
+  http-request deny deny_status {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http-code" }} if { src_http_req_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http" }} }
+            {{- else }}
   tcp-request content reject if { src_http_req_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http" }} }
+            {{- end }}
           {{- else }}
   #HTTP request rate not restricted
           {{- end }}

@@ -1096,6 +1096,7 @@ func modAnnotationsList(termination routev1.TLSTerminationType) []string {
 		"haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp",
 		"haproxy.router.openshift.io/rate-limit-connections.rate-tcp",
 		"haproxy.router.openshift.io/rate-limit-connections.rate-http",
+		"haproxy.router.openshift.io/rate-limit-connections.rate-http-code",
 		"haproxy.router.openshift.io/pod-concurrent-connections",
 		"router.openshift.io/haproxy.health.check.interval",
 	}
