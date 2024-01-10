@@ -330,6 +330,8 @@ frontend fe_sni
         {{- if $haveCRLs }} crl-file /var/lib/haproxy/mtls/latest/crls.pem {{ end }}
       {{- end }}
     {{- end }}
+  {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
+  {{- end }}
   mode http
 
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
@@ -439,6 +441,8 @@ frontend fe_no_sni
         {{- if $haveClientCA }} ca-file /var/lib/haproxy/mtls/latest/ca-bundle.pem {{ else }} ca-file /etc/ssl/certs/ca-bundle.trust.crt {{ end }}
         {{- if $haveCRLs }} crl-file /var/lib/haproxy/mtls/latest/crls.pem {{ end }}
       {{- end }}
+    {{- end }}
+    {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
     {{- end }}
   mode http
 
