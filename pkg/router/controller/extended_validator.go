@@ -19,14 +19,14 @@ type ExtendedValidator struct {
 	// plugin is the next plugin in the chain.
 	plugin router.Plugin
 
-	// recorder is an interface for indicating route rejections.
-	recorder RejectionRecorder
+	// recorder is an interface for indicating route status.
+	recorder RouteStatusRecorder
 }
 
 // NewExtendedValidator creates a plugin wrapper that ensures only routes that
 // pass extended validation are relayed to the next plugin in the chain.
-// Recorder is an interface for indicating why a route was rejected.
-func NewExtendedValidator(plugin router.Plugin, recorder RejectionRecorder) *ExtendedValidator {
+// Recorder is an interface for indicating route status updates.
+func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder) *ExtendedValidator {
 	return &ExtendedValidator{
 		plugin:   plugin,
 		recorder: recorder,

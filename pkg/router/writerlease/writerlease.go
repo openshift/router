@@ -31,13 +31,13 @@ type Lease interface {
 	WaitUntil(t time.Duration) (leader bool, ok bool)
 	// Try runs the provided function when the lease is held is the leader. It retries work until
 	// the work func indicates retry is not necessary.
-	Try(key string, fn WorkFunc)
+	Try(key WorkKey, fn WorkFunc)
 	// Extend indicates that the caller has observed another writer performing work against
 	// the specified key. This will clear the work remaining for the lease and extend the lease
 	// interval.
-	Extend(key string)
+	Extend(key WorkKey)
 	// Remove clears any pending work for the provided key.
-	Remove(key string)
+	Remove(key WorkKey)
 }
 
 // WorkFunc is a retriable unit of work. It should return an error if the work couldn't be
@@ -46,6 +46,8 @@ type Lease interface {
 type WorkFunc func() (result WorkResult, retry bool)
 
 type WorkResult int
+
+type WorkKey string
 
 const (
 	None WorkResult = iota
@@ -91,7 +93,7 @@ type WriterLease struct {
 
 	lock    sync.Mutex
 	id      int
-	queued  map[string]*work
+	queued  map[WorkKey]*work
 	queue   workqueue.DelayingInterface
 	state   State
 	expires time.Time
@@ -115,7 +117,7 @@ func New(leaseDuration, retryInterval time.Duration) *WriterLease {
 		retryInterval: retryInterval,
 
 		nowFn:  time.Now,
-		queued: make(map[string]*work),
+		queued: make(map[WorkKey]*work),
 		queue:  workqueue.NewDelayingQueue(),
 		once:   make(chan struct{}),
 	}
@@ -131,7 +133,7 @@ func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, bac
 		retryInterval: retryInterval,
 
 		nowFn:  time.Now,
-		queued: make(map[string]*work),
+		queued: make(map[WorkKey]*work),
 		queue:  workqueue.NewNamedDelayingQueue(name),
 		once:   make(chan struct{}),
 	}
@@ -173,7 +175,7 @@ func (l *WriterLease) WaitUntil(t time.Duration) (bool, bool) {
 	return state == Leader, true
 }
 
-func (l *WriterLease) Try(key string, fn WorkFunc) {
+func (l *WriterLease) Try(key WorkKey, fn WorkFunc) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	l.id++
@@ -191,7 +193,7 @@ func (l *WriterLease) Try(key string, fn WorkFunc) {
 	}
 }
 
-func (l *WriterLease) Extend(key string) {
+func (l *WriterLease) Extend(key WorkKey) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if _, ok := l.queued[key]; ok {
@@ -212,13 +214,13 @@ func (l *WriterLease) Len() int {
 	return len(l.queued)
 }
 
-func (l *WriterLease) Remove(key string) {
+func (l *WriterLease) Remove(key WorkKey) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	delete(l.queued, key)
 }
 
-func (l *WriterLease) get(key string) *work {
+func (l *WriterLease) get(key WorkKey) *work {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	return l.queued[key]
@@ -235,7 +237,7 @@ func (l *WriterLease) work() bool {
 	if shutdown {
 		return false
 	}
-	key := item.(string)
+	key := item.(WorkKey)
 
 	work := l.get(key)
 	if work == nil {
@@ -269,7 +271,7 @@ func (l *WriterLease) work() bool {
 }
 
 // retryKey schedules the key for a retry in the future.
-func (l *WriterLease) retryKey(key string, result WorkResult) {
+func (l *WriterLease) retryKey(key WorkKey, result WorkResult) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -280,7 +282,7 @@ func (l *WriterLease) retryKey(key string, result WorkResult) {
 	log.V(4).Info("retrying work", "worker", l.name, "key", key, "state", l.state, "tick", l.tick, "expires", l.expires)
 }
 
-func (l *WriterLease) finishKey(key string, result WorkResult, id int) {
+func (l *WriterLease) finishKey(key WorkKey, result WorkResult, id int) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 

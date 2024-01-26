@@ -785,7 +785,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	factory.RouteModifierFn = o.RouteUpdate
 
 	var plugin router.Plugin = templatePlugin
-	var recorder controller.RejectionRecorder = controller.LogRejections
+	var recorder controller.RouteStatusRecorder = controller.LogRejections
 	if o.UpdateStatus {
 		lease := writerlease.New(time.Minute, 3*time.Second)
 		go lease.Run(stopCh)
@@ -797,6 +797,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
 		recorder = status
 		plugin = status
+	}
+	if o.UpgradeValidation {
+		plugin = controller.NewUpgradeValidation(plugin, recorder)
 	}
 	if o.ExtendedValidation {
 		plugin = controller.NewExtendedValidator(plugin, recorder)
