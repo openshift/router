@@ -375,3 +375,35 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 
 	return certs, nil
 }
+
+// UpgradeRouteValidation performs an upgrade validation for
+// a route. This checks for issues that will cause failures in the next
+// OpenShift version.
+func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
+	tlsConfig := route.Spec.TLS
+	result := field.ErrorList{}
+
+	if tlsConfig == nil {
+		return result
+	}
+
+	if len(tlsConfig.Certificate) > 0 {
+		certs, err := cert.ParseCertsPEM([]byte(tlsConfig.Certificate))
+		if err != nil {
+			// Handling cert parsing errors, like malformed or invalid certs, isn't necessary here,
+			// as the ExtendedValidator plugin is responsible for handling these errors.
+			return result
+		}
+
+		if len(certs) < 1 {
+			return result
+		}
+
+		if certs[0].SignatureAlgorithm == x509.SHA1WithRSA || certs[0].SignatureAlgorithm == x509.ECDSAWithSHA1 {
+			tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("certificate")
+			message := "OpenShift 4.16 does not support certificates using SHA1 signature algorithms. This route will be rejected in OpenShift 4.16. To maintain functionality in OpenShift 4.16, generate a new certificate using a supported signature algorithm such as SHA256, SHA384, or SHA512, and update this route accordingly."
+			result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", message))
+		}
+	}
+	return result
+}

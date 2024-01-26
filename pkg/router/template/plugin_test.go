@@ -125,6 +125,48 @@ bGvtpjWA4r9WASIDPFsxk/cDEEEO6iPxgMOf5MdpQC2y2MU0rzF/Gg==
 -----END CERTIFICATE-----`
 
 	testDestinationCACertificate = testCACertificate
+
+	// openssl req -x509 -sha1 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateRsaSha1.key -out testCertificateRsaSha1.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -sha1 -in testCertificateRsaSha1.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateRsaSha1.crt
+	//
+	// Key = testCertificateRsaSha1Key
+	testCertificateRsaSha1 = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAl2gAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjHowDQYJKoZIhvcNAQEF
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDAxMTAxOTU2MDhaFw0zNDAxMDcx
+OTU2MDhaMHwxGDAWBgNVBAMMD3d3dy5leGFtcGxlLmNvbTELMAkGA1UECAwCU0Mx
+CzAJBgNVBAYTAlVTMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUuY29t
+MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdFeGFtcGxlMIGfMA0GCSqGSIb3
+DQEBAQUAA4GNADCBiQKBgQC4hsxewdQOk5goI9bdkR1urJnbu7TeZdDtPz0Mi976
+1guAxNPQO98t0X/Bhs7toZz/zIG4vQZfXaV2IU1ry7pQ64I8bTPXQ/Kpt8zW3zng
+dPeIJqVujKPybIL/teHJ1Bw4c4x1ZMpAGoZ6s750tQy1zP7WRqStJv2G9l3OQLFu
+AQIDAQABo00wSzAJBgNVHRMEAjAAMB0GA1UdDgQWBBS6uwvwYLV5u4TX9ZFMBpQe
+hW4YKjAfBgNVHSMEGDAWgBRQlTo+l7rGlVRX5myTzXIHBN587jANBgkqhkiG9w0B
+AQUFAAOBgQB+1bS0s6SpuCuMFFMpeBcE7WX//AGU/ZcRfO60ithV6NQ9OnN3djfS
+H+ZeW3QEaQVMM0PIOuMO22/9AN6UVs8IxSuSkrfBOQ+PY/3169b6rpGl44/ZTx6B
+O+c5wkkhnmy4+T6KnjQE5aO1VKBp3Ocl8PyIBqLLV52pZWUuytGlqA==
+-----END CERTIFICATE-----
+`
+	testCertificateRsaSha1Key = `
+-----BEGIN PRIVATE KEY-----
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBALiGzF7B1A6TmCgj
+1t2RHW6smdu7tN5l0O0/PQyL3vrWC4DE09A73y3Rf8GGzu2hnP/Mgbi9Bl9dpXYh
+TWvLulDrgjxtM9dD8qm3zNbfOeB094gmpW6Mo/Jsgv+14cnUHDhzjHVkykAahnqz
+vnS1DLXM/tZGpK0m/Yb2Xc5AsW4BAgMBAAECgYAWaNBzBYkSSBxna4rRl6kCYtXA
+mLgrdiP8W/y3BFmNDueQuNacaFj/QH0KbKu+sizV5+ktHU+jz0Sj5wF3AOPccRtJ
+QcGxr66f1uVPeBQfO27ac8b5UYwIFCu4gJ9IQp86INARuO4U5UR2o7sJ8rUpmf2M
+p2JUQwKXjO0qDyDcQQJBAODWqTkdr0Av2vAOZe6SOfmr+u/2shAWPTg8uc1Y08Ng
+1Fh0o7vqkOQ6Amtw4o5lE0RE0LlPSnxhpl28sT0gwUkCQQDSGdtIk77rh+WqNjYZ
+GWhKBA2H8w0jo37Wz1aGyv/Yt6LC/LgOdOcadu4xSIgG+Al9JHdzLx7iWvNdIjD6
+l/75AkEA1szdwL5WVnkhrmPjCAhVMO0YALbrqKjGdfq1+7OYJDlWxOcyIe5X3GJ7
+O1AOccGopXkk+1UAMVJNUZJata6cWQJBAIEvhubsecNHL09mwALU3YxNS6ihKR4V
+xML+gBynq4Ms/vZYADBbb1KVeEZza7ilQOhiyNPZUGssM2G7yVP8q7kCQHFCAgmO
+redbrtiWNunEy1hVHOJD6ALriPz2i1W51NMbrPV2kOy9GpV/p3oby3GmXHs+Zlo6
+bBbOLhI7o+VlGaM=
+-----END PRIVATE KEY-----`
 )
 
 // TestRouter provides an implementation of the plugin's router interface suitable for unit testing.
@@ -471,23 +513,45 @@ func TestHandleTCPEndpoints(t *testing.T) {
 	}
 }
 
-type rejection struct {
+type status struct {
 	route   *routev1.Route
 	reason  string
 	message string
 }
 
-type fakeRejections struct {
-	rejections []rejection
+type fakeStatusRecorder struct {
+	rejections                 []status
+	unservableInFutureVersions []status
 }
 
-func (r *fakeRejections) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	r.rejections = append(r.rejections, rejection{route: route, reason: reason, message: message})
+func (r *fakeStatusRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
+	r.rejections = append(r.rejections, status{route: route, reason: reason, message: message})
+}
+func (r *fakeStatusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
+	r.unservableInFutureVersions = append(r.unservableInFutureVersions, status{route: route, reason: reason, message: message})
+}
+func (r *fakeStatusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	var unservableInFutureVersions []status
+	for _, rejection := range r.unservableInFutureVersions {
+		if rejection.route.UID != route.UID {
+			unservableInFutureVersions = append(unservableInFutureVersions, rejection)
+		}
+	}
+	r.unservableInFutureVersions = unservableInFutureVersions
+}
+
+func (r *fakeStatusRecorder) isUnservableInFutureVersions(route *routev1.Route) bool {
+	for _, r := range r.unservableInFutureVersions {
+		if r.route.UID == route.UID {
+			return true
+		}
+	}
+	return false
 }
 
 // TestHandleRoute test route watch events
 func TestHandleRoute(t *testing.T) {
-	rejections := &fakeRejections{}
+	rejections := &fakeStatusRecorder{}
 	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
 	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
@@ -538,7 +602,7 @@ func TestHandleRoute(t *testing.T) {
 	}
 
 	if len(rejections.rejections) > 0 {
-		t.Fatalf("did not expect a recorded rejection: %#v", rejections)
+		t.Fatalf("did not expect a recorded status: %#v", rejections)
 	}
 
 	// attempt to add a second route with a newer time, verify it is ignored
@@ -571,7 +635,7 @@ func TestHandleRoute(t *testing.T) {
 		rejections.rejections[0].route.Name != "dupe" ||
 		rejections.rejections[0].reason != "HostAlreadyClaimed" ||
 		rejections.rejections[0].message != "route test already exposes www.example.com and is older" {
-		t.Fatalf("did not record rejection: %#v", rejections)
+		t.Fatalf("did not record status: %#v", rejections)
 	}
 	rejections.rejections = nil
 
@@ -590,7 +654,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("unexpected claimed routes: %#v", r)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("did not record rejection: %#v", rejections)
+		t.Fatalf("did not record status: %#v", rejections)
 	}
 	rejections.rejections = nil
 
@@ -610,7 +674,7 @@ func TestHandleRoute(t *testing.T) {
 		rejections.rejections[0].route.Name != "test" ||
 		rejections.rejections[0].reason != "HostAlreadyClaimed" ||
 		rejections.rejections[0].message != "replaced by older route dupe" {
-		t.Fatalf("did not record rejection: %#v", rejections)
+		t.Fatalf("did not record status: %#v", rejections)
 	}
 	rejections.rejections = nil
 
@@ -640,7 +704,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("did not clear claimed route: %#v", plugin)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("unexpected rejection: %#v", rejections)
+		t.Fatalf("unexpected status: %#v", rejections)
 	}
 
 	plugin.HandleRoute(watch.Deleted, fooDupe3)
@@ -649,7 +713,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("did not clear claimed route: %#v", plugin)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("unexpected rejection: %#v", rejections)
+		t.Fatalf("unexpected status: %#v", rejections)
 	}
 
 	//delete
@@ -671,7 +735,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Errorf("did not clear claimed route: %#v", plugin)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("unexpected rejection: %#v", rejections)
+		t.Fatalf("unexpected status: %#v", rejections)
 	}
 }
 
@@ -703,7 +767,7 @@ func (p *fakePlugin) Commit() error {
 
 // TestHandleRouteExtendedValidation test route watch events with extended route configuration validation.
 func TestHandleRouteExtendedValidation(t *testing.T) {
-	rejections := &fakeRejections{}
+	rejections := &fakeStatusRecorder{}
 	fake := &fakePlugin{}
 	plugin := controller.NewExtendedValidator(fake, rejections)
 
@@ -731,7 +795,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 	}
 
 	if len(rejections.rejections) > 0 {
-		t.Fatalf("did not expect a recorded rejection: %#v", rejections)
+		t.Fatalf("did not expect a recorded status: %#v", rejections)
 	}
 
 	tests := []struct {
@@ -1019,13 +1083,119 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 		},
 	}
 
+	uidCount := 0
+	nextUID := func() types.UID {
+		uidCount++
+		return types.UID(fmt.Sprintf("%03d", uidCount))
+	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			tc.route.UID = nextUID()
 			err := plugin.HandleRoute(watch.Added, tc.route)
 			if tc.errorExpected && err == nil {
 				t.Fatal("expected an error, got none")
 			} else if !tc.errorExpected && err != nil {
 				t.Fatalf("expected no errors, got %v", err)
+			}
+		})
+	}
+}
+
+// TestHandleRouteUpgradeValidation tests the upgrade route validation plugin.
+func TestHandleRouteUpgradeValidation(t *testing.T) {
+	rejections := &fakeStatusRecorder{}
+	fake := &fakePlugin{}
+	plugin := controller.NewUpgradeValidation(fake, rejections)
+
+	tests := []struct {
+		name                               string
+		route                              *routev1.Route
+		unservableInFutureVersionsExpected bool
+	}{
+		{
+			name: "route with no cert should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.normal.test",
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "route with SHA256 cert should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.example.com",
+					TLS: &routev1.TLSConfig{
+						Termination:              routev1.TLSTerminationReencrypt,
+						Certificate:              testCertificate,
+						Key:                      testPrivateKey,
+						CACertificate:            testCACertificate,
+						DestinationCACertificate: testDestinationCACertificate,
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "route with invalid certs should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.reencrypt.badconfig.test",
+					TLS: &routev1.TLSConfig{
+						Termination:              routev1.TLSTerminationReencrypt,
+						Certificate:              "def",
+						Key:                      "ghi",
+						CACertificate:            "jkl",
+						DestinationCACertificate: "abc",
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "route with expired cert should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.edge.expiredcert.test",
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
+						CACertificate: testCACertificate,
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "SHA1 certificate should be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.reencrypt.sha1.test",
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationReencrypt,
+						Certificate: testCertificateRsaSha1,
+						Key:         testCertificateRsaSha1Key,
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: true,
+		},
+	}
+
+	uidCount := 0
+	nextUID := func() types.UID {
+		uidCount++
+		return types.UID(fmt.Sprintf("%03d", uidCount))
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.route.UID = nextUID()
+			plugin.HandleRoute(watch.Added, tc.route)
+			unservableInFutureVersions := rejections.isUnservableInFutureVersions(tc.route)
+			if tc.unservableInFutureVersionsExpected != unservableInFutureVersions {
+				t.Fatalf("expected to be unservableInFutureVersions=%t, got unservableInFutureVersions=%t", tc.unservableInFutureVersionsExpected, unservableInFutureVersions)
 			}
 		})
 	}

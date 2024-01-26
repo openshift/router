@@ -22,19 +22,34 @@ const (
 	BlockedTestDomain = "domain.blocked.test"
 )
 
-type rejectionRecorder struct {
-	rejections map[string]string
+type routeStatusRecorder struct {
+	rejections                 map[string]string
+	unservableInFutureVersions map[string]string
 }
 
-func (_ rejectionRecorder) rejectionKey(route *routev1.Route) string {
+func (_ routeStatusRecorder) rejectionKey(route *routev1.Route) string {
 	return route.Namespace + "-" + route.Name
 }
 
-func (r rejectionRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
+func (r routeStatusRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
 	r.rejections[r.rejectionKey(route)] = reason
 }
 
-func (r rejectionRecorder) Clear() {
+func (r routeStatusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	unservableInFutureVersions := make(map[string]string)
+	for key, reason := range r.unservableInFutureVersions {
+		if key != r.rejectionKey(route) {
+			unservableInFutureVersions[key] = reason
+		}
+	}
+	r.unservableInFutureVersions = unservableInFutureVersions
+}
+
+func (r routeStatusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
+	r.unservableInFutureVersions[r.rejectionKey(route)] = reason
+}
+
+func (r routeStatusRecorder) Clear() {
 	r.rejections = make(map[string]string)
 }
 
@@ -248,7 +263,7 @@ func TestWildcardHostDeny(t *testing.T) {
 func TestWildcardSubDomainOwnership(t *testing.T) {
 	p := &fakePlugin{}
 
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, wildcardAdmitter, true, false, recorder)
 
 	oldest := metav1.Time{Time: time.Now()}
@@ -505,7 +520,7 @@ func TestValidRouteAdmissionFuzzing(t *testing.T) {
 	p := &fakePlugin{}
 
 	admitAll := func(route *routev1.Route) error { return nil }
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, RouteAdmissionFunc(admitAll), true, false, recorder)
 
 	oldest := metav1.Time{Time: time.Now()}
@@ -602,7 +617,7 @@ func TestInvalidRouteAdmissionFuzzing(t *testing.T) {
 	p := &fakePlugin{}
 
 	admitAll := func(route *routev1.Route) error { return nil }
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, RouteAdmissionFunc(admitAll), true, false, recorder)
 
 	oldest := metav1.Time{Time: time.Now()}
@@ -787,7 +802,7 @@ func TestStatusWildcardPolicyNoOp(t *testing.T) {
 	touched := metav1.Time{Time: now.Add(-time.Minute)}
 	p := &fakePlugin{}
 	c := fake.NewSimpleClientset()
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, wildcardAdmitter, true, false, recorder)
 	err := admitter.HandleRoute(watch.Added, &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{Name: "wild", Namespace: "thing", UID: types.UID("uid8")},
@@ -825,7 +840,7 @@ func TestStatusWildcardPolicyNotAllowedNoOp(t *testing.T) {
 	touched := metav1.Time{Time: now.Add(-time.Minute)}
 	p := &fakePlugin{}
 	c := fake.NewSimpleClientset()
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, wildcardAdmitter, false, false, recorder)
 	err := admitter.HandleRoute(watch.Added, &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{Name: "wild", Namespace: "thing", UID: types.UID("uid8")},
@@ -862,7 +877,7 @@ func TestDisableOwnershipChecksFuzzing(t *testing.T) {
 	p := &fakePlugin{}
 
 	admitAll := func(route *routev1.Route) error { return nil }
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	uniqueHostPlugin := NewUniqueHost(p, true, recorder)
 	admitter := NewHostAdmitter(uniqueHostPlugin, RouteAdmissionFunc(admitAll), true, true, recorder)
 
@@ -1026,7 +1041,7 @@ func TestDisableOwnershipChecksFuzzing(t *testing.T) {
 
 func TestHandleNamespaceProcessing(t *testing.T) {
 	p := &fakePlugin{}
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, wildcardAdmitter, true, false, recorder)
 
 	// Set namespaces handled in the host admitter plugin, the fakePlugin in
@@ -1148,7 +1163,7 @@ func TestHandleNamespaceProcessing(t *testing.T) {
 func TestWildcardPathRoutesWithoutNSCheckResyncs(t *testing.T) {
 	p := &fakePlugin{}
 
-	recorder := rejectionRecorder{rejections: make(map[string]string)}
+	recorder := routeStatusRecorder{rejections: make(map[string]string)}
 	admitter := NewHostAdmitter(p, wildcardAdmitter, true, true, recorder)
 
 	oldest := metav1.Time{Time: time.Now()}
