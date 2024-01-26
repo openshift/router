@@ -32,7 +32,7 @@ func HostForRoute(route *routev1.Route) string {
 type UniqueHost struct {
 	plugin router.Plugin
 
-	recorder RejectionRecorder
+	recorder RouteStatusRecorder
 
 	// nil means different than empty
 	allowedNamespaces sets.String
@@ -45,7 +45,7 @@ type UniqueHost struct {
 // NewUniqueHost creates a plugin wrapper that ensures only unique routes are passed into
 // the underlying plugin. Recorder is an interface for indicating why a route was
 // rejected.
-func NewUniqueHost(plugin router.Plugin, disableOwnershipCheck bool, recorder RejectionRecorder) *UniqueHost {
+func NewUniqueHost(plugin router.Plugin, disableOwnershipCheck bool, recorder RouteStatusRecorder) *UniqueHost {
 	routeActivationFn := hostindex.SameNamespace
 	if disableOwnershipCheck {
 		routeActivationFn = hostindex.OldestFirst

@@ -37,14 +37,14 @@ func (_ noopLease) WaitUntil(t time.Duration) (leader bool, ok bool) {
 	panic("not implemented")
 }
 
-func (_ noopLease) Try(key string, fn writerlease.WorkFunc) {
+func (_ noopLease) Try(key writerlease.WorkKey, fn writerlease.WorkFunc) {
 	fn()
 }
 
-func (_ noopLease) Extend(key string) {
+func (_ noopLease) Extend(key writerlease.WorkKey) {
 }
 
-func (_ noopLease) Remove(key string) {
+func (_ noopLease) Remove(key writerlease.WorkKey) {
 	panic("not implemented")
 }
 
@@ -116,14 +116,14 @@ type recorded struct {
 }
 
 type fakeTracker struct {
-	contended map[string]recorded
-	cleared   map[string]recorded
-	results   map[string]bool
+	contended map[contentionKey]recorded
+	cleared   map[contentionKey]recorded
+	results   map[contentionKey]bool
 }
 
-func (t *fakeTracker) IsChangeContended(id string, now time.Time, ingress *routev1.RouteIngress) bool {
+func (t *fakeTracker) IsChangeContended(id contentionKey, now time.Time, ingress *routev1.RouteIngress) bool {
 	if t.contended == nil {
-		t.contended = make(map[string]recorded)
+		t.contended = make(map[contentionKey]recorded)
 	}
 	t.contended[id] = recorded{
 		at:      now,
@@ -132,13 +132,18 @@ func (t *fakeTracker) IsChangeContended(id string, now time.Time, ingress *route
 	return t.results[id]
 }
 
-func (t *fakeTracker) Clear(id string, ingress *routev1.RouteIngress) {
+func (t *fakeTracker) Clear(id contentionKey, ingress *routev1.RouteIngress) {
 	if t.cleared == nil {
-		t.cleared = make(map[string]recorded)
+		t.cleared = make(map[contentionKey]recorded)
+	}
+	lastTouchedTime := ingressConditionTouched(ingress)
+	if lastTouchedTime == nil {
+		now := nowFn()
+		lastTouchedTime = &now
 	}
 	t.cleared[id] = recorded{
 		ingress: ingress,
-		at:      ingressConditionTouched(ingress).Time,
+		at:      lastTouchedTime.Time,
 	}
 }
 
@@ -606,7 +611,7 @@ func TestStatusFightBetweenReplicas(t *testing.T) {
 
 	lister1.items[0] = outObj2
 
-	tracker1.results = map[string]bool{"uid1": true}
+	tracker1.results = map[contentionKey]bool{"uid1": true}
 	now3 := metav1.Time{Time: now1.Time.Add(time.Minute)}
 	nowFn = func() metav1.Time { return now3 }
 	outObj2.Spec.Host = "route1.test.local"
@@ -686,7 +691,7 @@ func TestStatusFightBetweenRouters(t *testing.T) {
 	nowFn = func() metav1.Time { return now2 }
 	touched2 := metav1.Time{Time: now2.Add(-time.Minute)}
 	tracker.cleared = nil
-	tracker.results = map[string]bool{"uid1": true}
+	tracker.results = map[contentionKey]bool{"uid1": true}
 	route2 := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
 		Spec:       routev1.RouteSpec{Host: "route2.test-new.local"},
@@ -799,8 +804,8 @@ func TestRouterContention(t *testing.T) {
 	otherObj := currObj.DeepCopy()
 	ingress := findIngressForRoute(otherObj, "test")
 	ingress.Host = "route1.other1.local"
-	t1.Changed(string(otherObj.UID), ingress)
-	if t1.IsChangeContended(string(otherObj.UID), nowFn().Time, ingress) {
+	t1.Changed(contentionKey(otherObj.UID), ingress)
+	if t1.IsChangeContended(contentionKey(otherObj.UID), nowFn().Time, ingress) {
 		t.Fatal("change shouldn't be contended yet")
 	}
 	currObj = makePass(t, "route1.test.local", r1, otherObj, true, false)
@@ -808,8 +813,8 @@ func TestRouterContention(t *testing.T) {
 	// updating the route sets us back to candidate, but if we observe our own write
 	// we stay in candidate
 	ingress = findIngressForRoute(currObj, "test").DeepCopy()
-	t1.Changed(string(currObj.UID), ingress)
-	if t1.IsChangeContended(string(currObj.UID), nowFn().Time, ingress) {
+	t1.Changed(contentionKey(currObj.UID), ingress)
+	if t1.IsChangeContended(contentionKey(currObj.UID), nowFn().Time, ingress) {
 		t.Fatal("change should not be contended")
 	}
 	makePass(t, "route1.test.local", r1, currObj, false, false)
@@ -817,8 +822,8 @@ func TestRouterContention(t *testing.T) {
 	// updating the route sets us back to candidate, and if we detect another change to
 	// ingress we will go into conflict, even with our original write
 	ingress = ingressChangeWithNewHost(currObj, "test", "route1.other2.local")
-	t1.Changed(string(currObj.UID), ingress)
-	if !t1.IsChangeContended(string(currObj.UID), nowFn().Time, ingress) {
+	t1.Changed(contentionKey(currObj.UID), ingress)
+	if !t1.IsChangeContended(contentionKey(currObj.UID), nowFn().Time, ingress) {
 		t.Fatal("change should be contended")
 	}
 	makePass(t, "route1.test.local", r1, currObj, false, false)
@@ -826,9 +831,9 @@ func TestRouterContention(t *testing.T) {
 	// another contending write occurs, but the tracker isn't flushed so
 	// we stay contended
 	ingress = ingressChangeWithNewHost(currObj, "test", "route1.other3.local")
-	t1.Changed(string(currObj.UID), ingress)
+	t1.Changed(contentionKey(currObj.UID), ingress)
 	t1.flush()
-	if !t1.IsChangeContended(string(currObj.UID), nowFn().Time, ingress) {
+	if !t1.IsChangeContended(contentionKey(currObj.UID), nowFn().Time, ingress) {
 		t.Fatal("change should be contended")
 	}
 	makePass(t, "route1.test.local", r1, currObj, false, false)
@@ -843,13 +848,416 @@ func TestRouterContention(t *testing.T) {
 	// multiple changes to host name don't cause contention
 	currObj = makePass(t, "route2.test.local", r1, currObj, true, false)
 	currObj = makePass(t, "route3.test.local", r1, currObj, true, false)
-	t1.Changed(string(currObj.UID), findIngressForRoute(currObj, "test"))
+	t1.Changed(contentionKey(currObj.UID), findIngressForRoute(currObj, "test"))
 	currObj = makePass(t, "route4.test.local", r1, currObj, true, false)
-	t1.Changed(string(currObj.UID), findIngressForRoute(currObj, "test"))
+	t1.Changed(contentionKey(currObj.UID), findIngressForRoute(currObj, "test"))
 	currObj = makePass(t, "route5.test.local", r1, currObj, true, false)
-	t1.Changed(string(currObj.UID), findIngressForRoute(currObj, "test"))
-	t1.Changed(string(currObj.UID), findIngressForRoute(currObj, "test"))
+	t1.Changed(contentionKey(currObj.UID), findIngressForRoute(currObj, "test"))
+	t1.Changed(contentionKey(currObj.UID), findIngressForRoute(currObj, "test"))
 	currObj = makePass(t, "route6.test.local", r1, currObj, true, false)
+}
+
+// TestRouterContentionOnCondition tests router contention logic for adding/updating/removing a route condition.
+// This test validates the ingressEqual function is working correctly for comparing conditions.
+func TestRouterContentionOnCondition(t *testing.T) {
+	now := metav1.Now()
+	notNow := metav1.Time{Time: now.Add(3 * time.Minute)}
+
+	testCases := []struct {
+		name             string
+		key              string
+		conditions       []routev1.RouteIngressCondition
+		updateConditions []routev1.RouteIngressCondition
+		expectContend    bool
+	}{
+		{
+			name: "no change to condition does not cause contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: false,
+		},
+		{
+			name: "adding condition causes contention",
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
+			name: "removing condition causes contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
+			name: "changing condition type causes contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               "NewConditionType",
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
+			name: "changing condition status causes contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionFalse,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
+			name: "changing condition reason causes contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "bar",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
+			name: "changing condition message causes contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "bar",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
+			name: "changing condition transition time does not cause contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteUnservableInFutureVersions,
+				Status:             kapi.ConditionTrue,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &notNow,
+			}},
+			expectContend: false,
+		},
+		{
+			name: "same conditions, but different order does not cause contention",
+			conditions: []routev1.RouteIngressCondition{
+				{
+					Type:               routev1.RouteUnservableInFutureVersions,
+					Status:             kapi.ConditionTrue,
+					Reason:             "foo",
+					Message:            "foo",
+					LastTransitionTime: &now,
+				},
+				{
+					Type:               "ConditionTest",
+					Status:             kapi.ConditionTrue,
+					Reason:             "bar",
+					Message:            "bar",
+					LastTransitionTime: &now,
+				},
+			},
+			updateConditions: []routev1.RouteIngressCondition{
+				{
+					Type:               "ConditionTest",
+					Status:             kapi.ConditionTrue,
+					Reason:             "bar",
+					Message:            "bar",
+					LastTransitionTime: &now,
+				},
+				{
+					Type:               routev1.RouteUnservableInFutureVersions,
+					Status:             kapi.ConditionTrue,
+					Reason:             "foo",
+					Message:            "foo",
+					LastTransitionTime: &now,
+				},
+			},
+			expectContend: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			stopCh := make(chan struct{})
+			defer close(stopCh)
+
+			// NB: contention period is 1 minute
+			i1 := &fakeInformer{}
+			t1 := NewSimpleContentionTracker(i1, "test", time.Minute)
+
+			// Provide the initial condition.
+			routeIngress := routev1.RouteIngress{}
+			routeIngress.Conditions = tc.conditions
+
+			// The key value doesn't really matter, just as long as it doesn't change.
+			key := contentionKey("uid1")
+
+			// This is the initial "change". This should never be contended.
+			t1.Changed(key, routeIngress.DeepCopy())
+			if t1.IsChangeContended(key, nowFn().Time, nil) {
+				t.Fatal("expected initial change NOT to be contended")
+			}
+
+			// Now update the condition.
+			routeIngress.Conditions = tc.updateConditions
+
+			// Do another change with the new RouteIngress.
+			t1.Changed(key, routeIngress.DeepCopy())
+			if tc.expectContend && !t1.IsChangeContended(key, nowFn().Time, nil) {
+				t.Fatal("expected change to be contended")
+			} else if !tc.expectContend && t1.IsChangeContended(key, nowFn().Time, nil) {
+				t.Fatal("expected change NOT to be contended")
+			}
+
+		})
+	}
+}
+
+// TestStatusUnservableInFutureVersions tests the StatusAdmitter's functionality for handling routes that are unservable
+// in future version of OpenShift.
+func TestStatusUnservableInFutureVersions(t *testing.T) {
+	unservableInFutureVersionsTrueCondition := routev1.RouteIngressCondition{
+		Type:    routev1.RouteUnservableInFutureVersions,
+		Status:  corev1.ConditionTrue,
+		Reason:  "UpgradeRouteValidationFailed",
+		Message: "next version of OpenShift does not support SHA1",
+	}
+	testCases := []struct {
+		name                       string
+		routerName                 string
+		unservableInFutureVersions bool
+		route                      *routev1.Route
+		expectedRoute              *routev1.Route
+	}{
+		{
+			name:       "not unservableInFutureVersions should have no condition",
+			routerName: "test",
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+			},
+			expectedRoute: nil,
+		},
+		{
+			name:                       "add unservableInFutureVersions condition",
+			routerName:                 "test",
+			unservableInFutureVersions: true,
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+			},
+			expectedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition},
+				},
+				}},
+			},
+		},
+		{
+			name:       "remove unservableInFutureVersions condition if not unservableInFutureVersions",
+			routerName: "test",
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition},
+				}},
+				},
+			},
+			expectedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+				}},
+				},
+			},
+		},
+		{
+			name:       "remove unservableInFutureVersions condition if not unservableInFutureVersions with another status",
+			routerName: "test",
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{
+						{
+							Type:    "AnotherType",
+							Status:  corev1.ConditionTrue,
+							Reason:  "AnotherStatusReason",
+							Message: "a message for AnotherStatusReason",
+						},
+						unservableInFutureVersionsTrueCondition,
+					},
+				}},
+				},
+			},
+			expectedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{{
+						Type:    "AnotherType",
+						Status:  corev1.ConditionTrue,
+						Reason:  "AnotherStatusReason",
+						Message: "a message for AnotherStatusReason",
+					}},
+				}},
+				},
+			},
+		},
+		{
+			name:                       "add unservableInFutureVersions condition with existing status condition",
+			routerName:                 "test",
+			unservableInFutureVersions: true,
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{{
+						Type:    "AnotherType",
+						Status:  corev1.ConditionTrue,
+						Reason:  "AnotherStatusReason",
+						Message: "a message for AnotherStatusReason",
+					}},
+				}},
+				},
+			},
+			expectedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{
+						{
+							Type:    "AnotherType",
+							Status:  corev1.ConditionTrue,
+							Reason:  "AnotherStatusReason",
+							Message: "a message for AnotherStatusReason",
+						},
+						unservableInFutureVersionsTrueCondition,
+					},
+				}},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			now := nowFn()
+			nowFn = func() metav1.Time { return now }
+			p := &fakePlugin{}
+			c := fake.NewSimpleClientset(tc.route)
+			tracker := &fakeTracker{}
+			lister := &routeLister{items: []*routev1.Route{tc.route}}
+			admitter := NewStatusAdmitter(p, c.RouteV1(), lister, tc.routerName, "", noopLease{}, tracker)
+			if tc.unservableInFutureVersions {
+				admitter.RecordRouteUnservableInFutureVersions(tc.route, unservableInFutureVersionsTrueCondition.Reason, unservableInFutureVersionsTrueCondition.Message)
+			} else {
+				admitter.RecordRouteUnservableInFutureVersionsClear(tc.route)
+			}
+
+			// If expected route is nil, then assume we expect nothing to happen.
+			if tc.expectedRoute == nil {
+				if len(c.Actions()) != 0 {
+					t.Fatalf("expected 0 actions, but got %d: %#v", len(c.Actions()), c.Actions())
+				}
+			} else {
+				if len(c.Actions()) != 1 {
+					t.Fatalf("expected 1 actions, but got %d: %#v", len(c.Actions()), c.Actions())
+				}
+				action := c.Actions()[0]
+				if action.GetVerb() != "update" || action.GetResource().Resource != "routes" || action.GetSubresource() != "status" {
+					t.Fatalf("unexpected action: %#v", action)
+				}
+				obj := c.Actions()[0].(clientgotesting.UpdateAction).GetObject().(*routev1.Route)
+
+				// Compare expected route, but ignore LastTransitionTime since that is generated
+				cmpOpts := []cmp.Option{
+					cmpopts.EquateEmpty(),
+					cmpopts.IgnoreFields(routev1.RouteIngressCondition{}, "LastTransitionTime"),
+				}
+				if diff := cmp.Diff(tc.expectedRoute, obj, cmpOpts...); len(diff) > 0 {
+					t.Errorf("mismatched routes (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
 }
 
 // Test_recordIngressCondition tests recordIngressCondition. While it may appear like overkill, testing the functions
@@ -1108,6 +1516,262 @@ func Test_recordIngressCondition(t *testing.T) {
 		})
 	}
 }
+
+// Test_removeIngressCondition tests removeIngressCondition. While it may appear like overkill, testing the functions
+// that invoke these helpers is insufficient. There are certain logic paths that can only be exposed by testing
+// directly, such as scenarios where a status is admitted by another router.
+func Test_removeIngressCondition(t *testing.T) {
+	admittedTrueCondition := routev1.RouteIngressCondition{
+		Type:    routev1.RouteAdmitted,
+		Status:  corev1.ConditionTrue,
+		Reason:  "Test",
+		Message: "test",
+	}
+	unservableInFutureVersionsTrueCondition := routev1.RouteIngressCondition{
+		Type:    routev1.RouteUnservableInFutureVersions,
+		Status:  corev1.ConditionTrue,
+		Reason:  "Test",
+		Message: "test",
+	}
+	testCases := []struct {
+		name          string
+		route         *routev1.Route
+		routerName    string
+		conditionType routev1.RouteIngressConditionType
+		expectedRoute *routev1.Route
+		expectChanged bool
+	}{
+		{
+			name:       "condition not found",
+			routerName: "foo",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "foo.foo.local",
+					RouterName:              "foo",
+					RouterCanonicalHostname: "router-foo.foo.local",
+					Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition}},
+				}},
+			},
+			conditionType: routev1.RouteUnservableInFutureVersions,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "foo.foo.local",
+					RouterName:              "foo",
+					RouterCanonicalHostname: "router-foo.foo.local",
+					Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition}},
+				}},
+			},
+		},
+		{
+			name:       "ingress not found",
+			routerName: "foo",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "bar.bar.local",
+					RouterName:              "bar",
+					RouterCanonicalHostname: "router-bar.bar.local",
+					Conditions:              []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition}},
+				}},
+			},
+			conditionType: routev1.RouteUnservableInFutureVersions,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "bar.bar.local",
+					RouterName:              "bar",
+					RouterCanonicalHostname: "router-bar.bar.local",
+					Conditions:              []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition}},
+				}},
+			},
+		},
+		{
+			name:       "remove condition found",
+			routerName: "foo",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "foo.foo.local",
+					RouterName:              "foo",
+					RouterCanonicalHostname: "router-foo.foo.local",
+					Conditions: []routev1.RouteIngressCondition{
+						admittedTrueCondition,
+						unservableInFutureVersionsTrueCondition,
+					}},
+				}},
+			},
+			conditionType: routev1.RouteUnservableInFutureVersions,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "foo.foo.local",
+					RouterName:              "foo",
+					RouterCanonicalHostname: "router-foo.foo.local",
+					Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition}},
+				}},
+			},
+			expectChanged: true,
+		},
+		{
+			name:       "remove condition found with other ingresses",
+			routerName: "foo",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "bar.bar.local",
+						RouterName:              "bar",
+						RouterCanonicalHostname: "router-bar.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+						},
+					},
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+						},
+					},
+				}},
+			},
+			conditionType: routev1.RouteUnservableInFutureVersions,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "bar.bar.local",
+						RouterName:              "bar",
+						RouterCanonicalHostname: "router-bar.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+						},
+					},
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: true,
+		},
+		{
+			name:       "remove condition not found with other ingresses",
+			routerName: "foo",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "bar.bar.local",
+						RouterName:              "bar",
+						RouterCanonicalHostname: "router-bar.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+						},
+					},
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+						},
+					},
+				}},
+			},
+			conditionType: routev1.RouteUnservableInFutureVersions,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "bar.bar.local",
+						RouterName:              "bar",
+						RouterCanonicalHostname: "router-bar.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+						},
+					},
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: false,
+		},
+		{
+			name:       "duplicate ingress conditions",
+			routerName: "foo",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+							unservableInFutureVersionsTrueCondition,
+						},
+					},
+				}},
+			},
+			conditionType: routev1.RouteUnservableInFutureVersions,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							admittedTrueCondition,
+						},
+					},
+				}},
+			},
+			expectChanged: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			baselineIngressState := findIngressForRoute(tc.route, tc.routerName).DeepCopy()
+			changed, _, latest, original := removeIngressCondition(tc.route, tc.routerName, tc.conditionType)
+
+			// Compare expected route, but ignore LastTransitionTime since that is generated
+			cmpOpts := []cmp.Option{
+				cmpopts.EquateEmpty(),
+				cmpopts.IgnoreFields(routev1.RouteIngressCondition{}, "LastTransitionTime"),
+			}
+			if diff := cmp.Diff(tc.expectedRoute, tc.route, cmpOpts...); len(diff) > 0 {
+				t.Errorf("mismatched routes (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(findIngressForRoute(tc.route, tc.routerName), latest, cmpOpts...); len(diff) > 0 {
+				t.Errorf("expected latest to match route ingress (-want +got):\n%s", diff)
+			}
+			if tc.expectChanged != changed {
+				t.Errorf("expected changed=%t, but got changed=%t", tc.expectChanged, changed)
+			}
+			if diff := cmp.Diff(baselineIngressState, original, cmpOpts...); len(diff) > 0 {
+				t.Errorf("expected baselineIngressState to match original output from removeIngressCondition (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func ingressChangeWithNewHost(route *routev1.Route, routerName, newHost string) *routev1.RouteIngress {
 	ingress := findIngressForRoute(route, routerName).DeepCopy()
 	ingress.Host = newHost
