@@ -17,42 +17,48 @@ import (
 )
 
 const (
-	testExpiredCAUnknownCertificate = `-----BEGIN CERTIFICATE-----
-MIIDIjCCAgqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADCBoTELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgMAlNDMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0Rl
-ZmF1bHQgQ29tcGFueSBMdGQxEDAOBgNVBAsMB1Rlc3QgQ0ExGjAYBgNVBAMMEXd3
-dy5leGFtcGxlY2EuY29tMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUu
-Y29tMB4XDTE2MDExMzE5NDA1N1oXDTI2MDExMDE5NDA1N1owfDEYMBYGA1UEAxMP
-d3d3LmV4YW1wbGUuY29tMQswCQYDVQQIEwJTQzELMAkGA1UEBhMCVVMxIjAgBgkq
-hkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAOBgNVBAoTB0V4YW1wbGUx
-EDAOBgNVBAsTB0V4YW1wbGUwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAM0B
-u++oHV1wcphWRbMLUft8fD7nPG95xs7UeLPphFZuShIhhdAQMpvcsFeg+Bg9PWCu
-v3jZljmk06MLvuWLfwjYfo9q/V+qOZVfTVHHbaIO5RTXJMC2Nn+ACF0kHBmNcbth
-OOgF8L854a/P8tjm1iPR++vHnkex0NH7lyosVc/vAgMBAAGjDTALMAkGA1UdEwQC
-MAAwDQYJKoZIhvcNAQEFBQADggEBADjFm5AlNH3DNT1Uzx3m66fFjqqrHEs25geT
-yA3rvBuynflEHQO95M/8wCxYVyuAx4Z1i4YDC7tx0vmOn/2GXZHY9MAj1I8KCnwt
-Jik7E2r1/yY0MrkawljOAxisXs821kJ+Z/51Ud2t5uhGxS6hJypbGspMS7OtBbw7
-8oThK7cWtCXOldNF6ruqY1agWnhRdAq5qSMnuBXuicOP0Kbtx51a1ugE3SnvQenJ
-nZxdtYUXvEsHZC/6bAtTfNh+/SwgxQJuL2ZM+VG3X2JIKY8xTDui+il7uTh422lq
-wED8uwKl+bOj6xFDyw4gWoBxRobsbFaME8pkykP1+GnKDberyAM=
+	// openssl req -newkey rsa:1024 -nodes -keyout testExpiredCert.key -out testExpiredCert.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// faketime 'last year 5pm' /bin/bash -c 'openssl x509 -req -days 1 -sha256 -in testExpiredCert.csr -CA testExpiredCertCA.crt -CAcreateserial -CAkey testExpiredCertCA.key -extensions ext -extfile <(echo $"[ext]\nbasicConstraints = CA:FALSE") -out testExpiredCert.crt'
+	//
+	// Key = testExpiredCertKey
+	// CA = testExpiredCertCA
+	testExpiredCert = `-----BEGIN CERTIFICATE-----
+MIICoDCCAgkCFAaeel1AtQzHHpRUjVZSaSEbuzcvMA0GCSqGSIb3DQEBCwUAMIGh
+MQswCQYDVQQGEwJVUzELMAkGA1UECAwCU0MxFTATBgNVBAcMDERlZmF1bHQgQ2l0
+eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDEQMA4GA1UECwwHVGVzdCBD
+QTEaMBgGA1UEAwwRd3d3LmV4YW1wbGVjYS5jb20xIjAgBgkqhkiG9w0BCQEWE2V4
+YW1wbGVAZXhhbXBsZS5jb20wHhcNMjMwMTI2MjIwMDAwWhcNMjMwMTI3MjIwMDAw
+WjB8MRgwFgYDVQQDDA93d3cuZXhhbXBsZS5jb20xCzAJBgNVBAgMAlNDMQswCQYD
+VQQGEwJVUzEiMCAGCSqGSIb3DQEJARYTZXhhbXBsZUBleGFtcGxlLmNvbTEQMA4G
+A1UECgwHRXhhbXBsZTEQMA4GA1UECwwHRXhhbXBsZTCBnzANBgkqhkiG9w0BAQEF
+AAOBjQAwgYkCgYEAv2GAaJvd0aWxiw7jBTM+VDATQ2vTPbrRc5r8+2yNTwP1Dhr1
+VlLmX5o3yv/LeHhK6g8xw1xHcDdvIAdW+J6Uu99BwDK9R5dxwVoEeTYr82vOUoFQ
+1sdXqm4226bdAJXf3kdFo+zBr2aefpygpxvMGghz6oW7Nxz78SD8yHNaAzUCAwEA
+ATANBgkqhkiG9w0BAQsFAAOBgQABr3mFRjl60RAGL8s1pB6lqBRqy5pG2WoujQlT
+N65bDpFJP7vDiFe35qYVVGLAutPxTAaAtGkNhuiyoOqfP6BIlwkM68gD5plmdRBR
+hQi35A/6YMFAsBDOnhJccOCO2i19yhyAg2R0tMSder8b51IpmLABLt3UkujwVRJ+
+a3zkug==
 -----END CERTIFICATE-----`
 
-	testExpiredCertPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQDNAbvvqB1dcHKYVkWzC1H7fHw+5zxvecbO1Hiz6YRWbkoSIYXQ
-EDKb3LBXoPgYPT1grr942ZY5pNOjC77li38I2H6Pav1fqjmVX01Rx22iDuUU1yTA
-tjZ/gAhdJBwZjXG7YTjoBfC/OeGvz/LY5tYj0fvrx55HsdDR+5cqLFXP7wIDAQAB
-AoGAfE7P4Zsj6zOzGPI/Izj7Bi5OvGnEeKfzyBiH9Dflue74VRQkqqwXs/DWsNv3
-c+M2Y3iyu5ncgKmUduo5X8D9To2ymPRLGuCdfZTxnBMpIDKSJ0FTwVPkr6cYyyBk
-5VCbc470pQPxTAAtl2eaO1sIrzR4PcgwqrSOjwBQQocsGAECQQD8QOra/mZmxPbt
-bRh8U5lhgZmirImk5RY3QMPI/1/f4k+fyjkU5FRq/yqSyin75aSAXg8IupAFRgyZ
-W7BT6zwBAkEA0A0ugAGorpCbuTa25SsIOMxkEzCiKYvh0O+GfGkzWG4lkSeJqGME
-keuJGlXrZNKNoCYLluAKLPmnd72X2yTL7wJARM0kAXUP0wn324w8+HQIyqqBj/gF
-Vt9Q7uMQQ3s72CGu3ANZDFS2nbRZFU5koxrggk6lRRk1fOq9NvrmHg10AQJABOea
-pgfj+yGLmkUw8JwgGH6xCUbHO+WBUFSlPf+Y50fJeO+OrjqPXAVKeSV3ZCwWjKT4
-9viXJNJJ4WfF0bO/XwJAOMB1wQnEOSZ4v+laMwNtMq6hre5K8woqteXICoGcIWe8
-u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
------END RSA PRIVATE KEY-----`
+	testExpiredCertKey = `-----BEGIN PRIVATE KEY-----
+MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAL9hgGib3dGlsYsO
+4wUzPlQwE0Nr0z260XOa/PtsjU8D9Q4a9VZS5l+aN8r/y3h4SuoPMcNcR3A3byAH
+VvielLvfQcAyvUeXccFaBHk2K/NrzlKBUNbHV6puNtum3QCV395HRaPswa9mnn6c
+oKcbzBoIc+qFuzcc+/Eg/MhzWgM1AgMBAAECgYEAqC4Ood8XNzzcoM8cQV2e0GzP
+ANiocf7SQT1aQ7hJFb7sgtC9+HYxbKIhlYrkS6Gqc7WWjY9yV/Le/M52Z1U0bb5r
+/guvTx686AYoTZzCjptwpAuVE1sS9r+WCa/VgflPZYtaql960TtO72ntjcWHoIl/
+2AsE0/1wLHLquYHaDaECQQDxdDL9ecvEWD6yTom9GlfQq/6CwzA6Nhs1oncgDT/4
+1OXGD/GgXUvlJZszdkTrYh4az8YeobDsJsfMjIkFfQpDAkEAyukOORSRIk9/KBUm
+Ufyu7JtFibtr8mozkf43Dd+2BYyO6dPqS/E9m0nUZoMSoGfS0LqS8pT1hUU0RMun
+dXURJwJBALBC5V5I5UmmKc68qqxTaLu6cwc+OhykluRmf5P0WDjsIfiedwNcWCUl
+eNDui41RiSyFdNmzq5YZEU3vYa+SAkUCQQCx99EyvVhCWKl1dX9jv5WJDvLhx9H5
+D67lqKuO7p0OpuaeLfE85H0dW5cAxouqxwU/b7T9MSta1YTvphPdUG1XAkBwH06h
+STCeJCluaFZp/Aaok8fTAbodEu5gdfo/W8dspflTFM6RcR9+WJb91elObh3QiJET
+T1ZXsR6eRuHdx4oh
+-----END PRIVATE KEY-----`
 
+	// Key = testPrivateKey
+	// CA = testCACertificate
 	testCertificate = `-----BEGIN CERTIFICATE-----
 MIICwjCCAiugAwIBAgIBATANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQGEwJVUzEL
 MAkGA1UECAwCQ0ExETAPBgNVBAoMCFNlY3VyaXR5MRswGQYDVQQLDBJPcGVuU2hp
@@ -99,6 +105,8 @@ HP8gHJSZnaGrLKmjwNeQNsARYajKmDKO5HJ9g5H5Hae8enOb2yie541dneDT8rID
 4054dMQJnijd8620yf8wiNy05ZPOQQ0JvA/rW3WWZc5PGm8c2PsVjg==
 -----END RSA PRIVATE KEY-----`
 
+	// Key = N/A
+	// CA = self-signed
 	testCACertificate = `-----BEGIN CERTIFICATE-----
 MIIClDCCAf2gAwIBAgIJAPU57OGhuqJtMA0GCSqGSIb3DQEBCwUAMGMxCzAJBgNV
 BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxGzAZBgNVBAsM
@@ -776,7 +784,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination OK with bad config",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.badconfig.test",
+					Host: "www.reencrypt.badconfig.test",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						Certificate:              "def",
@@ -792,7 +800,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination OK without certs",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.nocerts.test",
+					Host: "www.reencrypt.nocerts.test",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testDestinationCACertificate,
@@ -805,7 +813,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination bad config without certs",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.badconfignocerts.test",
+					Host: "www.reencrypt.badconfignocerts.test",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: "abc",
@@ -818,7 +826,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination no dest cert",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.nodestcert.test",
+					Host: "www.reencrypt.nodestcert.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationReencrypt,
 						Certificate:   testCertificate,
@@ -881,7 +889,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testCertificate,
-						Key:           testExpiredCertPrivateKey,
+						Key:           testExpiredCertKey,
 						CACertificate: testCACertificate,
 					},
 				},
@@ -895,13 +903,12 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 					Host: "www.edge.expiredcert.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testExpiredCAUnknownCertificate,
-						Key:           testExpiredCertPrivateKey,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
 						CACertificate: testCACertificate,
 					},
 				},
 			},
-			errorExpected: true,
 		},
 		{
 			name: "Edge termination expired cert key mismatch",
@@ -910,7 +917,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 					Host: "www.edge.expiredcertkeymismatch.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testExpiredCAUnknownCertificate,
+						Certificate:   testExpiredCert,
 						Key:           testPrivateKey,
 						CACertificate: testCACertificate,
 					},
@@ -1015,14 +1022,10 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := plugin.HandleRoute(watch.Added, tc.route)
-			if tc.errorExpected {
-				if err == nil {
-					t.Fatalf("test case %s: expected an error, got none", tc.name)
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("test case %s: expected no errors, got %v", tc.name, err)
-				}
+			if tc.errorExpected && err == nil {
+				t.Fatal("expected an error, got none")
+			} else if !tc.errorExpected && err != nil {
+				t.Fatalf("expected no errors, got %v", err)
 			}
 		})
 	}
