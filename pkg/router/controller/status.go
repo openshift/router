@@ -168,8 +168,9 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 }
 
 // recordIngressCondition updates the matching ingress on the route (or adds a new one) with the specified
-// condition, returning whether the route was updated or created, the time assigned to the condition, and
-// a pointer to the current ingress record.
+// condition. It returns whether the ingress record was updated or created, the time assigned to the
+// condition, a pointer to the latest ingress record, and a pointer to a shallow copy of the original ingress
+// record.
 func recordIngressCondition(route *routev1.Route, name, hostName string, condition routev1.RouteIngressCondition) (changed, created bool, at time.Time, latest, original *routev1.RouteIngress) {
 	for i := range route.Status.Ingress {
 		existing := &route.Status.Ingress[i]
@@ -188,6 +189,9 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 			if *existingCondition != condition {
 				changed = true
 			}
+		} else {
+			// If the condition we want doesn't exist, then consider it changed.
+			changed = true
 		}
 		if !changed {
 			return false, false, time.Time{}, existing, existing
