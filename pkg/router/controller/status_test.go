@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	corev1 "k8s.io/api/core/v1"
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -849,6 +852,257 @@ func TestRouterContention(t *testing.T) {
 	currObj = makePass(t, "route6.test.local", r1, currObj, true, false)
 }
 
+// Test_recordIngressCondition tests recordIngressCondition. While it may appear like overkill, testing the functions
+// that invoke these helpers is insufficient. There are certain logic paths that can only be exposed by testing
+// directly, such as scenarios where a status is admitted by another router.
+func Test_recordIngressCondition(t *testing.T) {
+	admittedTrueCondition := routev1.RouteIngressCondition{
+		Type:    routev1.RouteAdmitted,
+		Status:  corev1.ConditionTrue,
+		Reason:  "Test",
+		Message: "test",
+	}
+	unservableInFutureVersionsTrueCondition := routev1.RouteIngressCondition{
+		Type:    routev1.RouteUnservableInFutureVersions,
+		Status:  corev1.ConditionTrue,
+		Reason:  "Test",
+		Message: "test",
+	}
+	testCases := []struct {
+		name                    string
+		route                   *routev1.Route
+		routerName              string
+		routerCanonicalHostname string
+		condition               routev1.RouteIngressCondition
+		expectedRoute           *routev1.Route
+		expectCreated           bool
+		expectChanged           bool
+	}{
+		{
+			name:                    "add new ingress with condition",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec:   routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						RouterName:              "foo",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: true,
+			expectCreated: true,
+		},
+		{
+			name:                    "add new condition to existing ingress with incorrect value",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						RouterCanonicalHostname: "router1.not-foo.local",
+						RouterName:              "foo",
+					},
+				}},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: true,
+			expectCreated: false,
+		},
+		{
+			name:                    "add new condition, but it already exists, therefore no-op",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: false,
+			expectCreated: false,
+		},
+		{
+			name:                    "add new condition to existing ingress with existing condition",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:       "route1.foo.local",
+						RouterName: "foo",
+						Conditions: []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition},
+					},
+				}},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterName:              "foo",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						Conditions: []routev1.RouteIngressCondition{
+							unservableInFutureVersionsTrueCondition,
+							admittedTrueCondition,
+						},
+					},
+				}},
+			},
+			expectChanged: true,
+			expectCreated: false,
+		},
+		{
+			name:                    "add new condition, but another router's ingress exists",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:       "foo.foo.local",
+						RouterName: "bar",
+						Conditions: []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition},
+					},
+				}},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:       "foo.foo.local",
+						RouterName: "bar",
+						Conditions: []routev1.RouteIngressCondition{unservableInFutureVersionsTrueCondition},
+					},
+					{
+						Host:                    "foo.foo.local",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						RouterName:              "foo",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: true,
+			expectCreated: true,
+		},
+		{
+			name:                    "add new condition, but ingress slice is empty",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec:   routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{}},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						RouterName:              "foo",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: true,
+			expectCreated: true,
+		},
+		{
+			name:                    "add new condition, but condition slice is empty",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						RouterName:              "foo",
+						Conditions:              []routev1.RouteIngressCondition{},
+					},
+				}},
+			},
+			condition: admittedTrueCondition,
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{
+					{
+						Host:                    "foo.foo.local",
+						RouterCanonicalHostname: "router-foo.foo.local",
+						RouterName:              "foo",
+						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
+					},
+				}},
+			},
+			expectChanged: true,
+			expectCreated: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			changed, created, _, latest, _ := recordIngressCondition(tc.route, tc.routerName, tc.routerCanonicalHostname, tc.condition)
+
+			// Compare expected route, but ignore LastTransitionTime since that is generated
+			cmpOpts := []cmp.Option{
+				cmpopts.EquateEmpty(),
+				cmpopts.IgnoreFields(routev1.RouteIngressCondition{}, "LastTransitionTime"),
+			}
+			if diff := cmp.Diff(tc.expectedRoute, tc.route, cmpOpts...); len(diff) > 0 {
+				t.Errorf("mismatched routes (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(findIngressForRoute(tc.route, tc.routerName), latest, cmpOpts...); len(diff) > 0 {
+				t.Errorf("expected latest to match route ingress (-want +got):\n%s", diff)
+			}
+			if tc.expectCreated != created {
+				t.Errorf("expected created=%t, but got created=%t", tc.expectCreated, created)
+			}
+			if tc.expectChanged != changed {
+				t.Errorf("expected changed=%t, but got changed=%t", tc.expectChanged, changed)
+			}
+		})
+	}
+}
 func ingressChangeWithNewHost(route *routev1.Route, routerName, newHost string) *routev1.RouteIngress {
 	ingress := findIngressForRoute(route, routerName).DeepCopy()
 	ingress.Host = newHost
