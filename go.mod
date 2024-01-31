@@ -1,6 +1,6 @@
 module github.com/openshift/router
 
-go 1.20
+go 1.21
 
 require (
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e
