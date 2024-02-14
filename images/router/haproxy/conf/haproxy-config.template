@@ -330,7 +330,6 @@ frontend fe_sni
         {{- if $haveCRLs }} crl-file /var/lib/haproxy/mtls/latest/crls.pem {{ end }}
       {{- end }}
     {{- end }}
-  {{- "" }} no-alpn
   mode http
 
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
@@ -441,7 +440,6 @@ frontend fe_no_sni
         {{- if $haveCRLs }} crl-file /var/lib/haproxy/mtls/latest/crls.pem {{ end }}
       {{- end }}
     {{- end }}
-  {{- "" }} no-alpn
   mode http
 
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
