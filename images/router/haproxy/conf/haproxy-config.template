@@ -560,6 +560,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
         {{- end }}
 
+  option httpchk GET /
+  http-check send hdr Host %[req.hdr(host)]
+  http-check expect status 200
+
         {{- with $adjustments := $.HTTPHeaderNameCaseAdjustments }}
           {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/h1-adjust-case") }}
   option h1-case-adjust-bogus-server
@@ -723,6 +727,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
                     {{- else }} verify none
                     {{- end }}
                   {{- end }}
+                  check-sni %[req.hdr(host)] sni str(%[req.hdr(host)]) check
                 {{- else if or (eq $cfg.TLSTermination "") (eq $cfg.TLSTermination "edge") }}
                   {{- if eq $endpoint.AppProtocol "h2c" }} proto h2
                   {{- end }}
