@@ -40,7 +40,7 @@ const (
 	caCertDir       = "router/cacerts"
 	defaultCertName = "default"
 
-	whitelistDir = "router/whitelists"
+	allowlistDir = "router/allowlists"
 
 	caCertPostfix   = "_ca"
 	destCertPostfix = "_pod"

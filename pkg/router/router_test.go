@@ -102,7 +102,7 @@ func TestMain(m *testing.M) {
 
 	h.workdir = workdir
 	h.dirs = map[string]string{
-		"whitelist": filepath.Join(workdir, "router", "whitelists"),
+		"allowlist": filepath.Join(workdir, "router", "allowlists"),
 		"certs":     filepath.Join(workdir, "router", "certs"),
 	}
 
@@ -252,7 +252,7 @@ func TestConfigTemplate(t *testing.T) {
 	// create routes whose settings would add some additional blocks to the conf
 	start := time.Now()
 	tests := map[string][]mustCreateWithConfig{
-		"Long whitelist of IPs": {
+		"Long allowlist of IPs": {
 			mustCreateWithConfig{
 				mustCreate: mustCreate{
 					name: "a",
@@ -260,7 +260,7 @@ func TestConfigTemplate(t *testing.T) {
 					path: "",
 					time: start,
 					annotations: map[string]string{
-						"haproxy.router.openshift.io/ip_whitelist": getDummyIPs(100),
+						"haproxy.router.openshift.io/ip_allowlist": getDummyIPs(100),
 					},
 					tlsTermination: routev1.TLSTerminationEdge,
 				},
@@ -268,15 +268,35 @@ func TestConfigTemplate(t *testing.T) {
 					section:     "backend",
 					sectionName: edgeBackendName(h.namespace, "a"),
 					attribute:   "acl",
-					value:       "whitelist src -f " + filepath.Join(h.dirs["whitelist"], h.namespace+":a.txt"),
+					value:       "allowlist src -f " + filepath.Join(h.dirs["allowlist"], h.namespace+":a.txt"),
 				},
 			},
 		},
-		"Whitelist of mixed IPs": {
+		"Allowlist of mixed IPs": {
 			mustCreateWithConfig{
 				mustCreate: mustCreate{
 					name: "a1",
 					host: "a1example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/ip_allowlist": "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "a1"),
+					attribute:   "acl",
+					value:       "allowlist src 192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+				},
+			},
+		},
+		"Allowlist of mixed IPs using the old annotation key": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name: "a2",
+					host: "a2example.com",
 					path: "",
 					time: start,
 					annotations: map[string]string{
@@ -286,9 +306,9 @@ func TestConfigTemplate(t *testing.T) {
 				},
 				mustMatchConfig: mustMatchConfig{
 					section:     "backend",
-					sectionName: edgeBackendName(h.namespace, "a1"),
+					sectionName: edgeBackendName(h.namespace, "a2"),
 					attribute:   "acl",
-					value:       "whitelist src 192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+					value:       "allowlist src 192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
 				},
 			},
 		},

@@ -1090,6 +1090,7 @@ func backendModAnnotations(route *routev1.Route) map[string]string {
 func modAnnotationsList(termination routev1.TLSTerminationType) []string {
 	annotations := []string{
 		"haproxy.router.openshift.io/balance",
+		"haproxy.router.openshift.io/ip_allowlist",
 		"haproxy.router.openshift.io/ip_whitelist",
 		"haproxy.router.openshift.io/timeout",
 		"haproxy.router.openshift.io/rate-limit-connections",
