@@ -1070,7 +1070,9 @@ func Test_recordIngressCondition(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			changed, created, _, latest, _ := recordIngressCondition(tc.route, tc.routerName, tc.routerCanonicalHostname, tc.condition)
+			baselineIngressState := findIngressForRoute(tc.route, tc.routerName).DeepCopy()
+
+			changed, created, _, latest, original := recordIngressCondition(tc.route, tc.routerName, tc.routerCanonicalHostname, tc.condition)
 
 			// Compare expected route, but ignore LastTransitionTime since that is generated
 			cmpOpts := []cmp.Option{
@@ -1088,6 +1090,9 @@ func Test_recordIngressCondition(t *testing.T) {
 			}
 			if tc.expectChanged != changed {
 				t.Errorf("expected changed=%t, but got changed=%t", tc.expectChanged, changed)
+			}
+			if diff := cmp.Diff(baselineIngressState, original, cmpOpts...); len(diff) > 0 {
+				t.Errorf("expected original to match baseline ingress from route.Status (-want +got):\n%s", diff)
 			}
 		})
 	}
