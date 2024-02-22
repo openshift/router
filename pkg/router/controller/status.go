@@ -197,14 +197,15 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 			return false, false, time.Time{}, existing, existing
 		}
 
-		// preserve a copy of the original ingress without conditions
+		// preserve a shallow copy of the original ingress
 		original := *existing
-		original.Conditions = nil
 
 		// generate the correct ingress
 		existing.Host = route.Spec.Host
 		existing.WildcardPolicy = route.Spec.WildcardPolicy
 		existing.RouterCanonicalHostname = hostName
+
+		// Add or update the condition
 		if existingCondition == nil {
 			existing.Conditions = append(existing.Conditions, condition)
 			existingCondition = &existing.Conditions[len(existing.Conditions)-1]
