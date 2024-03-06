@@ -104,7 +104,7 @@ func DoHTTPProbe(url *url.URL, headers http.Header, client HTTPGetInterface) (Re
 	}
 	body := string(b)
 	if res.StatusCode >= http.StatusOK && res.StatusCode < http.StatusBadRequest {
-		log.V(4).Info("probe succeeded", "url", url.String(), "response", *res)
+		log.V(4).Info("probe succeeded", "url", url.String(), "StatusCode", res.StatusCode, "Status", res.Status)
 		return Success, body, nil
 	}
 	log.V(4).Info("probe failed", "url", url.String(), "headers", headers, "body", body)
