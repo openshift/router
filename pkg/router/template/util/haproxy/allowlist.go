@@ -10,13 +10,13 @@ const (
 	// Ref: https://github.com/haproxy/haproxy/blob/master/include/common/defaults.h#L75
 	HAPROXY_MAX_LINE_ARGS = 64
 
-	// HAPROXY_MAX_WHITELIST_LENGTH is the maximum number of CIDRs allowed
-	// for an "acl whitelist src [<cidr>]*" config line.
-	HAPROXY_MAX_WHITELIST_LENGTH = HAPROXY_MAX_LINE_ARGS - 3
+	// HAPROXY_MAX_ALLOWLIST_LENGTH is the maximum number of CIDRs allowed
+	// for an "acl allowlist src [<cidr>]*" config line.
+	HAPROXY_MAX_ALLOWLIST_LENGTH = HAPROXY_MAX_LINE_ARGS - 3
 )
 
-// ValidateWhiteList validates a haproxy acl whitelist from an annotation value.
-func ValidateWhiteList(value string) ([]string, bool) {
+// ValidateAllowlist validates a haproxy acl allowlist from an annotation value.
+func ValidateAllowlist(value string) ([]string, bool) {
 	values := strings.Split(value, " ")
 
 	cidrs := make([]string, 0)
@@ -26,5 +26,5 @@ func ValidateWhiteList(value string) ([]string, bool) {
 		}
 	}
 
-	return cidrs, len(cidrs) <= HAPROXY_MAX_WHITELIST_LENGTH
+	return cidrs, len(cidrs) <= HAPROXY_MAX_ALLOWLIST_LENGTH
 }

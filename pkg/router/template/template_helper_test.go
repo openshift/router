@@ -915,26 +915,26 @@ func TestClipHAProxyTimeoutValue(t *testing.T) {
 	}
 }
 
-func TestGenerateHAProxyWhiteListFile(t *testing.T) {
+func Test_generateHAProxyAllowlistFile(t *testing.T) {
 	workDir := t.TempDir()
 
-	err := os.MkdirAll(path.Join(workDir, whitelistDir), 0740)
+	err := os.MkdirAll(path.Join(workDir, allowlistDir), 0740)
 	if err != nil {
-		t.Fatal("Unable to create the whitelist directory")
+		t.Fatal("Unable to create the allowlist directory")
 	}
 
 	testCases := []struct {
 		name              string
 		workDir           string
 		id                ServiceAliasConfigKey
-		expectedWhiteList []string
+		expectedAllowlist []string
 		failureExpected   bool
 	}{
 		{
 			name:    "Nominal",
 			workDir: workDir,
 			id:      ServiceAliasConfigKey("test1"),
-			expectedWhiteList: []string{
+			expectedAllowlist: []string{
 				"192.168.0.1",
 				"192.168.0.2",
 				"192.168.0.3",
@@ -944,7 +944,7 @@ func TestGenerateHAProxyWhiteListFile(t *testing.T) {
 			name:    "Nominal failure",
 			workDir: workDir + "-notexisting",
 			id:      ServiceAliasConfigKey("test2"),
-			expectedWhiteList: []string{
+			expectedAllowlist: []string{
 				"192.168.0.1",
 				"192.168.0.2",
 				"192.168.0.3",
@@ -955,7 +955,7 @@ func TestGenerateHAProxyWhiteListFile(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			file := generateHAProxyWhiteListFile(tc.workDir, tc.id, strings.Join(tc.expectedWhiteList, " "))
+			file := generateHAProxyAllowlistFile(tc.workDir, tc.id, strings.Join(tc.expectedAllowlist, " "))
 			if tc.failureExpected {
 				if file != "" {
 					t.Fatal("Failure expected but didn't happen")
@@ -971,9 +971,9 @@ func TestGenerateHAProxyWhiteListFile(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unable to read from the generated file: %v", err)
 			}
-			gotWhiteList := strings.Fields(string(contents))
-			if !reflect.DeepEqual(tc.expectedWhiteList, gotWhiteList) {
-				t.Errorf("Wrong whitelist written: expected %q, got %q", tc.expectedWhiteList, gotWhiteList)
+			gotAllowlist := strings.Fields(string(contents))
+			if !reflect.DeepEqual(tc.expectedAllowlist, gotAllowlist) {
+				t.Errorf("Wrong allowlist written: expected %q, got %q", tc.expectedAllowlist, gotAllowlist)
 			}
 		})
 	}
