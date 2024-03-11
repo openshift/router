@@ -158,13 +158,9 @@ defaults
   timeout connect {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_CONNECT_TIMEOUT") "5s" }}
   timeout client {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_CLIENT_TIMEOUT") "30s" }}
   timeout client-fin {{ firstMatch $timeSpecPattern (env "ROUTER_CLIENT_FIN_TIMEOUT") "1s" }}
-  timeout server {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s" }}
   timeout server-fin {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_FIN_TIMEOUT") "1s" }}
   timeout http-request {{ firstMatch $timeSpecPattern (env "ROUTER_SLOWLORIS_TIMEOUT") "10s" }}
   timeout http-keep-alive {{ firstMatch $timeSpecPattern (env "ROUTER_SLOWLORIS_HTTP_KEEPALIVE") "300s" }}
-
-  # Long timeout for WebSocket connections.
-  timeout tunnel {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_TUNNEL_TIMEOUT") "1h" }}
 
   {{- if isTrue (env "ROUTER_ENABLE_COMPRESSION") }}
   compression algo gzip
@@ -312,6 +308,9 @@ frontend public_ssl
 # traffic
 ##########################################################################
 backend be_sni
+        {{- with $value := maxTimeoutFirstMatchedAndClipped .State "haproxy.router.openshift.io/timeout" $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s"  }}
+  timeout server  {{ $value }}
+        {{- end }}
   server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy
 
 frontend fe_sni
@@ -426,6 +425,9 @@ frontend fe_sni
 ##########################################################################
 # backend for when sni does not exist, or ssl term needs to happen on the edge
 backend be_no_sni
+        {{- with $value := maxTimeoutFirstMatchedAndClipped .State "haproxy.router.openshift.io/timeout" $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s"  }}
+  timeout server  {{ $value }}
+        {{- end }}
   server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy
 
 frontend fe_no_sni
@@ -583,10 +585,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
   tcp-request content reject if !whitelist
         {{- end }}
-        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout") (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s") }}
   timeout server  {{ $value }}
         {{- end }}
-        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel")) }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") (env "ROUTER_DEFAULT_TUNNEL_TIMEOUT") "1h") }}
   timeout tunnel  {{ $value }}
         {{- end }}
 
@@ -787,7 +789,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
   tcp-request content reject if !whitelist
         {{- end }}
-        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout") (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s") }}
+  timeout server  {{ $value }}
+        {{- end }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") (index $cfg.Annotations "haproxy.router.openshift.io/timeout") (env "ROUTER_DEFAULT_TUNNEL_TIMEOUT") "1h") }}
   timeout tunnel  {{ $value }}
         {{- end }}
 

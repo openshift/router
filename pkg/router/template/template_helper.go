@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
@@ -386,6 +387,27 @@ func parseIPList(list string) string {
 	return list
 }
 
+// maxTimeoutFirstMatchedAndClipped finds the maximum timeout managed by a given annotation among all the routes, matches it against a given pattern, and clips.
+func maxTimeoutFirstMatchedAndClipped(aliases map[ServiceAliasConfigKey]ServiceAliasConfig, annotation, pattern string, values ...string) string {
+	var (
+		max         string
+		maxDuration time.Duration
+	)
+	for _, cfg := range aliases {
+		timeout := clipHAProxyTimeoutValue(firstMatch(pattern, append([]string{cfg.Annotations[annotation]}, values...)...))
+		if timeout != "" {
+			// No error handling because clipHAProxyTimeoutValue returns
+			// a valid timeout or an empty string. The latter is already handled.
+			timeoutDuration, _ := time.ParseDuration(timeout)
+			if timeoutDuration > maxDuration {
+				max = timeout
+				maxDuration = timeoutDuration
+			}
+		}
+	}
+	return max
+}
+
 var helperFunctions = template.FuncMap{
 	"endpointsForAlias":        endpointsForAlias,        //returns the list of valid endpoints
 	"processEndpointsForAlias": processEndpointsForAlias, //returns the list of valid endpoints after processing them
@@ -409,6 +431,7 @@ var helperFunctions = template.FuncMap{
 	"validateHAProxyWhiteList":     validateHAProxyWhiteList,     //validates a haproxy whitelist (acl) content
 	"generateHAProxyWhiteListFile": generateHAProxyWhiteListFile, //generates a haproxy whitelist file for use in an acl
 
-	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
-	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
+	"clipHAProxyTimeoutValue":          clipHAProxyTimeoutValue,          //clips extraordinarily high timeout values to be below the maximum allowed timeout value
+	"parseIPList":                      parseIPList,                      //parses the list of IPs/CIDRs (IPv4/IPv6)
+	"maxTimeoutFirstMatchedAndClipped": maxTimeoutFirstMatchedAndClipped, //finds the maximum timeout managed by a given annotation among all the routes, matches it against a given pattern, and clips
 }
