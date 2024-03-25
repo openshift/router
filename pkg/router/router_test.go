@@ -101,19 +101,25 @@ func TestMain(m *testing.M) {
 
 	h.workdir = workdir
 	h.dirs = map[string]string{
-		"whitelist": filepath.Join(workdir, "router", "whitelists"),
+		"whitelist":     filepath.Join(workdir, "router", "whitelists"),
+		"cabundle":      filepath.Join(workdir, "ca-trust"),
+		"cabundle-data": filepath.Join(workdir, "ca-trust", "..data/"),
 	}
 
 	createRouterDirs()
+	defaultDestinationCA := filepath.Join(h.dirs["cabundle"], "ca-bundle.crt")
+	os.Create(filepath.Join(h.dirs["cabundle-data"], "ca-bundle.crt"))
+	os.Symlink(filepath.Join(h.dirs["cabundle-data"], "ca-bundle.crt"), defaultDestinationCA)
 
 	// The template plugin which is wrapped
 	svcFetcher := templateplugin.NewListWatchServiceLookup(client.CoreV1(), 60*time.Second, namespace)
 	pluginCfg := templateplugin.TemplatePluginConfig{
-		WorkingDir:            workdir,
-		DefaultCertificateDir: workdir,
-		ReloadFn:              func(shutdown bool) error { return nil },
-		TemplatePath:          "../../images/router/haproxy/conf/haproxy-config.template",
-		ReloadInterval:        reloadInterval,
+		WorkingDir:               workdir,
+		DefaultCertificateDir:    workdir,
+		DefaultDestinationCAPath: defaultDestinationCA,
+		ReloadFn:                 func(shutdown bool) error { return nil },
+		TemplatePath:             "../../images/router/haproxy/conf/haproxy-config.template",
+		ReloadInterval:           reloadInterval,
 		HTTPResponseHeaders: []templateplugin.HTTPHeader{{
 			Name:   "x-foo",
 			Value:  "'bar'",
