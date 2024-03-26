@@ -351,6 +351,8 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 
 	// Reject any unsupported cert algorithms as HaProxy will refuse to start with them.
 	switch certs[0].SignatureAlgorithm {
+	case x509.SHA1WithRSA, x509.ECDSAWithSHA1:
+		return certs, fmt.Errorf("router does not support certs using SHA1")
 	case x509.MD5WithRSA:
 		return certs, fmt.Errorf("router does not support certs using MD5")
 	default:
