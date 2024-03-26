@@ -1,0 +1,11 @@
+[allowlist]
+  description = "Global Allowlist"
+
+  # Ignore based on any subset of the file path
+  paths = [
+    # Ignore all example certs used for testing
+    '''pkg\/router\/routeapihelpers\/validation_test.go$''',
+    '''pkg\/router\/template\/plugin_test.go$''',
+    '''pkg\/router\/template\/router_test.go$''',
+  ]
+       

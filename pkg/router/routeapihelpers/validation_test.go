@@ -10,27 +10,32 @@ import (
 )
 
 const (
-	testExpiredCAUnknownCertificate = `-----BEGIN CERTIFICATE-----
-MIIDIjCCAgqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADCBoTELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgMAlNDMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0Rl
-ZmF1bHQgQ29tcGFueSBMdGQxEDAOBgNVBAsMB1Rlc3QgQ0ExGjAYBgNVBAMMEXd3
-dy5leGFtcGxlY2EuY29tMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUu
-Y29tMB4XDTE2MDExMzE5NDA1N1oXDTI2MDExMDE5NDA1N1owfDEYMBYGA1UEAxMP
-d3d3LmV4YW1wbGUuY29tMQswCQYDVQQIEwJTQzELMAkGA1UEBhMCVVMxIjAgBgkq
-hkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAOBgNVBAoTB0V4YW1wbGUx
-EDAOBgNVBAsTB0V4YW1wbGUwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAM0B
-u++oHV1wcphWRbMLUft8fD7nPG95xs7UeLPphFZuShIhhdAQMpvcsFeg+Bg9PWCu
-v3jZljmk06MLvuWLfwjYfo9q/V+qOZVfTVHHbaIO5RTXJMC2Nn+ACF0kHBmNcbth
-OOgF8L854a/P8tjm1iPR++vHnkex0NH7lyosVc/vAgMBAAGjDTALMAkGA1UdEwQC
-MAAwDQYJKoZIhvcNAQEFBQADggEBADjFm5AlNH3DNT1Uzx3m66fFjqqrHEs25geT
-yA3rvBuynflEHQO95M/8wCxYVyuAx4Z1i4YDC7tx0vmOn/2GXZHY9MAj1I8KCnwt
-Jik7E2r1/yY0MrkawljOAxisXs821kJ+Z/51Ud2t5uhGxS6hJypbGspMS7OtBbw7
-8oThK7cWtCXOldNF6ruqY1agWnhRdAq5qSMnuBXuicOP0Kbtx51a1ugE3SnvQenJ
-nZxdtYUXvEsHZC/6bAtTfNh+/SwgxQJuL2ZM+VG3X2JIKY8xTDui+il7uTh422lq
-wED8uwKl+bOj6xFDyw4gWoBxRobsbFaME8pkykP1+GnKDberyAM=
+	// openssl req -x509 -sha256 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -newkey rsa:1024 -nodes -keyout testCAUnknownCertificate.key -out testCAUnknownCertificate.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -sha256 -in testCAUnknownCertificate.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCAUnknownCertificate.crt
+	//
+	// Key = testCAUnknownCertificateKey
+	// CA = Unknown
+	testCAUnknownCertificate = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAl2gAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjG4wDQYJKoZIhvcNAQEL
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDAxMTAxOTAwMDRaFw0zNDAxMDcx
+OTAwMDRaMHwxGDAWBgNVBAMMD3d3dy5leGFtcGxlLmNvbTELMAkGA1UECAwCU0Mx
+CzAJBgNVBAYTAlVTMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUuY29t
+MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdFeGFtcGxlMIGfMA0GCSqGSIb3
+DQEBAQUAA4GNADCBiQKBgQDNAbvvqB1dcHKYVkWzC1H7fHw+5zxvecbO1Hiz6YRW
+bkoSIYXQEDKb3LBXoPgYPT1grr942ZY5pNOjC77li38I2H6Pav1fqjmVX01Rx22i
+DuUU1yTAtjZ/gAhdJBwZjXG7YTjoBfC/OeGvz/LY5tYj0fvrx55HsdDR+5cqLFXP
+7wIDAQABo00wSzAJBgNVHRMEAjAAMB0GA1UdDgQWBBSYTeaq+a2V/7QWJh/gH2tE
+GXln7jAfBgNVHSMEGDAWgBRQlTo+l7rGlVRX5myTzXIHBN587jANBgkqhkiG9w0B
+AQsFAAOBgQCvvO7Gp9zfrKa5LRrfPQuz82Q47UDSeZTmn1Hi6RJxpbgmSggsXV5W
+ibm7ToWdUrcOsmj0gwZO08jP5G5gy52kShogSy8Je7Qj7Jf4OOdG2pCMe1BEYdyS
+8W1kEoEBL8JhHt1ftjW2U3rPhxbtOLZ0gnzLf30T9GfgAB1nwadcwA==
 -----END CERTIFICATE-----`
 
-	testExpiredCertPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
+	testCAUnknownCertificateKey = `-----BEGIN RSA PRIVATE KEY-----
 MIICWwIBAAKBgQDNAbvvqB1dcHKYVkWzC1H7fHw+5zxvecbO1Hiz6YRWbkoSIYXQ
 EDKb3LBXoPgYPT1grr942ZY5pNOjC77li38I2H6Pav1fqjmVX01Rx22iDuUU1yTA
 tjZ/gAhdJBwZjXG7YTjoBfC/OeGvz/LY5tYj0fvrx55HsdDR+5cqLFXP7wIDAQAB
@@ -46,6 +51,8 @@ pgfj+yGLmkUw8JwgGH6xCUbHO+WBUFSlPf+Y50fJeO+OrjqPXAVKeSV3ZCwWjKT4
 u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 -----END RSA PRIVATE KEY-----`
 
+	// Key = testPrivateKey
+	// CA = testCACertificate
 	testCertificate = `-----BEGIN CERTIFICATE-----
 MIICwjCCAiugAwIBAgIBATANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQGEwJVUzEL
 MAkGA1UECAwCQ0ExETAPBgNVBAoMCFNlY3VyaXR5MRswGQYDVQQLDBJPcGVuU2hp
@@ -92,6 +99,8 @@ HP8gHJSZnaGrLKmjwNeQNsARYajKmDKO5HJ9g5H5Hae8enOb2yie541dneDT8rID
 4054dMQJnijd8620yf8wiNy05ZPOQQ0JvA/rW3WWZc5PGm8c2PsVjg==
 -----END RSA PRIVATE KEY-----`
 
+	// Key = Unknown
+	// CA = self-signed
 	testCACertificate = `-----BEGIN CERTIFICATE-----
 MIIClDCCAf2gAwIBAgIJAPU57OGhuqJtMA0GCSqGSIb3DQEBCwUAMGMxCzAJBgNV
 BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxGzAZBgNVBAsM
@@ -111,6 +120,8 @@ bGvtpjWA4r9WASIDPFsxk/cDEEEO6iPxgMOf5MdpQC2y2MU0rzF/Gg==
 
 	testDestinationCACertificate = testCACertificate
 
+	// Key = testValidInFutureKey
+	// CA = self-signed
 	testValidInFutureCert = `-----BEGIN CERTIFICATE-----
 MIIDjzCCAnegAwIBAgIJAJcdKWMFNUEGMA0GCSqGSIb3DQEBCwUAMF0xCzAJBgNV
 BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxEzARBgNVBAsM
@@ -134,6 +145,8 @@ fKSS26HocZpiN0e7vO0XoJfh4VkOIn7BGNwxiDr9cIRL4ZHhZ0/kRQuXCHHYbTdq
 9mKv
 -----END CERTIFICATE-----`
 
+	// Key = testValidInFutureKey
+	// CA = self-signed
 	testValidInFutureCertWithWhitespace = `
 	
 	
@@ -227,6 +240,8 @@ DOGy/dMN+k0W2RgJ5JKR3g==
 
 `
 
+	// Key = testSelfSignedKey
+	// CA = self-signed
 	testSelfSignedCert = `-----BEGIN CERTIFICATE-----
 MIIDjTCCAnWgAwIBAgIJAKM4rr3VRQARMA0GCSqGSIb3DQEBCwUAMF0xCzAJBgNV
 BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxEzARBgNVBAsM
@@ -279,26 +294,100 @@ H6e+rtFlOu/BZSBUUgcOJ4xSDUilztVSMGHK7AxhBGlBHzPRwY8bjQfMaODs9pD8
 qOFcy/8ogwZdP9nTV73O2wG56g==
 -----END PRIVATE KEY-----`
 
-	testExpiredCertNoKey = `-----BEGIN CERTIFICATE-----
-MIIDIjCCAgqgAwIBAgIBATANBgkqhkiG9w0BAQUFADCBoTELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgMAlNDMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0Rl
-ZmF1bHQgQ29tcGFueSBMdGQxEDAOBgNVBAsMB1Rlc3QgQ0ExGjAYBgNVBAMMEXd3
-dy5leGFtcGxlY2EuY29tMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUu
-Y29tMB4XDTE1MDExMjE0MTk0MVoXDTE2MDExMjE0MTk0MVowfDEYMBYGA1UEAwwP
-d3d3LmV4YW1wbGUuY29tMQswCQYDVQQIDAJTQzELMAkGA1UEBhMCVVMxIjAgBgkq
-hkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAOBgNVBAoMB0V4YW1wbGUx
-EDAOBgNVBAsMB0V4YW1wbGUwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMrv
-gu6ZTTefNN7jjiZbS/xvQjyXjYMN7oVXv76jbX8gjMOmg9m0xoVZZFAE4XyQDuCm
-47VRx5Qrf/YLXmB2VtCFvB0AhXr5zSeWzPwaAPrjA4ebG+LUo24ziS8KqNxrFs1M
-mNrQUgZyQC6XIe1JHXc9t+JlL5UZyZQC1IfaJulDAgMBAAGjDTALMAkGA1UdEwQC
-MAAwDQYJKoZIhvcNAQEFBQADggEBAFCi7ZlkMnESvzlZCvv82Pq6S46AAOTPXdFd
-TMvrh12E1sdVALF1P1oYFJzG1EiZ5ezOx88fEDTW+Lxb9anw5/KJzwtWcfsupf1m
-V7J0D3qKzw5C1wjzYHh9/Pz7B1D0KthQRATQCfNf8s6bbFLaw/dmiIUhHLtIH5Qc
-yfrejTZbOSP77z8NOWir+BWWgIDDB2//3AkDIQvT20vmkZRhkqSdT7et4NmXOX/j
-jhPti4b2Fie0LeuvgaOdKjCpQQNrYthZHXeVlOLRhMTSk3qUczenkKTOhvP7IS9q
-+Dzv5hqgSfvMG392KWh5f8xXfJNs4W5KLbZyl901MeReiLrPH3w=
+	// openssl req -newkey rsa:1024 -nodes -keyout testExpiredCert.key -out testExpiredCert.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// faketime 'last year 5pm' /bin/bash -c 'openssl x509 -req -days 1 -sha256 -in testExpiredCert.csr -CA testExpiredCertCA.crt -CAcreateserial -CAkey testExpiredCertCA.key -extensions ext -extfile <(echo $"[ext]\nbasicConstraints = CA:FALSE") -out testExpiredCert.crt'
+	//
+	// Key = testExpiredCertKey
+	// CA = testExpiredCertCA
+	testExpiredCert = `-----BEGIN CERTIFICATE-----
+MIICoDCCAgkCFAaeel1AtQzHHpRUjVZSaSEbuzcvMA0GCSqGSIb3DQEBCwUAMIGh
+MQswCQYDVQQGEwJVUzELMAkGA1UECAwCU0MxFTATBgNVBAcMDERlZmF1bHQgQ2l0
+eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDEQMA4GA1UECwwHVGVzdCBD
+QTEaMBgGA1UEAwwRd3d3LmV4YW1wbGVjYS5jb20xIjAgBgkqhkiG9w0BCQEWE2V4
+YW1wbGVAZXhhbXBsZS5jb20wHhcNMjMwMTI2MjIwMDAwWhcNMjMwMTI3MjIwMDAw
+WjB8MRgwFgYDVQQDDA93d3cuZXhhbXBsZS5jb20xCzAJBgNVBAgMAlNDMQswCQYD
+VQQGEwJVUzEiMCAGCSqGSIb3DQEJARYTZXhhbXBsZUBleGFtcGxlLmNvbTEQMA4G
+A1UECgwHRXhhbXBsZTEQMA4GA1UECwwHRXhhbXBsZTCBnzANBgkqhkiG9w0BAQEF
+AAOBjQAwgYkCgYEAv2GAaJvd0aWxiw7jBTM+VDATQ2vTPbrRc5r8+2yNTwP1Dhr1
+VlLmX5o3yv/LeHhK6g8xw1xHcDdvIAdW+J6Uu99BwDK9R5dxwVoEeTYr82vOUoFQ
+1sdXqm4226bdAJXf3kdFo+zBr2aefpygpxvMGghz6oW7Nxz78SD8yHNaAzUCAwEA
+ATANBgkqhkiG9w0BAQsFAAOBgQABr3mFRjl60RAGL8s1pB6lqBRqy5pG2WoujQlT
+N65bDpFJP7vDiFe35qYVVGLAutPxTAaAtGkNhuiyoOqfP6BIlwkM68gD5plmdRBR
+hQi35A/6YMFAsBDOnhJccOCO2i19yhyAg2R0tMSder8b51IpmLABLt3UkujwVRJ+
+a3zkug==
 -----END CERTIFICATE-----`
 
+	testExpiredCertKey = `-----BEGIN PRIVATE KEY-----
+MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAL9hgGib3dGlsYsO
+4wUzPlQwE0Nr0z260XOa/PtsjU8D9Q4a9VZS5l+aN8r/y3h4SuoPMcNcR3A3byAH
+VvielLvfQcAyvUeXccFaBHk2K/NrzlKBUNbHV6puNtum3QCV395HRaPswa9mnn6c
+oKcbzBoIc+qFuzcc+/Eg/MhzWgM1AgMBAAECgYEAqC4Ood8XNzzcoM8cQV2e0GzP
+ANiocf7SQT1aQ7hJFb7sgtC9+HYxbKIhlYrkS6Gqc7WWjY9yV/Le/M52Z1U0bb5r
+/guvTx686AYoTZzCjptwpAuVE1sS9r+WCa/VgflPZYtaql960TtO72ntjcWHoIl/
+2AsE0/1wLHLquYHaDaECQQDxdDL9ecvEWD6yTom9GlfQq/6CwzA6Nhs1oncgDT/4
+1OXGD/GgXUvlJZszdkTrYh4az8YeobDsJsfMjIkFfQpDAkEAyukOORSRIk9/KBUm
+Ufyu7JtFibtr8mozkf43Dd+2BYyO6dPqS/E9m0nUZoMSoGfS0LqS8pT1hUU0RMun
+dXURJwJBALBC5V5I5UmmKc68qqxTaLu6cwc+OhykluRmf5P0WDjsIfiedwNcWCUl
+eNDui41RiSyFdNmzq5YZEU3vYa+SAkUCQQCx99EyvVhCWKl1dX9jv5WJDvLhx9H5
+D67lqKuO7p0OpuaeLfE85H0dW5cAxouqxwU/b7T9MSta1YTvphPdUG1XAkBwH06h
+STCeJCluaFZp/Aaok8fTAbodEu5gdfo/W8dspflTFM6RcR9+WJb91elObh3QiJET
+T1ZXsR6eRuHdx4oh
+-----END PRIVATE KEY-----`
+
+	// openssl req -x509 -sha256 -newkey rsa:1024 -days 3650 -keyout testExpiredCertCA.key -out testExpiredCertCA.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	//
+	// Key = Unknown
+	// CA = self-signed
+	testExpiredCertCA = `-----BEGIN CERTIFICATE-----
+MIIDTDCCArWgAwIBAgIURqF5FgSa/bgzk50k/IkGmViVVsQwDQYJKoZIhvcNAQEL
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDAxMjYxODQ5MzZaFw0zNDAxMjMx
+ODQ5MzZaMIGhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCU0MxFTATBgNVBAcMDERl
+ZmF1bHQgQ2l0eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDEQMA4GA1UE
+CwwHVGVzdCBDQTEaMBgGA1UEAwwRd3d3LmV4YW1wbGVjYS5jb20xIjAgBgkqhkiG
+9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0A
+MIGJAoGBAMsGGCMEIyGolBZ0waJjvbOGg9It5RsGk7T8VUR1lIOe27FZk43vusYj
+ZM7toeI0ZoVeiS3MO/UwGoB87ytri6p+hkWmyfoKGBU9QMGSN5FP+98hq42WzTqz
+91ppWC0LnE1+FhpVTtahoW1oh/02I+DcbnIICsJEhDht47c7XRCxAgMBAAGjfzB9
+MB0GA1UdDgQWBBRaPZXE3tjBGhxMx050osl+A7xaMDAfBgNVHSMEGDAWgBRaPZXE
+3tjBGhxMx050osl+A7xaMDAPBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBhjAd
+BgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDQYJKoZIhvcNAQELBQADgYEA
+WhPCLIhM9+0umzLFH7xpUa9KRsmcKTHNAzdwMUaMqWupUQH+lWaH8P0rIfz6KpIb
+ZiUiFJTlS7+mH55irYMHderxNmdCh6Zk/3Nm8AXz6vDP8/cjkR6SiX0bWirRsmMS
+4xFV4AJyDenc4zyqc8QHQhwxcaW83mLmGUcBR+u7FyE=
+-----END CERTIFICATE-----`
+
+	// openssl req -x509 -sha256 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -newkey rsa:1024 -nodes -keyout testExpiredCertNoKey.key -out testExpiredCertNoKey.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// faketime 'last year 5pm' /bin/bash -c 'openssl x509 -req -days 1 -sha256 -in testExpiredCertNoKey.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $"[ext]\nbasicConstraints = CA:FALSE") -out testExpiredCertNoKey.crt'
+	//
+	// Key = Unknown
+	// CA = Unknown
+	testExpiredCertNoKey = `-----BEGIN CERTIFICATE-----
+MIICoDCCAgkCFE1r/2f+5TpHQhC7pZzWTj+Gs4x0MA0GCSqGSIb3DQEBCwUAMIGh
+MQswCQYDVQQGEwJVUzELMAkGA1UECAwCU0MxFTATBgNVBAcMDERlZmF1bHQgQ2l0
+eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDEQMA4GA1UECwwHVGVzdCBD
+QTEaMBgGA1UEAwwRd3d3LmV4YW1wbGVjYS5jb20xIjAgBgkqhkiG9w0BCQEWE2V4
+YW1wbGVAZXhhbXBsZS5jb20wHhcNMjMwMTEwMjIwMDAwWhcNMjMwMTExMjIwMDAw
+WjB8MRgwFgYDVQQDDA93d3cuZXhhbXBsZS5jb20xCzAJBgNVBAgMAlNDMQswCQYD
+VQQGEwJVUzEiMCAGCSqGSIb3DQEJARYTZXhhbXBsZUBleGFtcGxlLmNvbTEQMA4G
+A1UECgwHRXhhbXBsZTEQMA4GA1UECwwHRXhhbXBsZTCBnzANBgkqhkiG9w0BAQEF
+AAOBjQAwgYkCgYEAzQG776gdXXBymFZFswtR+3x8Puc8b3nGztR4s+mEVm5KEiGF
+0BAym9ywV6D4GD09YK6/eNmWOaTTowu+5Yt/CNh+j2r9X6o5lV9NUcdtog7lFNck
+wLY2f4AIXSQcGY1xu2E46AXwvznhr8/y2ObWI9H768eeR7HQ0fuXKixVz+8CAwEA
+ATANBgkqhkiG9w0BAQsFAAOBgQBYlpkSYiy/NABcjR9Y8F2gqvvYFOtFPc7qcqTl
+f7b8rn4jEA2Sq6QaNxY/GutuVT8nmLrjF7aZ1R9NdIGN6lWjsVsUpZXezyCkIWfD
+nkw+5PHjKOgRh24io7DjLC2txHDmHm21wgNWJv9q/CF0bQ+XF5EqXWkW8QD0bQto
+PJrhbw==
+-----END CERTIFICATE-----`
+
+	// Key = Unknown
+	// CA = 2nd cert in testIntCACertificateChain
+	//
+	// Key = Unknown
+	// CA = self-signed
 	testIntCACertificateChain = `-----BEGIN CERTIFICATE-----
 MIIFqjCCA5KgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwYDELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
@@ -368,6 +457,7 @@ qA0au8ygoLaCLhYK+HnzGRVAYqc4hb4LKNhIbAveHLOTUKNeAFADxq8REsPkpeM7
 G0k/6pTJTZwfsA==
 -----END CERTIFICATE-----`
 
+	// Same certs as testIntCACertificateChain
 	testIntCACertificateChainCanonical = `-----BEGIN CERTIFICATE-----
 MIIFqjCCA5KgAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwYDELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
@@ -436,6 +526,8 @@ G0k/6pTJTZwfsA==
 -----END CERTIFICATE-----
 `
 
+	// Key = testPrivateKeyWithIntCA
+	// CA = 1st cert in testIntCACertificateChain
 	testCertificateWithIntCA = `-----BEGIN CERTIFICATE-----
 MIIGbzCCBFegAwIBAgICEAAwDQYJKoZIhvcNAQELBQAwaDELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
@@ -526,6 +618,8 @@ TGqICdrZWiXt3a0Z9Vmj3p9lmf37Yn7vcK82D/LAW3gXuj3JI9UT+qCx/mb4xRMM
 psdbOzUfDqYCDPPviJvBYr4R+XdJfdF048NUtMO0w+dEiMPf5dPpi3fOvWGE
 -----END RSA PRIVATE KEY-----`
 
+	// Key = testExpiredCertificateKey
+	// CA = 1st cert in testIntCACertificateChain
 	testExpiredCertificateWithIntCA = `-----BEGIN CERTIFICATE-----
 MIIGdzCCBF+gAwIBAgICEAEwDQYJKoZIhvcNAQELBQAwaDELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
@@ -616,6 +710,8 @@ BLZdb77lbMNcPJb9KRWYwdq+bxZqO8MP2mWEWy8+WXrLk6P9x03bJhE1JPZzwRYf
 giVrDnYEggz1sg9RYApGlEp99hMFM15W14f+T+5vLD7W4anyfP+beWAnp+A0Nw==
 -----END RSA PRIVATE KEY-----`
 
+	// Key = testFutureValidCertificateKey
+	// CA = 1st cert in testIntCACertificateChain
 	testFutureValidCertificateWithIntCA = `-----BEGIN CERTIFICATE-----
 MIIGgTCCBGmgAwIBAgICEAIwDQYJKoZIhvcNAQELBQAwaDELMAkGA1UEBhMCVVMx
 CzAJBgNVBAgMAkNBMREwDwYDVQQKDAhTZWN1cml0eTEbMBkGA1UECwwST3BlblNo
@@ -706,6 +802,7 @@ E3aQMYHn+86jpSIh8ewXcxIxDj1PxfQ354kIW9+tPNY8akYL2WwJefCAmc46SHJs
 DHEcIfSs5RcvB768lQkSZ8KHmIcHzw745UFquKYnAdJZbpHBpVAC+Xx/gZs=
 -----END RSA PRIVATE KEY-----`
 
+	// Invalid
 	testInvalidCANoCert1 = `-----BEGIN CERTIFICATE REQUEST-----
 MIICnTCCAYUCAQAwWDELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMREwDwYDVQQK
 DAhTZWN1cml0eTETMBEGA1UECwwKT3BlblNoaWZ0MzEUMBIGA1UEAwwLcm91dGVy
@@ -724,14 +821,18 @@ xhfvmedJE9ck2tEbxQk8BcdCXCN4HFePO8gpCYeC7r309E/QwFjU9+xw6qrpW5uP
 GA==
 -----END CERTIFICATE REQUEST-----`
 
+	// Invalid
 	testInvalidCANoCert2 = testSelfSignedKey
 
+	// Invalid/Malformed
 	testInvalidCAMalformedCert = `-----BEGIN CERTIFICATE-----
 MIIDjTCCAnWgAwIBAgIJAKM4rr3VRQARMA0GCSqGSIb3DQEBCwUAMF0xCzAJBgNV
 The+rest+of+the+certificate+info+is+invalid+and+badly+malformed/
 0A==
 -----END CERTIFICATE-----`
 
+	// Key = bz1723400key1
+	// CA = self-signed
 	bz1723400cert = `-----BEGIN CERTIFICATE-----
 MIICazCCAfKgAwIBAgIJANp+3iOVYFyDMAoGCCqGSM49BAMCMHQxCzAJBgNVBAYT
 AlVTMRcwFQYDVQQIDA5Ob3J0aCBDYXJvbGluYTEQMA4GA1UEBwwHUmFsZWlnaDEQ
@@ -826,6 +927,83 @@ g89A85Z2evF4bSHKPJCcd2ucphoc02WB5lh7bJM5iVc+vVxedMV/gQJBAKjHZb9j
 IrRGZJwgzmWX+NzqK9H3AyFk5p9oBuzmulVoJyKFzs1eN4ZIn25ifP8hP+uJHOTE
 jZrtwVw4rGVb/qM=
 -----END PRIVATE KEY-----`
+
+	// openssl req -x509 -sha1 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateRsaSha1.key -out testCertificateRsaSha1.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -sha1 -in testCertificateRsaSha1.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateRsaSha1.crt
+	//
+	// Key = testCertificateRsaSha1Key
+	// CA = Unknown
+	testCertificateRsaSha1 = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAl2gAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjHowDQYJKoZIhvcNAQEF
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDAxMTAxOTU2MDhaFw0zNDAxMDcx
+OTU2MDhaMHwxGDAWBgNVBAMMD3d3dy5leGFtcGxlLmNvbTELMAkGA1UECAwCU0Mx
+CzAJBgNVBAYTAlVTMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUuY29t
+MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdFeGFtcGxlMIGfMA0GCSqGSIb3
+DQEBAQUAA4GNADCBiQKBgQC4hsxewdQOk5goI9bdkR1urJnbu7TeZdDtPz0Mi976
+1guAxNPQO98t0X/Bhs7toZz/zIG4vQZfXaV2IU1ry7pQ64I8bTPXQ/Kpt8zW3zng
+dPeIJqVujKPybIL/teHJ1Bw4c4x1ZMpAGoZ6s750tQy1zP7WRqStJv2G9l3OQLFu
+AQIDAQABo00wSzAJBgNVHRMEAjAAMB0GA1UdDgQWBBS6uwvwYLV5u4TX9ZFMBpQe
+hW4YKjAfBgNVHSMEGDAWgBRQlTo+l7rGlVRX5myTzXIHBN587jANBgkqhkiG9w0B
+AQUFAAOBgQB+1bS0s6SpuCuMFFMpeBcE7WX//AGU/ZcRfO60ithV6NQ9OnN3djfS
+H+ZeW3QEaQVMM0PIOuMO22/9AN6UVs8IxSuSkrfBOQ+PY/3169b6rpGl44/ZTx6B
+O+c5wkkhnmy4+T6KnjQE5aO1VKBp3Ocl8PyIBqLLV52pZWUuytGlqA==
+-----END CERTIFICATE-----
+`
+	testCertificateRsaSha1Key = `
+-----BEGIN PRIVATE KEY-----
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBALiGzF7B1A6TmCgj
+1t2RHW6smdu7tN5l0O0/PQyL3vrWC4DE09A73y3Rf8GGzu2hnP/Mgbi9Bl9dpXYh
+TWvLulDrgjxtM9dD8qm3zNbfOeB094gmpW6Mo/Jsgv+14cnUHDhzjHVkykAahnqz
+vnS1DLXM/tZGpK0m/Yb2Xc5AsW4BAgMBAAECgYAWaNBzBYkSSBxna4rRl6kCYtXA
+mLgrdiP8W/y3BFmNDueQuNacaFj/QH0KbKu+sizV5+ktHU+jz0Sj5wF3AOPccRtJ
+QcGxr66f1uVPeBQfO27ac8b5UYwIFCu4gJ9IQp86INARuO4U5UR2o7sJ8rUpmf2M
+p2JUQwKXjO0qDyDcQQJBAODWqTkdr0Av2vAOZe6SOfmr+u/2shAWPTg8uc1Y08Ng
+1Fh0o7vqkOQ6Amtw4o5lE0RE0LlPSnxhpl28sT0gwUkCQQDSGdtIk77rh+WqNjYZ
+GWhKBA2H8w0jo37Wz1aGyv/Yt6LC/LgOdOcadu4xSIgG+Al9JHdzLx7iWvNdIjD6
+l/75AkEA1szdwL5WVnkhrmPjCAhVMO0YALbrqKjGdfq1+7OYJDlWxOcyIe5X3GJ7
+O1AOccGopXkk+1UAMVJNUZJata6cWQJBAIEvhubsecNHL09mwALU3YxNS6ihKR4V
+xML+gBynq4Ms/vZYADBbb1KVeEZza7ilQOhiyNPZUGssM2G7yVP8q7kCQHFCAgmO
+redbrtiWNunEy1hVHOJD6ALriPz2i1W51NMbrPV2kOy9GpV/p3oby3GmXHs+Zlo6
+bBbOLhI7o+VlGaM=
+-----END PRIVATE KEY-----`
+
+	// openssl ecparam -out exampleca.key -name secp224r1 -genkey
+	// openssl req -x509 -sha1 -key exampleca.key -days 3650 -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl ecparam -out testCertificateEcdsaSha1.key -name secp224r1 -genkey
+	// openssl req -new -nodes -key testCertificateEcdsaSha1.key -out testCertificateEcdsaSha1.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -sha1 -in testCertificateEcdsaSha1.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateEcdsaSha1.crt
+	//
+	// Key = testCertificateEcdsaSha1Key
+	// CA = Unknown
+	testCertificateEcdsaSha1 = `-----BEGIN CERTIFICATE-----
+MIICWTCCAgegAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjIIwCQYHKoZIzj0EATCB
+oTELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAlNDMRUwEwYDVQQHDAxEZWZhdWx0IENp
+dHkxHDAaBgNVBAoME0RlZmF1bHQgQ29tcGFueSBMdGQxEDAOBgNVBAsMB1Rlc3Qg
+Q0ExGjAYBgNVBAMMEXd3dy5leGFtcGxlY2EuY29tMSIwIAYJKoZIhvcNAQkBFhNl
+eGFtcGxlQGV4YW1wbGUuY29tMB4XDTI0MDExMDIwMjMzNVoXDTM0MDEwNzIwMjMz
+NVowfDEYMBYGA1UEAwwPd3d3LmV4YW1wbGUuY29tMQswCQYDVQQIDAJTQzELMAkG
+A1UEBhMCVVMxIjAgBgkqhkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAO
+BgNVBAoMB0V4YW1wbGUxEDAOBgNVBAsMB0V4YW1wbGUwTjAQBgcqhkjOPQIBBgUr
+gQQAIQM6AATOmu6DIvMYCHfyKfX3jiFKwmsai2r6hJI67MWvjcEq3mztN9hg/WNw
+D15CgvKqNpZboP+JaUtgLaNNMEswCQYDVR0TBAIwADAdBgNVHQ4EFgQUX5KvVN+P
+hOBQfF+oksHEHN9SMEowHwYDVR0jBBgwFoAU7dd64Bp/HI/JIqHUUknXX5jz068w
+CQYHKoZIzj0EAQNBADA+Ah0AxlT5Ri6/suTGv8pnL6QYp3Czpz3h3G5KOtzkbwId
+ANQzMWFQDZ+sjIEMr+UJsiD5mB1jUPysXUFT6Xg=
+-----END CERTIFICATE-----
+`
+	testCertificateEcdsaSha1Key = `-----BEGIN EC PARAMETERS-----
+BgUrgQQAIQ==
+-----END EC PARAMETERS-----
+-----BEGIN EC PRIVATE KEY-----
+MGgCAQEEHMp+7YQt1rH4YHPyOyLtjiUeDzZezVY5zYT9YJWgBwYFK4EEACGhPAM6
+AATOmu6DIvMYCHfyKfX3jiFKwmsai2r6hJI67MWvjcEq3mztN9hg/WNwD15CgvKq
+NpZboP+JaUtgLQ==
+-----END EC PRIVATE KEY-----
+`
 )
 
 // TestExtendedValidateRoute ensures that a route's certificate and keys
@@ -982,7 +1160,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testCertificate,
-						Key:           testExpiredCertPrivateKey,
+						Key:           testCAUnknownCertificateKey,
 						CACertificate: testCACertificate,
 					},
 				},
@@ -990,28 +1168,42 @@ func TestExtendedValidateRoute(t *testing.T) {
 			expectedErrors: 1,
 		},
 		{
-			name: "Edge termination expired cert unknown CA",
+			name: "Edge termination cert with unknown CA",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					Host: "www.example.com",
 					TLS: &routev1.TLSConfig{
 						Termination: routev1.TLSTerminationEdge,
-						Certificate: testExpiredCAUnknownCertificate,
-						Key:         testExpiredCertPrivateKey,
+						Certificate: testCAUnknownCertificate,
+						Key:         testCAUnknownCertificateKey,
 					},
 				},
 			},
 			expectedErrors: 0,
 		},
 		{
-			name: "Edge termination expired cert mismatched CA",
+			name: "Edge termination expired cert with unknown CA",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "think.different.test",
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: testExpiredCert,
+						Key:         testExpiredCertKey,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "Edge termination cert mismatched CA",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					Host: "www.example.com",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testExpiredCAUnknownCertificate,
-						Key:           testExpiredCertPrivateKey,
+						Certificate:   testCAUnknownCertificate,
+						Key:           testCAUnknownCertificateKey,
 						CACertificate: testCACertificate,
 					},
 				},
@@ -1019,13 +1211,31 @@ func TestExtendedValidateRoute(t *testing.T) {
 			expectedErrors: 1,
 		},
 		{
-			name: "Edge termination expired cert key mismatch",
+			// Note: This odd test case is a symptom of the x509 cert Verify function returning
+			//       Expired err BEFORE returning mismatch err and the extended validation logic
+			//       ignores Expired err. So expectedErrors=0
+			name: "Edge termination with expired cert, ignoring CA mismatch",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					Host: "www.example.com",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testExpiredCAUnknownCertificate,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
+						CACertificate: testCACertificate,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "Edge termination cert key mismatch",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.example.com",
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						Certificate:   testCAUnknownCertificate,
 						Key:           testPrivateKey,
 						CACertificate: testCACertificate,
 					},
@@ -1119,45 +1329,30 @@ func TestExtendedValidateRoute(t *testing.T) {
 			expectedErrors: 4,
 		},
 		{
-			name: "example cert",
+			name: "expired cert edge",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					Host: "www.example.com",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testCertificate,
-						Key:           testPrivateKey,
-						CACertificate: testCACertificate,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
+						CACertificate: testExpiredCertCA,
 					},
 				},
 			},
 			expectedErrors: 0,
 		},
 		{
-			name: "Expired cert",
-			route: &routev1.Route{
-				Spec: routev1.RouteSpec{
-					Host: "www.example.com",
-					TLS: &routev1.TLSConfig{
-						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testCertificate,
-						Key:           testPrivateKey,
-						CACertificate: testCACertificate,
-					},
-				},
-			},
-			expectedErrors: 0,
-		},
-		{
-			name: "Expired cert reencrypt",
+			name: "expired cert reencrypt",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					Host: "www.example.com",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
-						Certificate:              testCertificate,
-						Key:                      testPrivateKey,
-						CACertificate:            testCACertificate,
+						Certificate:              testExpiredCert,
+						Key:                      testExpiredCertKey,
+						CACertificate:            testExpiredCertCA,
 						DestinationCACertificate: testCACertificate,
 					},
 				},
@@ -1212,9 +1407,9 @@ func TestExtendedValidateRoute(t *testing.T) {
 					Host: "think.different.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testCertificate,
-						Key:           testPrivateKey,
-						CACertificate: testCACertificate,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
+						CACertificate: testExpiredCertCA,
 					},
 				},
 			},
@@ -1719,51 +1914,79 @@ func TestExtendedValidateRoute(t *testing.T) {
 			},
 			expectedErrors: 1,
 		},
+		{
+			name: "Edge termination with cert using SHA1 with RSA key",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: testCertificateRsaSha1,
+						Key:         testCertificateRsaSha1Key,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "Edge termination with cert using SHA1 with ECDSA key",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: testCertificateEcdsaSha1,
+						Key:         testCertificateEcdsaSha1Key,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
 	}
 
 	for _, tc := range tests {
-		errs := ExtendedValidateRoute(tc.route)
-		if len(errs) != tc.expectedErrors {
-			t.Errorf("Test case %s expected %d error(s), got %d. %v", tc.name, tc.expectedErrors, len(errs), errs)
-		}
-
-		if len(errs) == 0 {
-			if tc.expectRoute != nil {
-				if e, a := tc.expectRoute, tc.route; !reflect.DeepEqual(e, a) {
-					t.Errorf("Test case %s got unexpected route differences: %s", tc.name, diff.ObjectReflectDiff(e, a))
-				}
+		t.Run(tc.name, func(t *testing.T) {
+			errs := ExtendedValidateRoute(tc.route)
+			if len(errs) != tc.expectedErrors {
+				t.Errorf("expected %d error(s), got %d. %v", tc.expectedErrors, len(errs), errs)
 			}
 
-			if tls := tc.route.Spec.TLS; tls != nil {
-				data, err := sanitizePEM([]byte(tls.CACertificate))
-				if err != nil {
-					t.Errorf("Test case %s should have sanitized CA, got %v", tc.name, err)
+			if len(errs) == 0 {
+				if tc.expectRoute != nil {
+					if e, a := tc.expectRoute, tc.route; !reflect.DeepEqual(e, a) {
+						t.Errorf("got unexpected route differences: %s", diff.ObjectReflectDiff(e, a))
+					}
 				}
-				if e, a := data, []byte(tls.CACertificate); !bytes.Equal(e, a) {
-					t.Errorf("Test case %s should have sanitized CA, got\n%s\n%s", tc.name, e, a)
-				}
-				data, err = sanitizePEM([]byte(tls.Certificate))
-				if err != nil {
-					t.Errorf("Test case %s should have sanitized certificate, got %v", tc.name, err)
-				}
-				if e, a := data, []byte(tls.Certificate); !bytes.Equal(e, a) {
-					t.Errorf("Test case %s should have sanitized certificate, got\n%s\n%s", tc.name, e, a)
-				}
-				data, err = sanitizePEM([]byte(tls.DestinationCACertificate))
-				if err != nil {
-					t.Errorf("Test case %s should have sanitized destination CA, got %v", tc.name, err)
-				}
-				if e, a := data, []byte(tls.DestinationCACertificate); !bytes.Equal(e, a) {
-					t.Errorf("Test case %s should have sanitized destination CA, got\n%s\n%s", tc.name, e, a)
-				}
-				data, err = sanitizePEM([]byte(tls.Key))
-				if err != nil {
-					t.Errorf("Test case %s should have sanitized key, got %v", tc.name, err)
-				}
-				if e, a := data, []byte(tls.Key); !bytes.Equal(e, a) {
-					t.Errorf("Test case %s should have sanitized key, got\n%s\n%s", tc.name, e, a)
+
+				if tls := tc.route.Spec.TLS; tls != nil {
+					data, err := sanitizePEM([]byte(tls.CACertificate))
+					if err != nil {
+						t.Errorf("should have sanitized CA, got %v", err)
+					}
+					if e, a := data, []byte(tls.CACertificate); !bytes.Equal(e, a) {
+						t.Errorf("should have sanitized CA, got\n%s\n%s", e, a)
+					}
+					data, err = sanitizePEM([]byte(tls.Certificate))
+					if err != nil {
+						t.Errorf("should have sanitized certificate, got %v", err)
+					}
+					if e, a := data, []byte(tls.Certificate); !bytes.Equal(e, a) {
+						t.Errorf("should have sanitized certificate, got\n%s\n%s", e, a)
+					}
+					data, err = sanitizePEM([]byte(tls.DestinationCACertificate))
+					if err != nil {
+						t.Errorf("should have sanitized destination CA, got %v", err)
+					}
+					if e, a := data, []byte(tls.DestinationCACertificate); !bytes.Equal(e, a) {
+						t.Errorf("should have sanitized destination CA, got\n%s\n%s", e, a)
+					}
+					data, err = sanitizePEM([]byte(tls.Key))
+					if err != nil {
+						t.Errorf("should have sanitized key, got %v", err)
+					}
+					if e, a := data, []byte(tls.Key); !bytes.Equal(e, a) {
+						t.Errorf("should have sanitized key, got\n%s\n%s", e, a)
+					}
 				}
 			}
-		}
+		})
 	}
 }
