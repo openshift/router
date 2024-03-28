@@ -36,6 +36,7 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
+	"github.com/openshift/library-go/pkg/route/secretmanager"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
@@ -746,6 +747,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
+	// queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	secretManager := secretmanager.NewManager(kc, nil /*queue*/)
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
@@ -772,6 +776,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		HTTPHeaderNameCaseAdjustments: o.HTTPHeaderNameCaseAdjustments,
 		HTTPResponseHeaders:           o.HTTPResponseHeaders,
 		HTTPRequestHeaders:            o.HTTPRequestHeaders,
+		SecretManager:                 secretManager,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
@@ -798,6 +803,10 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		recorder = status
 		plugin = status
 	}
+
+	// RouteExternalCertificate
+	plugin = controller.NewRouteSecretManager(plugin, recorder, secretManager)
+
 	if o.ExtendedValidation {
 		plugin = controller.NewExtendedValidator(plugin, recorder)
 	}

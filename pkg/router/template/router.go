@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/library-go/pkg/route/secretmanager"
 
 	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/crl"
@@ -64,6 +65,7 @@ type templateRouter struct {
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
 	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
+	secretManger     *secretmanager.Manager
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
 	// usually a wildcard certificate for a cloud domain such as *.mypaas.com to allow applications to create app.mypaas.com
@@ -155,6 +157,7 @@ type templateRouterCfg struct {
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 	httpResponseHeaders           []HTTPHeader
 	httpRequestHeaders            []HTTPHeader
+	secretManager                 *secretmanager.Manager
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -249,6 +252,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		state:                         make(map[ServiceAliasConfigKey]ServiceAliasConfig),
 		serviceUnits:                  make(map[ServiceUnitKey]ServiceUnit),
 		certManager:                   certManager,
+		secretManger:                  cfg.secretManager,
 		defaultCertificate:            cfg.defaultCertificate,
 		defaultCertificatePath:        cfg.defaultCertificatePath,
 		defaultCertificateDir:         cfg.defaultCertificateDir,
@@ -938,7 +942,7 @@ func getPartsFromRouteKey(key ServiceAliasConfigKey) (string, string) {
 
 // createServiceAliasConfig creates a ServiceAliasConfig from a route and the router state.
 // The router state is not modified in the process, so referenced ServiceUnits may not exist.
-func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendKey ServiceAliasConfigKey) *ServiceAliasConfig {
+func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendKey ServiceAliasConfigKey) (*ServiceAliasConfig, error) {
 	wantsWildcardSupport := (route.Spec.WildcardPolicy == routev1.WildcardPolicySubdomain)
 
 	// The router config trumps what the route asks for/wants.
@@ -996,7 +1000,25 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		if tls.Termination != routev1.TLSTerminationPassthrough {
 			config.Certificates = make(map[string]Certificate)
 
-			if len(tls.Certificate) > 0 {
+			// read ExternalCertificate contents
+			if len(tls.Certificate) == 0 && tls.ExternalCertificate != nil && len(tls.ExternalCertificate.Name) > 0 {
+				if r.secretManger == nil {
+					return nil, fmt.Errorf("secretManger is not set")
+				}
+
+				secret, err := r.secretManger.GetSecret(route.Namespace, route.Name)
+				if err != nil {
+					return nil, err
+				}
+				certKey := generateCertKey(&config)
+				cert := Certificate{
+					ID:         string(backendKey),
+					Contents:   string(secret.Data["tls.crt"]),
+					PrivateKey: string(secret.Data["tls.key"]),
+				}
+				config.Certificates[certKey] = cert
+
+			} else if len(tls.Certificate) > 0 && tls.ExternalCertificate == nil {
 				certKey := generateCertKey(&config)
 				cert := Certificate{
 					ID:         string(backendKey),
@@ -1029,7 +1051,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		}
 	}
 
-	return &config
+	return &config, nil
 }
 
 func getHeadersList(httpHeaderList []routev1.RouteHTTPHeader) []HTTPHeader {
@@ -1066,7 +1088,12 @@ func SanitizeHeaderValue(headerValue string) string {
 func (r *templateRouter) AddRoute(route *routev1.Route) {
 	backendKey := routeKey(route)
 
-	newConfig := r.createServiceAliasConfig(route, backendKey)
+	newConfig, err := r.createServiceAliasConfig(route, backendKey)
+	// TODO: proper error handling?
+	if err != nil {
+		log.V(2).Error(err, "failed to add route", "namespace", route.Namespace, "name", route.Name)
+		return
+	}
 
 	// We have to call the internal form of functions after this
 	// because we are holding the state lock.
