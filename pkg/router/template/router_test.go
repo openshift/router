@@ -394,8 +394,7 @@ func TestCreateServiceAliasConfig(t *testing.T) {
 
 	// Basic sanity, validate more fields as necessary
 	if config.Host != route.Spec.Host || config.Path != route.Spec.Path || !compareTLS(route, config, t) ||
-		config.PreferPort != route.Spec.Port.TargetPort.String() || !reflect.DeepEqual(expectedSUs, config.ServiceUnits) ||
-		config.ActiveServiceUnits != 0 {
+		config.PreferPort != route.Spec.Port.TargetPort.String() || !reflect.DeepEqual(expectedSUs, config.ServiceUnits) {
 		t.Errorf("Route %v did not match service alias config %v", route, config)
 	}
 

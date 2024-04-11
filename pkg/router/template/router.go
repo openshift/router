@@ -930,15 +930,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 	// The router config trumps what the route asks for/wants.
 	wildcard := r.allowWildcardRoutes && wantsWildcardSupport
 
-	// Get the service weights from each service in the route. Count the active
-	// ones (with a non-zero weight)
 	serviceUnits := getServiceUnits(route)
-	activeServiceUnits := 0
-	for _, weight := range serviceUnits {
-		if weight > 0 {
-			activeServiceUnits++
-		}
-	}
 
 	config := ServiceAliasConfig{
 		Name:               route.Name,
@@ -948,7 +940,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		IsWildcard:         wildcard,
 		Annotations:        route.Annotations,
 		ServiceUnits:       serviceUnits,
-		ActiveServiceUnits: activeServiceUnits,
+		ActiveServiceUnits: len(serviceUnits),
 	}
 
 	if route.Spec.Port != nil {
