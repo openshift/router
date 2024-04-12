@@ -147,6 +147,9 @@ defaults
   log global
   {{- end }}
 
+  # https://issues.redhat.com/browse/OCPBUGS-32044
+  option idle-close-on-response
+
   # To configure custom default errors, you can either uncomment the
   # line below (server ... 127.0.0.1:8080) and point it to your custom
   # backend service or alternatively, you can send a custom 503 or 404 error.
