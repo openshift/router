@@ -1099,7 +1099,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 func TestHandleRouteUpgradeValidation(t *testing.T) {
 	rejections := &fakeStatusRecorder{}
 	fake := &fakePlugin{}
-	plugin := controller.NewUpgradeValidation(fake, rejections)
+	plugin := controller.NewUpgradeValidation(fake, rejections, false, false)
 
 	tests := []struct {
 		name                               string
