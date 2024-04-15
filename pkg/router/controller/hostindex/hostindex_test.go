@@ -152,7 +152,8 @@ func Test_hostIndex(t *testing.T) {
 				{route: newRoute("test", "1", 1, 1, routev1.RouteSpec{Host: "test.com"})},
 				{route: newRoute("test", "1", 1, 1, routev1.RouteSpec{Host: "test.com"})},
 			},
-			active: map[string][]string{"test.com": {"001"}},
+			active:    map[string][]string{"test.com": {"001"}},
+			activates: map[string]struct{}{"001": {}},
 		},
 		{
 			name: "update - inactive",
