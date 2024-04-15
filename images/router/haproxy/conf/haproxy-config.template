@@ -213,6 +213,12 @@ frontend public
   bind :{{ env "ROUTER_SERVICE_HTTP_PORT" "80" }}{{ if isTrue (env "ROUTER_USE_PROXY_PROTOCOL") }} accept-proxy{{ end }}
     {{- end }}
   mode http
+
+  # Workaround for a known issue encountered with certain HTTP clients,
+  # particularly the Apache HTTP client (prior to version 5),
+  # where closed idle connections are erroneously reused.
+  # Bug reference: https://issues.redhat.com/browse/OCPBUGS-32044.
+  option idle-close-on-response
   tcp-request inspect-delay {{ firstMatch $timeSpecPattern (env "ROUTER_INSPECT_DELAY") "5s" }}
   tcp-request content accept if HTTP
 
@@ -332,6 +338,8 @@ frontend fe_sni
     {{- end }}
   mode http
 
+  option idle-close-on-response
+
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
   capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
     {{- end }}
@@ -441,6 +449,8 @@ frontend fe_no_sni
       {{- end }}
     {{- end }}
   mode http
+
+  option idle-close-on-response
 
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
   capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
