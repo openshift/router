@@ -799,7 +799,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		plugin = status
 	}
 	if o.UpgradeValidation {
-		plugin = controller.NewUpgradeValidation(plugin, recorder)
+		plugin = controller.NewUpgradeValidation(plugin, recorder, o.UpgradeValidationForceAddCondition, o.UpgradeValidationForceRemoveCondition)
 	}
 	if o.ExtendedValidation {
 		plugin = controller.NewExtendedValidator(plugin, recorder)
