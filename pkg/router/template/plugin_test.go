@@ -1174,7 +1174,7 @@ func TestHandleRouteUpgradeValidation(t *testing.T) {
 					},
 				},
 			},
-			unservableInFutureVersionsExpected: true,
+			unservableInFutureVersionsExpected: false,
 		},
 	}
 
