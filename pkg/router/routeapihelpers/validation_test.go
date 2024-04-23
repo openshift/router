@@ -1928,7 +1928,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 0,
+			expectedErrors: 1,
 		},
 		{
 			name: "Edge termination with cert using SHA1 with ECDSA key",
@@ -1941,7 +1941,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 0,
+			expectedErrors: 1,
 		},
 	}
 

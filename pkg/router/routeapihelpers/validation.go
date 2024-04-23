@@ -351,6 +351,8 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 
 	// Reject any unsupported cert algorithms as HaProxy will refuse to start with them.
 	switch certs[0].SignatureAlgorithm {
+	case x509.SHA1WithRSA, x509.ECDSAWithSHA1:
+		return certs, fmt.Errorf("router does not support certs using SHA1")
 	case x509.MD5WithRSA:
 		return certs, fmt.Errorf("router does not support certs using MD5")
 	default:
@@ -380,36 +382,11 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 // a route. This checks for issues that will cause failures in the next
 // OpenShift version.
 func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
-	tlsConfig := route.Spec.TLS
-	result := field.ErrorList{}
-
-	if tlsConfig == nil {
-		return result
-	}
-
-	// Verify the route for incompatible SHA1 certificates within Spec.TLS.Certificate
-	// as it will prevent HaProxy from starting.
-	// There's no need to verify SHA1 certificates within Spec.TLS.CACertificate
-	// as they will be rejected by the ExtendedValidator plugin.
-	// Similarly, verifying SHA1 certificates within Spec.TLS.DestinationCACertificate
-	// is unnecessary as it will NOT prevent HaProxy from starting.
-	if len(tlsConfig.Certificate) > 0 {
-		certs, err := cert.ParseCertsPEM([]byte(tlsConfig.Certificate))
-		if err != nil {
-			// Handling cert parsing errors, like malformed or invalid certs, isn't necessary here,
-			// as the ExtendedValidator plugin is responsible for handling these errors.
-			return result
-		}
-
-		if len(certs) < 1 {
-			return result
-		}
-
-		if certs[0].SignatureAlgorithm == x509.SHA1WithRSA || certs[0].SignatureAlgorithm == x509.ECDSAWithSHA1 {
-			tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("certificate")
-			message := "OpenShift 4.16 does not support certificates using SHA1 signature algorithms. This route will be rejected in OpenShift 4.16. To maintain functionality in OpenShift 4.16, generate a new certificate using a supported signature algorithm such as SHA256, SHA384, or SHA512, and update this route accordingly."
-			result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", message))
-		}
-	}
-	return result
+	// This function returns nil because this release has no current route upgradeable issues.
+	// Previously in 4.15, we introduced the Upgrade Validation plugin to add the
+	// UnservableInFutureVersions condition to indicate that 4.16 does not support SHA1 certs.
+	// It's important to keep the Upgrade Validation plugin active in 4.16 as always
+	// returning nil clears stale UnservableInFutureVersions conditions (SHA1 Routes
+	// are getting rejected now).
+	return nil
 }
