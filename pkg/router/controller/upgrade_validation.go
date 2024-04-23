@@ -2,7 +2,6 @@ package controller
 
 import (
 	kapi "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -19,16 +18,24 @@ type UpgradeValidation struct {
 
 	// recorder is an interface for indicating route status.
 	recorder RouteStatusRecorder
+
+	// forceAddCondition indicates the plugin should forcibly add the condition.
+	forceAddCondition bool
+
+	// forceRemoveCondition indicates the plugin should forcibly remove the condition.
+	forceRemoveCondition bool
 }
 
 // NewUpgradeValidation creates a plugin wrapper that validates for upgrades
 // and adds an UnservableInFutureVersions status if needed. It does not stop
 // the plugin chain if the route is unservable in future versions.
 // Recorder is an interface for indicating routes status update.
-func NewUpgradeValidation(plugin router.Plugin, recorder RouteStatusRecorder) *UpgradeValidation {
+func NewUpgradeValidation(plugin router.Plugin, recorder RouteStatusRecorder, forceAddCondition, forceRemoveCondition bool) *UpgradeValidation {
 	return &UpgradeValidation{
-		plugin:   plugin,
-		recorder: recorder,
+		plugin:               plugin,
+		recorder:             recorder,
+		forceAddCondition:    forceAddCondition,
+		forceRemoveCondition: forceRemoveCondition,
 	}
 }
 
@@ -47,6 +54,18 @@ func (p *UpgradeValidation) HandleEndpoints(eventType watch.EventType, endpoints
 // and sets UnservableInFutureVersions condition if needed.
 func (p *UpgradeValidation) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	routeName := routeNameKey(route)
+
+	// Force add and force removal logic for debugging and testing.
+	if p.forceAddCondition {
+		log.Info("force adding UnservableInFutureVersions condition in upgrade validation", "conditionType", p.forceRemoveCondition, "route", routeName)
+		p.recorder.RecordRouteUnservableInFutureVersions(route, "ForceUpgradeValidationCondition", "forced upgrade validation condition")
+		return p.plugin.HandleRoute(eventType, route)
+	} else if p.forceRemoveCondition {
+		log.Info("force removing UnservableInFutureVersions condition in upgrade validation", "conditionType", p.forceRemoveCondition, "route", routeName)
+		p.recorder.RecordRouteUnservableInFutureVersionsClear(route)
+		return p.plugin.HandleRoute(eventType, route)
+	}
+
 	if err := routeapihelpers.UpgradeRouteValidation(route).ToAggregate(); err != nil {
 		log.Error(err, "route failed upgrade validation", "route", routeName)
 		p.recorder.RecordRouteUnservableInFutureVersions(route, "UpgradeRouteValidationFailed", err.Error())
