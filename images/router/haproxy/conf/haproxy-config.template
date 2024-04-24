@@ -583,15 +583,15 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
         {{- else }}
   balance {{ if gt $cfg.ActiveServiceUnits 1 }}roundrobin{{ else }}{{ firstMatch $balanceAlgoPattern (env "ROUTER_LOAD_BALANCE_ALGORITHM") "random" }}{{ end }}
         {{- end }}
-        {{- with $ip_whiteList := parseIPList (index $cfg.Annotations "haproxy.router.openshift.io/ip_whitelist") }}
-          {{- if validateHAProxyWhiteList $ip_whiteList }}
-  acl whitelist src {{ $ip_whiteList }}
+        {{- with $ip_allowlist := parseIPList (firstMatch ".+" (index $cfg.Annotations "haproxy.router.openshift.io/ip_allowlist") (index $cfg.Annotations "haproxy.router.openshift.io/ip_whitelist")) }}
+          {{- if validateHAProxyAllowlist $ip_allowlist }}
+  acl allowlist src {{ $ip_allowlist }}
           {{- else }}
-            {{- with $whiteListFileName := generateHAProxyWhiteListFile $workingDir $cfgIdx $ip_whiteList }}
-  acl whitelist src -f {{ $whiteListFileName }}
+            {{- with $allowlistFileName := generateHAProxyAllowlistFile $workingDir $cfgIdx $ip_allowlist }}
+  acl allowlist src -f {{ $allowlistFileName }}
             {{- end }}
           {{- end }}
-  tcp-request content reject if !whitelist
+  tcp-request content reject if !allowlist
         {{- end }}
         {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
   timeout server  {{ $value }}
@@ -787,15 +787,15 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
         {{- else }}
   balance {{ if gt $cfg.ActiveServiceUnits 1 }}roundrobin{{ else }}{{ firstMatch $balanceAlgoPattern (env "ROUTER_TCP_BALANCE_SCHEME") (env "ROUTER_LOAD_BALANCE_ALGORITHM") "source" }}{{ end }}
         {{- end }}
-        {{- with $ip_whiteList := parseIPList (index $cfg.Annotations "haproxy.router.openshift.io/ip_whitelist") }}
-          {{- if validateHAProxyWhiteList $ip_whiteList }}
-  acl whitelist src {{ $ip_whiteList }}
+        {{- with $ip_allowlist := parseIPList (firstMatch ".+" (index $cfg.Annotations "haproxy.router.openshift.io/ip_allowlist") (index $cfg.Annotations "haproxy.router.openshift.io/ip_whitelist")) }}
+          {{- if validateHAProxyAllowlist $ip_allowlist }}
+  acl allowlist src {{ $ip_allowlist }}
           {{- else }}
-            {{- with $whiteListFileName := generateHAProxyWhiteListFile $workingDir $cfgIdx $ip_whiteList }}
-  acl whitelist src -f {{ $whiteListFileName }}
+            {{- with $allowlistFileName := generateHAProxyAllowlistFile $workingDir $cfgIdx $ip_allowlist }}
+  acl allowlist src -f {{ $allowlistFileName }}
             {{- end }}
           {{- end }}
-  tcp-request content reject if !whitelist
+  tcp-request content reject if !allowlist
         {{- end }}
         {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-tunnel") (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
   timeout tunnel  {{ $value }}
