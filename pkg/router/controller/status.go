@@ -93,6 +93,7 @@ var nowFn = getRfc3339Timestamp
 
 // HandleRoute attempts to admit the provided route on watch add / modifications.
 func (a *StatusAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	log.V(10).Info("HandleRoute: StatusAdmitter")
 	switch eventType {
 	case watch.Added, watch.Modified:
 		performIngressConditionUpdate("admit", a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{

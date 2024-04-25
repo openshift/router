@@ -45,6 +45,7 @@ func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints
 
 // HandleRoute processes watch events on the Route resource.
 func (p *ExtendedValidator) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	log.V(10).Info("HandleRoute: ExtendedValidator")
 	// Check if previously seen route and its Spec is unchanged.
 	routeName := routeNameKey(route)
 	if err := routeapihelpers.ExtendedValidateRoute(route).ToAggregate(); err != nil {

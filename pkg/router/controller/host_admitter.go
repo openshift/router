@@ -126,6 +126,7 @@ func (p *HostAdmitter) HandleEndpoints(eventType watch.EventType, endpoints *kap
 
 // HandleRoute processes watch events on the Route resource.
 func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	log.V(10).Info("HandleRoute: HostAdmitter")
 	if p.allowedNamespaces != nil && !p.allowedNamespaces.Has(route.Namespace) {
 		// Ignore routes we don't need to "service" due to namespace
 		// restrictions (ala for sharding).

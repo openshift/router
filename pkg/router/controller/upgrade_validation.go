@@ -53,6 +53,7 @@ func (p *UpgradeValidation) HandleEndpoints(eventType watch.EventType, endpoints
 // It checks if the route is upgradeable to a future version of OpenShift
 // and sets UnservableInFutureVersions condition if needed.
 func (p *UpgradeValidation) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	log.V(10).Info("HandleRoute: UpgradeValidation")
 	routeName := routeNameKey(route)
 
 	// Force add and force removal logic for debugging and testing.
