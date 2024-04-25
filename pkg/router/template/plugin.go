@@ -217,6 +217,7 @@ func (p *TemplatePlugin) HandleNode(eventType watch.EventType, node *kapi.Node) 
 // determines which component needs to be recalculated (which template) and then does so
 // on demand.
 func (p *TemplatePlugin) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	log.V(10).Info("HandleRoute: TemplatePlugin")
 	switch eventType {
 	case watch.Added, watch.Modified:
 		p.Router.AddRoute(route)
