@@ -1298,6 +1298,55 @@ func TestStatusUnservableInFutureVersions(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:                       "update incorrect unservableInFutureVersions condition",
+			routerName:                 "test",
+			unservableInFutureVersions: true,
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{{
+						Type:    routev1.RouteUnservableInFutureVersions,
+						Status:  corev1.ConditionTrue,
+						Reason:  "wrong reason",
+						Message: "wrong message",
+					}},
+				}},
+				},
+			},
+			expectedRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "route1.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{
+						unservableInFutureVersionsTrueCondition,
+					},
+				}},
+				},
+			},
+		},
+		{
+			name:                       "no update for incorrect host name with unservableInFutureVersions condition",
+			routerName:                 "test",
+			unservableInFutureVersions: true,
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:       "foo.test.local",
+					RouterName: "test",
+					Conditions: []routev1.RouteIngressCondition{
+						unservableInFutureVersionsTrueCondition,
+					},
+				}},
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

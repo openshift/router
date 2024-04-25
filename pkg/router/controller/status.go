@@ -27,6 +27,12 @@ const (
 	unservableInFutureVersionsClearAction = string(routev1.RouteUnservableInFutureVersions) + "-Clear"
 )
 
+// TODO: Refactor the router to perform a single status update per route reconciliation.
+// Currently, executing multiple status updates simultaneously can complicate the writer lease and
+// contention tracker logic, increasing the likelihood of write conflicts and contentions. While the
+// existing logic is eventually consistent and acceptable for infrequent scenarios, it may lead to
+// prolonged status updates and complicate the debugging process.
+
 // RouteStatusRecorder is an object capable of recording why a route status condition changed.
 type RouteStatusRecorder interface {
 	RecordRouteRejection(route *routev1.Route, reason, message string)
@@ -133,16 +139,40 @@ func (a *StatusAdmitter) RecordRouteRejection(route *routev1.Route, reason, mess
 // RecordRouteUnservableInFutureVersions attempts to update the route status with a
 // reason for a route being unservable in future versions.
 func (a *StatusAdmitter) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
-	performIngressConditionUpdate(unservableInFutureVersionsAction, a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{
+	expectedCondition := routev1.RouteIngressCondition{
 		Type:    routev1.RouteUnservableInFutureVersions,
 		Status:  corev1.ConditionTrue,
 		Reason:  reason,
 		Message: message,
-	})
+	}
+	// First, verify if updates are required by checking if the route ingress status matches expected values.
+	// This helps avoid unnecessary tasks in the writerlease queue and prevents unneeded lease extensions.
+	// We only do this in for the new UnservableInFutureVersions condition to avoid perturbing existing logic for the
+	// Admitted condition. This should be reevaluated when refactoring to use a single route status update per route
+	// reconciliation (see TODO at top of file).
+	// We only compare the condition here and won't detect changes for other route ingress fields.
+	changed := isIngressConditionUpdateRequired(route, a.routerName, expectedCondition)
+	if !changed {
+		log.V(4).Info("route status matches expected values, update not required", "action", unservableInFutureVersionsAction, "namespace", route.Namespace, "name", route.Name)
+		return
+	}
+
+	performIngressConditionUpdate(unservableInFutureVersionsAction, a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, expectedCondition)
 }
 
 // RecordRouteUnservableInFutureVersionsClear clears the UnservableInFutureVersions status back to an unset state.
 func (a *StatusAdmitter) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	// First, verify if updates are required by checking if the route ingress status matches expected values.
+	// This helps avoid unnecessary tasks in the writerlease queue and prevents unneeded lease extensions.
+	// We only do this in for the new UnservableInFutureVersions condition to avoid perturbing existing logic for the
+	// Admitted condition. This should be reevaluated when refactoring to use a single route status update per route
+	// reconciliation (see TODO at top of file).
+	changed := isIngressConditionRemoveRequired(route, a.routerName, routev1.RouteUnservableInFutureVersions)
+	if !changed {
+		log.V(4).Info("route status matches expected values, update not required", "action", unservableInFutureVersionsClearAction, "namespace", route.Namespace, "name", route.Name)
+		return
+	}
+
 	performIngressConditionRemoval(unservableInFutureVersionsClearAction, a.lease, a.tracker, a.client, a.lister, route, a.routerName, routev1.RouteUnservableInFutureVersions)
 }
 
@@ -328,6 +358,31 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 	return true, true, now.Time, ingress, nil
 }
 
+// isIngressConditionUpdateRequired checks if an update is needed for the specified route
+// based on the given condition. It only compares the condition, and not other route ingress fields, but
+// if the route ingress is missing, it considers an updated necessary.
+// It returns true if any changes are needed.
+func isIngressConditionUpdateRequired(route *routev1.Route, name string, condition routev1.RouteIngressCondition) bool {
+	for i := range route.Status.Ingress {
+		existing := &route.Status.Ingress[i]
+		if existing.RouterName != name {
+			continue
+		}
+
+		// If condition doesn't exist, then we need to add it.
+		existingCondition := findCondition(existing, condition.Type)
+		if existingCondition == nil {
+			return true
+		}
+
+		// Check if condition differ, ignoring LastTransitionTime
+		return !conditionsEqual(existingCondition, &condition)
+	}
+
+	// Didn't find the route ingress status, which means it needs to be added.
+	return true
+}
+
 // removeIngressCondition removes a matching status condition if it is found.
 // It returns whether the route was changed, the time it removed the condition, and
 // a pointer to the latest and original ingress records.
@@ -364,6 +419,20 @@ func removeIngressCondition(route *routev1.Route, name string, condType routev1.
 	}
 
 	return false, time.Time{}, nil, nil
+}
+
+// isIngressConditionRemoveRequired checks if a removal is needed for the specified route
+// based on the given condition. It returns true if removal is needed.
+func isIngressConditionRemoveRequired(route *routev1.Route, name string, condType routev1.RouteIngressConditionType) bool {
+	for i := range route.Status.Ingress {
+		existing := &route.Status.Ingress[i]
+		if existing.RouterName != name {
+			continue
+		}
+		// If we found the condition, return true. If we didn't find it, return false.
+		return findCondition(existing, condType) != nil
+	}
+	return false
 }
 
 // findMostRecentIngress returns the name of the ingress status with the most recent condition transition time,
