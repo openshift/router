@@ -250,7 +250,7 @@ func (l *WriterLease) work() bool {
 	if leaseState == Follower {
 		// if we are following, continue to defer work until the lease expires
 		if remaining := leaseExpires.Sub(l.nowFn()); remaining > 0 {
-			log.V(4).Info("follower awaiting lease expiration", "worker", l.name, "leaseTimeRemaining", remaining)
+			log.V(4).Info("follower awaiting lease expiration", "worker", l.name, "key", key, "leaseTimeRemaining", remaining)
 			time.Sleep(remaining)
 			l.queue.Add(key)
 			l.queue.Done(key)
@@ -303,6 +303,7 @@ func (l *WriterLease) nextState(result WorkResult) {
 		case Election, Follower:
 			l.tick = 0
 			l.state = Leader
+			log.V(4).Info("state change: elected to leader", "worker", l.name)
 		}
 		l.expires = l.nowFn().Add(l.maxBackoff)
 	case Release:
@@ -310,6 +311,7 @@ func (l *WriterLease) nextState(result WorkResult) {
 		case Election, Leader:
 			l.tick = 0
 			l.state = Follower
+			log.V(4).Info("state change: demoted to follower", "worker", l.name)
 		case Follower:
 			l.tick++
 		}
