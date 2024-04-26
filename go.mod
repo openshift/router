@@ -11,9 +11,9 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20190927101021-3ecffd272576
 	github.com/google/go-cmp v0.6.0
 	github.com/haproxytech/config-parser/v4 v4.0.0-rc1
-	github.com/openshift/api v0.0.0-20240202140003-8b34b9854c7f
-	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
-	github.com/openshift/library-go v0.0.0-20230120202744-256994f916c4
+	github.com/openshift/api v0.0.0-20240424142232-29a704bf5aa2
+	github.com/openshift/client-go v0.0.0-20240405120947-c67c8325cdd8
+	github.com/openshift/library-go v0.0.0-20240426144148-0690e4a4602d
 	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.44.0
