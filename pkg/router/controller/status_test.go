@@ -947,6 +947,22 @@ func TestRouterContentionOnCondition(t *testing.T) {
 			expectContend: true,
 		},
 		{
+			name: "changing condition status with empty reason and message causes contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteAdmitted,
+				Status:             kapi.ConditionTrue,
+				LastTransitionTime: &notNow,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:               routev1.RouteAdmitted,
+				Status:             kapi.ConditionFalse,
+				Reason:             "foo",
+				Message:            "foo",
+				LastTransitionTime: &now,
+			}},
+			expectContend: true,
+		},
+		{
 			name: "changing condition reason causes contention",
 			conditions: []routev1.RouteIngressCondition{{
 				Type:               routev1.RouteUnservableInFutureVersions,
@@ -1070,6 +1086,72 @@ func TestRouterContentionOnCondition(t *testing.T) {
 				t.Fatal("expected change NOT to be contended")
 			}
 
+		})
+	}
+}
+
+// Benchmark_ingressConditionsEqual benchmarks the ingressConditionEqual function. Efficiency is crucial for
+// this function as it directly impacts the performance of the contention tracker, potentially delaying the
+// detection of contentions.
+func Benchmark_ingressConditionsEqual(b *testing.B) {
+	now := metav1.Now()
+	notNow := metav1.Time{Time: now.Add(3 * time.Minute)}
+	admittedCondition := routev1.RouteIngressCondition{
+		Type:               routev1.RouteAdmitted,
+		Status:             kapi.ConditionTrue,
+		Reason:             "foo",
+		Message:            "foo",
+		LastTransitionTime: &now,
+	}
+	unservableCondition := routev1.RouteIngressCondition{
+		Type:               routev1.RouteUnservableInFutureVersions,
+		Status:             kapi.ConditionFalse,
+		Reason:             "bar",
+		Message:            "bar",
+		LastTransitionTime: &notNow,
+	}
+	testCases := []struct {
+		name  string
+		condA []routev1.RouteIngressCondition
+		condB []routev1.RouteIngressCondition
+	}{
+		{
+			name: "single",
+			condA: []routev1.RouteIngressCondition{
+				admittedCondition,
+			},
+			condB: []routev1.RouteIngressCondition{
+				unservableCondition,
+			},
+		},
+		{
+			name: "mismatch_length",
+			condA: []routev1.RouteIngressCondition{
+				admittedCondition,
+			},
+			condB: []routev1.RouteIngressCondition{
+				unservableCondition,
+				admittedCondition,
+			},
+		},
+		{
+			name: "double",
+			condA: []routev1.RouteIngressCondition{
+				admittedCondition,
+				unservableCondition,
+			},
+			condB: []routev1.RouteIngressCondition{
+				unservableCondition,
+				admittedCondition,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		b.ResetTimer()
+		b.Run(tc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				ingressConditionsEqual(tc.condA, tc.condB)
+			}
 		})
 	}
 }

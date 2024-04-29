@@ -7,9 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	routev1 "github.com/openshift/api/route/v1"
 )
 
@@ -258,15 +255,36 @@ func ingressEqual(a, b *routev1.RouteIngress) bool {
 }
 
 // ingressConditionsEqual determines if the route ingress conditions are equal,
-// while ignoring LastTransitionTime
+// while ignoring LastTransitionTime.
 func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
-	conditionCmpOpts := []cmp.Option{
-		cmpopts.EquateEmpty(),
-		cmpopts.IgnoreFields(routev1.RouteIngressCondition{}, "LastTransitionTime"),
-		cmpopts.SortSlices(func(a, b routev1.RouteIngressCondition) bool { return a.Type < b.Type }),
+	if len(a) != len(b) {
+		return false
 	}
 
-	return cmp.Equal(a, b, conditionCmpOpts...)
+	// Compare each condition in a with every condition in b.
+	// Given the current max of only two conditions, nested loops are more efficient than sorting.
+	for i := 0; i < len(a); i++ {
+		matchFound := false
+		for j := 0; j < len(b); j++ {
+			if conditionsEqual(&a[i], &b[j]) {
+				matchFound = true
+				break
+			}
+		}
+		if !matchFound {
+			return false
+		}
+	}
+
+	return true
+}
+
+// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime.
+func conditionsEqual(a, b *routev1.RouteIngressCondition) bool {
+	return a.Type == b.Type &&
+		a.Status == b.Status &&
+		a.Reason == b.Reason &&
+		a.Message == b.Message
 }
 
 func ingressConditionTouched(ingress *routev1.RouteIngress) *metav1.Time {
