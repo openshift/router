@@ -233,6 +233,8 @@ func performIngressConditionRemoval(action string, lease writerlease.Lease, trac
 // attempts to update the route status and, depending on the outcome, clears the tracker if necessary. It returns the
 // writerlease's WorkResult and a boolean flag indicating whether the writerlease should retry.
 func handleRouteStatusUpdate(ctx context.Context, action string, oc client.RoutesGetter, route *routev1.Route, latest *routev1.RouteIngress, tracker ContentionTracker) (workResult writerlease.WorkResult, retry bool) {
+	log.V(4).Info("attempting to update route status")
+
 	switch _, err := oc.Routes(route.Namespace).UpdateStatus(ctx, route, metav1.UpdateOptions{}); {
 	case err == nil:
 		log.V(4).Info("updated route status", "action", action, "namespace", route.Namespace, "name", route.Name)
