@@ -27,6 +27,12 @@ const (
 	unservableInFutureVersionsClearAction = string(routev1.RouteUnservableInFutureVersions) + "-Clear"
 )
 
+// TODO: Refactor the router to perform a single status update per route reconciliation.
+// Currently, executing multiple status updates simultaneously can complicate the writer lease and
+// contention tracker logic, increasing the likelihood of write conflicts and contentions. While the
+// existing logic is eventually consistent and acceptable for infrequent scenarios, it may lead to
+// prolonged status updates and complicate the debugging process.
+
 // RouteStatusRecorder is an object capable of recording why a route status condition changed.
 type RouteStatusRecorder interface {
 	RecordRouteRejection(route *routev1.Route, reason, message string)
@@ -208,11 +214,8 @@ func performIngressConditionRemoval(action string, lease writerlease.Lease, trac
 		changed, now, latest, original := removeIngressCondition(route, routerName, condType)
 		if !changed {
 			log.V(4).Info("no changes to route needed", "action", action, "namespace", route.Namespace, "name", route.Name)
-			// Extending the lease ensures a delay in future work ONLY for followers. Unlike in
-			// performIngressConditionUpdate, it's not logical to invoke findMostRecentIngress here and expect the last
-			// update to be from our router. This is because performIngressConditionRemoval *removes* a condition
-			// without providing a LastTransitionTime on a condition for us to track previous actions.
-			lease.Extend(workKey)
+			// Previously, we executed lease.Extend here. We found that it led to over-extending the lease in nominal
+			// clusters that don't actually have any conditions to be removed.
 			return writerlease.None, false
 		}
 
