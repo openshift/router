@@ -102,6 +102,7 @@ func TestMain(m *testing.M) {
 	h.workdir = workdir
 	h.dirs = map[string]string{
 		"whitelist": filepath.Join(workdir, "router", "whitelists"),
+		"certs":     filepath.Join(workdir, "router", "certs"),
 	}
 
 	createRouterDirs()
@@ -109,8 +110,43 @@ func TestMain(m *testing.M) {
 	// The template plugin which is wrapped
 	svcFetcher := templateplugin.NewListWatchServiceLookup(client.CoreV1(), 60*time.Second, namespace)
 	pluginCfg := templateplugin.TemplatePluginConfig{
-		WorkingDir:            workdir,
-		DefaultCertificateDir: workdir,
+		WorkingDir: workdir,
+		DefaultCertificate: `-----BEGIN CERTIFICATE-----
+MIIDIjCCAgqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADCBoTELMAkGA1UEBhMCVVMx
+CzAJBgNVBAgMAlNDMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0Rl
+ZmF1bHQgQ29tcGFueSBMdGQxEDAOBgNVBAsMB1Rlc3QgQ0ExGjAYBgNVBAMMEXd3
+dy5leGFtcGxlY2EuY29tMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUu
+Y29tMB4XDTE2MDExMzE5NDA1N1oXDTI2MDExMDE5NDA1N1owfDEYMBYGA1UEAxMP
+d3d3LmV4YW1wbGUuY29tMQswCQYDVQQIEwJTQzELMAkGA1UEBhMCVVMxIjAgBgkq
+hkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAOBgNVBAoTB0V4YW1wbGUx
+EDAOBgNVBAsTB0V4YW1wbGUwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAM0B
+u++oHV1wcphWRbMLUft8fD7nPG95xs7UeLPphFZuShIhhdAQMpvcsFeg+Bg9PWCu
+v3jZljmk06MLvuWLfwjYfo9q/V+qOZVfTVHHbaIO5RTXJMC2Nn+ACF0kHBmNcbth
+OOgF8L854a/P8tjm1iPR++vHnkex0NH7lyosVc/vAgMBAAGjDTALMAkGA1UdEwQC
+MAAwDQYJKoZIhvcNAQEFBQADggEBADjFm5AlNH3DNT1Uzx3m66fFjqqrHEs25geT
+yA3rvBuynflEHQO95M/8wCxYVyuAx4Z1i4YDC7tx0vmOn/2GXZHY9MAj1I8KCnwt
+Jik7E2r1/yY0MrkawljOAxisXs821kJ+Z/51Ud2t5uhGxS6hJypbGspMS7OtBbw7
+8oThK7cWtCXOldNF6ruqY1agWnhRdAq5qSMnuBXuicOP0Kbtx51a1ugE3SnvQenJ
+nZxdtYUXvEsHZC/6bAtTfNh+/SwgxQJuL2ZM+VG3X2JIKY8xTDui+il7uTh422lq
+wED8uwKl+bOj6xFDyw4gWoBxRobsbFaME8pkykP1+GnKDberyAM=
+-----END CERTIFICATE-----
+-----BEGIN RSA PRIVATE KEY-----
+MIICWwIBAAKBgQDNAbvvqB1dcHKYVkWzC1H7fHw+5zxvecbO1Hiz6YRWbkoSIYXQ
+EDKb3LBXoPgYPT1grr942ZY5pNOjC77li38I2H6Pav1fqjmVX01Rx22iDuUU1yTA
+tjZ/gAhdJBwZjXG7YTjoBfC/OeGvz/LY5tYj0fvrx55HsdDR+5cqLFXP7wIDAQAB
+AoGAfE7P4Zsj6zOzGPI/Izj7Bi5OvGnEeKfzyBiH9Dflue74VRQkqqwXs/DWsNv3
+c+M2Y3iyu5ncgKmUduo5X8D9To2ymPRLGuCdfZTxnBMpIDKSJ0FTwVPkr6cYyyBk
+5VCbc470pQPxTAAtl2eaO1sIrzR4PcgwqrSOjwBQQocsGAECQQD8QOra/mZmxPbt
+bRh8U5lhgZmirImk5RY3QMPI/1/f4k+fyjkU5FRq/yqSyin75aSAXg8IupAFRgyZ
+W7BT6zwBAkEA0A0ugAGorpCbuTa25SsIOMxkEzCiKYvh0O+GfGkzWG4lkSeJqGME
+keuJGlXrZNKNoCYLluAKLPmnd72X2yTL7wJARM0kAXUP0wn324w8+HQIyqqBj/gF
+Vt9Q7uMQQ3s72CGu3ANZDFS2nbRZFU5koxrggk6lRRk1fOq9NvrmHg10AQJABOea
+pgfj+yGLmkUw8JwgGH6xCUbHO+WBUFSlPf+Y50fJeO+OrjqPXAVKeSV3ZCwWjKT4
+9viXJNJJ4WfF0bO/XwJAOMB1wQnEOSZ4v+laMwNtMq6hre5K8woqteXICoGcIWe8
+u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
+-----END RSA PRIVATE KEY-----
+`,
+		DefaultCertificateDir: h.dirs["certs"],
 		ReloadFn:              func(shutdown bool) error { return nil },
 		TemplatePath:          "../../images/router/haproxy/conf/haproxy-config.template",
 		ReloadInterval:        reloadInterval,
@@ -522,6 +558,89 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"two routes with different certificates": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name:           "m1",
+					host:           "m1example.com",
+					path:           "",
+					time:           start,
+					tlsTermination: routev1.TLSTerminationEdge,
+					cert:           "m1example PEM data",
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "cert_config.map",
+					value:   fmt.Sprintf("%s [alpn h2,http/1.1] m1example.com", filepath.Join(h.dirs["certs"], "default:m1.pem")),
+				},
+			},
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name:           "m2",
+					host:           "m2example.com",
+					path:           "",
+					time:           start,
+					tlsTermination: routev1.TLSTerminationEdge,
+					cert:           "m2example PEM data",
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "cert_config.map",
+					value:   fmt.Sprintf("%s [alpn h2,http/1.1] m2example.com", filepath.Join(h.dirs["certs"], "default:m2.pem")),
+				},
+			},
+		},
+		"two routes with the same certificate": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name:           "n1",
+					host:           "n1example.com",
+					path:           "",
+					time:           start,
+					tlsTermination: routev1.TLSTerminationEdge,
+					cert:           "n1example PEM data",
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "cert_config.map",
+					value:   fmt.Sprintf("%s n1example.com", filepath.Join(h.dirs["certs"], "default:n1.pem")),
+				},
+			},
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name:           "n2",
+					host:           "n2example.com",
+					path:           "",
+					time:           start,
+					tlsTermination: routev1.TLSTerminationEdge,
+					cert:           "n1example PEM data",
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "cert_config.map",
+					value:   fmt.Sprintf("%s n2example.com", filepath.Join(h.dirs["certs"], "default:n2.pem")),
+				},
+			},
+		},
+		"route with the default certificate": {
+			mustCreateWithConfig{
+				mustCreate: mustCreate{
+					name:           "o",
+					host:           "oexample.com",
+					path:           "",
+					time:           start,
+					tlsTermination: routev1.TLSTerminationEdge,
+					cert: func() string {
+						defaultCertFileName := filepath.Join(h.workdir, "router", "certs", "default.pem")
+						content, err := ioutil.ReadFile(defaultCertFileName)
+						if err != nil {
+							t.Fatal(err)
+						}
+						return string(content)
+					}(),
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "cert_config.map",
+					value:   fmt.Sprintf("%s oexample.com", filepath.Join(h.dirs["certs"], "default:o.pem")),
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
@@ -559,10 +678,14 @@ func TestConfigTemplate(t *testing.T) {
 		for _, expectation := range expectations {
 			t.Run(name, func(t *testing.T) {
 				if err := expectation.Match(parser); err != nil {
-					if content, err := ioutil.ReadFile(config); err != nil {
+					fileName := config
+					if len(expectation.mustMatchConfig.mapFile) != 0 {
+						fileName = filepath.Join(h.workdir, "conf", expectation.mustMatchConfig.mapFile)
+					}
+					if content, err := ioutil.ReadFile(fileName); err != nil {
 						t.Error(err)
 					} else {
-						t.Log("haproxy.config:", string(content))
+						t.Logf("%s:\n%s", fileName, string(content))
 					}
 					t.Fatal(err.Error())
 				}
@@ -591,6 +714,9 @@ type mustCreate struct {
 	// tlsTermination is the spec.tls.type of the route.  If this is empty,
 	// spec.tls will be nil.
 	tlsTermination routev1.TLSTerminationType
+	// cert is the spec.tls.certificate of the route.  It should be
+	// specified only if tlsTermination is "edge" or "reencrypt".
+	cert string
 	// httpHeaders is the spec.httpHeaders of the route.
 	httpHeaders routev1.RouteHTTPHeaders
 }
@@ -607,6 +733,7 @@ func (e mustCreate) Apply(h *harness) error {
 	if e.tlsTermination != "" {
 		tlsConfig = &routev1.TLSConfig{
 			Termination: routev1.TLSTerminationType(e.tlsTermination),
+			Certificate: e.cert,
 		}
 	}
 	route := &routev1.Route{
@@ -640,14 +767,37 @@ type mustCreateWithConfig struct {
 
 // mustMatchConfig uses HAProxy's config parser to find config snippets
 type mustMatchConfig struct {
-	section     string
+	// mapFile specifies a map file to search.  If empty, haproxy.config is
+	// searched.
+	mapFile string
+	// section specifies a section, such as "backend" or "frontend", to
+	// match on in haproxy.config.  If empty, mapFile should be specified.
+	section string
+	// sectionName specifies a specific backend or frontend name to match on
+	// in haproxy.config.
 	sectionName string
-	attribute   string
-	value       string
-	notFound    bool
+	// attribute is an haproxy.config parameter to match on.
+	attribute string
+	// value specifies an haproxy.config attribute value or map file entry
+	// to check for.
+	value string
+	// notFound indicates whether the expectation is that value be present
+	// or that it be absent.
+	notFound bool
 }
 
 func (m mustMatchConfig) Match(parser haproxyconfparser.Parser) error {
+	switch {
+	case len(m.mapFile) != 0:
+		return matchMapFile(m.mapFile, m.value, m.notFound)
+	case len(m.section) != 0:
+		return matchConfig(m, parser)
+	default:
+		return fmt.Errorf("match config does not specify a map file or config section: %v", m)
+	}
+}
+
+func matchConfig(m mustMatchConfig, parser haproxyconfparser.Parser) error {
 	data, err := parser.Get(haproxyconfparser.Section(m.section), m.sectionName, m.attribute)
 	if err != nil {
 		if m.notFound {
@@ -680,6 +830,32 @@ func (m mustMatchConfig) Match(parser haproxyconfparser.Parser) error {
 
 	if contains && m.notFound {
 		return fmt.Errorf("config from section %s is unexpected but found: [%s]", m.Section(), m)
+	}
+
+	return nil
+}
+
+func matchMapFile(mapFileName, entry string, notFound bool) error {
+	fileName := filepath.Join(h.workdir, "conf", mapFileName)
+
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return err
+	}
+	contains := false
+	for _, line := range strings.Split(string(content), "\n") {
+		if line == entry {
+			contains = true
+			break
+		}
+	}
+
+	if !contains && !notFound {
+		return fmt.Errorf("expected entry not found in map file %s: %s", mapFileName, entry)
+	}
+
+	if contains && notFound {
+		return fmt.Errorf("unexpected entry found in map file %s: %s", mapFileName, entry)
 	}
 
 	return nil

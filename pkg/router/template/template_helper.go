@@ -208,16 +208,18 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 	for k, cfg := range td.State {
 		cfg := cfg // avoid implicit memory aliasing (gosec G601)
 		hascert := false
+		var cert Certificate
 		if len(cfg.Host) > 0 {
 			certKey := generateCertKey(&cfg)
-			cert, ok := cfg.Certificates[certKey]
+			var ok bool
+			cert, ok = cfg.Certificates[certKey]
 			hascert = ok && len(cert.Contents) > 0
 		}
 
 		backendConfig := backendConfig(string(k), cfg, hascert)
 		if entry := haproxyutil.GenerateMapEntry(certConfigMap, backendConfig); entry != nil {
 			fqCertPath := path.Join(td.WorkingDir, certDir, entry.Key)
-			if td.DisableHTTP2 {
+			if td.DisableHTTP2 || td.CertificateIndex[cert.Contents] > 1 {
 				lines = append(lines, strings.Join([]string{fqCertPath, entry.Value}, " "))
 			} else {
 				lines = append(lines, strings.Join([]string{fqCertPath, "[alpn h2,http/1.1]", entry.Value}, " "))

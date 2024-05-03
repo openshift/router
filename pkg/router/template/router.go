@@ -202,6 +202,10 @@ type templateData struct {
 	HTTPResponseHeaders []HTTPHeader
 	// HTTPRequestHeaders allows users to set/delete custom HTTP request
 	HTTPRequestHeaders []HTTPHeader
+	// CertificateIndex is a map of certificate data to the number of times
+	// that a certificate has been observed over various routes, used to
+	// detect duplicate certificates.
+	CertificateIndex map[string]int
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -556,11 +560,22 @@ func (r *templateRouter) commitAndReload() error {
 // writeConfig writes the config to disk
 // Must be called while holding r.lock
 func (r *templateRouter) writeConfig() error {
+	certificateIndex := map[string]int{}
+	certificateIndex[r.defaultCertificate] = 1
+
 	//write out any certificate files that don't exist
 	for k, cfg := range r.state {
 		cfg := cfg // avoid implicit memory aliasing (gosec G601)
 		if err := r.writeCertificates(&cfg); err != nil {
 			return fmt.Errorf("error writing certificates for %s: %v", k, err)
+		}
+
+		// Keep track of duplicate certificates.
+		if len(cfg.Certificates) > 0 {
+			certKey := generateCertKey(&cfg)
+			if cert, ok := cfg.Certificates[certKey]; ok {
+				certificateIndex[cert.Contents]++
+			}
 		}
 
 		// calculate the server weight for the endpoints in each service
@@ -613,6 +628,7 @@ func (r *templateRouter) writeConfig() error {
 			HaveCRLs:                      r.haveCRLs,
 			HTTPResponseHeaders:           r.httpResponseHeaders,
 			HTTPRequestHeaders:            r.httpRequestHeaders,
+			CertificateIndex:              certificateIndex,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
