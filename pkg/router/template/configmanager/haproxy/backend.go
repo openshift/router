@@ -170,7 +170,7 @@ func (b *Backend) Refresh() error {
 
 // SetRoutingKey sets the cookie routing key for the haproxy backend.
 func (b *Backend) SetRoutingKey(k string) error {
-	log.V(4).Info("setting routing key", "backend", b.name)
+	log.V(2).Info("setting routing key", "backend", b.name)
 
 	cmd := fmt.Sprintf("set dynamic-cookie-key backend %s %s", b.name, k)
 	if err := b.executeCommand(cmd); err != nil {
@@ -217,13 +217,13 @@ func (b *Backend) Disable() error {
 
 // EnableServer enables serving traffic with a haproxy backend server.
 func (b *Backend) EnableServer(name string) error {
-	log.V(4).Info("enabling server with ready state", "server", name)
+	log.V(2).Info("enabling server with ready state", "server", name)
 	return b.UpdateServerState(name, BackendServerStateReady)
 }
 
 // DisableServer stops serving traffic for a haproxy backend server.
 func (b *Backend) DisableServer(name string) error {
-	log.V(4).Info("disabling server with maint state", "server", name)
+	log.V(2).Info("disabling server with maint state", "server", name)
 	return b.UpdateServerState(name, BackendServerStateMaint)
 }
 

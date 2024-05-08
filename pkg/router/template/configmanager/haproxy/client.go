@@ -51,7 +51,7 @@ func NewClient(socketName string, timeout int) *Client {
 // RunCommand executes a haproxy dynamic config API command and if present
 // converts the response as desired.
 func (c *Client) RunCommand(cmd string, converter Converter) ([]byte, error) {
-	log.V(4).Info("running haproxy command", "command", cmd)
+	log.V(2).Info("running haproxy command", "command", cmd)
 	buffer, err := c.runCommandWithRetries(cmd, maxRetries)
 	if err != nil {
 		log.V(0).Info("haproxy dynamic config API command failed", "command", cmd, "error", err)
@@ -59,7 +59,7 @@ func (c *Client) RunCommand(cmd string, converter Converter) ([]byte, error) {
 	}
 
 	response := buffer.Bytes()
-	log.V(4).Info("haproxy command returned", "response", string(response))
+	log.V(2).Info("haproxy command returned", "response", string(response))
 	if converter == nil {
 		return response, nil
 	}
@@ -191,7 +191,7 @@ func (c *Client) runCommandWithRetries(cmd string, limit int) (*bytes.Buffer, er
 	})
 
 	if cmdErr != nil {
-		log.V(4).Info("failed attempt to run haproxy command", "command", cmd, "attempts", n, "error", cmdErr)
+		log.V(2).Info("failed attempt to run haproxy command", "command", cmd, "attempts", n, "error", cmdErr)
 	}
 
 	return buffer, cmdErr
