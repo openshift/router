@@ -1360,28 +1360,32 @@ func (r *templateRouter) getActiveEndpoints(serviceUnits map[ServiceUnitKey]int3
 // Each service gets (weight/sum_of_weights) fraction of the requests.
 // For each service, the requests are distributed among the endpoints.
 // Each endpoint gets weight/numberOfEndpoints portion of the requests.
-// The largest weight per endpoint is scaled to 256 to permit better
-// precision results.  The remainder are scaled using the same scale factor.
+// If there is more than one active service, the largest weight per endpoint
+// is scaled to 256 to permit better precision results.  The remainder are
+// scaled using the same scale factor. If there is only one active service,
+// then non-zero weights are configured with a weight of 1.
 // Inaccuracies occur when converting float32 to int32 and when the scaled
 // weight per endpoint is less than 1.0, the minimum.
 // The above assumes roundRobin scheduling.
 // The port parameter, if set, will only count endpoints matching that port.
 func (r *templateRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int32, port string) map[ServiceUnitKey]int32 {
 	serviceUnitNames := make(map[ServiceUnitKey]int32)
-
-	// If there is only 1 service unit, then always set the weight 1
-	// for all the endpoints, except when the service weight is 0.
-	// Scaling the weight to 256 is redundant and causes haproxy to allocate more memory on startup.
-	if len(serviceUnits) == 1 {
-		for key, weight := range serviceUnits {
-			if r.numberOfEndpoints(key, port) > 0 {
-				if weight == 0 {
-					serviceUnitNames[key] = 0
-				} else {
-					serviceUnitNames[key] = 1
-				}
+	// If there is only 1 active service unit, then always reduce the weight to 1
+	// for all the endpoints, except when the service weight is 0, or it contains no endpoints.
+	// Scaling the weight to 256 in this case is redundant and causes haproxy to allocate more
+	// memory on startup.
+	activeServiceUnits := 0
+	for key, weight := range serviceUnits {
+		if r.numberOfEndpoints(key, port) > 0 {
+			if weight > 0 {
+				activeServiceUnits++
+				serviceUnitNames[key] = 1
+			} else if weight == 0 {
+				serviceUnitNames[key] = 0
 			}
 		}
+	}
+	if activeServiceUnits == 1 {
 		return serviceUnitNames
 	}
 
