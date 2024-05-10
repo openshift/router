@@ -846,6 +846,7 @@ func TestFilterNamespaces(t *testing.T) {
 func TestCalculateServiceWeights(t *testing.T) {
 	suKey1 := ServiceUnitKey("ns/svc1")
 	suKey2 := ServiceUnitKey("ns/svc2")
+	suKey3 := ServiceUnitKey("ns/svc3")
 	ep1 := Endpoint{
 		ID:       "ep1",
 		IP:       "ip",
@@ -1119,7 +1120,7 @@ func TestCalculateServiceWeights(t *testing.T) {
 				suKey2: 0,
 			},
 			expectedWeights: map[ServiceUnitKey]int32{
-				suKey1: 256,
+				suKey1: 1,
 				suKey2: 0,
 			},
 		},
@@ -1137,6 +1138,57 @@ func TestCalculateServiceWeights(t *testing.T) {
 			expectedWeights: map[ServiceUnitKey]int32{
 				suKey1: 0,
 				suKey2: 0,
+			},
+		},
+		{
+			name:      "two services with weight 0",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {ep1, ep2},
+				suKey2: {ep2},
+				suKey3: {ep3},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+				suKey2: 100,
+				suKey3: 0,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+				suKey2: 1,
+				suKey3: 0,
+			},
+		},
+		{
+			name:      "one service with no endpoints",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {},
+				suKey2: {ep2},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 100,
+				suKey2: 100,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey2: 1,
+			},
+		},
+		{
+			name:      "two services with no endpoints",
+			routePort: "8080",
+			serviceUnits: map[ServiceUnitKey][]Endpoint{
+				suKey1: {},
+				suKey2: {ep2},
+				suKey3: {},
+			},
+			serviceWeights: map[ServiceUnitKey]int32{
+				suKey1: 0,
+				suKey2: 100,
+				suKey3: 75,
+			},
+			expectedWeights: map[ServiceUnitKey]int32{
+				suKey2: 1,
 			},
 		},
 	}
