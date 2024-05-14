@@ -14,6 +14,7 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
+	fakesm "github.com/openshift/library-go/pkg/route/secretmanager/fake"
 
 	projectfake "github.com/openshift/client-go/project/clientset/versioned/fake"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned"
@@ -124,6 +125,7 @@ func TestMain(m *testing.M) {
 			Value:  `'"shouldn'\''t break"'`,
 			Action: "Set",
 		}},
+		SecretManager: &fakesm.SecretManager{},
 	}
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {

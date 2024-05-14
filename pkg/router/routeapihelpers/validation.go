@@ -2,6 +2,7 @@ package routeapihelpers
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/tls"
@@ -9,10 +10,25 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/cert"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/library-go/pkg/authorization/authorizationutil"
+
+	authorizationv1 "k8s.io/api/authorization/v1"
+	kapi "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+)
+
+const (
+	// routerServiceAccount is used to validate RBAC permissions for externalCertificate
+	// TODO: avoid hard coding the serviceaccount name, and instead use environment variable, may be through cluster-ingress-operator.
+	routerServiceAccount = "system:serviceaccount:openshift-ingress:router"
 )
 
 type blockVerifierFunc func(block *pem.Block) (*pem.Block, error)
@@ -389,4 +405,59 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 	// returning nil clears stale UnservableInFutureVersions conditions (SHA1 Routes
 	// are getting rejected now).
 	return nil
+}
+
+// ValidateTLSExternalCertificate tests different pre-conditions required for
+// using externalCertificate.
+func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, sarc authorizationclient.SubjectAccessReviewInterface, secretsGetter corev1client.SecretsGetter) field.ErrorList {
+	tls := route.Spec.TLS
+
+	errs := field.ErrorList{}
+	// The router serviceaccount must have permission to get/list/watch the referenced secret.
+	// The role and rolebinding to provide this access must be provided by the user.
+	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
+		&authorizationv1.ResourceAttributes{
+			Namespace: route.Namespace,
+			Verb:      "get",
+			Resource:  "secrets",
+			Name:      tls.ExternalCertificate.Name,
+		}); err != nil {
+		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to get this secret"))
+	}
+
+	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
+		&authorizationv1.ResourceAttributes{
+			Namespace: route.Namespace,
+			Verb:      "watch",
+			Resource:  "secrets",
+			Name:      tls.ExternalCertificate.Name,
+		}); err != nil {
+		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to watch this secret"))
+	}
+
+	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
+		&authorizationv1.ResourceAttributes{
+			Namespace: route.Namespace,
+			Verb:      "list",
+			Resource:  "secrets",
+			Name:      tls.ExternalCertificate.Name,
+		}); err != nil {
+		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to list this secret"))
+	}
+
+	// The secret should be in the same namespace as that of the route.
+	secret, err := secretsGetter.Secrets(route.Namespace).Get(context.TODO(), tls.ExternalCertificate.Name, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return append(errs, field.NotFound(fldPath, err.Error()))
+		}
+		return append(errs, field.InternalError(fldPath, err))
+	}
+
+	// The secret should be of type kubernetes.io/tls
+	if secret.Type != kapi.SecretTypeTLS {
+		errs = append(errs, field.Invalid(fldPath, tls.ExternalCertificate.Name, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
+	}
+
+	return errs
 }
