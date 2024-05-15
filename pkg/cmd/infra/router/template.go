@@ -36,6 +36,7 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
+	"github.com/openshift/library-go/pkg/route/secretmanager"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
@@ -718,6 +719,10 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	authorizationClient, err := authorizationclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
 
 	var cfgManager templateplugin.ConfigManager
 	var blueprintPlugin router.Plugin
@@ -746,6 +751,8 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
+	secretManager := secretmanager.NewManager(kc, nil)
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
@@ -772,6 +779,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		HTTPHeaderNameCaseAdjustments: o.HTTPHeaderNameCaseAdjustments,
 		HTTPResponseHeaders:           o.HTTPResponseHeaders,
 		HTTPRequestHeaders:            o.HTTPRequestHeaders,
+	}
+	if o.AllowExternalCertificates {
+		pluginCfg.SecretManager = secretManager
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
@@ -803,6 +813,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	}
 	if o.ExtendedValidation {
 		plugin = controller.NewExtendedValidator(plugin, recorder)
+	}
+	if o.AllowExternalCertificates {
+		plugin = controller.NewRouteSecretManager(plugin, recorder, secretManager, kc.CoreV1(), authorizationClient.SubjectAccessReviews())
 	}
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
