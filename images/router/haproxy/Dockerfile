@@ -1,5 +1,8 @@
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-RUN INSTALL_PKGS="haproxy26 rsyslog sysvinit-tools" && \
+RUN rpm -qp --changelog https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.15-rhel-8/haproxy26-2.6.13-3.rhaos4.15.el8.x86_64.rpm
+RUN yum install -y https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.15-rhel-8/haproxy26-2.6.13-3.rhaos4.15.el8.x86_64.rpm
+RUN haproxy -vv
+RUN INSTALL_PKGS="rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
