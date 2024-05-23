@@ -111,7 +111,7 @@ func ProxyProtocolHTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 			log.V(4).Info("probe failed", "url", u.String(), "response", res)
 			return errBackend
 		}
-		log.V(4).Info("probe succeeded", "url", u.String(), "response", res)
+		log.V(5).Info("probe succeeded", "url", u.String(), "StatusCode", res.StatusCode, "Status", res.Status)
 		return nil
 	})
 }
