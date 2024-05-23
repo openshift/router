@@ -73,6 +73,55 @@ if [ -n "${ROUTER_SHUTDOWN-}" ]; then
   exit 1
 fi
 
+# Base directory for reloads
+track_reloads_dir="/tmp/reloads"
+
+# Directories for storing snapshots, unified diffs, and traditional diffs
+snapshot_dir="${track_reloads_dir}/snapshots"
+unified_diff_dir="${track_reloads_dir}/changes/unified"
+traditional_diff_dir="${track_reloads_dir}/changes/traditional"
+
+# Generate a timestamp
+current_date=$(date "+%Y-%m-%d_%H%M%S")
+
+mkdir -p "$snapshot_dir"
+mkdir -p "$unified_diff_dir"
+mkdir -p "$traditional_diff_dir"
+
+# Snapshot directory for this change
+current_snapshot_dir="${snapshot_dir}/${current_date}"
+mkdir -p "$current_snapshot_dir"
+
+# Save snapshots if the previous configuration exists
+if [ -f "${track_reloads_dir}/haproxy.config.last" ]; then
+    cp "${track_reloads_dir}/haproxy.config.last" "${current_snapshot_dir}/haproxy.config.prev"
+    cp "$config_file" "${current_snapshot_dir}/haproxy.config.curr"
+    diff -u "${track_reloads_dir}/haproxy.config.last" "$config_file" > "${unified_diff_dir}/${current_date}.diff"
+    diff "${track_reloads_dir}/haproxy.config.last" "$config_file" > "${traditional_diff_dir}/${current_date}.diff"
+fi
+
+# Back up the current configuration file
+cp "$config_file" "${track_reloads_dir}/haproxy.config.last"
+
+prune_dir() {
+    local dir=$1
+    pushd "$dir" > /dev/null 2>&1 || { echo "Failed to enter directory $dir"; return; }
+    num_files=$(ls -1 | wc -l)
+    num_delete=$((num_files - 250))
+
+    if [ "$num_delete" -gt 0 ]; then
+        # Delete the oldest files if there are more files than the target
+        ls -1tr | head -n "$num_delete" | xargs -I {} rm -rf "{}"
+    fi
+
+    popd > /dev/null 2>&1
+}
+
+# Prune snapshots, unified diffs, and traditional diffs directories
+prune_dir "$snapshot_dir"
+prune_dir "$unified_diff_dir"
+prune_dir "$traditional_diff_dir"
+
 reload_status=0
 if [ -n "$old_pids" ]; then
   /usr/sbin/haproxy -f $config_file -p $pid_file -x /var/lib/haproxy/run/haproxy.sock -sf $old_pids
