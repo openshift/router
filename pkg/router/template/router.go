@@ -558,6 +558,17 @@ func (r *templateRouter) commitAndReload() error {
 		r.dynamicConfigManager.Notify(RouterEventReloadEnd)
 	}
 
+	fmt.Printf(`
+ _________
+< RELOAD! >
+ ---------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+`)
+
 	return nil
 }
 
