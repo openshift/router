@@ -19,4 +19,4 @@ WORKDIR /var/lib/haproxy/conf
 ENV XDG_CONFIG_HOME=/tmp \
     TEMPLATE_FILE=/var/lib/haproxy/conf/haproxy-config.template \
     RELOAD_SCRIPT=/var/lib/haproxy/reload-haproxy
-ENTRYPOINT ["/usr/bin/openshift-router", "--v=4"]
+ENTRYPOINT ["/usr/bin/openshift-router", "--v=2"]
