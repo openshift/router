@@ -59,6 +59,7 @@ func (c *Client) RunCommand(cmd string, converter Converter) ([]byte, error) {
 	}
 
 	response := buffer.Bytes()
+
 	log.V(2).Info("haproxy command returned", "response", string(response))
 	if converter == nil {
 		return response, nil
