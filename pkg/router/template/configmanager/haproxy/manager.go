@@ -162,7 +162,7 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 	return &haproxyConfigManager{
 		connectionInfo:         options.ConnectionInfo,
 		commitInterval:         options.CommitInterval,
-		blueprintRoutes:        buildBlueprintRoutes(options.BlueprintRoutes, options.ExtendedValidation),
+		blueprintRoutes:        nil, //buildBlueprintRoutes(options.BlueprintRoutes, options.ExtendedValidation),
 		blueprintRoutePoolSize: options.BlueprintRoutePoolSize,
 		maxDynamicServers:      options.MaxDynamicServers,
 		wildcardRoutesAllowed:  options.WildcardRoutesAllowed,

@@ -742,7 +742,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		}
 		cfgManager = haproxyconfigmanager.NewHAProxyConfigManager(cmopts)
 		if len(o.BlueprintRouteNamespace) > 0 {
-			blueprintPlugin = haproxyconfigmanager.NewBlueprintPlugin(cfgManager)
+			//blueprintPlugin = haproxyconfigmanager.NewBlueprintPlugin(cfgManager)
 		}
 	}
 
