@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/ocp/4.16:haproxy-router-base
+FROM registry.ci.openshift.org/ocp/4.17:haproxy-router-base
 RUN INSTALL_PKGS="socat haproxy28 rsyslog procps-ng util-linux" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
