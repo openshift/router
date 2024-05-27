@@ -349,6 +349,14 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 		return nil, fmt.Errorf("invalid/empty certificate data")
 	}
 
+	// Reject any unsupported cert algorithms as HaProxy will refuse to start with them.
+	switch certs[0].SignatureAlgorithm {
+	case x509.MD5WithRSA:
+		return certs, fmt.Errorf("router does not support certs using MD5")
+	default:
+		// Acceptable algorithm
+	}
+
 	if options != nil {
 		// Ensure we don't report errors for expired certs or if
 		// the validity is in the future.

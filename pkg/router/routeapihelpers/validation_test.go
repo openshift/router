@@ -787,6 +787,45 @@ kRsRwP+6Lr8hPeipqnjaxQGn3Je+We2haNgApCNU3AaSye1epeqAUaMREONr3F8Y
 h7Z/ugyUzsyUY8JR3CNlk16SnBmVW0o=
 -----END EC PRIVATE KEY-----
 `
+	// For reference, some details on how the MD5 keys and certificate were generated.
+	// openssl req -x509 -md5 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateMD5.key -out testCertificateMD5.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -md5 -in testCertificateMD5.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateMD5.crt
+	testCertificateMD5 = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAl2gAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjIQwDQYJKoZIhvcNAQEE
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDAxMTAyMDQwMDFaFw0zNDAxMDcy
+MDQwMDFaMHwxGDAWBgNVBAMMD3d3dy5leGFtcGxlLmNvbTELMAkGA1UECAwCU0Mx
+CzAJBgNVBAYTAlVTMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUuY29t
+MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdFeGFtcGxlMIGfMA0GCSqGSIb3
+DQEBAQUAA4GNADCBiQKBgQCsnm6gPXgmhJ45zlXnNeNNEK59m30fOHjOR3cwzdK0
+QgYrjq1aizyziIHmJW0myYqFHSMLXAC36HIoW12qBY+BCG503FWPSx9vheZp+J7Q
+S3YWU42fJfKZio5MRjPfYBd0XSwEHL8kydFLFQwHzm6xbc6w+gzGl0ozniCEBrFw
+/QIDAQABo00wSzAJBgNVHRMEAjAAMB0GA1UdDgQWBBSauVTA158vGbB/nsbzhwxh
+6jwt9jAfBgNVHSMEGDAWgBTKfEp5IiDNUspW6ThTe2jw01cE7zANBgkqhkiG9w0B
+AQQFAAOBgQCw52+33407UIzA6Tlkqqf1jJa1vNJ/uocqeVK6Hr/1MViI2zNMiRDq
+tbz9VZ8VDxIJ/4f7vV2ykHSyvffY9qVy9RU9EfLs89EAp2FG/aoZD8gDgjJvN+vb
+AG0WdGZ0+JjtnX2kJXZa8LYv02fYfZ5lKrUqtYwaw8Jzvs/60u39EA==
+-----END CERTIFICATE-----
+`
+	testCertificateMD5Key = `-----BEGIN PRIVATE KEY-----
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAKyebqA9eCaEnjnO
+Vec1400Qrn2bfR84eM5HdzDN0rRCBiuOrVqLPLOIgeYlbSbJioUdIwtcALfocihb
+XaoFj4EIbnTcVY9LH2+F5mn4ntBLdhZTjZ8l8pmKjkxGM99gF3RdLAQcvyTJ0UsV
+DAfObrFtzrD6DMaXSjOeIIQGsXD9AgMBAAECgYAuEd6uj5lIlm5wORx+J8ixYblg
+NqZvNbAwRayO7u/EQjbJWzvzBWQ++jjJBsYZ6wI4Qq1+s6BRdQ06rh/SZ8eDlRGU
+Vcj4wWMk2wtMg0zykbkImsIeCChojhfyFrs7ffM0V70EtYDrx/iTQSDAmW7GoK4v
+exxBAJQhVkx35/8ewQJBAOGsBrAOJyb+ulSf65Bi+/wVnlLK3yR88A5ATD/r+dRu
+cNClSv7b7MjUZWUfogSTsQ8hhMkc+6vAWhF5zmB+n40CQQDD0S154AJt+6VHwRAd
+ifku57dWH17Np/D1/xvd+6OqccIgXDadGGb1Qleas3PZ4GL7LtiZnjHbs0VtAsSD
+P0MxAkARJtb3SIwXPaMBzYnE1pEaTrZSypJ9HnXMT3y8Gv5I8//lC7sQdbygYuw1
+7FqPCH6bjMuf0XEbU6pEy8IwuU79AkEAkvrnz5s9N6CzpvBbUFDIIVT8YECbwHJW
+g89A85Z2evF4bSHKPJCcd2ucphoc02WB5lh7bJM5iVc+vVxedMV/gQJBAKjHZb9j
+IrRGZJwgzmWX+NzqK9H3AyFk5p9oBuzmulVoJyKFzs1eN4ZIn25ifP8hP+uJHOTE
+jZrtwVw4rGVb/qM=
+-----END PRIVATE KEY-----`
 )
 
 // TestExtendedValidateRoute ensures that a route's certificate and keys
@@ -1666,6 +1705,19 @@ func TestExtendedValidateRoute(t *testing.T) {
 				},
 			},
 			expectedErrors: 0,
+		},
+		{
+			name: "Edge termination with invalid cert using MD5",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: testCertificateMD5,
+						Key:         testCertificateMD5Key,
+					},
+				},
+			},
+			expectedErrors: 1,
 		},
 	}
 
