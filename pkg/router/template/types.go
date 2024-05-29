@@ -5,6 +5,7 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // ServiceUnit represents a service and its endpoints.
@@ -230,6 +231,8 @@ type ConfigManager interface {
 
 	// GenerateDynamicServerNames generates the dynamic server names.
 	GenerateDynamicServerNames(id ServiceAliasConfigKey) []string
+
+	HackAttack(v *prometheus.CounterVec)
 }
 
 // CaptureHTTPHeader specifies an HTTP header that should be captured for access

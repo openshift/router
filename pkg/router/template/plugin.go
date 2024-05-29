@@ -169,6 +169,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		secretManager:                 cfg.SecretManager,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
+	router.dynamicConfigManager.HackAttack(router.metricReloadCounter)
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
 }
 
