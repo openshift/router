@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_SanitizeInput(t *testing.T) {
+func Test_SanitizeRewriteTargetInput(t *testing.T) {
 	testCases := []struct {
 		name   string
 		input  string
@@ -85,7 +85,35 @@ func Test_SanitizeInput(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := rewritetarget.SanitizeInput(tc.input)
+			got := rewritetarget.SanitizeRewriteTargetInput(tc.input)
+			if got != tc.output {
+				t.Errorf("Failure: expected %s, got %s", tc.output, got)
+			}
+		})
+	}
+}
+
+func Test_SanitizeRewritePathInput(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{
+			name:   "single quotes should be always be escaped",
+			input:  `'foo'foo\'`,
+			output: `'\''foo'\''foo\'\''`,
+		},
+		{
+			name:   "nothing should change except for single quotes",
+			input:  `\\foo\"foo"\#foo\foo'foo\'#foo`,
+			output: `\\foo\"foo"\#foo\foo'\''foo\'\''#foo`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := rewritetarget.SanitizeRewritePathInput(tc.input)
 			if got != tc.output {
 				t.Errorf("Failure: expected %s, got %s", tc.output, got)
 			}

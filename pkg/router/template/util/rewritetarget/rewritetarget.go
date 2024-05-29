@@ -128,7 +128,7 @@ func processSingleQuotes(char rune, escaped bool) runeResult {
 	return runeResult{value: string(char), escaped: char == '\\' && !escaped}
 }
 
-// SanitizeInput processes the `haproxy.router.openshift.io/rewrite-target`
+// SanitizeRewriteTargetInput processes the `haproxy.router.openshift.io/rewrite-target`
 // annotation value for API compatibility while properly handling values
 // with spaces, backslashes, and other special characters. Because the
 // annotation value was initially introduced without being enclosed in
@@ -137,7 +137,7 @@ func processSingleQuotes(char rune, escaped bool) runeResult {
 // OCPBUGS-22739. However, we must still maintain API compatibility after
 // this change: the annotation values MUST be interpreted to the same values
 // after updating to enclose the value in single quotes.
-func SanitizeInput(val string) string {
+func SanitizeRewriteTargetInput(val string) string {
 	var encounteredCommentMarker bool
 
 	val = processRunes(val, newProcessHashCreator(&encounteredCommentMarker))
@@ -154,6 +154,32 @@ func SanitizeInput(val string) string {
 		// reference (i.e., `\1`) for dynamic substitutions.
 		val += `\1`
 	}
+
+	return val
+}
+
+// escapeSingleQuotes escapes all single quotes regardless if
+// they appear in pairs. It assumes the argument is already wrapped
+// in ” so that the escape sequence '\” will need to be added.
+func escapeSingleQuotes(val string) string {
+	return strings.ReplaceAll(val, `'`, `'\''`)
+}
+
+// SanitizeRewritePathInput processes the route's spec.path to be used
+// in the <match-regex> argument of the `http-request replace-path <match-regex> <replace-fmt>`
+// HAProxy configuration. This configuration is enabled when the
+// `haproxy.router.openshift.io/rewrite-target` annotation is provided.
+// Previous to this fix, the route's spec.path input to the <match-regex>
+// argument wasn't interpreted literally, causing characters in spec.path
+// to be interpreted as a regex meta characters. The solution wraps the
+// <match-regex> argument single quotes ” and uses /Q and /E to force literal
+// regex interpretation. However, we still must escape single quotes ' in the
+// spec.path to avoid syntax errors. All other characters are interpreted literally.
+// The key difference in handling <match-regex> (spec.path) and <replace-fmt>
+// (rewrite annotation) compatibility is that it is impossible to ensure compatibility
+// with values that were previously interpreted as regex meta characters.
+func SanitizeRewritePathInput(val string) string {
+	val = escapeSingleQuotes(val)
 
 	return val
 }
