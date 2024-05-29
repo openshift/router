@@ -3,7 +3,7 @@
 export GOOS=linux
 
 REGISTRY ?= quay.io
-IMAGE ?= openshift/openshift-router
+IMAGE ?= amcdermo/openshift-router-experimental-dynamic-config-manager-release-4.16
 TAG ?= latest
 IMAGEBUILDER ?= podman
 
