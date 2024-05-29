@@ -130,6 +130,8 @@ type templateRouter struct {
 	httpResponseHeaders []HTTPHeader
 	// httpRequestHeaders allows users to set or delete custom HTTP request headers.
 	httpRequestHeaders []HTTPHeader
+
+	metricReloadCounter *prometheus.CounterVec
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
@@ -246,6 +248,16 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	})
 	prometheus.MustRegister(metricWriteConfig)
 
+	metricReloadCounter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "template_router",
+			Name:      "reload_total",
+			Help:      "Counts the number of times the router reloads.",
+		},
+		[]string{"type"},
+	)
+	prometheus.MustRegister(metricReloadCounter)
+
 	router := &templateRouter{
 		dir:                           dir,
 		templates:                     cfg.templates,
@@ -277,6 +289,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		metricReload:        metricsReload,
 		metricReloadFailure: metricReloadFailure,
 		metricWriteConfig:   metricWriteConfig,
+		metricReloadCounter: metricReloadCounter,
 
 		rateLimitedCommitFunction: nil,
 	}
@@ -655,6 +668,28 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 
 // reloadRouter executes the router's reload script.
 func (r *templateRouter) reloadRouter(shutdown bool) error {
+	getCounterValue := func(label string) float64 {
+		metrics, err := prometheus.DefaultGatherer.Gather()
+		if err != nil {
+			return 0
+		}
+
+		for _, m := range metrics {
+			if *m.Name == "template_router_reload_total" {
+				for _, metric := range m.Metric {
+					for _, lbl := range metric.Label {
+						if *lbl.Name == "type" && *lbl.Value == label {
+							return *metric.Counter.Value
+						}
+					}
+				}
+			}
+		}
+		return 0 //, fmt.Errorf("counter with label %s not found", label)
+	}
+
+	log.V(2).Info("FULL RELOAD", "count", fmt.Sprintf("%d", int(getCounterValue("full"))))
+
 	if r.reloadFn != nil {
 		return r.reloadFn(shutdown)
 	}

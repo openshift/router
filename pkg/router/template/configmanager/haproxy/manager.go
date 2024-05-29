@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 	templaterouter "github.com/openshift/router/pkg/router/template"
@@ -151,6 +152,8 @@ type haproxyConfigManager struct {
 
 	// commitTimer indicates if a router config commit is pending.
 	commitTimer *time.Timer
+
+	metricReloadCounter *prometheus.CounterVec
 }
 
 // NewHAProxyConfigManager returns a new haproxyConfigManager.
@@ -174,6 +177,10 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 		backendEntries:   make(map[templaterouter.ServiceAliasConfigKey]*routeBackendEntry),
 		poolUsage:        make(map[templaterouter.ServiceAliasConfigKey]templaterouter.ServiceAliasConfigKey),
 	}
+}
+
+func (cm *haproxyConfigManager) HackAttack(m *prometheus.CounterVec) {
+	cm.metricReloadCounter = m
 }
 
 // Initialize initializes the haproxy config manager.
@@ -561,6 +568,31 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 	}
 
 	log.V(4).Info("committing backend", "backend", backendName)
+
+	cm.metricReloadCounter.With(prometheus.Labels{"type": "dynamic"}).Inc()
+
+	getCounterValue := func(label string) float64 {
+		metrics, err := prometheus.DefaultGatherer.Gather()
+		if err != nil {
+			return 0
+		}
+
+		for _, m := range metrics {
+			if *m.Name == "template_router_reload_total" {
+				for _, metric := range m.Metric {
+					for _, lbl := range metric.Label {
+						if *lbl.Name == "type" && *lbl.Value == label {
+							return *metric.Counter.Value
+						}
+					}
+				}
+			}
+		}
+		return 0 //, fmt.Errorf("counter with label %s not found", label)
+	}
+
+	log.V(2).Info("DYNAMIC RELOAD", "count", fmt.Sprintf("%d", int(getCounterValue("dynamic"))))
+
 	return backend.Commit()
 }
 
