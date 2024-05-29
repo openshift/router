@@ -128,7 +128,7 @@ func processSingleQuotes(char rune, escaped bool) runeResult {
 	return runeResult{value: string(char), escaped: char == '\\' && !escaped}
 }
 
-// SanitizeInput processes the `haproxy.router.openshift.io/rewrite-target`
+// SanitizeRewriteTargetInput processes the `haproxy.router.openshift.io/rewrite-target`
 // annotation value for API compatibility while properly handling values
 // with spaces, backslashes, and other special characters. Because the
 // annotation value was initially introduced without being enclosed in
@@ -137,7 +137,7 @@ func processSingleQuotes(char rune, escaped bool) runeResult {
 // OCPBUGS-22739. However, we must still maintain API compatibility after
 // this change: the annotation values MUST be interpreted to the same values
 // after updating to enclose the value in single quotes.
-func SanitizeInput(val string) string {
+func SanitizeRewriteTargetInput(val string) string {
 	var encounteredCommentMarker bool
 
 	val = processRunes(val, newProcessHashCreator(&encounteredCommentMarker))
@@ -156,4 +156,34 @@ func SanitizeInput(val string) string {
 	}
 
 	return val
+}
+
+// escapeSingleQuotes escapes all single quotes regardless if
+// they appear in pairs. It assumes the argument is already wrapped
+// in ” so that the escape sequence '\” will need to be added.
+func escapeSingleQuotes(val string) string {
+	return strings.ReplaceAll(val, `'`, `'\''`)
+}
+
+// SanitizeRewritePathInput processes the route's spec.path for use in the <match-regex> argument of the
+// `http-request replace-path <match-regex> <replace-fmt>` configuration in HAProxy. This configuration
+// is enabled when the `haproxy.router.openshift.io/rewrite-target` annotation is provided.
+//
+// This function was introduced to fix https://issues.redhat.com/browse/OCPBUGS-27741. Before this fix,
+// the route's spec.path input to the <match-regex> argument wasn't interpreted literally, causing characters
+// in spec.path to be treated as regex meta characters. This fix involves enclosing the <match-regex> argument
+// in single quotes in the haproxy-config.template. Additionally, this function sanitizes spec.path by escaping
+// regex meta-characters, newline characters, and single quotes to prevent syntax errors.
+func SanitizeRewritePathInput(path string) string {
+	// Escape any regex meta characters to ensure the path string is interpreted literally.
+	path = regexp.QuoteMeta(path)
+
+	// Escape return characters to avoid breaking HAProxy config.
+	path = strings.ReplaceAll(path, "\r", `\r`)
+	path = strings.ReplaceAll(path, "\n", `\n`)
+
+	// Escape single quotes to avoid syntax errors.
+	path = escapeSingleQuotes(path)
+
+	return path
 }
