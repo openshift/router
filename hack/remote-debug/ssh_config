@@ -1,0 +1,9 @@
+Host container
+  CheckHostIP no
+  HashKnownHosts no
+  LogLevel QUIET
+  Hostname 127.0.0.1
+  Port 2222
+  StrictHostKeyChecking no
+  User root
+  UserKnownHostsFile /dev/null

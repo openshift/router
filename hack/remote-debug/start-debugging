@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Start dlv and redirect its output to /proc/1/fd/1 so that we can use
+# `oc logs -f <pod>` in a terminal (or the IDE) to read the log output
+# from openshift-router.
+#
+# Note: If dlv reports an error about mismatched Go versions, you can
+# suppress the failure by adding `--check-go-version=false` to the dlv
+# invocation.
+#
+# $ dlv exec --help
+#   --check-go-version Exits if the version of Go in use is not
+#                      compatible (too old or too new) with the
+#                      version of Delve. (default true)
+#
+dlv --listen=:7000 --api-version=2 --headless=true --accept-multiclient exec "$@" /usr/bin/openshift-router 2>&1 | tee /proc/1/fd/1

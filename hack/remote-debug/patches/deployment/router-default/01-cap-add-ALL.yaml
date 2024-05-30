@@ -1,0 +1,9 @@
+spec:
+  template:
+    spec:
+      containers:
+      - name: router
+        securityContext:
+          capabilities:
+            add:
+            - ALL
