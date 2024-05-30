@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# This script automates the process of locating and copying the Delve
+# (dlv) debugger executable from a GoLand installation. The Dockerfile
+# in hack/remote-debug/Dockerfile expects to find a dlv executable in
+# the top-level directory.
+
+set -o errexit
+set -o nounset
+
+ide_home="$HOME/.local/share/JetBrains/Toolbox/apps/goland"
+
+if [[ ! -d "$ide_home" ]]; then
+    echo "The GoLand IDE home directory does not exist at $ide_home." >&2
+    exit 1
+fi
+
+os_type=$(uname -s | tr '[:upper:]' '[:lower:]')
+arch_type=$(uname -m)
+
+# Set the architecture based on operating system and CPU type.
+case "$os_type-$arch_type" in
+    "linux-x86_64"|"darwin-x86_64")
+        arch="linux"; [ "$os_type" = "darwin" ] && arch="mac"
+        ;;
+    "linux-arm"*|"darwin-arm"*)
+        arch="linuxarm"; [ "$os_type" = "darwin" ] && arch="macarm"
+        ;;
+    *)
+        echo "Unsupported architecture: $arch_type" >&2
+        exit 1
+        ;;
+esac
+
+source_dlv="$ide_home/plugins/go-plugin/lib/dlv/$arch/dlv"
+destination_dir="${1:-$(pwd)}"
+destination_dlv="$destination_dir/dlv"
+
+if [ -x "$source_dlv" ]; then
+    cp -v "$source_dlv" "$destination_dlv"
+else
+    echo "The executable does not exist at $source_dlv." >&2
+    exit 1
+fi

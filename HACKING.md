@@ -35,11 +35,11 @@ Example:
 
 1. Run `make` to ensure that your code changes compile
 1. Set the `IMAGE` environment variable. (ie. `export IMAGE=<your-quay-username>/openshift-router`)
-1. Build a modified Router image for testing your changes (`make -f hack/Makefile.debug new-openshift-router-image`)
+1. Build a modified Router image for testing your changes (`make -f hack/Makefile.debug build-image`)
 1. Push the new Router image to quay.io (`make -f hack/Makefile.debug push`)
 1. Use the new Router image in the default Ingress Controller's deployment (`make -f hack/Makefile.debug set-image`)
 
-Alternatively, after setting `IMAGE`, you can run `make dwim` (do what I mean) to accomplish the above steps in one command.
+Alternatively, after setting `IMAGE`, you can run `make deploy-image` to accomplish the above steps in one command.
 
 When done testing, use `make -f hack/Makefile.debug reset` to re-enable the CVO and Ingress Operator.
 
