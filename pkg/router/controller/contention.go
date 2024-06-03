@@ -7,9 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	routev1 "github.com/openshift/api/route/v1"
 )
 
@@ -24,14 +21,15 @@ type ContentionTracker interface {
 	// expected state of the object at this time and may be used by the tracker to
 	// determine if the most recent update was a contention. This method does not
 	// update the state of the tracker.
-	IsChangeContended(id string, now time.Time, current *routev1.RouteIngress) bool
+	IsChangeContended(id contentionKey, now time.Time, current *routev1.RouteIngress) bool
 	// Clear informs the tracker that the provided ingress state was confirmed to
 	// match the current state of this process. If a subsequent call to IsChangeContended
 	// is made within the expiration window, the object will be considered as contended.
-	Clear(id string, current *routev1.RouteIngress)
+	Clear(id contentionKey, current *routev1.RouteIngress)
 }
 
 type elementState int
+type contentionKey string
 
 const (
 	stateCandidate elementState = iota
@@ -57,7 +55,7 @@ type SimpleContentionTracker struct {
 
 	lock        sync.Mutex
 	contentions int
-	ids         map[string]trackerElement
+	ids         map[contentionKey]trackerElement
 }
 
 // NewSimpleContentionTracker creates a ContentionTracker that will prevent writing
@@ -74,7 +72,7 @@ func NewSimpleContentionTracker(informer cache.SharedInformer, routerName string
 		expires:        interval,
 		maxContentions: 5,
 
-		ids: make(map[string]trackerElement),
+		ids: make(map[contentionKey]trackerElement),
 	}
 }
 
@@ -104,7 +102,7 @@ func (t *SimpleContentionTracker) Run(stopCh <-chan struct{}) {
 				return
 			}
 			if ingress := ingressChanged(oldRoute, route, t.routerName); ingress != nil {
-				t.Changed(string(route.UID), ingress)
+				t.Changed(contentionKey(route.UID), ingress)
 			}
 		},
 	})
@@ -160,7 +158,7 @@ func (t *SimpleContentionTracker) flush() {
 // a separate goroutine and may have seen newer events than the current route controller
 // plugins, so we don't do direct time comparisons. Instead we count edge transitions on
 // a given id.
-func (t *SimpleContentionTracker) Changed(id string, current *routev1.RouteIngress) {
+func (t *SimpleContentionTracker) Changed(id contentionKey, current *routev1.RouteIngress) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -207,7 +205,7 @@ func (t *SimpleContentionTracker) Changed(id string, current *routev1.RouteIngre
 	}
 }
 
-func (t *SimpleContentionTracker) IsChangeContended(id string, now time.Time, current *routev1.RouteIngress) bool {
+func (t *SimpleContentionTracker) IsChangeContended(id contentionKey, now time.Time, current *routev1.RouteIngress) bool {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -232,7 +230,7 @@ func (t *SimpleContentionTracker) IsChangeContended(id string, now time.Time, cu
 	return false
 }
 
-func (t *SimpleContentionTracker) Clear(id string, current *routev1.RouteIngress) {
+func (t *SimpleContentionTracker) Clear(id contentionKey, current *routev1.RouteIngress) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
@@ -245,11 +243,48 @@ func (t *SimpleContentionTracker) Clear(id string, current *routev1.RouteIngress
 	t.ids[id] = last
 }
 
+// ingressEqual compares two route ingresses and returns a bool if they are equivalent.
 func ingressEqual(a, b *routev1.RouteIngress) bool {
-	// In addition to the RouteIngress' string fields, compare the available admission condition to determine
-	// if the given ingress' are equal. See https://bugzilla.redhat.com/show_bug.cgi?id=1908389.
-	return a.Host == b.Host && a.RouterCanonicalHostname == b.RouterCanonicalHostname && a.WildcardPolicy == b.WildcardPolicy && a.RouterName == b.RouterName &&
-		cmp.Equal(findCondition(a, routev1.RouteAdmitted), findCondition(b, routev1.RouteAdmitted), cmpopts.IgnoreFields(routev1.RouteIngressCondition{}, "LastTransitionTime"))
+	// In addition to the RouteIngress' string fields, compare all conditions to determine
+	// if the given ingress' are equal.
+	return a.Host == b.Host &&
+		a.RouterCanonicalHostname == b.RouterCanonicalHostname &&
+		a.WildcardPolicy == b.WildcardPolicy &&
+		a.RouterName == b.RouterName &&
+		ingressConditionsEqual(a.Conditions, b.Conditions)
+}
+
+// ingressConditionsEqual determines if the route ingress conditions are equal,
+// while ignoring LastTransitionTime.
+func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	// Compare each condition in a with every condition in b.
+	// Given the current max of only two conditions, nested loops are more efficient than sorting.
+	for i := 0; i < len(a); i++ {
+		matchFound := false
+		for j := 0; j < len(b); j++ {
+			if conditionsEqual(&a[i], &b[j]) {
+				matchFound = true
+				break
+			}
+		}
+		if !matchFound {
+			return false
+		}
+	}
+
+	return true
+}
+
+// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime.
+func conditionsEqual(a, b *routev1.RouteIngressCondition) bool {
+	return a.Type == b.Type &&
+		a.Status == b.Status &&
+		a.Reason == b.Reason &&
+		a.Message == b.Message
 }
 
 func ingressConditionTouched(ingress *routev1.RouteIngress) *metav1.Time {

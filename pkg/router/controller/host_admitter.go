@@ -78,7 +78,7 @@ type HostAdmitter struct {
 	admitter RouteAdmissionFunc
 
 	// recorder is an interface for indicating route rejections.
-	recorder RejectionRecorder
+	recorder RouteStatusRecorder
 
 	// allowWildcardRoutes enables wildcard route support.
 	allowWildcardRoutes bool
@@ -98,8 +98,8 @@ type HostAdmitter struct {
 
 // NewHostAdmitter creates a plugin wrapper that checks whether or not to
 // admit routes and relay them to the next plugin in the chain.
-// Recorder is an interface for indicating why a route was rejected.
-func NewHostAdmitter(plugin router.Plugin, fn RouteAdmissionFunc, allowWildcards, disableNamespaceCheck bool, recorder RejectionRecorder) *HostAdmitter {
+// Recorder is an interface for indicating route status updates..
+func NewHostAdmitter(plugin router.Plugin, fn RouteAdmissionFunc, allowWildcards, disableNamespaceCheck bool, recorder RouteStatusRecorder) *HostAdmitter {
 	return &HostAdmitter{
 		plugin:   plugin,
 		admitter: fn,
@@ -126,6 +126,7 @@ func (p *HostAdmitter) HandleEndpoints(eventType watch.EventType, endpoints *kap
 
 // HandleRoute processes watch events on the Route resource.
 func (p *HostAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	log.V(10).Info("HandleRoute: HostAdmitter")
 	if p.allowedNamespaces != nil && !p.allowedNamespaces.Has(route.Namespace) {
 		// Ignore routes we don't need to "service" due to namespace
 		// restrictions (ala for sharding).

@@ -17,42 +17,48 @@ import (
 )
 
 const (
-	testExpiredCAUnknownCertificate = `-----BEGIN CERTIFICATE-----
-MIIDIjCCAgqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADCBoTELMAkGA1UEBhMCVVMx
-CzAJBgNVBAgMAlNDMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0Rl
-ZmF1bHQgQ29tcGFueSBMdGQxEDAOBgNVBAsMB1Rlc3QgQ0ExGjAYBgNVBAMMEXd3
-dy5leGFtcGxlY2EuY29tMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUu
-Y29tMB4XDTE2MDExMzE5NDA1N1oXDTI2MDExMDE5NDA1N1owfDEYMBYGA1UEAxMP
-d3d3LmV4YW1wbGUuY29tMQswCQYDVQQIEwJTQzELMAkGA1UEBhMCVVMxIjAgBgkq
-hkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAOBgNVBAoTB0V4YW1wbGUx
-EDAOBgNVBAsTB0V4YW1wbGUwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAM0B
-u++oHV1wcphWRbMLUft8fD7nPG95xs7UeLPphFZuShIhhdAQMpvcsFeg+Bg9PWCu
-v3jZljmk06MLvuWLfwjYfo9q/V+qOZVfTVHHbaIO5RTXJMC2Nn+ACF0kHBmNcbth
-OOgF8L854a/P8tjm1iPR++vHnkex0NH7lyosVc/vAgMBAAGjDTALMAkGA1UdEwQC
-MAAwDQYJKoZIhvcNAQEFBQADggEBADjFm5AlNH3DNT1Uzx3m66fFjqqrHEs25geT
-yA3rvBuynflEHQO95M/8wCxYVyuAx4Z1i4YDC7tx0vmOn/2GXZHY9MAj1I8KCnwt
-Jik7E2r1/yY0MrkawljOAxisXs821kJ+Z/51Ud2t5uhGxS6hJypbGspMS7OtBbw7
-8oThK7cWtCXOldNF6ruqY1agWnhRdAq5qSMnuBXuicOP0Kbtx51a1ugE3SnvQenJ
-nZxdtYUXvEsHZC/6bAtTfNh+/SwgxQJuL2ZM+VG3X2JIKY8xTDui+il7uTh422lq
-wED8uwKl+bOj6xFDyw4gWoBxRobsbFaME8pkykP1+GnKDberyAM=
+	// openssl req -newkey rsa:1024 -nodes -keyout testExpiredCert.key -out testExpiredCert.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// faketime 'last year 5pm' /bin/bash -c 'openssl x509 -req -days 1 -sha256 -in testExpiredCert.csr -CA testExpiredCertCA.crt -CAcreateserial -CAkey testExpiredCertCA.key -extensions ext -extfile <(echo $"[ext]\nbasicConstraints = CA:FALSE") -out testExpiredCert.crt'
+	//
+	// Key = testExpiredCertKey
+	// CA = testExpiredCertCA
+	testExpiredCert = `-----BEGIN CERTIFICATE-----
+MIICoDCCAgkCFAaeel1AtQzHHpRUjVZSaSEbuzcvMA0GCSqGSIb3DQEBCwUAMIGh
+MQswCQYDVQQGEwJVUzELMAkGA1UECAwCU0MxFTATBgNVBAcMDERlZmF1bHQgQ2l0
+eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDEQMA4GA1UECwwHVGVzdCBD
+QTEaMBgGA1UEAwwRd3d3LmV4YW1wbGVjYS5jb20xIjAgBgkqhkiG9w0BCQEWE2V4
+YW1wbGVAZXhhbXBsZS5jb20wHhcNMjMwMTI2MjIwMDAwWhcNMjMwMTI3MjIwMDAw
+WjB8MRgwFgYDVQQDDA93d3cuZXhhbXBsZS5jb20xCzAJBgNVBAgMAlNDMQswCQYD
+VQQGEwJVUzEiMCAGCSqGSIb3DQEJARYTZXhhbXBsZUBleGFtcGxlLmNvbTEQMA4G
+A1UECgwHRXhhbXBsZTEQMA4GA1UECwwHRXhhbXBsZTCBnzANBgkqhkiG9w0BAQEF
+AAOBjQAwgYkCgYEAv2GAaJvd0aWxiw7jBTM+VDATQ2vTPbrRc5r8+2yNTwP1Dhr1
+VlLmX5o3yv/LeHhK6g8xw1xHcDdvIAdW+J6Uu99BwDK9R5dxwVoEeTYr82vOUoFQ
+1sdXqm4226bdAJXf3kdFo+zBr2aefpygpxvMGghz6oW7Nxz78SD8yHNaAzUCAwEA
+ATANBgkqhkiG9w0BAQsFAAOBgQABr3mFRjl60RAGL8s1pB6lqBRqy5pG2WoujQlT
+N65bDpFJP7vDiFe35qYVVGLAutPxTAaAtGkNhuiyoOqfP6BIlwkM68gD5plmdRBR
+hQi35A/6YMFAsBDOnhJccOCO2i19yhyAg2R0tMSder8b51IpmLABLt3UkujwVRJ+
+a3zkug==
 -----END CERTIFICATE-----`
 
-	testExpiredCertPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQDNAbvvqB1dcHKYVkWzC1H7fHw+5zxvecbO1Hiz6YRWbkoSIYXQ
-EDKb3LBXoPgYPT1grr942ZY5pNOjC77li38I2H6Pav1fqjmVX01Rx22iDuUU1yTA
-tjZ/gAhdJBwZjXG7YTjoBfC/OeGvz/LY5tYj0fvrx55HsdDR+5cqLFXP7wIDAQAB
-AoGAfE7P4Zsj6zOzGPI/Izj7Bi5OvGnEeKfzyBiH9Dflue74VRQkqqwXs/DWsNv3
-c+M2Y3iyu5ncgKmUduo5X8D9To2ymPRLGuCdfZTxnBMpIDKSJ0FTwVPkr6cYyyBk
-5VCbc470pQPxTAAtl2eaO1sIrzR4PcgwqrSOjwBQQocsGAECQQD8QOra/mZmxPbt
-bRh8U5lhgZmirImk5RY3QMPI/1/f4k+fyjkU5FRq/yqSyin75aSAXg8IupAFRgyZ
-W7BT6zwBAkEA0A0ugAGorpCbuTa25SsIOMxkEzCiKYvh0O+GfGkzWG4lkSeJqGME
-keuJGlXrZNKNoCYLluAKLPmnd72X2yTL7wJARM0kAXUP0wn324w8+HQIyqqBj/gF
-Vt9Q7uMQQ3s72CGu3ANZDFS2nbRZFU5koxrggk6lRRk1fOq9NvrmHg10AQJABOea
-pgfj+yGLmkUw8JwgGH6xCUbHO+WBUFSlPf+Y50fJeO+OrjqPXAVKeSV3ZCwWjKT4
-9viXJNJJ4WfF0bO/XwJAOMB1wQnEOSZ4v+laMwNtMq6hre5K8woqteXICoGcIWe8
-u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
------END RSA PRIVATE KEY-----`
+	testExpiredCertKey = `-----BEGIN PRIVATE KEY-----
+MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAL9hgGib3dGlsYsO
+4wUzPlQwE0Nr0z260XOa/PtsjU8D9Q4a9VZS5l+aN8r/y3h4SuoPMcNcR3A3byAH
+VvielLvfQcAyvUeXccFaBHk2K/NrzlKBUNbHV6puNtum3QCV395HRaPswa9mnn6c
+oKcbzBoIc+qFuzcc+/Eg/MhzWgM1AgMBAAECgYEAqC4Ood8XNzzcoM8cQV2e0GzP
+ANiocf7SQT1aQ7hJFb7sgtC9+HYxbKIhlYrkS6Gqc7WWjY9yV/Le/M52Z1U0bb5r
+/guvTx686AYoTZzCjptwpAuVE1sS9r+WCa/VgflPZYtaql960TtO72ntjcWHoIl/
+2AsE0/1wLHLquYHaDaECQQDxdDL9ecvEWD6yTom9GlfQq/6CwzA6Nhs1oncgDT/4
+1OXGD/GgXUvlJZszdkTrYh4az8YeobDsJsfMjIkFfQpDAkEAyukOORSRIk9/KBUm
+Ufyu7JtFibtr8mozkf43Dd+2BYyO6dPqS/E9m0nUZoMSoGfS0LqS8pT1hUU0RMun
+dXURJwJBALBC5V5I5UmmKc68qqxTaLu6cwc+OhykluRmf5P0WDjsIfiedwNcWCUl
+eNDui41RiSyFdNmzq5YZEU3vYa+SAkUCQQCx99EyvVhCWKl1dX9jv5WJDvLhx9H5
+D67lqKuO7p0OpuaeLfE85H0dW5cAxouqxwU/b7T9MSta1YTvphPdUG1XAkBwH06h
+STCeJCluaFZp/Aaok8fTAbodEu5gdfo/W8dspflTFM6RcR9+WJb91elObh3QiJET
+T1ZXsR6eRuHdx4oh
+-----END PRIVATE KEY-----`
 
+	// Key = testPrivateKey
+	// CA = testCACertificate
 	testCertificate = `-----BEGIN CERTIFICATE-----
 MIICwjCCAiugAwIBAgIBATANBgkqhkiG9w0BAQsFADBjMQswCQYDVQQGEwJVUzEL
 MAkGA1UECAwCQ0ExETAPBgNVBAoMCFNlY3VyaXR5MRswGQYDVQQLDBJPcGVuU2hp
@@ -99,6 +105,8 @@ HP8gHJSZnaGrLKmjwNeQNsARYajKmDKO5HJ9g5H5Hae8enOb2yie541dneDT8rID
 4054dMQJnijd8620yf8wiNy05ZPOQQ0JvA/rW3WWZc5PGm8c2PsVjg==
 -----END RSA PRIVATE KEY-----`
 
+	// Key = N/A
+	// CA = self-signed
 	testCACertificate = `-----BEGIN CERTIFICATE-----
 MIIClDCCAf2gAwIBAgIJAPU57OGhuqJtMA0GCSqGSIb3DQEBCwUAMGMxCzAJBgNV
 BAYTAlVTMQswCQYDVQQIDAJDQTERMA8GA1UECgwIU2VjdXJpdHkxGzAZBgNVBAsM
@@ -117,6 +125,48 @@ bGvtpjWA4r9WASIDPFsxk/cDEEEO6iPxgMOf5MdpQC2y2MU0rzF/Gg==
 -----END CERTIFICATE-----`
 
 	testDestinationCACertificate = testCACertificate
+
+	// openssl req -x509 -sha1 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateRsaSha1.key -out testCertificateRsaSha1.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -sha1 -in testCertificateRsaSha1.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateRsaSha1.crt
+	//
+	// Key = testCertificateRsaSha1Key
+	testCertificateRsaSha1 = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAl2gAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjHowDQYJKoZIhvcNAQEF
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDAxMTAxOTU2MDhaFw0zNDAxMDcx
+OTU2MDhaMHwxGDAWBgNVBAMMD3d3dy5leGFtcGxlLmNvbTELMAkGA1UECAwCU0Mx
+CzAJBgNVBAYTAlVTMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUuY29t
+MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdFeGFtcGxlMIGfMA0GCSqGSIb3
+DQEBAQUAA4GNADCBiQKBgQC4hsxewdQOk5goI9bdkR1urJnbu7TeZdDtPz0Mi976
+1guAxNPQO98t0X/Bhs7toZz/zIG4vQZfXaV2IU1ry7pQ64I8bTPXQ/Kpt8zW3zng
+dPeIJqVujKPybIL/teHJ1Bw4c4x1ZMpAGoZ6s750tQy1zP7WRqStJv2G9l3OQLFu
+AQIDAQABo00wSzAJBgNVHRMEAjAAMB0GA1UdDgQWBBS6uwvwYLV5u4TX9ZFMBpQe
+hW4YKjAfBgNVHSMEGDAWgBRQlTo+l7rGlVRX5myTzXIHBN587jANBgkqhkiG9w0B
+AQUFAAOBgQB+1bS0s6SpuCuMFFMpeBcE7WX//AGU/ZcRfO60ithV6NQ9OnN3djfS
+H+ZeW3QEaQVMM0PIOuMO22/9AN6UVs8IxSuSkrfBOQ+PY/3169b6rpGl44/ZTx6B
+O+c5wkkhnmy4+T6KnjQE5aO1VKBp3Ocl8PyIBqLLV52pZWUuytGlqA==
+-----END CERTIFICATE-----
+`
+	testCertificateRsaSha1Key = `
+-----BEGIN PRIVATE KEY-----
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBALiGzF7B1A6TmCgj
+1t2RHW6smdu7tN5l0O0/PQyL3vrWC4DE09A73y3Rf8GGzu2hnP/Mgbi9Bl9dpXYh
+TWvLulDrgjxtM9dD8qm3zNbfOeB094gmpW6Mo/Jsgv+14cnUHDhzjHVkykAahnqz
+vnS1DLXM/tZGpK0m/Yb2Xc5AsW4BAgMBAAECgYAWaNBzBYkSSBxna4rRl6kCYtXA
+mLgrdiP8W/y3BFmNDueQuNacaFj/QH0KbKu+sizV5+ktHU+jz0Sj5wF3AOPccRtJ
+QcGxr66f1uVPeBQfO27ac8b5UYwIFCu4gJ9IQp86INARuO4U5UR2o7sJ8rUpmf2M
+p2JUQwKXjO0qDyDcQQJBAODWqTkdr0Av2vAOZe6SOfmr+u/2shAWPTg8uc1Y08Ng
+1Fh0o7vqkOQ6Amtw4o5lE0RE0LlPSnxhpl28sT0gwUkCQQDSGdtIk77rh+WqNjYZ
+GWhKBA2H8w0jo37Wz1aGyv/Yt6LC/LgOdOcadu4xSIgG+Al9JHdzLx7iWvNdIjD6
+l/75AkEA1szdwL5WVnkhrmPjCAhVMO0YALbrqKjGdfq1+7OYJDlWxOcyIe5X3GJ7
+O1AOccGopXkk+1UAMVJNUZJata6cWQJBAIEvhubsecNHL09mwALU3YxNS6ihKR4V
+xML+gBynq4Ms/vZYADBbb1KVeEZza7ilQOhiyNPZUGssM2G7yVP8q7kCQHFCAgmO
+redbrtiWNunEy1hVHOJD6ALriPz2i1W51NMbrPV2kOy9GpV/p3oby3GmXHs+Zlo6
+bBbOLhI7o+VlGaM=
+-----END PRIVATE KEY-----`
 )
 
 // TestRouter provides an implementation of the plugin's router interface suitable for unit testing.
@@ -463,23 +513,45 @@ func TestHandleTCPEndpoints(t *testing.T) {
 	}
 }
 
-type rejection struct {
+type status struct {
 	route   *routev1.Route
 	reason  string
 	message string
 }
 
-type fakeRejections struct {
-	rejections []rejection
+type fakeStatusRecorder struct {
+	rejections                 []status
+	unservableInFutureVersions []status
 }
 
-func (r *fakeRejections) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	r.rejections = append(r.rejections, rejection{route: route, reason: reason, message: message})
+func (r *fakeStatusRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
+	r.rejections = append(r.rejections, status{route: route, reason: reason, message: message})
+}
+func (r *fakeStatusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
+	r.unservableInFutureVersions = append(r.unservableInFutureVersions, status{route: route, reason: reason, message: message})
+}
+func (r *fakeStatusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	var unservableInFutureVersions []status
+	for _, entry := range r.unservableInFutureVersions {
+		if entry.route.UID != route.UID {
+			unservableInFutureVersions = append(unservableInFutureVersions, entry)
+		}
+	}
+	r.unservableInFutureVersions = unservableInFutureVersions
+}
+
+func (r *fakeStatusRecorder) isUnservableInFutureVersions(route *routev1.Route) bool {
+	for _, r := range r.unservableInFutureVersions {
+		if r.route.UID == route.UID {
+			return true
+		}
+	}
+	return false
 }
 
 // TestHandleRoute test route watch events
 func TestHandleRoute(t *testing.T) {
-	rejections := &fakeRejections{}
+	rejections := &fakeStatusRecorder{}
 	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
 	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
@@ -530,7 +602,7 @@ func TestHandleRoute(t *testing.T) {
 	}
 
 	if len(rejections.rejections) > 0 {
-		t.Fatalf("did not expect a recorded rejection: %#v", rejections)
+		t.Fatalf("did not expect a recorded status: %#v", rejections)
 	}
 
 	// attempt to add a second route with a newer time, verify it is ignored
@@ -563,7 +635,7 @@ func TestHandleRoute(t *testing.T) {
 		rejections.rejections[0].route.Name != "dupe" ||
 		rejections.rejections[0].reason != "HostAlreadyClaimed" ||
 		rejections.rejections[0].message != "route test already exposes www.example.com and is older" {
-		t.Fatalf("did not record rejection: %#v", rejections)
+		t.Fatalf("did not record status: %#v", rejections)
 	}
 	rejections.rejections = nil
 
@@ -582,7 +654,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("unexpected claimed routes: %#v", r)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("did not record rejection: %#v", rejections)
+		t.Fatalf("did not record status: %#v", rejections)
 	}
 	rejections.rejections = nil
 
@@ -602,7 +674,7 @@ func TestHandleRoute(t *testing.T) {
 		rejections.rejections[0].route.Name != "test" ||
 		rejections.rejections[0].reason != "HostAlreadyClaimed" ||
 		rejections.rejections[0].message != "replaced by older route dupe" {
-		t.Fatalf("did not record rejection: %#v", rejections)
+		t.Fatalf("did not record status: %#v", rejections)
 	}
 	rejections.rejections = nil
 
@@ -632,7 +704,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("did not clear claimed route: %#v", plugin)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("unexpected rejection: %#v", rejections)
+		t.Fatalf("unexpected status: %#v", rejections)
 	}
 
 	plugin.HandleRoute(watch.Deleted, fooDupe3)
@@ -641,7 +713,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Fatalf("did not clear claimed route: %#v", plugin)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("unexpected rejection: %#v", rejections)
+		t.Fatalf("unexpected status: %#v", rejections)
 	}
 
 	//delete
@@ -663,7 +735,7 @@ func TestHandleRoute(t *testing.T) {
 		t.Errorf("did not clear claimed route: %#v", plugin)
 	}
 	if len(rejections.rejections) != 0 {
-		t.Fatalf("unexpected rejection: %#v", rejections)
+		t.Fatalf("unexpected status: %#v", rejections)
 	}
 }
 
@@ -695,7 +767,7 @@ func (p *fakePlugin) Commit() error {
 
 // TestHandleRouteExtendedValidation test route watch events with extended route configuration validation.
 func TestHandleRouteExtendedValidation(t *testing.T) {
-	rejections := &fakeRejections{}
+	rejections := &fakeStatusRecorder{}
 	fake := &fakePlugin{}
 	plugin := controller.NewExtendedValidator(fake, rejections)
 
@@ -723,7 +795,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 	}
 
 	if len(rejections.rejections) > 0 {
-		t.Fatalf("did not expect a recorded rejection: %#v", rejections)
+		t.Fatalf("did not expect a recorded status: %#v", rejections)
 	}
 
 	tests := []struct {
@@ -776,7 +848,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination OK with bad config",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.badconfig.test",
+					Host: "www.reencrypt.badconfig.test",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						Certificate:              "def",
@@ -792,7 +864,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination OK without certs",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.nocerts.test",
+					Host: "www.reencrypt.nocerts.test",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: testDestinationCACertificate,
@@ -805,7 +877,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination bad config without certs",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.badconfignocerts.test",
+					Host: "www.reencrypt.badconfignocerts.test",
 					TLS: &routev1.TLSConfig{
 						Termination:              routev1.TLSTerminationReencrypt,
 						DestinationCACertificate: "abc",
@@ -818,7 +890,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 			name: "Reencrypt termination no dest cert",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
-					Host: "www.reencypt.nodestcert.test",
+					Host: "www.reencrypt.nodestcert.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationReencrypt,
 						Certificate:   testCertificate,
@@ -881,7 +953,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
 						Certificate:   testCertificate,
-						Key:           testExpiredCertPrivateKey,
+						Key:           testExpiredCertKey,
 						CACertificate: testCACertificate,
 					},
 				},
@@ -895,13 +967,12 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 					Host: "www.edge.expiredcert.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testExpiredCAUnknownCertificate,
-						Key:           testExpiredCertPrivateKey,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
 						CACertificate: testCACertificate,
 					},
 				},
 			},
-			errorExpected: true,
 		},
 		{
 			name: "Edge termination expired cert key mismatch",
@@ -910,7 +981,7 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 					Host: "www.edge.expiredcertkeymismatch.test",
 					TLS: &routev1.TLSConfig{
 						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   testExpiredCAUnknownCertificate,
+						Certificate:   testExpiredCert,
 						Key:           testPrivateKey,
 						CACertificate: testCACertificate,
 					},
@@ -1015,14 +1086,110 @@ func TestHandleRouteExtendedValidation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := plugin.HandleRoute(watch.Added, tc.route)
-			if tc.errorExpected {
-				if err == nil {
-					t.Fatalf("test case %s: expected an error, got none", tc.name)
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("test case %s: expected no errors, got %v", tc.name, err)
-				}
+			if tc.errorExpected && err == nil {
+				t.Fatal("expected an error, got none")
+			} else if !tc.errorExpected && err != nil {
+				t.Fatalf("expected no errors, got %v", err)
+			}
+		})
+	}
+}
+
+// TestHandleRouteUpgradeValidation tests the upgrade route validation plugin.
+func TestHandleRouteUpgradeValidation(t *testing.T) {
+	rejections := &fakeStatusRecorder{}
+	fake := &fakePlugin{}
+	plugin := controller.NewUpgradeValidation(fake, rejections, false, false)
+
+	tests := []struct {
+		name                               string
+		route                              *routev1.Route
+		unservableInFutureVersionsExpected bool
+	}{
+		{
+			name: "route with no cert should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.normal.test",
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "route with SHA256 cert should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.example.com",
+					TLS: &routev1.TLSConfig{
+						Termination:              routev1.TLSTerminationReencrypt,
+						Certificate:              testCertificate,
+						Key:                      testPrivateKey,
+						CACertificate:            testCACertificate,
+						DestinationCACertificate: testDestinationCACertificate,
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "route with invalid certs should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.reencrypt.badconfig.test",
+					TLS: &routev1.TLSConfig{
+						Termination:              routev1.TLSTerminationReencrypt,
+						Certificate:              "def",
+						Key:                      "ghi",
+						CACertificate:            "jkl",
+						DestinationCACertificate: "abc",
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "route with expired cert should not be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.edge.expiredcert.test",
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						Certificate:   testExpiredCert,
+						Key:           testExpiredCertKey,
+						CACertificate: testCACertificate,
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: false,
+		},
+		{
+			name: "SHA1 certificate should be unservable in future versions",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "www.reencrypt.sha1.test",
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationReencrypt,
+						Certificate: testCertificateRsaSha1,
+						Key:         testCertificateRsaSha1Key,
+					},
+				},
+			},
+			unservableInFutureVersionsExpected: true,
+		},
+	}
+
+	uidCount := 0
+	nextUID := func() types.UID {
+		uidCount++
+		return types.UID(fmt.Sprintf("%03d", uidCount))
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.route.UID = nextUID()
+			plugin.HandleRoute(watch.Added, tc.route)
+			unservableInFutureVersions := rejections.isUnservableInFutureVersions(tc.route)
+			if tc.unservableInFutureVersionsExpected != unservableInFutureVersions {
+				t.Fatalf("expected to be unservableInFutureVersions=%t, got unservableInFutureVersions=%t", tc.unservableInFutureVersionsExpected, unservableInFutureVersions)
 			}
 		})
 	}
