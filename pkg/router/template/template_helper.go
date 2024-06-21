@@ -19,6 +19,7 @@ import (
 	templateutil "github.com/openshift/router/pkg/router/template/util"
 	haproxyutil "github.com/openshift/router/pkg/router/template/util/haproxy"
 	"github.com/openshift/router/pkg/router/template/util/haproxytime"
+	"github.com/openshift/router/pkg/router/template/util/rewritetarget"
 )
 
 const (
@@ -411,4 +412,6 @@ var helperFunctions = template.FuncMap{
 
 	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
 	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
+
+	"processRewriteTarget": rewritetarget.SanitizeInput, //sanitizes `haproxy.router.openshift.io/rewrite-target` annotation
 }
