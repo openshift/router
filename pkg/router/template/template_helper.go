@@ -391,13 +391,16 @@ func parseIPList(list string) string {
 }
 
 // maxTimeoutFirstMatchedAndClipped finds the maximum timeout managed by a given annotation among all the routes, matches it against a given pattern, and clips.
+// The goal is to get the maximum timeout among the ones set on the lowest layer backends, rather than the maximum of all values provided to the function.
+// For instance, if a route has a timeout annotation set, it will take precedence over the default timeout, even if the default timeout is greater.
 func maxTimeoutFirstMatchedAndClipped(aliases map[ServiceAliasConfigKey]ServiceAliasConfig, annotation, pattern string, values ...string) string {
 	var (
 		max         string
 		maxDuration time.Duration
 	)
+	// find max timeout in route annotations
 	for _, cfg := range aliases {
-		timeout := clipHAProxyTimeoutValue(firstMatch(pattern, append([]string{cfg.Annotations[annotation]}, values...)...))
+		timeout := clipHAProxyTimeoutValue(firstMatch(pattern, cfg.Annotations[annotation]))
 		if timeout != "" {
 			// No error handling because clipHAProxyTimeoutValue returns
 			// a valid timeout or an empty string. The latter is already handled.
@@ -407,6 +410,14 @@ func maxTimeoutFirstMatchedAndClipped(aliases map[ServiceAliasConfigKey]ServiceA
 				maxDuration = timeoutDuration
 			}
 		}
+	}
+	// use values if no max was found in routes
+	if max == "" {
+		max = clipHAProxyTimeoutValue(firstMatch(pattern, values...))
+	}
+	// use max haproxy timeout if no max was found
+	if max == "" {
+		max = templateutil.HaproxyMaxTimeout
 	}
 	return max
 }
