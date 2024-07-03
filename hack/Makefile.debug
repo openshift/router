@@ -3,13 +3,20 @@
 export GOOS=linux
 
 REGISTRY ?= quay.io
-IMAGE ?= openshift/openshift-router
+IMAGE ?= $(USER)/openshift-router
+IMAGE_BASE ?= $(USER)/openshift-router-base
 TAG ?= latest
 IMAGEBUILDER ?= podman
 
 new-openshift-router-image:
 	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
 	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f hack/Dockerfile.debug .
+
+new-ci-router-image:
+	$(IMAGEBUILDER) build -t $(IMAGE_BASE):$(TAG) -f images/router/base/Dockerfile.rhel .
+	cp -f images/router/haproxy/Dockerfile.rhel8 images/router/haproxy/Dockerfile.rhel8.debug
+	sed -i "s|FROM .*|FROM $(IMAGE_BASE):$(TAG)|" images/router/haproxy/Dockerfile.rhel8.debug
+	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f images/router/haproxy/Dockerfile.rhel8.debug .
 
 push:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
