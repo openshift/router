@@ -14,9 +14,7 @@ new-openshift-router-image:
 
 new-ci-router-image:
 	$(IMAGEBUILDER) build -t $(IMAGE_BASE):$(TAG) -f images/router/base/Dockerfile.rhel .
-	cp -f images/router/haproxy/Dockerfile.rhel8 images/router/haproxy/Dockerfile.rhel8.debug
-	sed -i "s|FROM .*|FROM $(IMAGE_BASE):$(TAG)|" images/router/haproxy/Dockerfile.rhel8.debug
-	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f images/router/haproxy/Dockerfile.rhel8.debug .
+	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f images/router/haproxy/Dockerfile.rhel8 --build-arg="BASE=$(IMAGE_BASE):$(TAG)" .
 
 push:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
