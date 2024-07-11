@@ -17,7 +17,6 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 
-	"github.com/openshift/library-go/pkg/route/secretmanager"
 	unidlingapi "github.com/openshift/router/pkg/router/unidling"
 )
 
@@ -69,7 +68,6 @@ type TemplatePluginConfig struct {
 	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 	HTTPResponseHeaders           []HTTPHeader
 	HTTPRequestHeaders            []HTTPHeader
-	SecretManager                 secretmanager.SecretManager
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation
@@ -166,7 +164,6 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		httpHeaderNameCaseAdjustments: cfg.HTTPHeaderNameCaseAdjustments,
 		httpResponseHeaders:           cfg.HTTPResponseHeaders,
 		httpRequestHeaders:            cfg.HTTPRequestHeaders,
-		secretManager:                 cfg.SecretManager,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
 	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
