@@ -2,29 +2,137 @@
 
 export GOOS=linux
 
-REGISTRY ?= quay.io
-IMAGE ?= openshift/openshift-router
+REGISTRY ?= <some-registry.com>
+IMAGE ?= <some-user-namespace>/openshift-router
 TAG ?= latest
 IMAGEBUILDER ?= podman
 
-new-openshift-router-image:
-	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f hack/Dockerfile.debug .
+SERVICE_FILES := $(wildcard hack/remote-debug/*.service)
+SYSTEMD_DIR   := $(HOME)/.config/systemd/user
 
-push:
+DOCKERFILE_DEBUG ?= hack/Dockerfile.debug
+
+ifndef HAPROXY_RPMS
+  $(error HAPROXY_RPMS is not set. Please set the environment variable HAPROXY_RPMS. (e.g., HAPROXY_RPMS=https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm))
+endif
+
+# Uncomment the following for remote debugging.
+# DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
+
+ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+  ifndef GITHUB_USER
+    $(error GITHUB_USER is not set. Please set the environment variable GITHUB_USER)
+  endif
+  # Remote debugging requires the dlv executable in the local
+  # directory which is copied into the container in
+  # hack/remote-debug/Dockerfile.
+  ifeq (,$(wildcard ./dlv))
+    $(error dlv executable not found in the current directory. Consider running ./hack/remote-debug/find-and-copy-dlv-from-goland-installation)
+  endif
+  # GITHUB_USER is a hard requirement. The docker build in
+  # hack/remote-debug/Dockerfile needs to fetch your public ssh keys
+  # from https://github.com/<GITHUB_USER>.keys.
+  export GITHUB_USER
+endif
+
+# The `--continue` flag for `dlv` (Delve debugger) starts the debuggee
+# immediately, without halting for a debugger to attach. This setup
+# ensures that the router is operational from the get-go, yet still
+# allows for remote debugging. Attach from your IDE at any time after
+# launch to begin debugging.
+DLV_CONTINUE ?= --continue
+
+build:
+	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
+	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
+
+build-image: build
+	$(IMAGEBUILDER) build --build-arg HAPROXY_RPMS="$(HAPROXY_RPMS)" --build-arg GITHUB_USER="$(GITHUB_USER)" -t $(IMAGE):$(TAG) -f $(DOCKERFILE_DEBUG) .
+
+push-image:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
 	$(IMAGEBUILDER) push $(REGISTRY)/$(IMAGE):$(TAG)
 
 set-image:
 	oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
 	oc scale --replicas 0 -n openshift-ingress-operator deployments ingress-operator
-	oc -n openshift-ingress scale deployment --replicas=0 router-default
-	oc -n openshift-ingress patch deployment router-default -p '{"spec":{"template":{"spec":{"$$setElementOrder/containers":[{"name":"router"}],"containers":[{"imagePullPolicy":"Always","name":"router"}]}}}}'
+	oc scale --replicas 0 -n openshift-ingress deployment/router-default
+ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+	oc apply -f hack/remote-debug/manifests
+	oc apply -f hack/remote-debug/custom-router-scc.yaml
+	@for patch in $(sort $(wildcard hack/remote-debug/patches/deployment/router-default/*.yaml)); do \
+	    echo "Applying patch $$patch"; \
+	    oc -n openshift-ingress patch deployment router-default -p "$$(cat $$patch)" --type=strategic; \
+	done
+endif
 	oc -n openshift-ingress set image deployment/router-default router=$(REGISTRY)/$(IMAGE):$(TAG)
-	oc -n openshift-ingress scale deployment --replicas=1 router-default
+	oc scale --replicas 1 -n openshift-ingress deployment/router-default
+ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+	@echo "Waiting for the deployment/router-default to become available..."; \
+	if ! oc -n openshift-ingress rollout status deployment/router-default --timeout=180s; then \
+		echo "Deployment did not become available in time. Please check the deployment status."; \
+		false; \
+	fi
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		echo "Checking SSH access..."; \
+		if ssh -o ConnectTimeout=5 -F hack/remote-debug/ssh_config container uptime; then \
+			echo "SSH check passed."; \
+			break; \
+		else \
+			echo "SSH check failed. Restarting port-forward services and retrying..."; \
+			$(MAKE) -f hack/Makefile.debug restart-port-forward-services; \
+			attempt=$$((attempt + 1)); \
+			sleep 5; \
+		fi; \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "SSH check did not pass in time. Please check the deployment and SSH configuration."; \
+		false; \
+	fi
+endif
 
-dwim:  new-openshift-router-image push set-image
+deploy-image: build-image push-image set-image
 
 reset:
 	oc scale --replicas 1 -n openshift-cluster-version deployments/cluster-version-operator
 	oc scale --replicas 1 -n openshift-ingress-operator deployments ingress-operator
+	oc delete -n openshift-ingress deployment/router-default
+	oc delete --ignore-not-found -f hack/remote-debug/manifests
+	oc delete --ignore-not-found -f hack/remote-debug/custom-router-scc.yaml
+
+rsync-openshift-router: build
+	rsync --progress --compress -e 'ssh -F hack/remote-debug/ssh_config' ./openshift-router container:/usr/bin/openshift-router
+
+debug: rsync-openshift-router
+	ssh -t -F hack/remote-debug/ssh_config container "pkill haproxy || true; /usr/bin/start-debugging $(DLV_CONTINUE)"
+
+install-port-forward-services: | $(SYSTEMD_DIR)
+	for service in $(SERVICE_FILES); do \
+		install -m 644 $$service $(SYSTEMD_DIR)/$$(basename $$service); \
+		systemctl --user daemon-reload; \
+		systemctl --user enable --now $$(basename $$service); \
+	done
+
+uninstall-port-forward-services:
+	for service in $(SERVICE_FILES); do \
+		systemctl --user stop $$(basename $$service); \
+		systemctl --user disable $$(basename $$service); \
+		$(RM) $(SYSTEMD_DIR)/$$(basename $$service); \
+		systemctl --user daemon-reload; \
+	done
+
+restart-port-forward-services:
+	@for service in $(SERVICE_FILES); do \
+		service_name=$$(basename $$service); \
+		systemctl --user restart $$service_name; \
+		if systemctl --user is-active $$service_name --quiet; then \
+			echo "$$service_name is running."; \
+		else \
+			echo "$$service_name failed to start."; \
+		fi; \
+	done
+
+$(SYSTEMD_DIR):
+	@mkdir -p $@

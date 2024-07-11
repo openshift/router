@@ -1,0 +1,13 @@
+[Unit]
+Description=Persistent oc port-forward service for port 7000 (Delve debugger)
+After=network.target
+
+[Service]
+RestartSec=3
+Restart=always
+ExecStart=%h/go/bin/oc port-forward -n openshift-ingress deployment/router-default --address 127.0.0.1 7000:7000
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
