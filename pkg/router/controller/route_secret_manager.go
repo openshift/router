@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/library-go/pkg/route/secretmanager"
@@ -29,17 +30,23 @@ type RouteSecretManager struct {
 	secretManager secretmanager.SecretManager
 	secretsGetter corev1client.SecretsGetter
 	sarClient     authorizationclient.SubjectAccessReviewInterface
+	// deletedSecrets tracks routes for which the associated secret was deleted (populated inside DeleteFunc)
+	// after intial creation of the secret monitor. This helps to differentiate between a new secret creation
+	// and a recreation of a previously deleted secret.
+	// It is thread safe and "namespace/routeName" is used as it's key.
+	deletedSecrets sync.Map
 }
 
 // NewRouteSecretManager creates a new instance of RouteSecretManager.
 // It wraps the provided plugin and adds secret management capabilities.
 func NewRouteSecretManager(plugin router.Plugin, recorder RouteStatusRecorder, secretManager secretmanager.SecretManager, secretsGetter corev1client.SecretsGetter, sarClient authorizationclient.SubjectAccessReviewInterface) *RouteSecretManager {
 	return &RouteSecretManager{
-		plugin:        plugin,
-		recorder:      recorder,
-		secretManager: secretManager,
-		secretsGetter: secretsGetter,
-		sarClient:     sarClient,
+		plugin:         plugin,
+		recorder:       recorder,
+		secretManager:  secretManager,
+		secretsGetter:  secretsGetter,
+		sarClient:      sarClient,
+		deletedSecrets: sync.Map{},
 	}
 }
 
@@ -85,13 +92,11 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	// This prevents sending outdated routes to subsequent plugins, preserving expected functionality.
 	// TODO: Refer https://github.com/openshift/router/pull/565#discussion_r1596441128 for possible ways to improve the logic.
 	case watch.Modified:
-		// unregister associated secret monitor, if registered
-		if p.secretManager.IsRouteRegistered(route.Namespace, route.Name) {
-			if err := p.secretManager.UnregisterRoute(route.Namespace, route.Name); err != nil {
-				log.Error(err, "failed to unregister route")
-				return err
-			}
+		// unregister with secret monitor
+		if err := p.unregister(route); err != nil {
+			return err
 		}
+
 		// register with secret monitor
 		if hasExternalCertificate(route) {
 			if err := p.validateAndRegister(route); err != nil {
@@ -100,13 +105,11 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 		}
 
 	case watch.Deleted:
-		// unregister associated secret monitor, if registered
-		if p.secretManager.IsRouteRegistered(route.Namespace, route.Name) {
-			if err := p.secretManager.UnregisterRoute(route.Namespace, route.Name); err != nil {
-				log.Error(err, "failed to unregister route")
-				return err
-			}
+		// unregister with secret monitor
+		if err := p.unregister(route); err != nil {
+			return err
 		}
+
 	default:
 		return fmt.Errorf("invalid eventType %v", eventType)
 	}
@@ -166,6 +169,47 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
 			log.V(4).Info("secret added for route", "namespace", route.Namespace, "secret", secret.Name, "route", route.Name)
+
+			// Secret re-creation scenario
+
+			// Check if the route key exists in the deletedSecrets map i.e check if the secret was deleted previously for this route.
+			// If it exists, it means the secret is being recreated. Remove the key from the map and proceed with re-registration. Else no-op (new secret creation).
+			// this helps to differentiate between a new secret creation and a recreation of a previously deleted secret.
+			key := generateKey(route.Namespace, route.Name)
+			if _, deleted := p.deletedSecrets.LoadAndDelete(key); deleted {
+				log.V(4).Info("secret recreated for route", "namespace", route.Namespace, "secret", secret.Name, "route", route.Name)
+
+				// re-validate
+				// since secret re-creation will not trigger apiserver route admission,
+				// we need to rely on router controller for this validation.
+				fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
+				if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
+					log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
+					p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
+					// route should be already deleted in this case
+					// p.plugin.HandleRoute(watch.Deleted, route)
+					return
+				}
+
+				// read the re-created secret
+				reCreatedSecret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
+				if err != nil {
+					log.Error(err, "failed to get referenced secret")
+					p.recorder.RecordRouteRejection(route, "ExternalCertificateGetFailed", err.Error())
+					// route should be already deleted in this case
+					// p.plugin.HandleRoute(watch.Deleted, route)
+					return
+				}
+
+				// update tls.Certificate and tls.Key
+				route.Spec.TLS.Certificate = string(reCreatedSecret.Data["tls.crt"])
+				route.Spec.TLS.Key = string(reCreatedSecret.Data["tls.key"])
+
+				// call the next plugin with watch.Modified
+				p.plugin.HandleRoute(watch.Modified, route)
+				// commit the changes
+				p.plugin.Commit()
+			}
 		},
 
 		UpdateFunc: func(old interface{}, new interface{}) {
@@ -203,13 +247,12 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 
 		DeleteFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
-			msg := fmt.Sprintf("secret %s deleted for route %s/%s", secret.Name, route.Namespace, route.Name)
+			key := generateKey(route.Namespace, route.Name)
+			msg := fmt.Sprintf("secret %s deleted for route %s", secret.Name, key)
 			log.V(4).Info(msg)
 
-			// unregister associated secret monitor
-			if err := p.secretManager.UnregisterRoute(route.Namespace, route.Name); err != nil {
-				log.Error(err, "failed to unregister route")
-			}
+			// keep the secret monitor active and mark the secret as deleted for this route.
+			p.deletedSecrets.Store(key, true)
 
 			p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretDeleted", msg)
 			p.plugin.HandleRoute(watch.Deleted, route)
@@ -217,7 +260,26 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 	}
 }
 
+func (p *RouteSecretManager) unregister(route *routev1.Route) error {
+	// unregister associated secret monitor, if registered
+	if p.secretManager.IsRouteRegistered(route.Namespace, route.Name) {
+		if err := p.secretManager.UnregisterRoute(route.Namespace, route.Name); err != nil {
+			log.Error(err, "failed to unregister route")
+			return err
+		}
+		// clean the route if present inside deletedSecrets
+		// this is required for the scenario when the associated secret is deleted, before unregistering with secretManager
+		p.deletedSecrets.Delete(generateKey(route.Namespace, route.Name))
+	}
+	return nil
+}
+
 func hasExternalCertificate(route *routev1.Route) bool {
 	tls := route.Spec.TLS
 	return tls != nil && tls.ExternalCertificate != nil && len(tls.ExternalCertificate.Name) > 0
+}
+
+// generateKey creates a unique identifier for a route
+func generateKey(namespace, route string) string {
+	return fmt.Sprintf("%s/%s", namespace, route)
 }
