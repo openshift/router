@@ -131,24 +131,13 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 
 				log.V(4).Info("ExternalCertificate is not updated", "namespace", route.Namespace, "route", route.Name)
 				// re-validate
-				fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
-				if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
-					log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
-					p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
-					p.plugin.HandleRoute(watch.Deleted, route)
+				if err := p.validate(route); err != nil {
 					return err
 				}
-
-				// read referenced secret
-				secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
-				if err != nil {
-					log.Error(err, "failed to get referenced secret")
+				// read referenced secret and update TLS certificate and key
+				if err := p.populateRouteTLSFromSecret(route); err != nil {
 					return err
 				}
-
-				// Update the tls.Certificate and tls.Key fields of the route with the data from the referenced secret.
-				route.Spec.TLS.Certificate = string(secret.Data["tls.crt"])
-				route.Spec.TLS.Key = string(secret.Data["tls.key"])
 			}
 
 		case newHasExt && !oldHadExt:
@@ -191,34 +180,20 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 // validateAndRegister validates the route's externalCertificate configuration and registers it with the secret manager.
 // It also updates the in-memory TLS certificate and key after reading from secret informer's cache.
 func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
-	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
 	// validate
-	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
-		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
-		p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
-		p.plugin.HandleRoute(watch.Deleted, route)
+	if err := p.validate(route); err != nil {
 		return err
 	}
-
 	// register route with secretManager
 	handler := p.generateSecretHandler(route)
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
 		log.Error(err, "failed to register route")
 		return err
 	}
-	// read referenced secret
-	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
-	if err != nil {
-		log.Error(err, "failed to get referenced secret")
+	// read referenced secret and update TLS certificate and key
+	if err := p.populateRouteTLSFromSecret(route); err != nil {
 		return err
 	}
-
-	// Update the tls.Certificate and tls.Key fields of the route with the data from the referenced secret.
-	// Since externalCertificate does not contain the CACertificate, tls.CACertificate will not be updated.
-	// NOTE that this update is only performed in-memory and will not reflect in the actual route resource stored in etcd, because
-	// the router does not make kube-client calls to directly update route resources.
-	route.Spec.TLS.Certificate = string(secret.Data["tls.crt"])
-	route.Spec.TLS.Key = string(secret.Data["tls.key"])
 
 	return nil
 }
@@ -230,7 +205,6 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 // external certificate configuration, updates the route's TLS certificate and key, and calls the next plugin's HandleRoute method with a watch.Modified event, and then commits the changes by calling the next plugin's Commit() method.
 //
 // UpdateFunc: Invoked when an existing secret is updated. It performs validation of the route's external certificate configuration.
-// If the validation fails, it records the route rejection and triggers the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
 // If the validation succeeds, it updates the route's TLS certificate and key with the new secret data and calls the next plugin's HandleRoute method with a watch.Modified event, and then commits the changes by calling the next plugin's Commit() method.
 //
 // DeleteFunc: Invoked when the secret is deleted. It logs the deletion, marks the secret as deleted for this route in the deletedSecrets map,
@@ -255,27 +229,13 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 				// re-validate
 				// since secret re-creation will not trigger the apiserver route admission,
 				// we need to rely on the router controller for this validation.
-				fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
-				if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
-					log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
-					p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
-					p.plugin.HandleRoute(watch.Deleted, route)
+				if err := p.validate(route); err != nil {
 					return
 				}
-
-				// read the re-created secret
-				reCreatedSecret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
-				if err != nil {
-					log.Error(err, "failed to get referenced secret")
-					p.recorder.RecordRouteRejection(route, "ExternalCertificateGetFailed", err.Error())
-					p.plugin.HandleRoute(watch.Deleted, route)
+				// read the re-created secret and update TLS certificate and key
+				if err := p.populateRouteTLSFromSecret(route); err != nil {
 					return
 				}
-
-				// update tls.Certificate and tls.Key
-				route.Spec.TLS.Certificate = string(reCreatedSecret.Data["tls.crt"])
-				route.Spec.TLS.Key = string(reCreatedSecret.Data["tls.key"])
-
 				// call the next plugin with watch.Modified
 				p.plugin.HandleRoute(watch.Modified, route)
 				// commit the changes
@@ -289,27 +249,13 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 			log.V(4).Info("secret updated for route", "namespace", route.Namespace, "secret", secretNew.Name, "old-version", secretOld.ResourceVersion, "new-version", secretNew.ResourceVersion, "route", route.Name)
 
 			// re-validate
-			fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
-			if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
-				log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
-				p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
-				p.plugin.HandleRoute(watch.Deleted, route)
+			if err := p.validate(route); err != nil {
 				return
 			}
-
-			// read referenced secret (updated data)
-			secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
-			if err != nil {
-				log.Error(err, "failed to get referenced secret")
-				p.recorder.RecordRouteRejection(route, "ExternalCertificateGetFailed", err.Error())
-				p.plugin.HandleRoute(watch.Deleted, route)
+			// read referenced secret (updated data) and update TLS certificate and key
+			if err := p.populateRouteTLSFromSecret(route); err != nil {
 				return
 			}
-
-			// update tls.Certificate and tls.Key
-			route.Spec.TLS.Certificate = string(secret.Data["tls.crt"])
-			route.Spec.TLS.Key = string(secret.Data["tls.key"])
-
 			// call the next plugin with watch.Modified
 			p.plugin.HandleRoute(watch.Modified, route)
 			// commit the changes
@@ -329,6 +275,44 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 			p.plugin.HandleRoute(watch.Deleted, route)
 		},
 	}
+}
+
+// validate checks the route's external certificate configuration.
+// If the validation fails, it records the route rejection and triggers
+// the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
+func (p *RouteSecretManager) validate(route *routev1.Route) error {
+	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
+	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
+		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
+		p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
+		p.plugin.HandleRoute(watch.Deleted, route)
+		return err
+	}
+	return nil
+}
+
+// populateRouteTLSFromSecret updates the TLS configuration of the route using data from the referenced secret.
+// If fetching the secret fails, it records the route rejection and triggers
+// the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
+// Note: This function performs an in-place update of the route. The caller should be aware that the route's TLS configuration will be modified directly.
+func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) error {
+	// read referenced secret
+	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
+	if err != nil {
+		log.Error(err, "failed to get referenced secret")
+		p.recorder.RecordRouteRejection(route, "ExternalCertificateGetFailed", err.Error())
+		p.plugin.HandleRoute(watch.Deleted, route)
+		return err
+	}
+
+	// Update the tls.Certificate and tls.Key fields of the route with the data from the referenced secret.
+	// Since externalCertificate does not contain the CACertificate, tls.CACertificate will not be updated.
+	// NOTE that this update is only performed in-memory and will not reflect in the actual route resource stored in etcd, because
+	// the router does not make kube-client calls to directly update route resources.
+	route.Spec.TLS.Certificate = string(secret.Data["tls.crt"])
+	route.Spec.TLS.Key = string(secret.Data["tls.key"])
+
+	return nil
 }
 
 // unregister removes the route's registration with the secret manager and ensures
