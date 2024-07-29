@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	logf "github.com/openshift/router/log"
@@ -66,6 +67,9 @@ var (
 	CRLFilename = filepath.Join(mtlsLatestSymlink, crlBasename)
 	// CABundleFilename is the fully qualified path to the currently in use CA bundle.
 	CABundleFilename = filepath.Join(mtlsLatestSymlink, caBundleBasename)
+	// crlsUpdated is true when all CRLs have been successfully updated, and false when there are missing CRLs.
+	crlsUpdated = false
+	crlsMutex   = sync.Mutex{}
 )
 
 // authorityKeyIdentifier is a certificate's authority key identifier.
@@ -143,12 +147,16 @@ func ManageCRLs(caBundleFilename string, caUpdateChannel <-chan struct{}, update
 			log.Error(err, "failed to parse CA bundle", "CA bundle filename", caBundleFilename)
 			nextUpdate = time.Now().Add(errorBackoffTime)
 		}
+		if !shouldHaveCRLs {
+			SetCRLsUpdated(true)
+		}
 		for {
 			updated := false
 			if nextUpdate.IsZero() {
 				log.V(4).Info("no nextUpdate. only watching for CA updates")
 				select {
 				case <-caUpdateChannel:
+					SetCRLsUpdated(false)
 					caUpdated = true
 				}
 			} else {
@@ -156,6 +164,7 @@ func ManageCRLs(caBundleFilename string, caUpdateChannel <-chan struct{}, update
 				select {
 				case <-time.After(time.Until(nextUpdate)):
 				case <-caUpdateChannel:
+					SetCRLsUpdated(false)
 					caUpdated = true
 				}
 			}
@@ -175,8 +184,9 @@ func ManageCRLs(caBundleFilename string, caUpdateChannel <-chan struct{}, update
 				nextUpdate = time.Now().Add(errorBackoffTime)
 				continue
 			}
-			// After successfully updating the CRL file, reset caUpdated
+			// After successfully updating the CRL file, reset caUpdated and mark CRLs as updated
 			caUpdated = false
+			SetCRLsUpdated(true)
 			if updated {
 				updateCallback(shouldHaveCRLs)
 			}
@@ -505,4 +515,16 @@ func makeStagingDirectory() (string, error) {
 		return "", err
 	}
 	return stagingDirName, nil
+}
+
+func GetCRLsUpdated() bool {
+	crlsMutex.Lock()
+	defer crlsMutex.Unlock()
+	return crlsUpdated
+}
+
+func SetCRLsUpdated(value bool) {
+	crlsMutex.Lock()
+	defer crlsMutex.Unlock()
+	crlsUpdated = value
 }
