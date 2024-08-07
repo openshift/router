@@ -1,4 +1,4 @@
-.PHONY: all build check images/router/*/Dockerfile images/router/*/Dockerfile.rhel
+.PHONY: all build check images/router/*/Dockerfile images/router/*/Dockerfile.ocp
 
 PACKAGE=github.com/openshift/router
 MAIN_PACKAGE=$(PACKAGE)/cmd/openshift-router
@@ -33,8 +33,8 @@ build:
 images/router/*/Dockerfile: images/router/base/Dockerfile
 	imagebuilder -t registry.svc.ci.openshift.org/openshift/origin-v4.0:`basename $(@D)`-router -f images/router/`basename $(@D)`/Dockerfile .
 
-images/router/*/Dockerfile.rhel: images/router/base/Dockerfile.rhel
-	imagebuilder -t registry.svc.ci.openshift.org/ocp/4.0:`basename $(@D)`-router -f images/router/`basename $(@D)`/Dockerfile.rhel .
+images/router/*/Dockerfile.ocp: images/router/base/Dockerfile.ocp
+	imagebuilder -t registry.svc.ci.openshift.org/ocp/4.0:`basename $(@D)`-router -f images/router/`basename $(@D)`/Dockerfile.ocp .
 
 check:
 	CGO_ENABLED=1 $(GO) test -race ./...
