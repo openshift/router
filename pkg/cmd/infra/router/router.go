@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	kclientset "k8s.io/client-go/kubernetes"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -254,7 +255,7 @@ func (o *RouterSelection) Complete() error {
 		if errs := validation.IsDNS1123Subdomain(routerCanonicalHostname); len(errs) != 0 {
 			return fmt.Errorf("invalid canonical hostname: %s", routerCanonicalHostname)
 		}
-		if errs := validation.IsValidIP(routerCanonicalHostname); len(errs) == 0 {
+		if errs := validation.IsValidIP(field.NewPath(""), routerCanonicalHostname); len(errs) == 0 {
 			return fmt.Errorf("canonical hostname must not be an IP address: %s", routerCanonicalHostname)
 		}
 	}
