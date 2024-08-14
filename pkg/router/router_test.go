@@ -102,11 +102,16 @@ func TestMain(m *testing.M) {
 
 	h.workdir = workdir
 	h.dirs = map[string]string{
-		"whitelist": filepath.Join(workdir, "router", "whitelists"),
-		"certs":     filepath.Join(workdir, "router", "certs"),
+		"whitelist":     filepath.Join(workdir, "router", "whitelists"),
+		"certs":         filepath.Join(workdir, "router", "certs"),
+		"serviceCA":     filepath.Join(workdir, "service-ca"),
+		"serviceCAData": filepath.Join(workdir, "service-ca", "..data/"),
 	}
 
 	createRouterDirs()
+	defaultDestinationCA := filepath.Join(h.dirs["serviceCA"], "service-ca.crt")
+	os.Create(filepath.Join(h.dirs["serviceCAData"], "service-ca.crt"))
+	os.Symlink(filepath.Join(h.dirs["serviceCAData"], "service-ca.crt"), defaultDestinationCA)
 
 	// The template plugin which is wrapped
 	svcFetcher := templateplugin.NewListWatchServiceLookup(client.CoreV1(), 60*time.Second, namespace)
@@ -147,10 +152,11 @@ pgfj+yGLmkUw8JwgGH6xCUbHO+WBUFSlPf+Y50fJeO+OrjqPXAVKeSV3ZCwWjKT4
 u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 -----END RSA PRIVATE KEY-----
 `,
-		DefaultCertificateDir: h.dirs["certs"],
-		ReloadFn:              func(shutdown bool) error { return nil },
-		TemplatePath:          "../../images/router/haproxy/conf/haproxy-config.template",
-		ReloadInterval:        reloadInterval,
+		DefaultCertificateDir:    h.dirs["certs"],
+		DefaultDestinationCAPath: defaultDestinationCA,
+		ReloadFn:                 func(shutdown bool) error { return nil },
+		TemplatePath:             "../../images/router/haproxy/conf/haproxy-config.template",
+		ReloadInterval:           reloadInterval,
 		HTTPResponseHeaders: []templateplugin.HTTPHeader{{
 			Name:   "x-foo",
 			Value:  "'bar'",
