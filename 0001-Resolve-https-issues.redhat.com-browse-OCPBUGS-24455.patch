@@ -1,0 +1,727 @@
+From 1d8b5c473de5656284ec8b7305401246e3db54d8 Mon Sep 17 00:00:00 2001
+From: Grant Spence <gspence@redhat.com>
+Date: Fri, 16 Aug 2024 14:09:15 -0400
+Subject: Resolve https://issues.redhat.com/browse/OCPBUGS-24455
+ (CVE-2023-45539)
+
+- Fix for CVE-2023-45539 which now rejects URIs with '#'.
+- Patch taken from [1-6], and cherry-picked onto v2.6.13.
+- [1-4] are dependencies, [5] applies to HTTP/1, [6] applies
+  to HTTP/2, and [7] is a doc update.
+
+[1] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=4a776fd01
+[2] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=b375df603
+[3] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=c699bb17b
+[4] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=014945a15
+[5] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=832b672ee
+[6] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=c8e07f2fd
+[7] https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=c47814a58
+---
+ ...not-accept-as-part-of-the-URI-compon.patch | 117 ++++++++++++++++++
+ ...ect-more-chars-from-the-path-pseudo-.patch |  68 ++++++++++
+ ...handling-of-URL-fragments-in-request.patch |  76 ++++++++++++
+ ...cept-invalid-http-request-down-the-r.patch |  73 +++++++++++
+ ...ew-function-http_path_has_forbidden_.patch |  56 +++++++++
+ ...w-function-ist_find_range-to-find-a-.patch |  84 +++++++++++++
+ ...has_forbidden_char-from-h2.c-to-http.patch | 109 ++++++++++++++++
+ haproxy.spec                                  |  31 ++++-
+ 8 files changed, 613 insertions(+), 1 deletion(-)
+ create mode 100644 OCPBUGS-24455-0001-BUG-MINOR-h1-do-not-accept-as-part-of-the-URI-compon.patch
+ create mode 100644 OCPBUGS-24455-0001-BUG-MINOR-h2-reject-more-chars-from-the-path-pseudo-.patch
+ create mode 100644 OCPBUGS-24455-0001-DOC-clarify-the-handling-of-URL-fragments-in-request.patch
+ create mode 100644 OCPBUGS-24455-0001-MINOR-h2-pass-accept-invalid-http-request-down-the-r.patch
+ create mode 100644 OCPBUGS-24455-0001-MINOR-http-add-new-function-http_path_has_forbidden_.patch
+ create mode 100644 OCPBUGS-24455-0001-MINOR-ist-add-new-function-ist_find_range-to-find-a-.patch
+ create mode 100644 OCPBUGS-24455-0001-REORG-http-move-has_forbidden_char-from-h2.c-to-http.patch
+
+diff --git a/OCPBUGS-24455-0001-BUG-MINOR-h1-do-not-accept-as-part-of-the-URI-compon.patch b/OCPBUGS-24455-0001-BUG-MINOR-h1-do-not-accept-as-part-of-the-URI-compon.patch
+new file mode 100644
+index 0000000..88136a0
+--- /dev/null
++++ b/OCPBUGS-24455-0001-BUG-MINOR-h1-do-not-accept-as-part-of-the-URI-compon.patch
+@@ -0,0 +1,117 @@
++From edc246838a0cb250a6bed75bb1c9d4d570e65ca8 Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 16:17:22 +0200
++Subject: BUG/MINOR: h1: do not accept '#' as part of the URI component
++
++Seth Manesse and Paul Plasil reported that the "path" sample fetch
++function incorrectly accepts '#' as part of the path component. This
++can in some cases lead to misrouted requests for rules that would apply
++on the suffix:
++
++    use_backend static if { path_end .png .jpg .gif .css .js }
++
++Note that this behavior can be selectively configured using
++"normalize-uri fragment-encode" and "normalize-uri fragment-strip".
++
++The problem is that while the RFC says that this '#' must never be
++emitted, as often it doesn't suggest how servers should handle it. A
++diminishing number of servers still do accept it and trim it silently,
++while others are rejecting it, as indicated in the conversation below
++with other implementers:
++
++   https://lists.w3.org/Archives/Public/ietf-http-wg/2023JulSep/0070.html
++
++Looking at logs from publicly exposed servers, such requests appear at
++a rate of roughly 1 per million and only come from attacks or poorly
++written web crawlers incorrectly following links found on various pages.
++
++Thus it looks like the best solution to this problem is to simply reject
++such ambiguous requests by default, and include this in the list of
++controls that can be disabled using "option accept-invalid-http-request".
++
++We're already rejecting URIs containing any control char anyway, so we
++should also reject '#'.
++
++In the H1 parser for the H1_MSG_RQURI state, there is an accelerated
++parser for bytes 0x21..0x7e that has been tightened to 0x24..0x7e (it
++should not impact perf since 0x21..0x23 are not supposed to appear in
++a URI anyway). This way '#' falls through the fine-grained filter and
++we can add the special case for it also conditionned by a check on the
++proxy's option "accept-invalid-http-request", with no overhead for the
++vast majority of valid URIs. Here this information is available through
++h1m->err_pos that's set to -2 when the option is here (so we don't need
++to change the API to expose the proxy). Example with a trivial GET
++through netcat:
++
++  [08/Aug/2023:16:16:52.651] frontend layer1 (#2): invalid request
++    backend <NONE> (#-1), server <NONE> (#-1), event #0, src 127.0.0.1:50812
++    buffer starts at 0 (including 0 out), 16361 free,
++    len 23, wraps at 16336, error at position 7
++    H1 connection flags 0x00000000, H1 stream flags 0x00000810
++    H1 msg state MSG_RQURI(4), H1 msg flags 0x00001400
++    H1 chunk len 0 bytes, H1 body len 0 bytes :
++
++    00000  GET /aa#bb HTTP/1.0\r\n
++    00021  \r\n
++
++This should be progressively backported to all stable versions along with
++the following patch:
++
++    REGTESTS: http-rules: add accept-invalid-http-request for normalize-uri tests
++
++Similar fixes for h2 and h3 will come in followup patches.
++
++Thanks to Seth Manesse and Paul Plasil for reporting this problem with
++detailed explanations.
++
++(cherry picked from commit 2eab6d354322932cfec2ed54de261e4347eca9a6)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 9bf75c8e22a8f2537f27c557854a8803087046d0)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 9facd01c9ac85fe9bcb331594b80fa08e7406552)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ src/h1.c | 15 +++++++++++----
++ 1 file changed, 11 insertions(+), 4 deletions(-)
++
++diff --git a/src/h1.c b/src/h1.c
++index 88a54c4a5..4e224f895 100644
++--- a/src/h1.c
+++++ b/src/h1.c
++@@ -551,13 +551,13 @@ int h1_headers_to_hdr_list(char *start, const char *stop,
++ 	case H1_MSG_RQURI:
++ 	http_msg_rquri:
++ #ifdef HA_UNALIGNED_LE
++-		/* speedup: skip bytes not between 0x21 and 0x7e inclusive */
+++		/* speedup: skip bytes not between 0x24 and 0x7e inclusive */
++ 		while (ptr <= end - sizeof(int)) {
++-			int x = *(int *)ptr - 0x21212121;
+++			int x = *(int *)ptr - 0x24242424;
++ 			if (x & 0x80808080)
++ 				break;
++ 
++-			x -= 0x5e5e5e5e;
+++			x -= 0x5b5b5b5b;
++ 			if (!(x & 0x80808080))
++ 				break;
++ 
++@@ -569,8 +569,15 @@ int h1_headers_to_hdr_list(char *start, const char *stop,
++ 			goto http_msg_ood;
++ 		}
++ 	http_msg_rquri2:
++-		if (likely((unsigned char)(*ptr - 33) <= 93)) /* 33 to 126 included */
+++		if (likely((unsigned char)(*ptr - 33) <= 93)) { /* 33 to 126 included */
+++			if (*ptr == '#') {
+++				if (h1m->err_pos < -1) /* PR_O2_REQBUG_OK not set */
+++					goto invalid_char;
+++				if (h1m->err_pos == -1) /* PR_O2_REQBUG_OK set: just log */
+++					h1m->err_pos = ptr - start + skip;
+++			}
++ 			EAT_AND_JUMP_OR_RETURN(ptr, end, http_msg_rquri2, http_msg_ood, state, H1_MSG_RQURI);
+++		}
++ 
++ 		if (likely(HTTP_IS_SPHT(*ptr))) {
++ 			sl.rq.u.len = ptr - sl.rq.u.ptr;
++-- 
++2.41.0
++
+diff --git a/OCPBUGS-24455-0001-BUG-MINOR-h2-reject-more-chars-from-the-path-pseudo-.patch b/OCPBUGS-24455-0001-BUG-MINOR-h2-reject-more-chars-from-the-path-pseudo-.patch
+new file mode 100644
+index 0000000..43dca8f
+--- /dev/null
++++ b/OCPBUGS-24455-0001-BUG-MINOR-h2-reject-more-chars-from-the-path-pseudo-.patch
+@@ -0,0 +1,68 @@
++From 0f72b2255e6e54f6967ec1635b89cae64433bd9a Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 15:40:49 +0200
++Subject: BUG/MINOR: h2: reject more chars from the :path pseudo header
++
++This is the h2 version of this previous fix:
++
++    BUG/MINOR: h1: do not accept '#' as part of the URI component
++
++In addition to the current NUL/CR/LF, this will also reject all other
++control chars, the space and '#' from the :path pseudo-header, to avoid
++taking the '#' for a part of the path. It's still possible to fall back
++to the previous behavior using "option accept-invalid-http-request".
++
++This patch modifies the request parser to change the ":path" pseudo header
++validation function with a new one that rejects 0x00-0x1F (control chars),
++space and '#'. This way such chars will be dropped early in the chain, and
++the search for '#' doesn't incur a second pass over the header's value.
++
++This should be progressively backported to stable versions, along with the
++following commits it relies on:
++
++     REGTESTS: http-rules: add accept-invalid-http-request for normalize-uri tests
++     REORG: http: move has_forbidden_char() from h2.c to http.h
++     MINOR: ist: add new function ist_find_range() to find a character range
++     MINOR: http: add new function http_path_has_forbidden_char()
++     MINOR: h2: pass accept-invalid-http-request down the request parser
++
++(cherry picked from commit b3119d4fb4588087e2483a80b01d322683719e29)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 462a8600ce9e478573a957e046b446a7dcffd286)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 648e59e30723b8fd4e71aab02cb679f6ea7446e7)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ src/h2.c | 15 +++++++++++----
++ 1 file changed, 11 insertions(+), 4 deletions(-)
++
++diff --git a/src/h2.c b/src/h2.c
++index cf42b7a56..67a443661 100644
++--- a/src/h2.c
+++++ b/src/h2.c
++@@ -337,11 +337,18 @@ int h2_make_htx_request(struct http_hdr *list, struct htx *htx, unsigned int *ms
++ 		}
++ 
++ 		/* RFC7540#10.3: intermediaries forwarding to HTTP/1 must take care of
++-		 * rejecting NUL, CR and LF characters.
+++		 * rejecting NUL, CR and LF characters. For :path we reject all CTL
+++		 * chars, spaces, and '#'.
++ 		 */
++-		ctl = ist_find_ctl(list[idx].v);
++-		if (unlikely(ctl) && http_header_has_forbidden_char(list[idx].v, ctl))
++-			goto fail;
+++		if (phdr == H2_PHDR_IDX_PATH && !relaxed) {
+++			ctl = ist_find_range(list[idx].v, 0, '#');
+++			if (unlikely(ctl) && http_path_has_forbidden_char(list[idx].v, ctl))
+++				goto fail;
+++		} else {
+++			ctl = ist_find_ctl(list[idx].v);
+++			if (unlikely(ctl) && http_header_has_forbidden_char(list[idx].v, ctl))
+++				goto fail;
+++		}
++ 
++ 		if (phdr > 0 && phdr < H2_PHDR_NUM_ENTRIES) {
++ 			/* insert a pseudo header by its index (in phdr) and value (in value) */
++-- 
++2.41.0
++
+diff --git a/OCPBUGS-24455-0001-DOC-clarify-the-handling-of-URL-fragments-in-request.patch b/OCPBUGS-24455-0001-DOC-clarify-the-handling-of-URL-fragments-in-request.patch
+new file mode 100644
+index 0000000..aff64fb
+--- /dev/null
++++ b/OCPBUGS-24455-0001-DOC-clarify-the-handling-of-URL-fragments-in-request.patch
+@@ -0,0 +1,76 @@
++From 7da72d25f29404c4cd42e2817f4e10d72af1869e Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 19:35:25 +0200
++Subject: DOC: clarify the handling of URL fragments in requests
++
++We indicate in path/pathq/url that they may contain '#' if the frontend
++is configured with "option accept-invalid-http-request", and that option
++mentions the fragment as well.
++
++(cherry picked from commit 7ab4949ef107a7088777f954de800fe8cf727796)
++ [ad: backported as a companion to BUG/MINOR: h1: do not accept '#' as
++  part of the URI component]
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 965fb74eb180ab4f275ef907e018128e7eee0e69)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit e9903d6073ce9ff0ed8b304700e9d2b435ed8050)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ doc/configuration.txt | 20 +++++++++++++++++---
++ 1 file changed, 17 insertions(+), 3 deletions(-)
++
++diff --git a/doc/configuration.txt b/doc/configuration.txt
++index 2fb33e052..34b0d13e9 100644
++--- a/doc/configuration.txt
+++++ b/doc/configuration.txt
++@@ -8536,6 +8536,8 @@ no option accept-invalid-http-request
++   option also relaxes the test on the HTTP version, it allows HTTP/0.9 requests
++   to pass through (no version specified), as well as different protocol names
++   (e.g. RTSP), and multiple digits for both the major and the minor version.
+++  Finally, this option also allows incoming URLs to contain fragment references
+++  ('#' after the path).
++ 
++   This option should never be enabled by default as it hides application bugs
++   and open security breaches. It should only be deployed after a problem has
++@@ -20915,7 +20917,11 @@ path : string
++   information from databases and keep them in caches. Note that with outgoing
++   caches, it would be wiser to use "url" instead. With ACLs, it's typically
++   used to match exact file names (e.g. "/login.php"), or directory parts using
++-  the derivative forms. See also the "url" and "base" fetch methods.
+++  the derivative forms. See also the "url" and "base" fetch methods. Please
+++  note that any fragment reference in the URI ('#' after the path) is strictly
+++  forbidden by the HTTP standard and will be rejected. However, if the frontend
+++  receiving the request has "option accept-invalid-http-request", then this
+++  fragment part will be accepted and will also appear in the path.
++ 
++   ACL derivatives :
++     path     : exact string match
++@@ -20933,7 +20939,11 @@ pathq : string
++   relative URI, excluding the scheme and the authority part, if any. Indeed,
++   while it is the common representation for an HTTP/1.1 request target, in
++   HTTP/2, an absolute URI is often used. This sample fetch will return the same
++-  result in both cases.
+++  result in both cases. Please note that any fragment reference in the URI ('#'
+++  after the path) is strictly forbidden by the HTTP standard and will be
+++  rejected. However, if the frontend receiving the request has "option
+++  accept-invalid-http-request", then this fragment part will be accepted and
+++  will also appear in the path.
++ 
++ query : string
++   This extracts the request's query string, which starts after the first
++@@ -21166,7 +21176,11 @@ url : string
++   "path" is preferred over using "url", because clients may send a full URL as
++   is normally done with proxies. The only real use is to match "*" which does
++   not match in "path", and for which there is already a predefined ACL. See
++-  also "path" and "base".
+++  also "path" and "base". Please note that any fragment reference in the URI
+++  ('#' after the path) is strictly forbidden by the HTTP standard and will be
+++  rejected. However, if the frontend receiving the request has "option
+++  accept-invalid-http-request", then this fragment part will be accepted and
+++  will also appear in the url.
++ 
++   ACL derivatives :
++     url     : exact string match
++-- 
++2.41.0
++
+diff --git a/OCPBUGS-24455-0001-MINOR-h2-pass-accept-invalid-http-request-down-the-r.patch b/OCPBUGS-24455-0001-MINOR-h2-pass-accept-invalid-http-request-down-the-r.patch
+new file mode 100644
+index 0000000..c827200
+--- /dev/null
++++ b/OCPBUGS-24455-0001-MINOR-h2-pass-accept-invalid-http-request-down-the-r.patch
+@@ -0,0 +1,73 @@
++From 7aad3a2568d25c4bdf683536935f90c5209fddcf Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 15:38:28 +0200
++Subject: MINOR: h2: pass accept-invalid-http-request down the request parser
++
++We're adding a new argument "relaxed" to h2_make_htx_request() so that
++we can control its level of acceptance of certain invalid requests at
++the proxy level with "option accept-invalid-http-request". The goal
++will be to add deactivable checks that are still desirable to have by
++default. For now no test is subject to it.
++
++(cherry picked from commit d93a00861d714313faa0395ff9e2acb14b0a2fca)
++ [ad: backported for following fix : BUG/MINOR: h2: reject more chars
++  from the :path pseudo header]
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit b6be1a4f858eb6602490c192235114c1a163fef9)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 26fa3a285df0748fc79e73e552161268b66fb527)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ include/haproxy/h2.h | 2 +-
++ src/h2.c             | 6 +++++-
++ src/mux_h2.c         | 3 ++-
++ 3 files changed, 8 insertions(+), 3 deletions(-)
++
++diff --git a/include/haproxy/h2.h b/include/haproxy/h2.h
++index 84e4c76fc..4082b38a8 100644
++--- a/include/haproxy/h2.h
+++++ b/include/haproxy/h2.h
++@@ -207,7 +207,7 @@ extern struct h2_frame_definition h2_frame_definition[H2_FT_ENTRIES];
++ /* various protocol processing functions */
++ 
++ int h2_parse_cont_len_header(unsigned int *msgf, struct ist *value, unsigned long long *body_len);
++-int h2_make_htx_request(struct http_hdr *list, struct htx *htx, unsigned int *msgf, unsigned long long *body_len);
+++int h2_make_htx_request(struct http_hdr *list, struct htx *htx, unsigned int *msgf, unsigned long long *body_len, int relaxed);
++ int h2_make_htx_response(struct http_hdr *list, struct htx *htx, unsigned int *msgf, unsigned long long *body_len, char *upgrade_protocol);
++ int h2_make_htx_trailers(struct http_hdr *list, struct htx *htx);
++ 
++diff --git a/src/h2.c b/src/h2.c
++index 76c936783..cf42b7a56 100644
++--- a/src/h2.c
+++++ b/src/h2.c
++@@ -296,8 +296,12 @@ static struct htx_sl *h2_prepare_htx_reqline(uint32_t fields, struct ist *phdr,
++  *
++  * The Cookie header will be reassembled at the end, and for this, the <list>
++  * will be used to create a linked list, so its contents may be destroyed.
+++ *
+++ * When <relaxed> is non-nul, some non-dangerous checks will be ignored. This
+++ * is in order to satisfy "option accept-invalid-http-request" for
+++ * interoperability purposes.
++  */
++-int h2_make_htx_request(struct http_hdr *list, struct htx *htx, unsigned int *msgf, unsigned long long *body_len)
+++int h2_make_htx_request(struct http_hdr *list, struct htx *htx, unsigned int *msgf, unsigned long long *body_len, int relaxed)
++ {
++ 	struct ist phdr_val[H2_PHDR_NUM_ENTRIES];
++ 	uint32_t fields; /* bit mask of H2_PHDR_FND_* */
++diff --git a/src/mux_h2.c b/src/mux_h2.c
++index 18a53f50a..65edcaacd 100644
++--- a/src/mux_h2.c
+++++ b/src/mux_h2.c
++@@ -5079,7 +5079,8 @@ static int h2c_decode_headers(struct h2c *h2c, struct buffer *rxbuf, uint32_t *f
++ 	if (h2c->flags & H2_CF_IS_BACK)
++ 		outlen = h2_make_htx_response(list, htx, &msgf, body_len, upgrade_protocol);
++ 	else
++-		outlen = h2_make_htx_request(list, htx, &msgf, body_len);
+++		outlen = h2_make_htx_request(list, htx, &msgf, body_len,
+++					     !!(((const struct session *)h2c->conn->owner)->fe->options2 & PR_O2_REQBUG_OK));
++ 
++ 	if (outlen < 0 || htx_free_space(htx) < global.tune.maxrewrite) {
++ 		/* too large headers? this is a stream error only */
++-- 
++2.41.0
++
+diff --git a/OCPBUGS-24455-0001-MINOR-http-add-new-function-http_path_has_forbidden_.patch b/OCPBUGS-24455-0001-MINOR-http-add-new-function-http_path_has_forbidden_.patch
+new file mode 100644
+index 0000000..1102f94
+--- /dev/null
++++ b/OCPBUGS-24455-0001-MINOR-http-add-new-function-http_path_has_forbidden_.patch
+@@ -0,0 +1,56 @@
++From 0d45f996beea915711183673b30bc20d3c0da69a Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 15:24:54 +0200
++Subject: MINOR: http: add new function http_path_has_forbidden_char()
++
++As its name implies, this function checks if a path component has any
++forbidden headers starting at the designated location. The goal is to
++seek from the result of a successful ist_find_range() for more precise
++chars. Here we're focusing on 0x00-0x1F, 0x20 and 0x23 to make sure
++we're not too strict at this point.
++
++(cherry picked from commit 30f58f4217d585efeac3d85cb1b695ba53b7760b)
++ [ad: backported for following fix : BUG/MINOR: h2: reject more chars
++  from the :path pseudo header]
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit b491940181a88bb6c69ab2afc24b93a50adfa67c)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit f7666e5e43ce63e804ebffdf224d92cfd3367282)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ include/haproxy/http.h | 19 +++++++++++++++++++
++ 1 file changed, 19 insertions(+)
++
++diff --git a/include/haproxy/http.h b/include/haproxy/http.h
++index 41eca98a1..534b6ec2b 100644
++--- a/include/haproxy/http.h
+++++ b/include/haproxy/http.h
++@@ -190,6 +190,25 @@ static inline int http_header_has_forbidden_char(const struct ist ist, const cha
++ 	return 0;
++ }
++ 
+++/* Looks into <ist> for forbidden characters for :path values (0x00..0x1F,
+++ * 0x20, 0x23), starting at pointer <start> which must be within <ist>.
+++ * Returns non-zero if such a character is found, 0 otherwise. When run on
+++ * unlikely header match, it's recommended to first check for the presence
+++ * of control chars using ist_find_ctl().
+++ */
+++static inline int http_path_has_forbidden_char(const struct ist ist, const char *start)
+++{
+++	do {
+++		if ((uint8_t)*start <= 0x23) {
+++			if ((uint8_t)*start < 0x20)
+++				return 1;
+++			if ((1U << ((uint8_t)*start & 0x1F)) & ((1<<3) | (1<<0)))
+++				return 1;
+++		}
+++		start++;
+++	} while (start < istend(ist));
+++	return 0;
+++}
++ 
++ #endif /* _HAPROXY_HTTP_H */
++ 
++-- 
++2.41.0
++
+diff --git a/OCPBUGS-24455-0001-MINOR-ist-add-new-function-ist_find_range-to-find-a-.patch b/OCPBUGS-24455-0001-MINOR-ist-add-new-function-ist_find_range-to-find-a-.patch
+new file mode 100644
+index 0000000..d25f7e0
+--- /dev/null
++++ b/OCPBUGS-24455-0001-MINOR-ist-add-new-function-ist_find_range-to-find-a-.patch
+@@ -0,0 +1,84 @@
++From 6d2f155ba4f29716da5c8661378669a5e047557d Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 15:23:19 +0200
++Subject: MINOR: ist: add new function ist_find_range() to find a character
++ range
++
++This looks up the character range <min>..<max> in the input string and
++returns a pointer to the first one found. It's essentially the equivalent
++of ist_find_ctl() in that it searches by 32 or 64 bits at once, but deals
++with a range.
++
++(cherry picked from commit 197668de975e495f0c0f0e4ff51b96203fa9842d)
++ [ad: backported for following fix : BUG/MINOR: h2: reject more chars
++ from the :path pseudo header]
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 451ac6628acc4b9eed3260501a49c60d4e4d4e55)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 3468f7f8e04c9c5ca5c985c7511e05e78fe1eded)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ include/import/ist.h | 47 ++++++++++++++++++++++++++++++++++++++++++++
++ 1 file changed, 47 insertions(+)
++
++diff --git a/include/import/ist.h b/include/import/ist.h
++index 978fb3c72..38fe9363c 100644
++--- a/include/import/ist.h
+++++ b/include/import/ist.h
++@@ -746,6 +746,53 @@ static inline const char *ist_find_ctl(const struct ist ist)
++ 	return NULL;
++ }
++ 
+++/* Returns a pointer to the first character found <ist> that belongs to the
+++ * range [min:max] inclusive, or NULL if none is present. The function is
+++ * optimized for strings having no such chars by processing up to sizeof(long)
+++ * bytes at once on architectures supporting efficient unaligned accesses.
+++ * Despite this it is not very fast (~0.43 byte/cycle) and should mostly be
+++ * used on low match probability when it can save a call to a much slower
+++ * function. Will not work for characters 0x80 and above. It's optimized for
+++ * min and max to be known at build time.
+++ */
+++static inline const char *ist_find_range(const struct ist ist, unsigned char min, unsigned char max)
+++{
+++	const union { unsigned long v; } __attribute__((packed)) *u;
+++	const char *curr = (void *)ist.ptr - sizeof(long);
+++	const char *last = curr + ist.len;
+++	unsigned long l1, l2;
+++
+++	/* easier with an exclusive boundary */
+++	max++;
+++
+++	do {
+++		curr += sizeof(long);
+++		if (curr > last)
+++			break;
+++		u = (void *)curr;
+++		/* add 0x<min><min><min><min>..<min> then subtract
+++		 * 0x<max><max><max><max>..<max> to the value to generate a
+++		 * carry in the lower byte if the byte contains a lower value.
+++		 * If we generate a bit 7 that was not there, it means the byte
+++		 * was min..max.
+++		 */
+++		l2  = u->v;
+++		l1  = ~l2 & ((~0UL / 255) * 0x80); /* 0x808080...80 */
+++		l2 += (~0UL / 255) * min;          /* 0x<min><min>..<min> */
+++		l2 -= (~0UL / 255) * max;          /* 0x<max><max>..<max> */
+++	} while ((l1 & l2) == 0);
+++
+++	last += sizeof(long);
+++	if (__builtin_expect(curr < last, 0)) {
+++		do {
+++			if ((unsigned char)(*curr - min) < (unsigned char)(max - min))
+++				return curr;
+++			curr++;
+++		} while (curr < last);
+++	}
+++	return NULL;
+++}
+++
++ /* looks for first occurrence of character <chr> in string <ist> and returns
++  * the tail of the string starting with this character, or (ist.end,0) if not
++  * found.
++-- 
++2.41.0
++
+diff --git a/OCPBUGS-24455-0001-REORG-http-move-has_forbidden_char-from-h2.c-to-http.patch b/OCPBUGS-24455-0001-REORG-http-move-has_forbidden_char-from-h2.c-to-http.patch
+new file mode 100644
+index 0000000..9516ef1
+--- /dev/null
++++ b/OCPBUGS-24455-0001-REORG-http-move-has_forbidden_char-from-h2.c-to-http.patch
+@@ -0,0 +1,109 @@
++From fff99cf848b3e330a664d0b79308846714936f52 Mon Sep 17 00:00:00 2001
++From: Willy Tarreau <w@1wt.eu>
++Date: Tue, 8 Aug 2023 17:00:50 +0200
++Subject: REORG: http: move has_forbidden_char() from h2.c to http.h
++
++This function is not H2 specific but rather generic to HTTP. We'll
++need it in H3 soon, so let's move it to HTTP and rename it to
++http_header_has_forbidden_char().
++
++(cherry picked from commit d4069f3cee0f6e94afaec518b6373dd368073f52)
++ [ad: backported for next patch BUG/MAJOR: h3: reject header values
++ containing invalid chars]
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 21c4ffd025115058994a3e2765c17fc3cee52f90)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++(cherry picked from commit 9c0bc4f201cf58c10706416cb4807c0f4794f8ac)
++Signed-off-by: Amaury Denoyelle <adenoyelle@haproxy.com>
++---
++ include/haproxy/http.h | 18 ++++++++++++++++++
++ src/h2.c               | 23 +++--------------------
++ 2 files changed, 21 insertions(+), 20 deletions(-)
++
++diff --git a/include/haproxy/http.h b/include/haproxy/http.h
++index f597ee4cd..41eca98a1 100644
++--- a/include/haproxy/http.h
+++++ b/include/haproxy/http.h
++@@ -173,6 +173,24 @@ static inline struct http_uri_parser http_uri_parser_init(const struct ist uri)
++ 	return parser;
++ }
++ 
+++/* Looks into <ist> for forbidden characters for header values (0x00, 0x0A,
+++ * 0x0D), starting at pointer <start> which must be within <ist>. Returns
+++ * non-zero if such a character is found, 0 otherwise. When run on unlikely
+++ * header match, it's recommended to first check for the presence of control
+++ * chars using ist_find_ctl().
+++ */
+++static inline int http_header_has_forbidden_char(const struct ist ist, const char *start)
+++{
+++	do {
+++		if ((uint8_t)*start <= 0x0d &&
+++		    (1U << (uint8_t)*start) & ((1<<13) | (1<<10) | (1<<0)))
+++			return 1;
+++		start++;
+++	} while (start < istend(ist));
+++	return 0;
+++}
+++
+++
++ #endif /* _HAPROXY_HTTP_H */
++ 
++ /*
++diff --git a/src/h2.c b/src/h2.c
++index f794262ee..76c936783 100644
++--- a/src/h2.c
+++++ b/src/h2.c
++@@ -49,23 +49,6 @@ struct h2_frame_definition h2_frame_definition[H2_FT_ENTRIES] =	{
++ 	 [H2_FT_CONTINUATION ] = { .dir = 3, .min_id = 1, .max_id = H2_MAX_STREAM_ID, .min_len = 0, .max_len = H2_MAX_FRAME_LEN, },
++ };
++ 
++-/* Looks into <ist> for forbidden characters for header values (0x00, 0x0A,
++- * 0x0D), starting at pointer <start> which must be within <ist>. Returns
++- * non-zero if such a character is found, 0 otherwise. When run on unlikely
++- * header match, it's recommended to first check for the presence of control
++- * chars using ist_find_ctl().
++- */
++-static int has_forbidden_char(const struct ist ist, const char *start)
++-{
++-	do {
++-		if ((uint8_t)*start <= 0x0d &&
++-		    (1U << (uint8_t)*start) & ((1<<13) | (1<<10) | (1<<0)))
++-			return 1;
++-		start++;
++-	} while (start < istend(ist));
++-	return 0;
++-}
++-
++ /* Prepare the request line into <htx> from pseudo headers stored in <phdr[]>.
++  * <fields> indicates what was found so far. This should be called once at the
++  * detection of the first general header field or at the end of the request if
++@@ -353,7 +336,7 @@ int h2_make_htx_request(struct http_hdr *list, struct htx *htx, unsigned int *ms
++ 		 * rejecting NUL, CR and LF characters.
++ 		 */
++ 		ctl = ist_find_ctl(list[idx].v);
++-		if (unlikely(ctl) && has_forbidden_char(list[idx].v, ctl))
+++		if (unlikely(ctl) && http_header_has_forbidden_char(list[idx].v, ctl))
++ 			goto fail;
++ 
++ 		if (phdr > 0 && phdr < H2_PHDR_NUM_ENTRIES) {
++@@ -638,7 +621,7 @@ int h2_make_htx_response(struct http_hdr *list, struct htx *htx, unsigned int *m
++ 		 * rejecting NUL, CR and LF characters.
++ 		 */
++ 		ctl = ist_find_ctl(list[idx].v);
++-		if (unlikely(ctl) && has_forbidden_char(list[idx].v, ctl))
+++		if (unlikely(ctl) && http_header_has_forbidden_char(list[idx].v, ctl))
++ 			goto fail;
++ 
++ 		if (phdr > 0 && phdr < H2_PHDR_NUM_ENTRIES) {
++@@ -797,7 +780,7 @@ int h2_make_htx_trailers(struct http_hdr *list, struct htx *htx)
++ 		 * rejecting NUL, CR and LF characters.
++ 		 */
++ 		ctl = ist_find_ctl(list[idx].v);
++-		if (unlikely(ctl) && has_forbidden_char(list[idx].v, ctl))
+++		if (unlikely(ctl) && http_header_has_forbidden_char(list[idx].v, ctl))
++ 			goto fail;
++ 
++ 		if (!htx_add_trailer(htx, list[idx].n, list[idx].v))
++-- 
++2.41.0
++
+diff --git a/haproxy.spec b/haproxy.spec
+index 019976c..61167e3 100644
+--- a/haproxy.spec
++++ b/haproxy.spec
+@@ -10,7 +10,7 @@
+ 
+ Name:           haproxy
+ Version:        2.6.13
+-Release:        3.rhaos4.14%{?dist}
++Release:        4.rhaos4.14%{?dist}
+ Summary:        Do not ship, install or use this, use %{real_name} subpackage instead
+ 
+ License:        GPLv2+
+@@ -27,6 +27,16 @@ Patch1:         0001-BUG-MAJOR-http-reject-any-empty-content-length-heade.patch
+ # https://issues.redhat.com/browse/OCPBUGS-32369
+ Patch2:         0001-BUG-MINOR-haproxy-only-tid-0-must-not-sleep-if-got-s.patch
+ 
++# https://issues.redhat.com/browse/OCPBUGS-24455
++# Patch 3,4,5,6 are a dependencies of Patch8. Patch9 is a doc update.
++Patch3:         OCPBUGS-24455-0001-REORG-http-move-has_forbidden_char-from-h2.c-to-http.patch
++Patch4:         OCPBUGS-24455-0001-MINOR-ist-add-new-function-ist_find_range-to-find-a-.patch
++Patch5:         OCPBUGS-24455-0001-MINOR-http-add-new-function-http_path_has_forbidden_.patch
++Patch6:         OCPBUGS-24455-0001-MINOR-h2-pass-accept-invalid-http-request-down-the-r.patch
++Patch7:         OCPBUGS-24455-0001-BUG-MINOR-h1-do-not-accept-as-part-of-the-URI-compon.patch
++Patch8:         OCPBUGS-24455-0001-BUG-MINOR-h2-reject-more-chars-from-the-path-pseudo-.patch
++Patch9:         OCPBUGS-24455-0001-DOC-clarify-the-handling-of-URL-fragments-in-request.patch
++
+ BuildRequires:  openssl-devel
+ BuildRequires:  pcre-devel
+ BuildRequires:  zlib-devel
+@@ -60,6 +70,13 @@ availability environments. Indeed, it can:
+ %patch0 -p1
+ %patch1 -p1
+ %patch2 -p1
++%patch3 -p1
++%patch4 -p1
++%patch5 -p1
++%patch6 -p1
++%patch7 -p1
++%patch8 -p1
++%patch9 -p1
+ 
+ %build
+ regparm_opts=
+@@ -101,6 +118,18 @@ fi
+ %{_sbindir}/%{name}
+ 
+ %changelog
++* Fri Aug 16 2024 Grant Spence <gspence@redhat.com> - 2.6.13-4.rhaos4.14
++- Resolve https://issues.redhat.com/browse/OCPBUGS-24455
++- Fix for CVE-2023-45539 which now rejects URIs with '#'.
++- Patches taken from:
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=4a776fd01 (Dependency)
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=b375df603 (Dependency)
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=c699bb17b (Dependency)
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=014945a15 (Dependency)
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=832b672ee (HTTP/1 Fix)
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=c8e07f2fd (HTTP/2 Fix)
++  - https://git.haproxy.org/?p=haproxy-2.6.git;a=commit;h=c47814a58 (Doc Update)
++
+ * Fri May 17 2024 Andrew McDermott <amcdermo@redhat.com> - 2.6.13-3.rhaos4.14
+ +- Resolve https://issues.redhat.com/browse/OCPBUGS-32369 (HAProxy consuming high cpu usage)
+ +- Carry fix for https://github.com/haproxy/haproxy/issues/2537
+-- 
+2.45.0
+
