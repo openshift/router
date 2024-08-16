@@ -1,5 +1,9 @@
 FROM registry.svc.ci.openshift.org/ocp/4.0:base-router
-RUN INSTALL_PKGS="haproxy22 rsyslog sysvinit-tools" && \
+COPY --from=quay.io/openshift/network-edge-testing:router-scratch-rpm-haproxy22-2.2.24-5.rhaos4.13.el8.x86_64.rpm /haproxy22-2.2.24-5.rhaos4.13.el8.x86_64.rpm /
+RUN rpm -qp --changelog /haproxy22-2.2.24-5.rhaos4.13.el8.x86_64.rpm
+RUN yum install -y /haproxy22-2.2.24-5.rhaos4.13.el8.x86_64.rpm
+RUN haproxy -vv
+RUN INSTALL_PKGS="rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
