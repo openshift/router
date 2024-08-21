@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
-# For example: https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm
+# For example: https://ocp-artifacts.hosts.prod.psi.rdu2.redhat.com/pub/RHOCP/plashets/4.18/stream/el9/latest/x86_64/os/Packages/haproxy-2.8.10-1.rhaos4.17.el9__x86_64/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm
 ARG HAPROXY_RPMS
 
 RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat" && \
