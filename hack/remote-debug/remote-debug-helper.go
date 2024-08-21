@@ -19,9 +19,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -46,12 +44,6 @@ const (
 var lastEnvContent string
 
 func main() {
-	// Start SSHD.
-	if err := startSSHD(); err != nil {
-		fmt.Printf("Error starting SSHD: %v\n", err)
-		os.Exit(1)
-	}
-
 	var envFilePath string
 
 	// Parse the command-line arguments.
@@ -129,37 +121,6 @@ func main() {
 	<-sigCh
 
 	fmt.Println("Shutting down...")
-}
-
-func startSSHD() error {
-	cmd := exec.Command("/usr/sbin/sshd", "-E", "/proc/1/fd/1")
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
-	go func() {
-		io.Copy(os.Stdout, stdoutPipe)
-	}()
-
-	go func() {
-		io.Copy(os.Stderr, stderrPipe)
-	}()
-
-	go func() {
-		if err := cmd.Wait(); err != nil {
-			fmt.Printf("SSHD exited with error: %v\n", err)
-		}
-	}()
-	return nil
 }
 
 func writeEnvFile(deployment *v1.Deployment, event, envFilePath string, clientset *kubernetes.Clientset) {

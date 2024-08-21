@@ -10,7 +10,7 @@ ARG DNF_UPDATE=false
 # For example: https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm
 ARG HAPROXY_RPMS
 
-RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat lsof strace rsync wget tini openssh-server" && \
+RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat lsof strace rsync wget supervisor openssh-server" && \
     [ "$DNF_UPDATE" = "true" ] && dnf update -y || echo "Skipping dnf update" && \
     dnf install -y $INSTALL_PKGS $HAPROXY_RPMS && \
     mkdir -p /var/lib/haproxy/router/{certs,cacerts,whitelists} && \
@@ -20,6 +20,9 @@ RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat lsof strace rsync wget tini
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy && \
     [ "$CLEAN_DNF_CACHE" = "true" ] && dnf clean all || echo "Skipping dnf clean all"
+
+RUN mkdir -p /var/log/supervisor /etc/supervisor
+COPY hack/remote-debug/supervisord.conf /etc/supervisor/supervisord.conf
 
 RUN echo "AllowAgentForwarding no" >> /etc/ssh/sshd_config && \
     echo "PasswordAuthentication no" >> /etc/ssh/sshd_config && \
@@ -58,4 +61,4 @@ WORKDIR /var/lib/haproxy/conf
 ENV XDG_CONFIG_HOME=/tmp \
     TEMPLATE_FILE=/var/lib/haproxy/conf/haproxy-config.template \
     RELOAD_SCRIPT=/var/lib/haproxy/reload-haproxy
-ENTRYPOINT ["/usr/bin/tini", "-v", "-s", "--", "/usr/bin/remote-debug-helper"]
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
