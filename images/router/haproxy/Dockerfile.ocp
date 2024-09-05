@@ -1,5 +1,5 @@
 FROM registry.ci.openshift.org/ocp/4.17:haproxy-router-base
-RUN INSTALL_PKGS="socat haproxy28 rsyslog procps-ng util-linux" && \
+RUN INSTALL_PKGS="socat haproxy28 rsyslog procps-ng util-linux cri-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
