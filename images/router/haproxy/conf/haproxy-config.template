@@ -740,7 +740,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
                   {{- end }}
                 {{- end }}{{/* end type specific options*/}}
 
-                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms" }}
+                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
                 {{- end }}{{/* end else no health check */}}
                 {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
                 {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
@@ -754,7 +754,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
         {{- with $dynamicConfigManager }}
           {{- if (eq $cfg.TLSTermination "reencrypt") }}
             {{- range $idx, $serverName := $dynamicConfigManager.GenerateDynamicServerNames $cfgIdx }}
-  server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms" }}
+  server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
               {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx }}.pem
               {{- else }}
                 {{- if gt (len $defaultDestinationCA) 0 }} verify required ca-file {{ $defaultDestinationCA }}
@@ -824,7 +824,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
             {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
               {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
   server {{ $endpoint.ID }} {{ $endpoint.IP }}:{{ $endpoint.Port }} weight {{ $weight }}
-                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms" }}
+                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
                 {{- end }}{{/* end else no health check */}}
                 {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
                 {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
