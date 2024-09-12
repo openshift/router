@@ -57,11 +57,11 @@ type RouterSelection struct {
 
 	IncludeUDP bool
 
-	DeniedDomains      []string
-	BlacklistedDomains sets.String
+	DeniedDomains     []string
+	DenylistedDomains sets.String
 
 	AllowedDomains     []string
-	WhitelistedDomains sets.String
+	AllowlistedDomains sets.String
 
 	AllowWildcardRoutes bool
 
@@ -152,14 +152,14 @@ func (o *RouterSelection) AdmissionCheck(route *routev1.Route) error {
 		return nil
 	}
 
-	if hostInDomainList(route.Spec.Host, o.BlacklistedDomains) {
+	if hostInDomainList(route.Spec.Host, o.DenylistedDomains) {
 		log.V(4).Info("host in list of denied domains", "routeName", route.Name, "host", route.Spec.Host)
 		return fmt.Errorf("host in list of denied domains")
 	}
 
-	if o.WhitelistedDomains.Len() > 0 {
+	if o.AllowlistedDomains.Len() > 0 {
 		log.V(4).Info("checking if host is in the list of allowed domains", "routeName", route.Name, "host", route.Spec.Host)
-		if hostInDomainList(route.Spec.Host, o.WhitelistedDomains) {
+		if hostInDomainList(route.Spec.Host, o.AllowlistedDomains) {
 			log.V(4).Info("host admitted - in the list of allowed domains", "routeName", route.Name, "host", route.Spec.Host)
 			return nil
 		}
@@ -171,8 +171,8 @@ func (o *RouterSelection) AdmissionCheck(route *routev1.Route) error {
 }
 
 // RouteAdmissionFunc returns a func that checks if a route can be admitted
-// based on blacklist & whitelist checks and wildcard routes policy setting.
-// Note: The blacklist settings trumps the whitelist ones.
+// based on denylist & allowlist checks and wildcard routes policy setting.
+// Note: Entries in the denylist take precedence over the allowlist ones.
 func (o *RouterSelection) RouteAdmissionFunc() controller.RouteAdmissionFunc {
 	return func(route *routev1.Route) error {
 		if err := o.AdmissionCheck(route); err != nil {
@@ -248,8 +248,8 @@ func (o *RouterSelection) Complete() error {
 		o.NamespaceLabels = s
 	}
 
-	o.BlacklistedDomains = sets.NewString(o.DeniedDomains...)
-	o.WhitelistedDomains = sets.NewString(o.AllowedDomains...)
+	o.DenylistedDomains = sets.NewString(o.DeniedDomains...)
+	o.AllowlistedDomains = sets.NewString(o.AllowedDomains...)
 
 	if routerCanonicalHostname := o.RouterCanonicalHostname; len(routerCanonicalHostname) > 0 {
 		if errs := validation.IsDNS1123Subdomain(routerCanonicalHostname); len(errs) != 0 {

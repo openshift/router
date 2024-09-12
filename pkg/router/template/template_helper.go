@@ -231,19 +231,19 @@ func generateHAProxyCertConfigMap(td templateData) []string {
 	return lines
 }
 
-// validateHAProxyWhiteList validates a whitelist for use with an haproxy acl.
-func validateHAProxyWhiteList(value string) bool {
-	_, valid := haproxyutil.ValidateWhiteList(value)
+// validateHAProxyAllowlist validates an allowlist for use with an haproxy acl.
+func validateHAProxyAllowlist(value string) bool {
+	_, valid := haproxyutil.ValidateAllowlist(value)
 	return valid
 }
 
-// generateHAProxyWhiteListFile generates a whitelist file for use with an haproxy acl.
-func generateHAProxyWhiteListFile(workingDir string, id ServiceAliasConfigKey, value string) string {
-	name := path.Join(workingDir, whitelistDir, fmt.Sprintf("%s.txt", id))
-	cidrs, _ := haproxyutil.ValidateWhiteList(value)
+// generateHAProxyAllowlistFile generates an allowlist file for use with an haproxy acl.
+func generateHAProxyAllowlistFile(workingDir string, id ServiceAliasConfigKey, value string) string {
+	name := path.Join(workingDir, allowlistDir, fmt.Sprintf("%s.txt", id))
+	cidrs, _ := haproxyutil.ValidateAllowlist(value)
 	data := []byte(strings.Join(cidrs, "\n") + "\n")
 	if err := ioutil.WriteFile(name, data, 0644); err != nil {
-		log.Error(err, "error writing haproxy whitelist contents")
+		log.Error(err, "error writing haproxy allowlist contents")
 		return ""
 	}
 
@@ -409,8 +409,8 @@ var helperFunctions = template.FuncMap{
 	"getPrimaryAliasKey":          getPrimaryAliasKey,          //returns the key of the primary alias for a group of aliases
 
 	"generateHAProxyMap":           generateHAProxyMap,           //generates a haproxy map content
-	"validateHAProxyWhiteList":     validateHAProxyWhiteList,     //validates a haproxy whitelist (acl) content
-	"generateHAProxyWhiteListFile": generateHAProxyWhiteListFile, //generates a haproxy whitelist file for use in an acl
+	"validateHAProxyAllowlist":     validateHAProxyAllowlist,     //validates a haproxy allowlist (acl) content
+	"generateHAProxyAllowlistFile": generateHAProxyAllowlistFile, //generates a haproxy allowlist file for use in an acl
 
 	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
 	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
