@@ -108,11 +108,11 @@ type counterValuesByMetric map[metricID][]int64
 
 // defaultSelectedMetrics is the list of metrics included by default. These metrics are a subset
 // of the metrics exposed by haproxy_exporter by default for performance reasons.
-var defaultSelectedMetrics = []int{2, 4, 5, 7, 8, 9, 13, 14, 17, 21, 24, 33, 35, 39, 40, 41, 42, 43, 44, 58, 59, 60, 79, 85}
+var defaultSelectedMetrics = []int{2, 4, 5, 7, 8, 9, 13, 14, 17, 21, 24, 33, 35, 39, 40, 41, 42, 43, 44, 58, 59, 60, 79, 85, 99}
 
 // defaultCounterMetrics is the list of metrics that are counters and should be preserved across
 // restarts. Only add metrics to this list if they are a counter.
-var defaultCounterMetrics = []int{7, 8, 9, 13, 14, 21, 24, 39, 40, 41, 42, 43, 44, 79, 85}
+var defaultCounterMetrics = []int{7, 8, 9, 13, 14, 21, 24, 39, 40, 41, 42, 43, 44, 79, 85, 99}
 
 // Exporter collects HAProxy stats from the given URI and exports them using
 // the prometheus metrics package.
@@ -266,6 +266,7 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			59: newBackendMetric("http_average_connect_latency_milliseconds", "Average connect latency of the last 1024 requests in milliseconds.", nil),
 			60: newBackendMetric("http_average_response_latency_milliseconds", "Average response latency of the last 1024 requests in milliseconds.", nil),
 			85: newBackendMetric("connections_reused_total", "Total number of connections reused.", nil),
+			99: newBackendMetric("duplicate_te_header_total", "Total number of duplicate Transfer-Encoding headers detected", nil),
 		}),
 		serverMetrics: filterMetrics(opts.ExportedMetrics, metrics{
 			2:  newServerMetric("current_queue", "Current number of queued requests assigned to this server.", nil),
@@ -297,6 +298,7 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			59: newServerMetric("http_average_connect_latency_milliseconds", "Average connect latency of the last 1024 requests in milliseconds.", nil),
 			60: newServerMetric("http_average_response_latency_milliseconds", "Average response latency of the last 1024 requests in milliseconds.", nil),
 			85: newServerMetric("connections_reused_total", "Total number of connections reused.", nil),
+			99: newServerMetric("duplicate_te_header_total", "Total number of duplicate Transfer-Encoding headers detected", nil),
 		}),
 		counterIndices:   counterIndices,
 		counterIndexSize: counterIndexSize + 1,
