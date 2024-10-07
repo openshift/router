@@ -107,7 +107,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 		switch {
 		case newHasExt && oldHadExt:
 			// Both new and old routes have externalCertificate
-			log.V(6).Info("Both new and old routes have externalCertificate", "namespace", route.Namespace, "route", route.Name)
+			log.V(4).Info("Both new and old routes have externalCertificate", "namespace", route.Namespace, "route", route.Name)
 			if oldSecret != route.Spec.TLS.ExternalCertificate.Name {
 				// ExternalCertificate is updated
 				log.V(4).Info("ExternalCertificate is updated", "namespace", route.Namespace, "route", route.Name)
@@ -120,7 +120,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				}
 			} else {
 				// ExternalCertificate is not updated
-				// Revalidate and update the in-memory TLS certificate and key
+				// Revalidate and update the in-memory TLS certificate and key (even if ExternalCertificate remains unchanged)
 				// It is the responsibility of this plugin to ensure everything is synced properly.
 
 				// One Scenario: The user deletes the secret, causing the route's status to be updated to reject.
@@ -155,10 +155,6 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 			if err := p.unregister(route); err != nil {
 				return err
 			}
-
-		case !newHasExt && !oldHadExt:
-			// Neither new nor old route have externalCertificate
-			// Do nothing
 		}
 
 	case watch.Deleted:

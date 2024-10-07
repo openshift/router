@@ -1131,7 +1131,7 @@ func TestRouteSecretManager(t *testing.T) {
 				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.rejections)
 			}
 			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route)); exists {
-				t.Fatalf("deletedSecrets must be cleaned")
+				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route))
 			}
 		})
 	}
