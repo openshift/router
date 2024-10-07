@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/library-go/pkg/route/secretmanager"
 
 	logf "github.com/openshift/router/log"
 	"github.com/openshift/router/pkg/router/crl"
@@ -65,7 +64,6 @@ type templateRouter struct {
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
 	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
-	secretManager    secretmanager.SecretManager
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
 	// usually a wildcard certificate for a cloud domain such as *.mypaas.com to allow applications to create app.mypaas.com
@@ -157,7 +155,6 @@ type templateRouterCfg struct {
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 	httpResponseHeaders           []HTTPHeader
 	httpRequestHeaders            []HTTPHeader
-	secretManager                 secretmanager.SecretManager
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -256,7 +253,6 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		state:                         make(map[ServiceAliasConfigKey]ServiceAliasConfig),
 		serviceUnits:                  make(map[ServiceUnitKey]ServiceUnit),
 		certManager:                   certManager,
-		secretManager:                 cfg.secretManager,
 		defaultCertificate:            cfg.defaultCertificate,
 		defaultCertificatePath:        cfg.defaultCertificatePath,
 		defaultCertificateDir:         cfg.defaultCertificateDir,
@@ -1134,14 +1130,6 @@ func (r *templateRouter) RemoveRoute(route *routev1.Route) {
 	defer r.lock.Unlock()
 
 	r.removeRouteInternal(route)
-
-	if r.secretManager != nil { // TODO: remove this nil check while dropping AllowExternalCertificates flag.
-		if r.secretManager.IsRouteRegistered(route.Namespace, route.Name) {
-			if err := r.secretManager.UnregisterRoute(route.Namespace, route.Name); err != nil {
-				log.Error(err, "failed to unregister route")
-			}
-		}
-	}
 }
 
 // removeRouteInternal removes the given route - internal
