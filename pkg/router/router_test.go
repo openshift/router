@@ -190,11 +190,11 @@ func TestAdmissionEdgeCases(t *testing.T) {
 
 	tests := map[string][]expectation{
 		"deletion promotes inactive routes": {
-			mustCreate{name: "a", host: "example.com", path: "", time: start},
-			mustCreate{name: "b", host: "example.com", path: "/foo", time: start.Add(1 * time.Minute)},
-			mustCreate{name: "c", host: "example.com", path: "/foo", time: start.Add(2 * time.Minute)},
-			mustCreate{name: "d", host: "example.com", path: "/foo", time: start.Add(3 * time.Minute)},
-			mustCreate{name: "e", host: "example.com", path: "/bar", time: start.Add(4 * time.Minute)},
+			mustCreateRoute{name: "a", host: "example.com", path: "", time: start},
+			mustCreateRoute{name: "b", host: "example.com", path: "/foo", time: start.Add(1 * time.Minute)},
+			mustCreateRoute{name: "c", host: "example.com", path: "/foo", time: start.Add(2 * time.Minute)},
+			mustCreateRoute{name: "d", host: "example.com", path: "/foo", time: start.Add(3 * time.Minute)},
+			mustCreateRoute{name: "e", host: "example.com", path: "/bar", time: start.Add(4 * time.Minute)},
 
 			expectAdmitted{"a", "b", "e"},
 			expectRejected{"c", "d"},
@@ -254,7 +254,7 @@ func TestConfigTemplate(t *testing.T) {
 	tests := map[string][]mustCreateWithConfig{
 		"Long allowlist of IPs": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "a",
 					host: "aexample.com",
 					path: "",
@@ -274,7 +274,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Allowlist of mixed IPs": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "a1",
 					host: "a1example.com",
 					path: "",
@@ -294,7 +294,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Allowlist of mixed IPs using the old annotation key": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "a2",
 					host: "a2example.com",
 					path: "",
@@ -314,7 +314,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Simple HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "b",
 					host: "bexample.com",
 					path: "",
@@ -334,7 +334,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Simple HSTS header 2": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "b2",
 					host: "b2example.com",
 					path: "",
@@ -354,7 +354,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Case insensitive, with white spaces HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "c",
 					host: "cexample.com",
 					path: "",
@@ -374,7 +374,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Quotes in HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "d",
 					host: "dexample.com",
 					path: "",
@@ -394,7 +394,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Equal sign with LWS in HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "f",
 					host: "fexample.com",
 					path: "",
@@ -414,7 +414,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Required directive missing": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "g",
 					host: "gexample.com",
 					path: "",
@@ -436,7 +436,7 @@ func TestConfigTemplate(t *testing.T) {
 		// test cases to be revised once HSTS pattern is fully compliant to RFC6797#section-6.1
 		"Wrong HSTS header directive": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "h",
 					host: "hexample.com",
 					path: "",
@@ -457,7 +457,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Typo in HSTS header directive": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "i",
 					host: "iexample.com",
 					path: "",
@@ -498,7 +498,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Route HTTP request header with a format": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "j",
 					host: "jexample.com",
 					httpHeaders: routev1.RouteHTTPHeaders{
@@ -526,7 +526,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Route HTTP response header with 'if'": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "k",
 					host: "kexample.com",
 					httpHeaders: routev1.RouteHTTPHeaders{
@@ -554,7 +554,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Route HTTP response header with apostrophe, double-quotes, and backslash": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "l",
 					host: "lexample.com",
 					httpHeaders: routev1.RouteHTTPHeaders{
@@ -582,7 +582,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"two routes with different certificates": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "m1",
 					host:           "m1example.com",
 					path:           "",
@@ -596,7 +596,7 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "m2",
 					host:           "m2example.com",
 					path:           "",
@@ -612,7 +612,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"two routes with the same certificate": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "n1",
 					host:           "n1example.com",
 					path:           "",
@@ -626,7 +626,7 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "n2",
 					host:           "n2example.com",
 					path:           "",
@@ -642,7 +642,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"route with the default certificate": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "o",
 					host:           "oexample.com",
 					path:           "",
@@ -720,8 +720,8 @@ type expectation interface {
 	Apply(h *harness) error
 }
 
-// mustCreate represents a route that gets created in a unit test.
-type mustCreate struct {
+// mustCreateRoute represents a route that gets created in a unit test.
+type mustCreateRoute struct {
 	// name is the metadata.name of the route.  If name is empty, no route
 	// is created.
 	name string
@@ -743,7 +743,7 @@ type mustCreate struct {
 	httpHeaders routev1.RouteHTTPHeaders
 }
 
-func (e mustCreate) Apply(h *harness) error {
+func (e mustCreateRoute) Apply(h *harness) error {
 	if e.name == "" {
 		return nil
 	}
@@ -783,7 +783,7 @@ func (e mustCreate) Apply(h *harness) error {
 }
 
 type mustCreateWithConfig struct {
-	mustCreate
+	mustCreateRoute
 	mustMatchConfig
 }
 
