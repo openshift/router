@@ -473,7 +473,9 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 				// endpoint was unchanged.
 				delete(modifiedEndpoints, v2ep.ID)
 			}
-			if ep.AppProtocol != v2ep.AppProtocol && (ep.AppProtocol == "h2c" || v2ep.AppProtocol == "h2c") {
+			epUsesH2C := ep.AppProtocol == "h2c" || ep.AppProtocol == "kubernetes.io/h2c"
+			v2epUsesH2c := v2ep.AppProtocol == "h2c" || v2ep.AppProtocol == "kubernetes.io/h2c"
+			if (epUsesH2C || v2epUsesH2c) && epUsesH2C != v2epUsesH2c {
 				return fmt.Errorf("endpoint %s changed appProtocol from %q to %q, and dynamically updating proto is unsupported", ep.ID, ep.AppProtocol, v2ep.AppProtocol)
 			}
 		} else {

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,12 +23,14 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	kclientset "k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	"k8s.io/klog/v2"
@@ -43,6 +46,7 @@ import (
 )
 
 type harness struct {
+	client      kclientset.Interface
 	routeClient routeclient.Interface
 
 	namespace string
@@ -76,6 +80,7 @@ func TestMain(m *testing.M) {
 	namespace := "default"
 
 	h = &harness{
+		client:      client,
 		routeClient: routeClient,
 		namespace:   namespace,
 	}
@@ -190,11 +195,11 @@ func TestAdmissionEdgeCases(t *testing.T) {
 
 	tests := map[string][]expectation{
 		"deletion promotes inactive routes": {
-			mustCreate{name: "a", host: "example.com", path: "", time: start},
-			mustCreate{name: "b", host: "example.com", path: "/foo", time: start.Add(1 * time.Minute)},
-			mustCreate{name: "c", host: "example.com", path: "/foo", time: start.Add(2 * time.Minute)},
-			mustCreate{name: "d", host: "example.com", path: "/foo", time: start.Add(3 * time.Minute)},
-			mustCreate{name: "e", host: "example.com", path: "/bar", time: start.Add(4 * time.Minute)},
+			mustCreateRoute{name: "a", host: "example.com", path: "", time: start},
+			mustCreateRoute{name: "b", host: "example.com", path: "/foo", time: start.Add(1 * time.Minute)},
+			mustCreateRoute{name: "c", host: "example.com", path: "/foo", time: start.Add(2 * time.Minute)},
+			mustCreateRoute{name: "d", host: "example.com", path: "/foo", time: start.Add(3 * time.Minute)},
+			mustCreateRoute{name: "e", host: "example.com", path: "/bar", time: start.Add(4 * time.Minute)},
 
 			expectAdmitted{"a", "b", "e"},
 			expectRejected{"c", "d"},
@@ -254,7 +259,7 @@ func TestConfigTemplate(t *testing.T) {
 	tests := map[string][]mustCreateWithConfig{
 		"Long whitelist of IPs": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "a",
 					host: "aexample.com",
 					path: "",
@@ -274,7 +279,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Whitelist of mixed IPs": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "a1",
 					host: "a1example.com",
 					path: "",
@@ -294,7 +299,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Simple HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "b",
 					host: "bexample.com",
 					path: "",
@@ -314,7 +319,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Simple HSTS header 2": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "b2",
 					host: "b2example.com",
 					path: "",
@@ -334,7 +339,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Case insensitive, with white spaces HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "c",
 					host: "cexample.com",
 					path: "",
@@ -354,7 +359,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Quotes in HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "d",
 					host: "dexample.com",
 					path: "",
@@ -374,7 +379,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Equal sign with LWS in HSTS header": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "f",
 					host: "fexample.com",
 					path: "",
@@ -394,7 +399,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Required directive missing": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "g",
 					host: "gexample.com",
 					path: "",
@@ -416,7 +421,7 @@ func TestConfigTemplate(t *testing.T) {
 		// test cases to be revised once HSTS pattern is fully compliant to RFC6797#section-6.1
 		"Wrong HSTS header directive": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "h",
 					host: "hexample.com",
 					path: "",
@@ -437,7 +442,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Typo in HSTS header directive": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "i",
 					host: "iexample.com",
 					path: "",
@@ -478,7 +483,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Route HTTP request header with a format": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "j",
 					host: "jexample.com",
 					httpHeaders: routev1.RouteHTTPHeaders{
@@ -506,7 +511,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Route HTTP response header with 'if'": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "k",
 					host: "kexample.com",
 					httpHeaders: routev1.RouteHTTPHeaders{
@@ -534,7 +539,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"Route HTTP response header with apostrophe, double-quotes, and backslash": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name: "l",
 					host: "lexample.com",
 					httpHeaders: routev1.RouteHTTPHeaders{
@@ -562,7 +567,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"two routes with different certificates": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "m1",
 					host:           "m1example.com",
 					path:           "",
@@ -576,7 +581,7 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "m2",
 					host:           "m2example.com",
 					path:           "",
@@ -592,7 +597,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"two routes with the same certificate": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "n1",
 					host:           "n1example.com",
 					path:           "",
@@ -606,7 +611,7 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "n2",
 					host:           "n2example.com",
 					path:           "",
@@ -622,7 +627,7 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"route with the default certificate": {
 			mustCreateWithConfig{
-				mustCreate: mustCreate{
+				mustCreateRoute: mustCreateRoute{
 					name:           "o",
 					host:           "oexample.com",
 					path:           "",
@@ -643,15 +648,87 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"route with appProtocol: unknown-value": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlice: mustCreateEndpointSlice{
+					name:        "servicep1",
+					serviceName: "servicep1",
+					appProtocol: "unknown-value",
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "p1",
+					host:              "p1example.com",
+					targetServiceName: "servicep1",
+					time:              start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "p1"),
+					attribute:   "server",
+					value:       "proto h2",
+					notFound:    true,
+				},
+			},
+		},
+		"route with appProtocol: h2c": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlice: mustCreateEndpointSlice{
+					name:        "servicep2",
+					serviceName: "servicep2",
+					appProtocol: "h2c",
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "p2",
+					host:              "p2example.com",
+					targetServiceName: "servicep2",
+					time:              start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "p2"),
+					attribute:   "server",
+					value:       "proto h2",
+				},
+			},
+		},
+		"route with appProtocol: kubernetes.io/h2c": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlice: mustCreateEndpointSlice{
+					name:        "servicep3",
+					serviceName: "servicep3",
+					appProtocol: "kubernetes.io/h2c",
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "p3",
+					host:              "p3example.com",
+					targetServiceName: "servicep3",
+					time:              start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "p3"),
+					attribute:   "server",
+					value:       "proto h2",
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
 
 	for name, expectations := range tests {
 		for _, expectation := range expectations {
-			err := expectation.Apply(h)
-			if err != nil {
-				t.Fatalf("%s failed: %v", name, err)
+			if !reflect.DeepEqual(expectation.mustCreateEndpointSlice, mustCreateEndpointSlice{}) {
+				err := expectation.mustCreateEndpointSlice.Apply(h)
+				if err != nil {
+					t.Fatalf("%s mustCreateEndpointSlice failed: %v", name, err)
+				}
+			}
+			if !reflect.DeepEqual(expectation.mustCreateRoute, mustCreateRoute{}) {
+				err := expectation.mustCreateRoute.Apply(h)
+				if err != nil {
+					t.Fatalf("%s mustCreateRoute failed: %v", name, err)
+				}
 			}
 		}
 	}
@@ -700,8 +777,8 @@ type expectation interface {
 	Apply(h *harness) error
 }
 
-// mustCreate represents a route that gets created in a unit test.
-type mustCreate struct {
+// mustCreateRoute represents a route that gets created in a unit test.
+type mustCreateRoute struct {
 	// name is the metadata.name of the route.  If name is empty, no route
 	// is created.
 	name string
@@ -709,6 +786,9 @@ type mustCreate struct {
 	host string
 	// path is the spec.path of the route.
 	path string
+	// targetServiceName is the spec.to.name of the route.  If this field
+	// is empty, a name is generated based on the route's name.
+	targetServiceName string
 	// time is the metadata.creationTimestamp of the route.
 	time time.Time
 	// annotations is the metadata.annotations of the route.
@@ -723,7 +803,7 @@ type mustCreate struct {
 	httpHeaders routev1.RouteHTTPHeaders
 }
 
-func (e mustCreate) Apply(h *harness) error {
+func (e mustCreateRoute) Apply(h *harness) error {
 	if e.name == "" {
 		return nil
 	}
@@ -738,6 +818,10 @@ func (e mustCreate) Apply(h *harness) error {
 			Certificate: e.cert,
 		}
 	}
+	serviceName := "service" + e.name
+	if e.targetServiceName != "" {
+		serviceName = e.targetServiceName
+	}
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: metav1.Time{Time: e.time},
@@ -750,7 +834,7 @@ func (e mustCreate) Apply(h *harness) error {
 			Host: e.host,
 			Path: e.path,
 			To: routev1.RouteTargetReference{
-				Name:   "service" + e.name,
+				Name:   serviceName,
 				Weight: new(int32),
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
@@ -762,8 +846,49 @@ func (e mustCreate) Apply(h *harness) error {
 	return err
 }
 
+// mustCreateEndpointSlice represents an endpointslice that gets created in a unit test.
+type mustCreateEndpointSlice struct {
+	// name is the metadata.name of the endpointslice.  If name is empty,
+	// no endpointsslice is created.
+	name string
+	// serviceName is the name of the associated service.  This value is
+	// used as the value of the kubernetes.io/service-name label.
+	serviceName string
+	// appProtocol is the appProtocol of the endpointslice.
+	appProtocol string
+}
+
+func (e mustCreateEndpointSlice) Apply(h *harness) error {
+	if e.name == "" {
+		return nil
+	}
+	var appProtocol *string
+	if e.appProtocol != "" {
+		appProtocol = &e.appProtocol
+	}
+	ep := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: h.namespace,
+			Name:      e.name,
+			Labels: map[string]string{
+				discoveryv1.LabelServiceName: e.serviceName,
+			},
+			UID: h.nextUID(),
+		},
+		Endpoints: []discoveryv1.Endpoint{{
+			Addresses: []string{"1.1.1.1"},
+		}},
+		Ports: []discoveryv1.EndpointPort{{
+			AppProtocol: appProtocol,
+		}},
+	}
+	_, err := h.client.DiscoveryV1().EndpointSlices(ep.Namespace).Create(context.TODO(), ep, metav1.CreateOptions{})
+	return err
+}
+
 type mustCreateWithConfig struct {
-	mustCreate
+	mustCreateEndpointSlice
+	mustCreateRoute
 	mustMatchConfig
 }
 
@@ -824,6 +949,13 @@ func matchConfig(m mustMatchConfig, parser haproxyconfparser.Parser) error {
 				break
 			}
 		}
+	case []haproxyconfparsertypes.Server:
+		for _, a := range data {
+			for _, b := range a.Params {
+				contains = contains || b.String() == m.value
+			}
+		}
+
 	}
 
 	if !contains && !m.notFound {

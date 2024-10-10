@@ -736,7 +736,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
                     {{- end }}
                   {{- end }}
                 {{- else if or (eq $cfg.TLSTermination "") (eq $cfg.TLSTermination "edge") }}
-                  {{- if eq $endpoint.AppProtocol "h2c" }} proto h2
+                  {{- if or (eq $endpoint.AppProtocol "h2c") (eq $endpoint.AppProtocol "kubernetes.io/h2c") }} proto h2
                   {{- end }}
                 {{- end }}{{/* end type specific options*/}}
 
