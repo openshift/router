@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,12 +23,14 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	kclientset "k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	"k8s.io/klog/v2"
@@ -43,6 +46,7 @@ import (
 )
 
 type harness struct {
+	client      kclientset.Interface
 	routeClient routeclient.Interface
 
 	namespace string
@@ -76,6 +80,7 @@ func TestMain(m *testing.M) {
 	namespace := "default"
 
 	h = &harness{
+		client:      client,
 		routeClient: routeClient,
 		namespace:   namespace,
 	}
@@ -663,15 +668,88 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"route with appProtocol: unknown-value": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlice: mustCreateEndpointSlice{
+					name:        "servicep1",
+					serviceName: "servicep1",
+					appProtocol: "unknown-value",
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "p1",
+					host:              "p1example.com",
+					targetServiceName: "servicep1",
+					time:              start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "p1"),
+					attribute:   "server",
+					value:       "proto h2",
+					notFound:    true,
+				},
+			},
+		},
+		"route with appProtocol: h2c": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlice: mustCreateEndpointSlice{
+					name:        "servicep2",
+					serviceName: "servicep2",
+					appProtocol: "h2c",
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "p2",
+					host:              "p2example.com",
+					targetServiceName: "servicep2",
+					time:              start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "p2"),
+					attribute:   "server",
+					value:       "proto h2",
+				},
+			},
+		},
+		"route with appProtocol: kubernetes.io/h2c": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlice: mustCreateEndpointSlice{
+					name:        "servicep3",
+					serviceName: "servicep3",
+					appProtocol: "kubernetes.io/h2c",
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "p3",
+					host:              "p3example.com",
+					targetServiceName: "servicep3",
+					time:              start,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "p3"),
+					attribute:   "server",
+					value:       "proto h2",
+					notFound:    true,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
 
 	for name, expectations := range tests {
 		for _, expectation := range expectations {
-			err := expectation.Apply(h)
-			if err != nil {
-				t.Fatalf("%s failed: %v", name, err)
+			if !reflect.DeepEqual(expectation.mustCreateEndpointSlice, mustCreateEndpointSlice{}) {
+				err := expectation.mustCreateEndpointSlice.Apply(h)
+				if err != nil {
+					t.Fatalf("%s mustCreateEndpointSlice failed: %v", name, err)
+				}
+			}
+			if !reflect.DeepEqual(expectation.mustCreateRoute, mustCreateRoute{}) {
+				err := expectation.mustCreateRoute.Apply(h)
+				if err != nil {
+					t.Fatalf("%s mustCreateRoute failed: %v", name, err)
+				}
 			}
 		}
 	}
@@ -729,6 +807,9 @@ type mustCreateRoute struct {
 	host string
 	// path is the spec.path of the route.
 	path string
+	// targetServiceName is the spec.to.name of the route.  If this field
+	// is empty, a name is generated based on the route's name.
+	targetServiceName string
 	// time is the metadata.creationTimestamp of the route.
 	time time.Time
 	// annotations is the metadata.annotations of the route.
@@ -758,6 +839,10 @@ func (e mustCreateRoute) Apply(h *harness) error {
 			Certificate: e.cert,
 		}
 	}
+	serviceName := "service" + e.name
+	if e.targetServiceName != "" {
+		serviceName = e.targetServiceName
+	}
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: metav1.Time{Time: e.time},
@@ -770,7 +855,7 @@ func (e mustCreateRoute) Apply(h *harness) error {
 			Host: e.host,
 			Path: e.path,
 			To: routev1.RouteTargetReference{
-				Name:   "service" + e.name,
+				Name:   serviceName,
 				Weight: new(int32),
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
@@ -782,7 +867,48 @@ func (e mustCreateRoute) Apply(h *harness) error {
 	return err
 }
 
+// mustCreateEndpointSlice represents an endpointslice that gets created in a unit test.
+type mustCreateEndpointSlice struct {
+	// name is the metadata.name of the endpointslice.  If name is empty,
+	// no endpointsslice is created.
+	name string
+	// serviceName is the name of the associated service.  This value is
+	// used as the value of the kubernetes.io/service-name label.
+	serviceName string
+	// appProtocol is the appProtocol of the endpointslice.
+	appProtocol string
+}
+
+func (e mustCreateEndpointSlice) Apply(h *harness) error {
+	if e.name == "" {
+		return nil
+	}
+	var appProtocol *string
+	if e.appProtocol != "" {
+		appProtocol = &e.appProtocol
+	}
+	ep := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: h.namespace,
+			Name:      e.name,
+			Labels: map[string]string{
+				discoveryv1.LabelServiceName: e.serviceName,
+			},
+			UID: h.nextUID(),
+		},
+		Endpoints: []discoveryv1.Endpoint{{
+			Addresses: []string{"1.1.1.1"},
+		}},
+		Ports: []discoveryv1.EndpointPort{{
+			AppProtocol: appProtocol,
+		}},
+	}
+	_, err := h.client.DiscoveryV1().EndpointSlices(ep.Namespace).Create(context.TODO(), ep, metav1.CreateOptions{})
+	return err
+}
+
 type mustCreateWithConfig struct {
+	mustCreateEndpointSlice
 	mustCreateRoute
 	mustMatchConfig
 }
@@ -844,6 +970,13 @@ func matchConfig(m mustMatchConfig, parser haproxyconfparser.Parser) error {
 				break
 			}
 		}
+	case []haproxyconfparsertypes.Server:
+		for _, a := range data {
+			for _, b := range a.Params {
+				contains = contains || b.String() == m.value
+			}
+		}
+
 	}
 
 	if !contains && !m.notFound {
