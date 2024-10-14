@@ -40,6 +40,7 @@ be_secure:openshift-console:console,BACKEND,0,0,0,8,1,236,505655,2344127,0,0,,0,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-vn6lh:downloads:port:10.128.0.30:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,1,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.128.0.30:8080,ce739475136fa468d51cfcf5aad91b68,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-g7nsm:downloads:port:10.129.5.61:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,2,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.129.5.61:8080,450630300ddc04605decdd966ea57de6,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,512,2,0,,0,802,0,,1,18,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,a663438294fbd72a8e16964e97c8ecde,http,leastconn,,,,,,,0,0,0,0,0,,,0,0,0,0,,,,,,,
+be_secure:ocpbugs40850:reencrypt-8,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,1,1,0,,0,19,0,,1,32,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,120abb61cc27a4dfc293a18dcd44b291,http,unknown,,,,,,,0,0,0,0,0,,,0,0,0,0,0,,,,,0,
 `,
 		`public,FRONTEND,,,0,2,20000,162,18770,30715,0,0,0,,,,,OPEN,,,,,,,,,1,2,0,,,,0,0,0,1,,,,0,160,1,0,1,0,,0,1,162,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,http,,0,1,162,160,0,0,0,,,0,0,,,,,,,,,,,,,
 public_ssl,FRONTEND,,,1,32,20000,200,928408,2060591,0,0,0,,,,,OPEN,,,,,,,,,1,3,0,,,,0,0,0,50,,,,,,,,,,,0,0,0,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,tcp,,0,50,200,,0,0,0,,,,,,,,,,,,,,,,,
@@ -59,7 +60,7 @@ be_secure:openshift-console:console,BACKEND,0,0,0,8,1,236,505655,2344127,0,0,,0,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-vn6lh:downloads:port:10.128.0.30:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,1,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.128.0.30:8080,ce739475136fa468d51cfcf5aad91b68,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-g7nsm:downloads:port:10.129.5.61:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,2,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.129.5.61:8080,450630300ddc04605decdd966ea57de6,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,512,2,0,,0,802,0,,1,18,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,a663438294fbd72a8e16964e97c8ecde,http,leastconn,,,,,,,0,0,0,0,0,,,0,0,0,0,,,,,,,
-`,
+be_secure:ocpbugs40850:reencrypt-8,BACKEND,0,0,0,1,1,1,136,123,0,0,,0,0,0,0,UP,1,1,0,,0,43,0,,1,32,0,,1,,1,0,,1,,,,0,1,0,0,0,0,,,,1,0,0,0,0,0,0,16,,,0,3,1,8,,,,,,,,,,,,,120abb61cc27a4dfc293a18dcd44b291,http,unknown,,,,,,,0,1,0,0,0,,,0,3,1,8,0,,,,,1,`,
 		`public,FRONTEND,,,0,2,20000,162,18770,30715,0,0,0,,,,,OPEN,,,,,,,,,1,2,0,,,,0,0,0,1,,,,0,160,1,0,1,0,,0,1,162,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,http,,0,1,162,160,0,0,0,,,0,0,,,,,,,,,,,,,
 public_ssl,FRONTEND,,,1,32,20000,200,928408,2060591,0,0,0,,,,,OPEN,,,,,,,,,1,3,0,,,,0,0,0,50,,,,,,,,,,,0,0,0,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,tcp,,0,50,200,,0,0,0,,,,,,,,,,,,,,,,,
 be_sni,fe_sni,0,0,1,32,,0,900961,1776021,,0,,0,0,0,0,no check,1,1,0,,,802,,,1,4,1,,184,,2,0,,51,,,,,,,,,,,,,,3,0,,,,,68,,,2,0,0,734,,,,,,,,,,,,127.0.0.1:10444,,tcp,,,,,,,,0,184,0,,,0,,29,6,0,46392,,,,,,,
@@ -78,6 +79,7 @@ be_secure:openshift-console:console,BACKEND,0,0,0,8,1,236,505655,2344127,0,0,,0,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-vn6lh:downloads:port:10.128.0.30:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,1,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.128.0.30:8080,ce739475136fa468d51cfcf5aad91b68,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-g7nsm:downloads:port:10.129.5.61:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,2,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.129.5.61:8080,450630300ddc04605decdd966ea57de6,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,512,2,0,,0,802,0,,1,18,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,a663438294fbd72a8e16964e97c8ecde,http,leastconn,,,,,,,0,0,0,0,0,,,0,0,0,0,,,,,,,
+be_secure:ocpbugs40850:reencrypt-8,BACKEND,0,0,0,1,1,2,272,246,0,0,,0,0,0,0,UP,1,1,0,,0,73,0,,1,32,0,,2,,1,0,,1,,,,0,2,0,0,0,0,,,,2,0,0,0,0,0,0,19,,,0,3,1,8,,,,,,,,,,,,,120abb61cc27a4dfc293a18dcd44b291,http,unknown,,,,,,,0,2,0,0,0,,,0,3,1,8,0,,,,,2,
 `,
 		`public,FRONTEND,,,0,2,20000,162,18770,30715,0,0,0,,,,,OPEN,,,,,,,,,1,2,0,,,,0,0,0,1,,,,0,160,1,0,1,0,,0,1,162,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,http,,0,1,162,160,0,0,0,,,0,0,,,,,,,,,,,,,
 public_ssl,FRONTEND,,,1,32,20000,200,928408,2060591,0,0,0,,,,,OPEN,,,,,,,,,1,3,0,,,,0,0,0,50,,,,,,,,,,,0,0,0,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,tcp,,0,50,200,,0,0,0,,,,,,,,,,,,,,,,,
@@ -97,6 +99,7 @@ be_secure:openshift-console:console,BACKEND,0,0,0,8,1,236,505655,2344127,0,0,,0,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-vn6lh:downloads:port:10.128.0.30:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,1,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.128.0.30:8080,ce739475136fa468d51cfcf5aad91b68,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-g7nsm:downloads:port:10.129.5.61:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,2,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.129.5.61:8080,450630300ddc04605decdd966ea57de6,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,512,2,0,,0,802,0,,1,18,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,a663438294fbd72a8e16964e97c8ecde,http,leastconn,,,,,,,0,0,0,0,0,,,0,0,0,0,,,,,,,
+be_secure:ocpbugs40850:reencrypt-8,BACKEND,0,0,0,1,1,4,544,492,0,0,,0,0,0,0,UP,1,1,0,,0,103,0,,1,32,0,,4,,1,0,,2,,,,0,4,0,0,0,0,,,,4,0,0,0,0,0,0,18,,,0,3,1,7,,,,,,,,,,,,,120abb61cc27a4dfc293a18dcd44b291,http,unknown,,,,,,,0,4,0,0,0,,,0,3,1,8,0,,,,,3,
 `,
 		`public,FRONTEND,,,0,2,20000,162,18770,30715,0,0,0,,,,,OPEN,,,,,,,,,1,2,0,,,,0,0,0,1,,,,0,160,1,0,1,0,,0,1,162,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,http,,0,1,162,160,0,0,0,,,0,0,,,,,,,,,,,,,
 public_ssl,FRONTEND,,,1,32,20000,200,928408,2060591,0,0,0,,,,,OPEN,,,,,,,,,1,3,0,,,,0,0,0,50,,,,,,,,,,,0,0,0,,,0,0,0,0,,,,,,,,,,,,,,,,,,,,,tcp,,0,50,200,,0,0,0,,,,,,,,,,,,,,,,,
@@ -116,6 +119,7 @@ be_secure:openshift-console:console,BACKEND,0,0,0,8,1,236,505655,2344127,0,0,,0,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-vn6lh:downloads:port:10.128.0.30:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,1,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.128.0.30:8080,ce739475136fa468d51cfcf5aad91b68,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,pod:downloads-564948bf9c-g7nsm:downloads:port:10.129.5.61:8080,0,0,0,0,,0,0,0,,0,,0,0,0,0,UP,256,1,0,0,0,802,0,,1,18,2,,0,,2,0,,0,L4OK,,0,0,0,0,0,0,0,,,,,0,0,,,,,-1,,,0,0,0,0,,,,Layer4 check passed,,2,3,4,,,,10.129.5.61:8080,450630300ddc04605decdd966ea57de6,http,,,,,,,,0,0,0,,,0,,0,0,0,0,,,,,,,
 be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP,512,2,0,,0,802,0,,1,18,0,,0,,1,0,,0,,,,0,0,0,0,0,0,,,,0,0,0,0,0,0,0,-1,,,0,0,0,0,,,,,,,,,,,,,a663438294fbd72a8e16964e97c8ecde,http,leastconn,,,,,,,0,0,0,0,0,,,0,0,0,0,,,,,,,
+be_secure:ocpbugs40850:reencrypt-8,BACKEND,0,0,0,1,1,9,1224,1107,0,0,,0,0,0,0,UP,1,1,0,,0,133,0,,1,32,0,,9,,1,0,,5,,,,0,9,0,0,0,0,,,,9,0,0,0,0,0,0,12,,,0,2,1,6,,,,,,,,,,,,,120abb61cc27a4dfc293a18dcd44b291,http,unknown,,,,,,,0,9,0,0,0,,,0,3,1,8,0,,,,,4,
 `,
 	}
 	var index int
@@ -150,6 +154,12 @@ be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 184, map[string]string{"namespace": "", "pod": "", "route": "", "server": "fe_sni", "service": ""})
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 236, map[string]string{"namespace": "openshift-console", "pod": "console-6db7cbb464-gr787", "route": "console", "server": "10.129.0.43:8443", "service": "console"})
 
+	mustHaveMetric(t, f, "haproxy_backend_duplicate_te_header_total", 0, map[string]string{
+		"backend":   "https",
+		"namespace": "ocpbugs40850",
+		"route":     "reencrypt-8",
+	})
+
 	// simulate reload
 	e.CollectNow()
 	if e.counterValues[secondConsolePodID][e.counterIndices[connectionsTotalIndex]] != 241 {
@@ -167,6 +177,12 @@ be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 184, map[string]string{"namespace": "", "pod": "", "route": "", "server": "fe_sni", "service": ""})
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 244, map[string]string{"namespace": "openshift-console", "pod": "console-6db7cbb464-gr787", "route": "console", "server": "10.129.0.43:8443", "service": "console"})
 
+	mustHaveMetric(t, f, "haproxy_backend_duplicate_te_header_total", 3, map[string]string{
+		"backend":   "https",
+		"namespace": "ocpbugs40850",
+		"route":     "reencrypt-8",
+	})
+
 	now := time.Now()
 	e.lastScrape = &now
 	e.scrapeInterval = time.Hour
@@ -179,6 +195,12 @@ be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP
 	mustHaveMetric(t, f, "haproxy_server_max_sessions", 32, map[string]string{"namespace": "", "pod": "", "route": "", "server": "fe_sni", "service": ""})
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 184, map[string]string{"namespace": "", "pod": "", "route": "", "server": "fe_sni", "service": ""})
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 244, map[string]string{"namespace": "openshift-console", "pod": "console-6db7cbb464-gr787", "route": "console", "server": "10.129.0.43:8443", "service": "console"})
+
+	mustHaveMetric(t, f, "haproxy_backend_duplicate_te_header_total", 3, map[string]string{
+		"backend":   "https",
+		"namespace": "ocpbugs40850",
+		"route":     "reencrypt-8",
+	})
 
 	// simulate second reload
 	e.CollectNow()
@@ -196,6 +218,12 @@ be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP
 	mustHaveMetric(t, f, "haproxy_server_max_sessions", 32, map[string]string{"namespace": "", "pod": "", "route": "", "server": "fe_sni", "service": ""})
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 184, map[string]string{"namespace": "", "pod": "", "route": "", "server": "fe_sni", "service": ""})
 	mustHaveMetric(t, f, "haproxy_server_connections_total", 245, map[string]string{"namespace": "openshift-console", "pod": "console-6db7cbb464-gr787", "route": "console", "server": "10.129.0.43:8443", "service": "console"})
+
+	mustHaveMetric(t, f, "haproxy_backend_duplicate_te_header_total", 4, map[string]string{
+		"backend":   "https",
+		"namespace": "ocpbugs40850",
+		"route":     "reencrypt-8",
+	})
 }
 
 func mustHaveMetric(t *testing.T, families []*client_model.MetricFamily, name string, value float64, labels ...map[string]string) {
