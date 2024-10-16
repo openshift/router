@@ -376,17 +376,33 @@ func parseIPList(list string) string {
 		return ""
 	}
 
+	var validIPs []string
+	var invalidIPs []string
+
 	ipList := strings.Fields(list)
 	for _, ip := range ipList {
-		if net.ParseIP(ip) == nil {
-			if _, _, err := net.ParseCIDR(ip); err != nil {
-				log.V(7).Info("parseIPList found not IP/CIDR item", "value", ip, "err", err)
-				return ""
-			}
+		// check if it's a valid IP
+		if net.ParseIP(ip) != nil {
+			validIPs = append(validIPs, ip)
+		} else if _, _, err := net.ParseCIDR(ip); err == nil {
+			// check if it's a valid CIDR
+			validIPs = append(validIPs, ip)
+		} else {
+			invalidIPs = append(invalidIPs, ip)
 		}
 	}
-	log.V(7).Info("parseIPList parsed the list", "value", list)
-	return list
+
+	if len(invalidIPs) > 0 {
+		log.V(7).Info("parseIPList found invalid IP/CIDR items", "invalidIPs", invalidIPs)
+	}
+
+	if len(validIPs) == 0 {
+		return ""
+	}
+
+	result := strings.Join(validIPs, " ")
+	log.V(7).Info("parseIPList parsed the list", "validIPs", result)
+	return result
 }
 
 var helperFunctions = template.FuncMap{

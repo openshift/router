@@ -981,74 +981,125 @@ func TestGenerateHAProxyWhiteListFile(t *testing.T) {
 
 func TestParseIPList(t *testing.T) {
 	testCases := []struct {
-		name          string
-		input         string
-		expectedEmpty bool
+		name            string
+		input           string
+		expectedEmpty   bool
+		expectedReturn  string
 	}{
 		{
 			name:  "All mixed",
 			input: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+			expectedReturn: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
 		},
 		{
 			name:  "IPs only",
 			input: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 64:ff9b::192.168.0.1 172.16.14.10",
+			expectedReturn: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 64:ff9b::192.168.0.1 172.16.14.10",
 		},
 		{
 			name:  "CIDRs only",
 			input: "192.168.1.0/16 2001:0db8:85a3:0000:0000:8a2e:0370:7334/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
+			expectedReturn: "192.168.1.0/16 2001:0db8:85a3:0000:0000:8a2e:0370:7334/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
 		},
 		{
 			name:  "IPv6 only",
 			input: "2001:0db8:85a3:0000:0000:8a2e:0370:7334 2001:0db8:85a3::8a2e:370:10/64 2001:db8::2:1 ::ffff:192.168.0.1 2600:14a0::/40",
+			expectedReturn: "2001:0db8:85a3:0000:0000:8a2e:0370:7334 2001:0db8:85a3::8a2e:370:10/64 2001:db8::2:1 ::ffff:192.168.0.1 2600:14a0::/40",
 		},
 		{
 			name:  "IPv4 only",
 			input: "192.168.10.10 10.168.12.10/8 8.8.8.8 172.16.0.0/24",
+			expectedReturn: "192.168.10.10 10.168.12.10/8 8.8.8.8 172.16.0.0/24",
 		},
 		{
 			name:  "Single IP",
 			input: "192.168.15.15",
+			expectedReturn: "192.168.15.15",
 		},
 		{
 			// as behavior as the previous (regexp) approach
 			name:          "Leading and trailing spaces",
 			input:         " 192.168.10.10  ",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
 			name:          "Only white spaces",
 			input:         "   ",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
 			name:          "Empty",
 			input:         "",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
 			name:          "Wrong IPv4",
 			input:         "192.168.",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
 			name:          "Wrong IPv6",
 			input:         "2001:0db8:",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
 			name:          "Wrong IPv4 CIDR",
 			input:         "192.168.10.5/64",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
 			name:          "Wrong IPv6 CIDR",
 			input:         "2600:14a0::/256",
 			expectedEmpty: true,
+			expectedReturn: "",
 		},
 		{
-			name:          "Wrong IP in a list",
+			name:          "Wrong IPv4 in a IPs only list",
 			input:         "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 10.",
-			expectedEmpty: true,
+			expectedEmpty: false,
+			expectedReturn: "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1",
+		},
+		{
+			name:          "Wrong IPv6 in a IPs only list",
+			input:         "192.168.1.0 2001:0db8:85a3:0000:0000:8a2e:0370 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 10.",
+			expectedEmpty: false,
+			expectedReturn: "192.168.1.0 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1",
+		},
+		{
+			name:          "Wrong IPv4 in a IPv4 list",
+			input:         "192.168.1.0 10.10.0.1 192.168. 10.",
+			expectedEmpty: false,
+			expectedReturn: "192.168.1.0 10.10.0.1",
+		},
+		{
+			name:          "Wrong IPv6 in a IPv6 list",
+			input:         "2001:0db8:85a3:0000:8a2e:0370:7334 2001:0db8:85a3::8a2e:370:10/64 2001:db8::2:1 ::ffff:192.168.0.1 :/40",
+			expectedEmpty: false,
+			expectedReturn: "2001:0db8:85a3::8a2e:370:10/64 2001:db8::2:1 ::ffff:192.168.0.1",
+		},
+		{
+			name:  "All mixed type with invlaid IPv4",
+			input: "192.168.1 2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+			expectedEmpty: false,
+			expectedReturn: "2001:0db8:85a3:0000:0000:8a2e:0370:7334 172.16.14.10/24 2001:0db8:85a3::8a2e:370:10/64 64:ff9b::192.168.0.1 2600:14a0::/40",
+		},
+		{
+			name:  "Wrong IPv4 CIDR in a CIDRs only list",
+			input: "192.168.1./16 2001:0db8:85a3:0000:0000:8a2e:0370:7334/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
+			expectedEmpty: false,
+			expectedReturn: "2001:0db8:85a3:0000:0000:8a2e:0370:7334/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
+		},
+		{
+			name:  "Wrong IPv6 CIDR in a CIDRs only list",
+			input: "192.168.1.0/16 2001:0db8:85a3:0000:0000:8a2e:0370/48 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
+			expectedEmpty: false,
+			expectedReturn: "192.168.1.0/16 172.16.14.10/24 2001:0db8:85a3::8a2e:0370:10/64 2600:14a0::/40",
 		},
 	}
 
@@ -1061,7 +1112,7 @@ func TestParseIPList(t *testing.T) {
 				}
 				return
 			}
-			if got != tc.input {
+			if got != tc.expectedReturn {
 				t.Errorf("Failure: expected %q, got %q", tc.input, got)
 			}
 		})
