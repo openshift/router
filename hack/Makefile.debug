@@ -57,7 +57,7 @@ push-image:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
 	$(IMAGEBUILDER) push $(REGISTRY)/$(IMAGE):$(TAG)
 
-set-image:
+set-image: install-port-forward-services
 	oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
 	oc scale --replicas 0 -n openshift-ingress-operator deployments ingress-operator
 	oc scale --replicas 0 -n openshift-ingress deployment/router-default
