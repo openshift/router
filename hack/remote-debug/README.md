@@ -21,8 +21,8 @@ new image on the deployment, and waiting for new pods to roll out.
 
 ## Overview
 
-The debug image runs `tini` as the init system. `tini` launches
-`remote-debug-helper`, which performs the following tasks:
+The debug image runs `supervisord` as the init system. `supervisord`
+launches `remote-debug-helper`, which performs the following tasks:
 
 1. Discovers all environment variables associated with the
    `router-default` deployment.
@@ -146,22 +146,6 @@ will automatically load when you navigate to the directory.
 After deploying the debug image, you can access the container via SSH.
 This can be particularly useful for debugging and inspecting the
 running environment.
-
-### Process Tree for the Newly Deployed Image
-
-When you check the process tree for the newly deployed image, you
-should see the following:
-
-```sh
-$ oc rsh -n openshift-ingress router-default-57bd8d49bc-f6h9q
-sh-5.2# ps -ef
-UID          PID    PPID  C STIME TTY          TIME CMD
-root           1       0  0 07:08 ?        00:00:00 /usr/bin/tini -v -s -- /usr/bin/remote-debug-helper
-root           7       1  0 07:08 ?        00:00:00 /usr/bin/remote-debug-helper
-root          23       1  0 07:08 ?        00:00:00 sshd: /usr/sbin/sshd -E /proc/1/fd/1 [listener] 0 of 10-100 startups
-root          27       0  0 07:26 pts/0    00:00:00 /bin/sh
-root          33      27  0 07:26 pts/0    00:00:00 ps -ef
-```
 
 ## Preparatory Steps
 
