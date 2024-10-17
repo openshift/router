@@ -13,7 +13,7 @@ SYSTEMD_DIR   := $(HOME)/.config/systemd/user
 DOCKERFILE_DEBUG ?= hack/Dockerfile.debug
 
 ifndef HAPROXY_RPMS
-  $(error HAPROXY_RPMS is not set. Please set the environment variable HAPROXY_RPMS. (e.g., HAPROXY_RPMS=https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm))
+  $(error HAPROXY_RPMS is not set. Please set the environment variable HAPROXY_RPMS.)
 endif
 
 # Uncomment the following for remote debugging.
