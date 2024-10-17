@@ -99,7 +99,7 @@ endif
 
 deploy-image: build-image push-image set-image
 
-reset:
+reset: uninstall-port-forward-services
 	oc scale --replicas 1 -n openshift-cluster-version deployments/cluster-version-operator
 	oc scale --replicas 1 -n openshift-ingress-operator deployments ingress-operator
 	oc delete -n openshift-ingress deployment/router-default
