@@ -141,51 +141,6 @@ will automatically load when you navigate to the directory.
     $ make -f hack/Makefile.debug set-image
     ```
 
-    The `set-image` target in the Makefile performs the following
-    steps to update the router deployment:
-
-    ```makefile
-    set-image:
-        oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
-        oc scale --replicas 0 -n openshift-ingress-operator deployments ingress-operator
-        oc scale --replicas 0 -n openshift-ingress deployment/router-default
-        oc apply -f hack/remote-debug/manifests
-        @for patch in hack/remote-debug/patches/*.yaml; do \
-            echo "Applying patch $$patch"; \
-            oc -n openshift-ingress patch deployment router-default -p "$$(cat $$patch)" --type=strategic; \
-        done
-        oc -n openshift-ingress set image deployment/router-default router=$(REGISTRY)/$(IMAGE):$(TAG)
-        oc scale --replicas 1 -n openshift-ingress deployment/router-default
-    ```
-
-    Explanation of the steps:
-
-    - Scale down both the Cluster Version Operator (CVO) and the
-      Ingress Operator to stop the reconciliation of the router
-      deployment since we are using a custom image.
-
-    - Scale down the router deployment to 0 replicas, ensuring that no
-      instances of the old image are running.
-
-    - Apply Manifests: This step applies the necessary manifests that
-      allow the `remote-debug-helper` to watch for deployment events.
-      Normally, the router deployment does not have the permissions
-      required to watch deployments. To address this, we create a role
-      and a role binding specifically for the `remote-debug-helper`.
-      This role grants the required permissions.
-
-    - Apply patches: This applies several patches to facilitate debugging.
-      The patches include:
-      - cap-add-ALL.yaml: set security capabilities to "ALL" (debug FTW!)
-      - remove-probes.yaml: remove liveness, readiness, and startup probes
-      - run-as-user-0.yaml: run as root
-      - update-image-policy.yaml: set image pull policy to ALWAYS
-
-    - Set the image: Finally we set the new image on the router
-      deployment and scale the router-default deployment back up to 1
-      replica. Having a single replica simplifies debugging as there
-      is only one pod to consider.
-
 # SSH & Debugger pod Access
 
 After deploying the debug image, you can access the container via SSH.
