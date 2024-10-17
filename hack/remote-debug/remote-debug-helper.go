@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -29,8 +28,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 const (
@@ -49,18 +46,8 @@ func main() {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		// Fallback to local config.
-		if home := homedir.HomeDir(); home != "" {
-			configPath := filepath.Join(home, ".kube", "config")
-			config, err = clientcmd.BuildConfigFromFlags("", configPath)
-			if err != nil {
-				fmt.Printf("Error creating local config: %v\n", err)
-				os.Exit(1)
-			}
-		} else {
-			fmt.Printf("Error creating in-cluster config: %v\n", err)
-			os.Exit(1)
-		}
+		fmt.Printf("Error creating in-cluster config: %v\n", err)
+		os.Exit(1)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -124,7 +111,6 @@ func writeEnvFile(deployment *v1.Deployment, event, envFilePath string, clientse
 	envFileContent := extractEnvVars(deployment, clientset)
 
 	if envFileContent == lastEnvContent {
-		// fmt.Printf("No changes in environment variables. Skipping file write. Event: %s\n", event)
 		return
 	}
 
