@@ -17,22 +17,15 @@ ifndef HAPROXY_RPMS
 endif
 
 # Uncomment the following for remote debugging.
-# DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
+DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
 
 ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
-  ifndef GITHUB_USER
-    $(error GITHUB_USER is not set. Please set the environment variable GITHUB_USER)
-  endif
   # Remote debugging requires the dlv executable in the local
   # directory which is copied into the container in
   # hack/remote-debug/Dockerfile.
   ifeq (,$(wildcard ./dlv))
     $(error dlv executable not found in the current directory. Consider running ./hack/remote-debug/find-and-copy-dlv-from-goland-installation)
   endif
-  # GITHUB_USER is a hard requirement. The docker build in
-  # hack/remote-debug/Dockerfile needs to fetch your public ssh keys
-  # from https://github.com/<GITHUB_USER>.keys.
-  export GITHUB_USER
 endif
 
 # The `--continue` flag for `dlv` (Delve debugger) starts the debuggee
@@ -46,8 +39,19 @@ build:
 	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
 	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
 
+hack/remote-debug/ssh:
+	mkdir -p $@
+
+hack/remote-debug/ssh/id_ed25519: | hack/remote-debug/ssh
+	ssh-keygen -t ed25519 -f $@ -C "root@router" -N "" -q
+
+# Conditionally add the SSH key pair dependency.
+ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+build-image: hack/remote-debug/ssh/id_ed25519
+endif
+
 build-image: build
-	$(IMAGEBUILDER) build --build-arg HAPROXY_RPMS="$(HAPROXY_RPMS)" --build-arg GITHUB_USER="$(GITHUB_USER)" -t $(IMAGE):$(TAG) -f $(DOCKERFILE_DEBUG) .
+	$(IMAGEBUILDER) build --build-arg HAPROXY_RPMS="$(HAPROXY_RPMS)" -t $(IMAGE):$(TAG) -f $(DOCKERFILE_DEBUG) .
 
 push-image:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
@@ -77,7 +81,7 @@ ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
 		echo "Checking SSH access..."; \
-		if ssh -o ConnectTimeout=5 -F hack/remote-debug/ssh_config container uptime; then \
+		if ssh -o ConnectTimeout=5 -F hack/remote-debug/ssh/config container uptime; then \
 			echo "SSH check passed."; \
 			break; \
 		else \
@@ -101,12 +105,13 @@ reset:
 	oc delete -n openshift-ingress deployment/router-default
 	oc delete --ignore-not-found -f hack/remote-debug/manifests
 	oc delete --ignore-not-found -f hack/remote-debug/custom-router-scc.yaml
+	$(RM) -f hack/remote-debug/ssh/id_ed25519 hack/remote-debug/ssh/id_ed25519.pub
 
 rsync-openshift-router: build
-	rsync --progress --compress -e 'ssh -F hack/remote-debug/ssh_config' ./openshift-router container:/usr/bin/openshift-router
+	rsync --progress --compress -e 'ssh -F hack/remote-debug/ssh/config' ./openshift-router container:/usr/bin/openshift-router
 
 debug: rsync-openshift-router
-	ssh -t -F hack/remote-debug/ssh_config container "pkill haproxy || true; /usr/bin/start-debugging $(DLV_CONTINUE)"
+	ssh -t -F hack/remote-debug/ssh/config container "pkill haproxy || true; /usr/bin/start-debugging $(DLV_CONTINUE)"
 
 install-port-forward-services: | $(SYSTEMD_DIR)
 	for service in $(SERVICE_FILES); do \
@@ -136,3 +141,7 @@ restart-port-forward-services:
 
 $(SYSTEMD_DIR):
 	@mkdir -p $@
+
+.PHONY: ssh-container
+ssh-container:
+	ssh -F hack/remote-debug/ssh/config container

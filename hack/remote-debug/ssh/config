@@ -7,3 +7,5 @@ Host container
   StrictHostKeyChecking no
   User root
   UserKnownHostsFile /dev/null
+  IdentitiesOnly yes
+  IdentityFile hack/remote-debug/ssh/id_ed25519

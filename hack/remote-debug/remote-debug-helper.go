@@ -10,9 +10,6 @@
 // session provides an accurate context for troubleshooting and
 // interacting with the router as if commands were executed directly
 // within the pod.
-//
-// Additionally, this program starts an SSH daemon within a container,
-// allowing users to SSH into the environment for debugging purposes.
 package main
 
 import (

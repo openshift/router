@@ -1,9 +1,5 @@
 FROM quay.io/fedora/fedora:40
 
-# This is a build-time variable and must be present in the
-# environment.
-ARG GITHUB_USER
-
 ARG CLEAN_DNF_CACHE=false
 ARG DNF_UPDATE=false
 
@@ -31,14 +27,15 @@ RUN echo "AllowAgentForwarding no" >> /etc/ssh/sshd_config && \
     echo "Match User root" >> /etc/ssh/sshd_config && \
     echo "  AuthorizedKeysFile /etc/ssh/authorized_keys.d/%u" >> /etc/ssh/sshd_config && \
     ssh-keygen -A && \
-    mkdir -p /etc/ssh/authorized_keys.d && \
-    curl -s https://github.com/${GITHUB_USER}.keys -o /etc/ssh/authorized_keys.d/root && \
-    chmod 755 /etc/ssh/authorized_keys.d && \
+    mkdir -p /etc/ssh/authorized_keys.d
+
+COPY hack/remote-debug/ssh/id_ed25519.pub /etc/ssh/authorized_keys.d/root
+
+RUN chmod 755 /etc/ssh/authorized_keys.d && \
     chmod 444 /etc/ssh/authorized_keys.d/root
 
-# Modify root's home directory and preserve bash login setups. When we
-# ssh into the container this step ensures that the initial directory
-# matches `oc rsh <pod>`.
+# Ensure root's home directory preserves bash login setups and the
+# initial working directory matches the container's setting.
 RUN sed -i 's|^\(root:x:0:0:Super User:\)/root|\1/var/lib/haproxy/conf|' /etc/passwd && \
     ln -s /root/.bash* /var/lib/haproxy/conf
 

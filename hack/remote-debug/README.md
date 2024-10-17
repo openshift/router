@@ -76,12 +76,6 @@ follow to set up your development environment.
 
     - **TAG**: (Optional, defaults to "latest"): Specifies the tag for the image.
 
-    - **GITHUB_USER**: When building the custom debug image with SSH support,
-      only public key authentication is supported for SSH login to the pod.
-      The public keys are fetched from
-      `https://github.com/${GITHUB_USER}.keys`, and the Dockerfile requires
-      this environment variable to be set.
-
     - **DOCKERFILE_DEBUG**: This ensures that the Makefile uses the correct
       Dockerfile for building the debug image, enabling features necessary
       for remote debugging.
@@ -89,18 +83,11 @@ follow to set up your development environment.
     - **HAPROXY_RPMS**: Specifies the URLs or package names of the HAProxy
       RPM packages to be used.
 
-    You should verify that you have an SSH key installed on Github with:
-
-    ```sh
-    curl https://github.com/${GITHUB_USER}.keys
-    ```
-
 #### Example `.envrc` file:
 
 ```sh
 export REGISTRY=quay.io
 export IMAGE=amcdermo/openshift-router
-export GITHUB_USER=frobware
 export DOCKERFILE_DEBUG=hack/remote-debug/Dockerfile
 export HAPROXY_RPMS="https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy-debugsource-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-debuginfo-2.8.10-1.rhaos4.17.el9.x86_64.rpm"
 ```
@@ -125,7 +112,7 @@ will automatically load when you navigate to the directory.
     $ make -f hack/Makefile.debug build-image
     GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
     GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
-    podman build --build-arg HAPROXY_RPMS=https="https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm" --build-arg GITHUB_USER="frobware" -t amcdermo/openshift-router:latest -f hack/Dockerfile.debug .
+    podman build --build-arg HAPROXY_RPMS=https="https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm" -t amcdermo/openshift-router:latest -f hack/Dockerfile.debug .
     ...
     Successfully tagged localhost/amcdermo/openshift-router:latest
     ```
@@ -272,7 +259,7 @@ root          33      27  0 07:26 pts/0    00:00:00 ps -ef
     We can now ssh to the container:
 
     ```sh
-    $ ssh -F hack/remote-debug/ssh_config container
+    $ make -f hack/Makefile.debug ssh-container
     Last login: Thu Jun  6 08:49:05 2024 from ::1
     [root@worker-0 ~]# whoami
     root
@@ -377,7 +364,7 @@ Welcome to the Happy Path!
     You can now start debugging again with:
 
     ```sh
-    $ ssh -F hack/remote-debug/ssh_config container
+    $ make -f hack/Makefile.debug ssh-container
     Last login: Thu Jun  6 08:53:17 2024 from ::1
 
     [root@worker-0 ~]# /usr/bin/start-debugging --continue
@@ -399,10 +386,10 @@ new binary, and starting the debugging session in one step:
 $ make -f hack/Makefile.debug debug
 GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
 GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
-rsync --progress -z -e 'ssh -F hack/remote-debug/ssh_config' ./openshift-router container:/usr/bin/openshift-router
+rsync --progress -z -e 'ssh -F hack/remote-debug/ssh/config' ./openshift-router container:/usr/bin/openshift-router
 openshift-router
      82,512,838 100%  203.29MB/s    0:00:00 (xfr#1, to-chk=0/1)
-ssh -t -F hack/remote-debug/ssh_config container /usr/bin/start-debugging --continue
+ssh -t -F hack/remote-debug/ssh/config container /usr/bin/start-debugging --continue
 API server listening at: [::]:7000
 2024-06-06T09:33:44Z warning layer=rpc Listening for remote connections (connections are not authenticated nor encrypted)
 I0606 09:33:45.873085     234 template.go:560] "msg"="starting router" "logger"="router" "version"="majorFromGit: \nminorFromGit: \ncommitFromGit: \nversionFromGit: unknown\ngitTreeState: \nbuildDate: \n"
@@ -424,10 +411,10 @@ with:
 $ make -f hack/Makefile.debug debug DLV_CONTINUE=
 GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
 GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
-rsync --progress -z -e 'ssh -F hack/remote-debug/ssh_config' ./openshift-router container:/usr/bin/openshift-router
+rsync --progress -z -e 'ssh -F hack/remote-debug/ssh/config' ./openshift-router container:/usr/bin/openshift-router
 openshift-router
      82,512,838 100%    4.27GB/s    0:00:00 (xfr#1, to-chk=0/1)
-ssh -t -F hack/remote-debug/ssh_config container /usr/bin/start-debug
+ssh -t -F hack/remote-debug/ssh/config container /usr/bin/start-debug
 ```
 
 Here, dlv is waiting for a connection from the debugger, which allows
@@ -446,7 +433,7 @@ another shell to kill the `dlv` process so that you can continue down
 the happy path:
 
 ```sh
-$ ssh -F hack/remote-debug/ssh_config container pkill dlv
+$ make -f hack/Makefile.debug ssh-container pkill dlv
 ```
 
 # Router Logs
