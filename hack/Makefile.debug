@@ -63,7 +63,6 @@ set-image: install-port-forward-services
 	oc scale --replicas 0 -n openshift-ingress deployment/router-default
 ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
 	oc apply -f hack/remote-debug/manifests
-	oc apply -f hack/remote-debug/custom-router-scc.yaml
 	@for patch in $(sort $(wildcard hack/remote-debug/patches/deployment/router-default/*.yaml)); do \
 	    echo "Applying patch $$patch"; \
 	    oc -n openshift-ingress patch deployment router-default -p "$$(cat $$patch)" --type=strategic; \
@@ -104,7 +103,6 @@ reset: uninstall-port-forward-services
 	oc scale --replicas 1 -n openshift-ingress-operator deployments ingress-operator
 	oc delete -n openshift-ingress deployment/router-default
 	oc delete --ignore-not-found -f hack/remote-debug/manifests
-	oc delete --ignore-not-found -f hack/remote-debug/custom-router-scc.yaml
 	$(RM) -f hack/remote-debug/ssh/id_ed25519 hack/remote-debug/ssh/id_ed25519.pub
 
 rsync-openshift-router: build
