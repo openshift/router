@@ -70,27 +70,12 @@ follow to set up your development environment.
     deployment processes. These variables can be set in a `.envrc` file in
     the top-level directory.
 
-    - **REGISTRY**: The container registry where the image will be pushed.
-
-    - **IMAGE**: The name of the debug image.
-
-    - **TAG**: (Optional, defaults to "latest"): Specifies the tag for the image.
-
-    - **DOCKERFILE_DEBUG**: This ensures that the Makefile uses the correct
-      Dockerfile for building the debug image, enabling features necessary
-      for remote debugging.
-
-    - **HAPROXY_RPMS**: Specifies the URLs or package names of the HAProxy
-      RPM packages to be used.
-
-#### Example `.envrc` file:
-
-```sh
-export REGISTRY=quay.io
-export IMAGE=amcdermo/openshift-router
-export DOCKERFILE_DEBUG=hack/remote-debug/Dockerfile
-export HAPROXY_RPMS="https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy-debugsource-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-debuginfo-2.8.10-1.rhaos4.17.el9.x86_64.rpm"
-```
+    ```sh
+    export REGISTRY=quay.io
+    export IMAGE=amcdermo/openshift-router
+    export DOCKERFILE_DEBUG=hack/remote-debug/Dockerfile
+    export HAPROXY_RPMS="https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy-debugsource-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-debuginfo-2.8.10-1.rhaos4.17.el9.x86_64.rpm"
+    ```
 
 You can either source the `.envrc` file manually with:
 ```sh
