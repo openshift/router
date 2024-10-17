@@ -17,7 +17,7 @@ ifndef HAPROXY_RPMS
 endif
 
 # Uncomment the following for remote debugging.
-DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
+# DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
 
 ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
   # Remote debugging requires the dlv executable in the local
