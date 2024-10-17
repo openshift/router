@@ -376,8 +376,6 @@ Welcome to the Happy Path!
     API server listening at: [::]:7000
     ```
 
-## Lather, Rinse, Repeat:
-
 You can simplify the previous steps using the `debug` Makefile target.
 This target combines steps 1, 2, and 3, running the build, syncing the
 new binary, and starting the debugging session in one step:
