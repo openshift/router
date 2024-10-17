@@ -289,6 +289,9 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	if err := router.watchMutualTLSCert(); err != nil {
 		return nil, err
 	}
+	if err := router.watchCABundleCert(); err != nil {
+		return nil, err
+	}
 	if router.dynamicConfigManager != nil {
 		log.V(0).Info("initializing dynamic config manager ... ")
 		router.dynamicConfigManager.Initialize(router, router.defaultCertificatePath)
@@ -1520,4 +1523,29 @@ func privateKeysFromPEM(pemCerts []byte) ([]byte, error) {
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+// watchCABundleCert watches the directory containing the CA bundle certificate
+// and reloads the router if the directory contents change.
+func (r *templateRouter) watchCABundleCert() error {
+	if len(r.defaultDestinationCAPath) == 0 {
+		log.V(0).Info("defaultDestinationCAPath is empty, file watcher not created")
+		return nil
+	}
+
+	caBundleDir := filepath.Dir(r.defaultDestinationCAPath)
+	reloadFn := func() {
+		log.V(0).Info("reloading to get updated default destination CA certificate bundle")
+		r.rateLimitedCommitFunction.RegisterChange()
+	}
+
+	if err := r.watchVolumeMountDir(caBundleDir, reloadFn); err != nil {
+		// On encountering an error will log it and not return the error because
+		// DefaultDestinationCAPath is an optional configuration parameter, and an
+		// error here shouldn't cause router to exit.
+		log.V(0).Error(err, "failed to establish watch on CA bundle certificate directory")
+		return nil
+	}
+
+	return nil
 }
