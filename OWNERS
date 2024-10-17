@@ -11,6 +11,7 @@ approvers:
   - rfredette
   - alebedev87
   - gcs278
+  - grzpiotrowski
 reviewers:
   - ironcladlou
   - knobunc
@@ -25,4 +26,5 @@ reviewers:
   - rfredette
   - alebedev87
   - gcs278
+  - grzpiotrowski
 component: Routing
