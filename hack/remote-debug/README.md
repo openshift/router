@@ -259,7 +259,7 @@ root          33      27  0 07:26 pts/0    00:00:00 ps -ef
     We can now ssh to the container:
 
     ```sh
-    $ make -f hack/Makefile.debug ssh-container
+    $ ssh -F hack/remote-debug/ssh_config container
     Last login: Thu Jun  6 08:49:05 2024 from ::1
     [root@worker-0 ~]# whoami
     root
@@ -364,7 +364,7 @@ Welcome to the Happy Path!
     You can now start debugging again with:
 
     ```sh
-    $ make -f hack/Makefile.debug ssh-container
+    $ ssh -F hack/remote-debug/ssh_config container
     Last login: Thu Jun  6 08:53:17 2024 from ::1
 
     [root@worker-0 ~]# /usr/bin/start-debugging --continue
@@ -431,7 +431,7 @@ another shell to kill the `dlv` process so that you can continue down
 the happy path:
 
 ```sh
-$ make -f hack/Makefile.debug ssh-container pkill dlv
+$ ssh -F hack/remote-debug/ssh_config container pkill dlv
 ```
 
 # Router Logs
