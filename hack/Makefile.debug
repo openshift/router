@@ -121,7 +121,10 @@ rsync-openshift-router: build
 debug: rsync-openshift-router
 	ssh -t -F hack/remote-debug/ssh/config container "pkill haproxy || true; /usr/bin/start-debugging $(DLV_CONTINUE)"
 
-install-port-forward-services: | $(SYSTEMD_DIR)
+check-for-envsubst:
+	@command -v envsubst >/dev/null 2>&1 || { echo >&2 "envsubst(1) is required but it's not installed. Aborting."; exit 1; }
+
+install-port-forward-services: check-for-envsubst | $(SYSTEMD_DIR)
 	for service in $(SERVICE_FILES); do \
 		KUBECONFIG=$(KUBECONFIG) \
 		LOCAL_DEBUG_PORT=$(LOCAL_DEBUG_PORT) \
