@@ -1,9 +1,5 @@
 package templaterouter
 
-import (
-	fakesm "github.com/openshift/library-go/pkg/route/secretmanager/fake"
-)
-
 // NewFakeTemplateRouter provides an empty template router with a simple certificate manager
 // backed by a fake cert writer for testing
 func NewFakeTemplateRouter() *templateRouter {
@@ -13,7 +9,6 @@ func NewFakeTemplateRouter() *templateRouter {
 		serviceUnits:              make(map[ServiceUnitKey]ServiceUnit),
 		certManager:               fakeCertManager,
 		rateLimitedCommitFunction: nil,
-		secretManager:             &fakesm.SecretManager{},
 	}
 }
 

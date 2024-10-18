@@ -780,9 +780,6 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		HTTPResponseHeaders:           o.HTTPResponseHeaders,
 		HTTPRequestHeaders:            o.HTTPRequestHeaders,
 	}
-	if o.AllowExternalCertificates {
-		pluginCfg.SecretManager = secretManager
-	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
 	templatePlugin, err := templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
