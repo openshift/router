@@ -73,7 +73,7 @@ follow to set up your development environment.
     ```sh
     export REGISTRY=quay.io
     export IMAGE=amcdermo/openshift-router
-    export DOCKERFILE_DEBUG=hack/remote-debug/Dockerfile
+    export DOCKERFILE_REMOTE_DEBUG=hack/remote-debug/Dockerfile
     ```
 
 You can either source the `.envrc` file manually with:

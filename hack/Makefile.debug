@@ -10,12 +10,12 @@ IMAGEBUILDER ?= podman
 SERVICE_FILES := $(wildcard hack/remote-debug/*.service)
 SYSTEMD_DIR   := $(HOME)/.config/systemd/user
 
-DOCKERFILE_DEBUG ?= hack/Dockerfile.debug
+DOCKERFILE_REMOTE_DEBUG ?= hack/Dockerfile.debug
 
 # Uncomment the following for remote debugging.
-# DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
+# DOCKERFILE_REMOTE_DEBUG = hack/remote-debug/Dockerfile
 
-ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+ifeq ($(DOCKERFILE_REMOTE_DEBUG),hack/remote-debug/Dockerfile)
   # Remote debugging requires the dlv executable in the local
   # directory which is copied into the container in
   # hack/remote-debug/Dockerfile.
@@ -42,18 +42,18 @@ hack/remote-debug/ssh/id_ed25519: | hack/remote-debug/ssh
 	ssh-keygen -t ed25519 -f $@ -C "root@router" -N "" -q
 
 # Conditionally add the SSH key pair dependency.
-ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+ifeq ($(DOCKERFILE_REMOTE_DEBUG),hack/remote-debug/Dockerfile)
 build-image: hack/remote-debug/ssh/id_ed25519
 endif
 
 build-image: build
-	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f $(DOCKERFILE_DEBUG) .
+	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f $(DOCKERFILE_REMOTE_DEBUG) .
 
 push-image:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
 	$(IMAGEBUILDER) push $(REGISTRY)/$(IMAGE):$(TAG)
 
-ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+ifeq ($(DOCKERFILE_REMOTE_DEBUG),hack/remote-debug/Dockerfile)
 set-image: install-port-forward-services
 endif
 
@@ -61,7 +61,7 @@ set-image:
 	oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
 	oc scale --replicas 0 -n openshift-ingress-operator deployments ingress-operator
 	oc scale --replicas 0 -n openshift-ingress deployment/router-default
-ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+ifeq ($(DOCKERFILE_REMOTE_DEBUG),hack/remote-debug/Dockerfile)
 	oc apply -f hack/remote-debug/manifests
 	@for patch in $(sort $(wildcard hack/remote-debug/patches/deployment/router-default/*.yaml)); do \
 	    echo "Applying patch $$patch"; \
@@ -76,7 +76,7 @@ endif
 		echo "Deployment did not become available in time. Please check the deployment status."; \
 		false; \
 	fi
-ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+ifeq ($(DOCKERFILE_REMOTE_DEBUG),hack/remote-debug/Dockerfile)
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
@@ -99,7 +99,7 @@ endif
 
 deploy-image: build-image push-image set-image
 
-ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
+ifeq ($(DOCKERFILE_REMOTE_DEBUG),hack/remote-debug/Dockerfile)
 reset:: install-port-forward-services
 	$(RM) -f hack/remote-debug/ssh/id_ed25519 hack/remote-debug/ssh/id_ed25519.pub
 endif
