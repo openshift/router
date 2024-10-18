@@ -396,12 +396,12 @@ This will combine the steps outlined earlier, which are:
 - **`build`**: Compile the openshift-router and remote-debug-helper binaries
 - **`build-image`**: Build the new image
 - **`push-image`**: Push the new image to the specified container registry
+- **`install-port-forward-services`**: Install the port-forward systemd services
 - **`set-image`**: Update the router deployment to use the new image
-- **`restart-port-forward-services`**: Restart the port-forward services to ensure they are pointing to the correct pod
 
-By using the `deploy-image` target, you can quickly redeploy a new debug image
-with all necessary changes, streamlining the development and debugging
-process.
+By using the `deploy-image` target, you can quickly redeploy a new
+debug image with all necessary changes, streamlining the development
+and debugging process.
 
 # Reverting a Debug Image Deployment
 
