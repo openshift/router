@@ -22,7 +22,7 @@ new image on the deployment, and waiting for new pods to roll out.
 ## Overview
 
 The debug image runs `supervisord` as the init system. `supervisord`
-launches `remote-debug-helper`, which performs the following tasks:
+launches `etc-profile-helper`, which performs the following tasks:
 
 1. Discovers all environment variables associated with the
    `router-default` deployment.
@@ -63,7 +63,7 @@ follow to set up your development environment.
 
     Ensure the `dlv` debugger version installed by `dnf` matches the one
     used by your $IDE to avoid compatibility issues.
-
+    
 ### 2. Set Environment Variables for image build and SSH access
 
     You need to specify several environment variables for the build and
@@ -103,7 +103,7 @@ follow to set up your development environment.
 
 # Building and deploying the debug image
 
-1. **Build `openshift-router` and `remote-debug-helper`**:
+1. **Build `openshift-router` and `etc-profile-helper`**:
 
     To build the image, ensure you have at least the HAProxy binary
     RPMs in the current directory (which is the Docker/Podman build
@@ -123,7 +123,7 @@ follow to set up your development environment.
    Navigate to the top-level directory of your
    [openshift-router](https://github.com/openshift/router) clone and
    run the following command to compile the `openshift-router` and
-   `remote-debug-helper` binaries:
+   `etc-profile-helper` binaries:
 
     ```sh
     $ make -f hack/Makefile.debug build-image
@@ -328,7 +328,7 @@ new binary, and starting the debugging session in one step:
 ```sh
 $ make -f hack/Makefile.debug debug
 GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
+GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/etc-profile-helper -gcflags=all="-N -l" ./hack/remote-debug/etc-profile-helper.go
 rsync --progress -z -e 'ssh -F hack/remote-debug/ssh/config' ./openshift-router container:/usr/bin/openshift-router
 openshift-router
      82,512,838 100%  203.29MB/s    0:00:00 (xfr#1, to-chk=0/1)
@@ -353,7 +353,7 @@ with:
 ```sh
 $ make -f hack/Makefile.debug debug DLV_CONTINUE=
 GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
+GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/etc-profile-helper -gcflags=all="-N -l" ./hack/remote-debug/etc-profile-helper.go
 rsync --progress -z -e 'ssh -F hack/remote-debug/ssh/config' ./openshift-router container:/usr/bin/openshift-router
 openshift-router
      82,512,838 100%    4.27GB/s    0:00:00 (xfr#1, to-chk=0/1)
@@ -425,7 +425,7 @@ $ make -f hack/Makefile.debug deploy-image
 ```
 
 This will combine the steps outlined earlier, which are:
-- **`build`**: Compile the openshift-router and remote-debug-helper binaries
+- **`build`**: Compile the openshift-router and etc-profile-helper binaries
 - **`build-image`**: Build the new image
 - **`push-image`**: Push the new image to the specified container registry
 - **`install-port-forward-services`**: Install the port-forward systemd services

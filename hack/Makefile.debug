@@ -38,7 +38,7 @@ DLV_CONTINUE ?= --continue
 
 build:
 	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
+	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/etc-profile-helper -gcflags=all="-N -l" ./hack/remote-debug/etc-profile-helper.go
 
 hack/remote-debug/ssh:
 	mkdir -p $@

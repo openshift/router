@@ -48,7 +48,7 @@ COPY images/router/haproxy/ /var/lib/haproxy/
 # to avoid compatibility issues.
 COPY dlv \
      hack/remote-debug/start-debugging \
-     hack/remote-debug/remote-debug-helper \
+     hack/remote-debug/etc-profile-helper \
      openshift-router /usr/bin/
 
 LABEL io.k8s.display-name="OpenShift HAProxy Router" \
