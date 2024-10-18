@@ -76,12 +76,30 @@ follow to set up your development environment.
     export DOCKERFILE_REMOTE_DEBUG=hack/remote-debug/Dockerfile
     ```
 
-You can either source the `.envrc` file manually with:
-```sh
-$ source .envrc
-```
-or, if using [direnv](https://direnv.net/), the environment variables
-will automatically load when you navigate to the directory.
+    The port-forwarding services for SSH and Devle (described later) also
+    rely on the following variables. You don't have to set these as they
+    have the following defaults. But if you have something already bound
+    to port 2222 or port 7777 then these environment variables provide an
+    escape hatch to change the defaults.
+
+    ```sh
+    export KUBECONFIG=${HOME}/.kube/config
+
+    # The local port used for Delve (debugger) connections.
+    export LOCAL_DEBUG_PORT=7000
+
+    # The local port used for SSH access.
+    export LOCAL_SSH_PORT=2222
+
+    # Path to the OpenShift CLI binary (oc).
+    export OC_PATH=/usr/bin/oc
+
+    You can either source the `.envrc` file manually with:
+    ```sh
+    $ source .envrc
+    ```
+    or, if using [direnv](https://direnv.net/), the environment variables
+    will automatically load when you navigate to the directory.
 
 # Building and deploying the debug image
 

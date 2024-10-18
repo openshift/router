@@ -1,11 +1,11 @@
 [Unit]
-Description=Persistent oc port-forward service for port 2222 (SSH)
+Description=Persistent oc port-forward service for SSH
 After=network.target
 
 [Service]
 RestartSec=3
 Restart=always
-ExecStart=%h/go/bin/oc port-forward -n openshift-ingress deployment/router-default --address 127.0.0.1 2222:2222
+ExecStart=${OC_PATH} --kubeconfig ${KUBECONFIG} port-forward -n openshift-ingress deployment/router-default --address 127.0.0.1 ${LOCAL_SSH_PORT}:2222
 StandardOutput=journal
 StandardError=journal
 

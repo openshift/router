@@ -1,11 +1,11 @@
 [Unit]
-Description=Persistent oc port-forward service for port 7000 (Delve debugger)
+Description=Persistent oc port-forward service for Delve debugger
 After=network.target
 
 [Service]
-RestartSec=3
+RestartSec=1
 Restart=always
-ExecStart=%h/go/bin/oc port-forward -n openshift-ingress deployment/router-default --address 127.0.0.1 7000:7000
+ExecStart=${OC_PATH} --kubeconfig ${KUBECONFIG} port-forward -n openshift-ingress deployment/router-default --address 127.0.0.1 ${LOCAL_DEBUG_PORT}:7000
 StandardOutput=journal
 StandardError=journal
 

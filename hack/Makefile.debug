@@ -12,6 +12,11 @@ SYSTEMD_DIR   := $(HOME)/.config/systemd/user
 
 DOCKERFILE_REMOTE_DEBUG ?= hack/Dockerfile.debug
 
+KUBECONFIG		?= $(HOME)/.kube/config
+LOCAL_DEBUG_PORT	?= 7000
+LOCAL_SSH_PORT		?= 2222
+OC_PATH			?= /usr/bin/oc
+
 # Uncomment the following for remote debugging.
 # DOCKERFILE_REMOTE_DEBUG = hack/remote-debug/Dockerfile
 
@@ -118,7 +123,11 @@ debug: rsync-openshift-router
 
 install-port-forward-services: | $(SYSTEMD_DIR)
 	for service in $(SERVICE_FILES); do \
-		install -m 644 $$service $(SYSTEMD_DIR)/$$(basename $$service); \
+		KUBECONFIG=$(KUBECONFIG) \
+		LOCAL_DEBUG_PORT=$(LOCAL_DEBUG_PORT) \
+		LOCAL_SSH_PORT=$(LOCAL_SSH_PORT) \
+		OC_PATH=$(OC_PATH) \
+		envsubst < $$service > $(SYSTEMD_DIR)/$$(basename $$service); \
 		systemctl --user daemon-reload; \
 		systemctl --user enable --now $$(basename $$service); \
 	done
