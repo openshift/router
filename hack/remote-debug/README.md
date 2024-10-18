@@ -95,23 +95,12 @@ will automatically load when you navigate to the directory.
 
     ```sh
     $ make -f hack/Makefile.debug build-image
-    GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-    GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o hack/remote-debug/remote-debug-helper -gcflags=all="-N -l" ./hack/remote-debug/remote-debug-helper.go
-    podman build --build-arg HAPROXY_RPMS=https="https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm" -t amcdermo/openshift-router:latest -f hack/Dockerfile.debug .
-    ...
-    Successfully tagged localhost/amcdermo/openshift-router:latest
     ```
 
 2. **Push the image**:
 
     ```sh
     $ make -f hack/Makefile.debug push-image
-    podman tag amcdermo/openshift-router:latest quay.io/amcdermo/openshift-router:latest
-    podman push quay.io/amcdermo/openshift-router:latest
-    Getting image source signatures
-    ...
-    Copying config f918e18835 done
-    Writing manifest to image destination
     ```
 
 3. **Set the image**:
