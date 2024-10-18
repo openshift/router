@@ -27,7 +27,7 @@ func generateTestData(n int) []string {
 	return cidrs
 }
 
-func TestValidateWhiteList(t *testing.T) {
+func Test_ValidateAllowlist(t *testing.T) {
 	tests := []struct {
 		name        string
 		data        []string
@@ -66,7 +66,7 @@ func TestValidateWhiteList(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		values, ok := ValidateWhiteList(strings.Join(tc.data, " "))
+		values, ok := ValidateAllowlist(strings.Join(tc.data, " "))
 		if !reflect.DeepEqual(tc.expectation, values) {
 			t.Errorf("%s: expected validated data %+v, got %+v", tc.name, tc.expectation, values)
 		}
@@ -80,7 +80,7 @@ func TestValidateWhiteList(t *testing.T) {
 	for _, v := range limitsTest {
 		name := fmt.Sprintf("limits-test-%d", v)
 		data := generateTestData(v)
-		values, ok := ValidateWhiteList(strings.Join(data, " "))
+		values, ok := ValidateAllowlist(strings.Join(data, " "))
 		if !reflect.DeepEqual(data, values) {
 			t.Errorf("%s: expected validated data %+v, got %+v", name, data, values)
 		}
