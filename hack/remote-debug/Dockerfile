@@ -3,12 +3,15 @@ FROM quay.io/fedora/fedora:40
 ARG CLEAN_DNF_CACHE=false
 ARG DNF_UPDATE=false
 
-# For example: https://github.com/frobware/haproxy-builds/raw/master/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm
-ARG HAPROXY_RPMS
+RUN mkdir -p /tmp/rpms /root/rpmbuild/SRPMS
+COPY haproxy*.rpm /tmp/rpms/
 
-RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat lsof strace rsync wget supervisor openssh-server" && \
+RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat lsof strace rsync wget supervisor openssh-server rpm-build" && \
     [ "$DNF_UPDATE" = "true" ] && dnf update -y || echo "Skipping dnf update" && \
-    dnf install -y $INSTALL_PKGS $HAPROXY_RPMS && \
+    dnf install -y $INSTALL_PKGS && \
+    if ls /tmp/rpms/*src.rpm 2>/dev/null; then mv /tmp/rpms/*src.rpm /root/rpmbuild/SRPMS/; fi && \
+    if ls /tmp/rpms/*.rpm 2>/dev/null; then dnf install -y /tmp/rpms/*.rpm; fi && \
+    if ls /root/rpmbuild/SRPMS/*.src.rpm 2>/dev/null; then rpm -ivh /root/rpmbuild/SRPMS/*.src.rpm; fi && \
     mkdir -p /var/lib/haproxy/router/{certs,cacerts,whitelists} && \
     mkdir -p /var/lib/haproxy/{conf/.tmp,run,bin,log,mtls} && \
     touch /var/lib/haproxy/conf/{{os_http_be,os_edge_reencrypt_be,os_tcp_be,os_sni_passthrough,os_route_http_redirect,cert_config,os_wildcard_domain}.map,haproxy.config} && \

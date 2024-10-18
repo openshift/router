@@ -12,10 +12,6 @@ SYSTEMD_DIR   := $(HOME)/.config/systemd/user
 
 DOCKERFILE_DEBUG ?= hack/Dockerfile.debug
 
-ifndef HAPROXY_RPMS
-  $(error HAPROXY_RPMS is not set. Please set the environment variable HAPROXY_RPMS.)
-endif
-
 # Uncomment the following for remote debugging.
 # DOCKERFILE_DEBUG = hack/remote-debug/Dockerfile
 
@@ -51,7 +47,7 @@ build-image: hack/remote-debug/ssh/id_ed25519
 endif
 
 build-image: build
-	$(IMAGEBUILDER) build --build-arg HAPROXY_RPMS="$(HAPROXY_RPMS)" -t $(IMAGE):$(TAG) -f $(DOCKERFILE_DEBUG) .
+	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f $(DOCKERFILE_DEBUG) .
 
 push-image:
 	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
@@ -72,6 +68,7 @@ ifeq ($(DOCKERFILE_DEBUG),hack/remote-debug/Dockerfile)
 	    oc -n openshift-ingress patch deployment router-default -p "$$(cat $$patch)" --type=strategic; \
 	done
 endif
+	oc -n openshift-ingress patch deployment router-default -p '{"spec":{"template":{"spec":{"$$setElementOrder/containers":[{"name":"router"}],"containers":[{"imagePullPolicy":"Always","name":"router"}]}}}}'
 	oc -n openshift-ingress set image deployment/router-default router=$(REGISTRY)/$(IMAGE):$(TAG)
 	oc scale --replicas 1 -n openshift-ingress deployment/router-default
 	@echo "Waiting for the deployment/router-default to become available..."; \

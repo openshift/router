@@ -1,11 +1,13 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
-# For example: https://ocp-artifacts.hosts.prod.psi.rdu2.redhat.com/pub/RHOCP/plashets/4.18/stream/el9/latest/x86_64/os/Packages/haproxy-2.8.10-1.rhaos4.17.el9__x86_64/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm
-ARG HAPROXY_RPMS
+RUN mkdir -p /tmp/rpms /root/rpmbuild/SRPMS
+COPY haproxy*.rpm /tmp/rpms/
 
 RUN INSTALL_PKGS="rsyslog procps-ng util-linux socat" && \
-    yum install -y $INSTALL_PKGS $HAPROXY_RPMS && \
+    yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
+    if ls /tmp/rpms/*src.rpm 2>/dev/null; then rm /tmp/rpms/*src.rpm; fi && \
+    if ls /tmp/rpms/*.rpm 2>/dev/null; then dnf install -y /tmp/rpms/*.rpm; fi && \
     yum clean all && \
     mkdir -p /var/lib/haproxy/router/{certs,cacerts,whitelists} && \
     mkdir -p /var/lib/haproxy/{conf/.tmp,run,bin,log,mtls} && \

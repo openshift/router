@@ -74,7 +74,6 @@ follow to set up your development environment.
     export REGISTRY=quay.io
     export IMAGE=amcdermo/openshift-router
     export DOCKERFILE_DEBUG=hack/remote-debug/Dockerfile
-    export HAPROXY_RPMS="https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy-debugsource-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm https://github.com/frobware/haproxy-builds/raw/master/debug/rhaos-4.17-rhel-9/haproxy28-debuginfo-2.8.10-1.rhaos4.17.el9.x86_64.rpm"
     ```
 
 You can either source the `.envrc` file manually with:
@@ -87,6 +86,21 @@ will automatically load when you navigate to the directory.
 # Building and deploying the debug image
 
 1. **Build `openshift-router` and `remote-debug-helper`**:
+
+    To build the image, ensure you have at least the HAProxy binary
+    RPMs in the current directory (which is the Docker/Podman build
+    context). These RPMs can be obtained via brew (RH internal build
+    system). The image build process will automatically copy all
+    haproxy*.rpm files, both source and binary RPMs, and install them
+    appropriately.
+
+   ```sh
+   % ls -l *.rpm
+   -rw-r--r-- 1 aim users 4402838 Oct 18 10:34 haproxy-2.8.10-1.rhaos4.17.el9.src.rpm
+   -rw-r--r-- 1 aim users 2460520 Oct 18 10:34 haproxy28-2.8.10-1.rhaos4.17.el9.x86_64.rpm
+   -rw-r--r-- 1 aim users 3967020 Oct 18 10:34 haproxy28-debuginfo-2.8.10-1.rhaos4.17.el9.x86_64.rpm
+   -rw-r--r-- 1 aim users 1418293 Oct 18 10:34 haproxy-debugsource-2.8.10-1.rhaos4.17.el9.x86_64.rpm
+   ```
 
    Navigate to the top-level directory of your
    [openshift-router](https://github.com/openshift/router) clone and
