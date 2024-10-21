@@ -105,20 +105,29 @@ var _ router.Plugin = &fakePluginDone{}
 
 type statusRecorder struct {
 	rejections                 []string
+	updates                    []string
 	unservableInFutureVersions map[string]string
+	doneCh                     chan struct{}
 }
 
-func (r *statusRecorder) rejectionKey(route *routev1.Route) string {
+func (r *statusRecorder) routeKey(route *routev1.Route) string {
 	return route.Namespace + "-" + route.Name
 }
 func (r *statusRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	r.rejections = append(r.rejections, fmt.Sprintf("%s:%s", r.rejectionKey(route), reason))
+	defer close(r.doneCh)
+	r.rejections = append(r.rejections, fmt.Sprintf("%s:%s", r.routeKey(route), reason))
 }
+
+func (r *statusRecorder) RecordRouteUpdate(route *routev1.Route, reason, message string) {
+	defer close(r.doneCh)
+	r.updates = append(r.updates, fmt.Sprintf("%s:%s", r.routeKey(route), reason))
+}
+
 func (r *statusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
-	delete(r.unservableInFutureVersions, r.rejectionKey(route))
+	delete(r.unservableInFutureVersions, r.routeKey(route))
 }
 func (r *statusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
-	r.unservableInFutureVersions[r.rejectionKey(route)] = reason
+	r.unservableInFutureVersions[r.routeKey(route)] = reason
 }
 
 var _ RouteStatusRecorder = &statusRecorder{}
@@ -1114,8 +1123,10 @@ func TestRouteSecretManager(t *testing.T) {
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
 			p := &fakePlugin{}
-			recorder := &statusRecorder{}
-			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &testSARCreator{allow: s.allow})
+			recorder := &statusRecorder{
+				doneCh: make(chan struct{}),
+			}
+			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{}, &testSARCreator{allow: s.allow})
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
 			if (gotErr != nil) != s.expectedError {
@@ -1130,28 +1141,22 @@ func TestRouteSecretManager(t *testing.T) {
 			if !reflect.DeepEqual(s.expectedRejections, recorder.rejections) {
 				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.rejections)
 			}
-			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route)); exists {
-				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route))
+			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {
+				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route.Namespace, s.route.Name))
 			}
 		})
 	}
 }
 
-func TestSecretUpdateAndDelete(t *testing.T) {
+func TestSecretUpdate(t *testing.T) {
 
 	scenarios := []struct {
-		name                   string
-		route                  *routev1.Route
-		secretManager          fake.SecretManager
-		allow                  bool
-		deleteSecret           bool
-		expectedRoute          *routev1.Route
-		expectedEventType      watch.EventType
-		expectedRejections     []string
-		expectedDeletedSecrets any
+		name                string
+		route               *routev1.Route
+		isRouteAdmittedTrue bool
 	}{
 		{
-			name: "secret updated but permission revoked",
+			name: "Secret updated when route status was Admitted=False",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
@@ -1164,36 +1169,22 @@ func TestSecretUpdateAndDelete(t *testing.T) {
 						},
 					},
 				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-			},
-			allow: false,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionFalse,
+								},
+							},
 						},
 					},
 				},
-			},
-			expectedEventType: watch.Deleted,
-			expectedRejections: []string{
-				"sandbox-route-test:ExternalCertificateValidationFailed",
 			},
 		},
 		{
-			name: "secret updated with permission but got error from secretManager",
+			name: "Secret updated when route status was Admitted=True",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
@@ -1206,125 +1197,34 @@ func TestSecretUpdateAndDelete(t *testing.T) {
 						},
 					},
 				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-				Err:        fmt.Errorf("something"),
-			},
-			allow: true,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
 						},
 					},
 				},
 			},
-			expectedEventType: watch.Deleted,
-			expectedRejections: []string{
-				"sandbox-route-test:ExternalCertificateGetFailed",
-			},
-		},
-		{
-			name: "secret updated with permission correctly",
-			route: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-			},
-			allow: true,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-						Certificate: "my-crt",
-						Key:         "my-key",
-					},
-				},
-			},
-			expectedEventType: watch.Modified,
-		},
-		{
-			name: "secret deleted and route successfully stored into deletedSecrets",
-			route: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-			},
-			deleteSecret: true,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			expectedEventType: watch.Deleted,
-			expectedRejections: []string{
-				"sandbox-route-test:ExternalCertificateSecretDeleted",
-			},
-			expectedDeletedSecrets: true,
+			isRouteAdmittedTrue: true,
 		},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
-			oldSecret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
-			kubeClient := testclient.NewSimpleClientset(oldSecret)
+			recorder := &statusRecorder{
+				doneCh: make(chan struct{}),
+			}
+			lister := &routeLister{items: []*routev1.Route{s.route}}
+			rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+
+			// Create a fakeSecret and start an informer for it
+			secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
+			kubeClient := testclient.NewSimpleClientset(secret)
 			informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
 			go informer.Run(context.TODO().Done())
 
@@ -1333,239 +1233,174 @@ func TestSecretUpdateAndDelete(t *testing.T) {
 				t.Fatal("cache not synced yet")
 			}
 
-			p := &fakePluginDone{
-				doneCh: make(chan struct{}),
-			}
-			recorder := &statusRecorder{}
-			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, &testSecretGetter{namespace: s.route.Namespace, secret: oldSecret}, &testSARCreator{allow: s.allow})
-
-			if _, err := informer.AddEventHandler(rsm.generateSecretHandler(s.route)); err != nil {
+			if _, err := informer.AddEventHandler(rsm.generateSecretHandler(s.route.Namespace, s.route.Name)); err != nil {
 				t.Fatalf("failed to add handler: %v", err)
 			}
 
-			if s.deleteSecret {
-				// delete the secret
-				if err := kubeClient.CoreV1().Secrets(s.route.Namespace).Delete(context.TODO(), s.secretManager.Secret.Name, metav1.DeleteOptions{}); err != nil {
-					t.Fatalf("failed to delete secret: %v", err)
-				}
+			// update the secret
+			updatedSecret := secret.DeepCopy()
+			updatedSecret.Data = map[string][]byte{
+				"tls.crt": []byte("my-crt"),
+				"tls.key": []byte("my-key"),
+			}
+			if _, err := kubeClient.CoreV1().Secrets(s.route.Namespace).Update(context.TODO(), updatedSecret, metav1.UpdateOptions{}); err != nil {
+				t.Fatalf("failed to update secret: %v", err)
+			}
 
+			// wait until route's status is updated
+			<-recorder.doneCh
+
+			expectedStatus := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+
+			if s.isRouteAdmittedTrue {
+				// RecordRouteUpdate will be called if `Admitted=True`
+				if !reflect.DeepEqual(expectedStatus, recorder.updates) {
+					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.updates)
+				}
 			} else {
-				// update the secret
-				if _, err := kubeClient.CoreV1().Secrets(s.route.Namespace).Update(context.TODO(), s.secretManager.Secret, metav1.UpdateOptions{}); err != nil {
-					t.Fatalf("failed to update secret: %v", err)
+				// RecordRouteRejection will be called if `Admitted=False`
+				if !reflect.DeepEqual(expectedStatus, recorder.rejections) {
+					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.rejections)
 				}
 			}
-			// wait until p.plugin.HandleRoute() completes (required to handle race condition)
-			<-p.doneCh
 
-			if !reflect.DeepEqual(s.expectedRoute, p.route) {
-				t.Fatalf("expected route for next plugin %v, but got %v", s.expectedRoute, p.route)
-			}
-			if s.expectedEventType != p.eventType {
-				t.Fatalf("expected %s event for next plugin, but got %s", s.expectedEventType, p.eventType)
-			}
-			if !reflect.DeepEqual(s.expectedRejections, recorder.rejections) {
-				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.rejections)
+			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {
+				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route.Namespace, s.route.Name))
 			}
 
-			if val, _ := rsm.deletedSecrets.Load(generateKey(s.route)); !reflect.DeepEqual(val, s.expectedDeletedSecrets) {
-				t.Fatalf("expected deletedSecrets %v, but got %v", s.expectedDeletedSecrets, val)
-			}
 		})
+	}
+
+}
+
+func TestSecretDelete(t *testing.T) {
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+	recorder := &statusRecorder{
+		doneCh: make(chan struct{}),
+	}
+	p := &fakePluginDone{
+		doneCh: make(chan struct{}),
+	}
+	lister := &routeLister{items: []*routev1.Route{route}}
+	rsm := NewRouteSecretManager(p, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+
+	// Create a fakeSecret and start an informer for it
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
+	kubeClient := testclient.NewSimpleClientset(secret)
+	informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
+	go informer.Run(context.TODO().Done())
+
+	// wait for informer to start
+	if !cache.WaitForCacheSync(context.TODO().Done(), informer.HasSynced) {
+		t.Fatal("cache not synced yet")
+	}
+
+	if _, err := informer.AddEventHandler(rsm.generateSecretHandler(route.Namespace, route.Name)); err != nil {
+		t.Fatalf("failed to add handler: %v", err)
+	}
+
+	// delete the secret
+	if err := kubeClient.CoreV1().Secrets(route.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{}); err != nil {
+		t.Fatalf("failed to delete secret: %v", err)
+	}
+
+	<-recorder.doneCh // wait until the route's status is updated
+	<-p.doneCh        // wait until p.plugin.HandleRoute() is completed
+
+	expectedRoute := route
+	expectedEventType := watch.Deleted
+	expectedRejections := []string{"sandbox-route-test:ExternalCertificateSecretDeleted"}
+	expectedDeletedSecrets := true
+
+	if !reflect.DeepEqual(expectedRoute, p.route) {
+		t.Fatalf("expected route for next plugin %v, but got %v", expectedRoute, p.route)
+	}
+	if expectedEventType != p.eventType {
+		t.Fatalf("expected %s event for next plugin, but got %s", expectedEventType, p.eventType)
+	}
+	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
+		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
+	}
+
+	if val, _ := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); !reflect.DeepEqual(val, expectedDeletedSecrets) {
+		t.Fatalf("expected deletedSecrets %v, but got %v", expectedDeletedSecrets, val)
 	}
 }
 
 func TestSecretRecreation(t *testing.T) {
-	scenarios := []struct {
-		name               string
-		route              *routev1.Route
-		secretManager      fake.SecretManager
-		allow              bool
-		expectedRoute      *routev1.Route
-		expectedEventType  watch.EventType
-		expectedRejections []string
-	}{
-		{
-			name: "secret deleted and recreated with permission revoked",
-			route: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-			},
-			allow: false,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			expectedEventType: watch.Deleted,
-			expectedRejections: []string{
-				"sandbox-route-test:ExternalCertificateSecretDeleted",
-				"sandbox-route-test:ExternalCertificateValidationFailed",
-			},
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
 		},
-		{
-			name: "secret deleted and recreated with permission but got error from secretManager",
-			route: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
 				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-				Err:        fmt.Errorf("something"),
-			},
-			allow: true,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			expectedEventType: watch.Deleted,
-			expectedRejections: []string{
-				"sandbox-route-test:ExternalCertificateSecretDeleted",
-				"sandbox-route-test:ExternalCertificateGetFailed",
-			},
-		},
-		{
-			name: "secret deleted and recreated with permission correctly",
-			route: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-					},
-				},
-			},
-			secretManager: fake.SecretManager{
-				Secret: fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
-					"tls.crt": []byte("my-crt"),
-					"tls.key": []byte("my-key"),
-				}),
-				IsPresent:  true,
-				SecretName: "tls-secret",
-			},
-			allow: true,
-			expectedRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route-test",
-					Namespace: "sandbox",
-				},
-				Spec: routev1.RouteSpec{
-					TLS: &routev1.TLSConfig{
-						ExternalCertificate: &routev1.LocalObjectReference{
-							Name: "tls-secret",
-						},
-						Certificate: "my-crt",
-						Key:         "my-key",
-					},
-				},
-			},
-			expectedEventType: watch.Modified,
-			expectedRejections: []string{
-				"sandbox-route-test:ExternalCertificateSecretDeleted",
 			},
 		},
 	}
+	recorder := &statusRecorder{
+		doneCh: make(chan struct{}),
+	}
+	p := &fakePluginDone{
+		doneCh: make(chan struct{}),
+	}
+	lister := &routeLister{items: []*routev1.Route{route}}
+	rsm := NewRouteSecretManager(p, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
 
-	for _, s := range scenarios {
-		t.Run(s.name, func(t *testing.T) {
-			oldSecret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
-			kubeClient := testclient.NewSimpleClientset(oldSecret)
-			informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
-			go informer.Run(context.TODO().Done())
+	// Create a fakeSecret and start an informer for it
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
+	kubeClient := testclient.NewSimpleClientset(secret)
+	informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
+	go informer.Run(context.TODO().Done())
 
-			// wait for informer to start
-			if !cache.WaitForCacheSync(context.TODO().Done(), informer.HasSynced) {
-				t.Fatal("cache not synced yet")
-			}
+	// wait for informer to start
+	if !cache.WaitForCacheSync(context.TODO().Done(), informer.HasSynced) {
+		t.Fatal("cache not synced yet")
+	}
 
-			nextPlugin := &fakePluginDone{
-				doneCh: make(chan struct{}),
-			}
-			recorder := &statusRecorder{}
-			rsm := NewRouteSecretManager(nextPlugin, recorder, &s.secretManager, &testSecretGetter{namespace: s.route.Namespace, secret: oldSecret}, &testSARCreator{allow: s.allow})
+	if _, err := informer.AddEventHandler(rsm.generateSecretHandler(route.Namespace, route.Name)); err != nil {
+		t.Fatalf("failed to add handler: %v", err)
+	}
 
-			if _, err := informer.AddEventHandler(rsm.generateSecretHandler(s.route)); err != nil {
-				t.Fatalf("failed to add handler: %v", err)
-			}
+	// delete the secret
+	if err := kubeClient.CoreV1().Secrets(route.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{}); err != nil {
+		t.Fatalf("failed to delete secret: %v", err)
+	}
 
-			// secret deletion
-			if err := kubeClient.CoreV1().Secrets(s.route.Namespace).Delete(context.TODO(), s.secretManager.Secret.Name, metav1.DeleteOptions{}); err != nil {
-				t.Fatalf("failed to delete secret: %v", err)
-			}
-			<-nextPlugin.doneCh // wait for HandleRoute (deletion) to complete
+	<-recorder.doneCh // wait until the route's status is updated (deletion)
+	<-p.doneCh        // wait until p.plugin.HandleRoute() is completed (deletion)
 
-			// recreate the secret
-			nextPlugin.doneCh = make(chan struct{}) // need a new doneCh for recreation
-			if _, err := kubeClient.CoreV1().Secrets(s.route.Namespace).Create(context.TODO(), s.secretManager.Secret, metav1.CreateOptions{}); err != nil {
-				t.Fatalf("failed to create secret: %v", err)
-			}
+	// re-create the secret
+	recorder.doneCh = make(chan struct{}) // need a new doneCh for re-creation
+	if _, err := kubeClient.CoreV1().Secrets(route.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{}); err != nil {
+		t.Fatalf("failed to create secret: %v", err)
+	}
 
-			<-nextPlugin.doneCh // wait for HandleRoute (recreation) to complete
+	<-recorder.doneCh // wait until the route's status is updated (re-creation)
 
-			if !reflect.DeepEqual(s.expectedRoute, nextPlugin.route) {
-				t.Fatalf("expected route for next plugin %v, but got %v", s.expectedRoute, nextPlugin.route)
-			}
-			if s.expectedEventType != nextPlugin.eventType {
-				t.Fatalf("expected %s event for next plugin, but got %s", s.expectedEventType, nextPlugin.eventType)
-			}
-			if !reflect.DeepEqual(s.expectedRejections, recorder.rejections) {
-				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.rejections)
-			}
-			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route)); exists {
-				t.Fatalf("deletedSecrets must be cleaned")
-			}
-		})
+	expectedRejections := []string{
+		"sandbox-route-test:ExternalCertificateSecretDeleted",
+		"sandbox-route-test:ExternalCertificateSecretRecreated",
+	}
+	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
+		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
+	}
+	if _, exists := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); exists {
+		t.Fatalf("expected deletedSecrets to not have %q key", generateKey(route.Namespace, route.Name))
 	}
 }

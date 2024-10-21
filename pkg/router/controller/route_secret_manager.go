@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	routev1 "github.com/openshift/api/route/v1"
+	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/route/secretmanager"
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
@@ -29,6 +30,7 @@ type RouteSecretManager struct {
 
 	secretManager secretmanager.SecretManager
 	secretsGetter corev1client.SecretsGetter
+	routelister   routelisters.RouteLister
 	sarClient     authorizationclient.SubjectAccessReviewInterface
 	// deletedSecrets tracks routes for which the associated secret was deleted after intial creation of the secret monitor.
 	// This helps to differentiate between a new secret creation and a recreation of a previously deleted secret.
@@ -39,12 +41,20 @@ type RouteSecretManager struct {
 
 // NewRouteSecretManager creates a new instance of RouteSecretManager.
 // It wraps the provided plugin and adds secret management capabilities.
-func NewRouteSecretManager(plugin router.Plugin, recorder RouteStatusRecorder, secretManager secretmanager.SecretManager, secretsGetter corev1client.SecretsGetter, sarClient authorizationclient.SubjectAccessReviewInterface) *RouteSecretManager {
+func NewRouteSecretManager(
+	plugin router.Plugin,
+	recorder RouteStatusRecorder,
+	secretManager secretmanager.SecretManager,
+	secretsGetter corev1client.SecretsGetter,
+	routelister routelisters.RouteLister,
+	sarClient authorizationclient.SubjectAccessReviewInterface,
+) *RouteSecretManager {
 	return &RouteSecretManager{
 		plugin:         plugin,
 		recorder:       recorder,
 		secretManager:  secretManager,
 		secretsGetter:  secretsGetter,
+		routelister:    routelister,
 		sarClient:      sarClient,
 		deletedSecrets: sync.Map{},
 	}
@@ -95,10 +105,6 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 			}
 		}
 
-	// TODO always creating a new `secretHandler` ensures that there are no stale route specs
-	// in the next plugin chain, especially when the referenced secret is updated or deleted.
-	// This prevents sending outdated routes to subsequent plugins, preserving expected functionality.
-	// TODO : we might need to add RouteLister()
 	case watch.Modified:
 		// Determine if the route's external certificate configuration has changed
 		newHasExt := hasExternalCertificate(route)
@@ -120,13 +126,23 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				}
 			} else {
 				// ExternalCertificate is not updated
-				// Revalidate and update the in-memory TLS certificate and key (even if ExternalCertificate remains unchanged)
-				// It is the responsibility of this plugin to ensure everything is synced properly.
-
-				// One Scenario: The user deletes the secret, causing the route's status to be updated to reject.
-				// This triggers the entire plugin chain again. Without re-validating the external certificate
-				// and re-syncing the secret here, the route could become active again and start serving
-				// the default certificate, even though its spec has an external certificate.
+				// Re-validate and update the in-memory TLS certificate and key (even if ExternalCertificate remains unchanged)
+				// It is the responsibility of this plugin to ensure everything is synced properly, because there might
+				// have been updates to the secret data or other events that require re-evaluation.
+				//
+				// 1. Secret update and re-create: Even if the externalCertificate name remains
+				//    the same, the router needs to be aware of the events when the content of
+				//    the secret is updated or the secret is recreated, to re-validate and
+				//    fetch the new TLS data. Note: These events won't trigger the apiserver
+				//    route admission, hence we need to rely on the router controller for this validation.
+				//
+				// 2. Consider a case where a user deletes the secret, causing the route's
+				//    status to be updated to "reject". This status update triggers the
+				//    entire plugin chain again.  Without re-validating the external certificate
+				//    and re-syncing the secret here, the route could incorrectly transition
+				//    back to an "active" state and start serving the default certificate
+				//    even though its spec still references an external certificate.
+				//
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
 				log.V(4).Info("ExternalCertificate is not updated", "namespace", route.Namespace, "route", route.Name)
@@ -181,7 +197,7 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 		return err
 	}
 	// register route with secretManager
-	handler := p.generateSecretHandler(route)
+	handler := p.generateSecretHandler(route.Namespace, route.Name)
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
 		log.Error(err, "failed to register route")
 		return err
@@ -196,78 +212,107 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 
 // generateSecretHandler creates ResourceEventHandlerFuncs to handle Add, Update, and Delete events on secrets.
 //
-// AddFunc: Invoked when a new secret is added. It logs the addition of the secret. This function also handles the
-// re-creation scenario where a previously deleted secret is added again. In such cases, it revalidates the route's
-// external certificate configuration, updates the route's TLS certificate and key, and calls the next plugin's HandleRoute method with a watch.Modified event, and then commits the changes by calling the next plugin's Commit() method.
+// To ensure that the handlers always operate on the most up-to-date route object,
+// it fetches the latest route from the informer and then updates the route's status
+// with specific reasons related to the secret event. This status update is crucial
+// because it serves as a signal to trigger the entire route plugin chain to re-evaluate
+// the route from the beginning.
 //
-// UpdateFunc: Invoked when an existing secret is updated. It performs validation of the route's external certificate configuration.
-// If the validation succeeds, it updates the route's TLS certificate and key with the new secret data and calls the next plugin's HandleRoute method with a watch.Modified event, and then commits the changes by calling the next plugin's Commit() method.
+// Triggering a re-evaluation ensures that both:
+//   - Changes made by `RouteModifierFn` registered with the `RouterControllerFactory`
+//     are propagated correctly to all plugins.
+//   - All plugins get a chance to react to the changes and make necessary
+//     in-memory modifications to the route object, ensuring consistent behavior.
 //
-// DeleteFunc: Invoked when the secret is deleted. It logs the deletion, marks the secret as deleted for this route in the deletedSecrets map,
-// records the route rejection, and triggers the deletion of the route by calling the HandleRoute method with a watch.Deleted event. NOTE: It doesn't unregister the route.
-func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.ResourceEventHandlerFuncs {
+// - AddFunc:
+//   - Invoked when a new secret is added.
+//   - Handles secret recreation: If a secret is recreated (created after being
+//     deleted), it fetches the latest route object associated with it using the
+//     RouteLister and updates the route's status to trigger a full
+//     re-evaluation of the route by the entire plugin chain.
+//
+// - UpdateFunc:
+//   - Invoked when an existing secret is updated.
+//   - Fetches the latest associated route object and
+//     updates the route's status to trigger a re-evaluation by the entire plugin chain.
+//
+// - DeleteFunc:
+//   - Invoked when the secret is deleted.
+//   - Marks the secret as deleted for the associated route in the `deletedSecrets` map.
+//   - Fetches the latest associated route object and records a route rejection event.
+//   - Triggers the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
+//   - NOTE: It doesn't unregister the route.
+func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) cache.ResourceEventHandlerFuncs {
 	// secret handler
 	return cache.ResourceEventHandlerFuncs{
 
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
-			log.V(4).Info("secret added for route", "namespace", route.Namespace, "secret", secret.Name, "route", route.Name)
+			log.V(4).Info("secret added for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
 
 			// Secret re-creation scenario
 			// Check if the route key exists in the deletedSecrets map, indicating that the secret was previously deleted for this route.
-			// If it exists, it means the secret is being recreated. Remove the key from the map and proceed with re-registration.
+			// If it exists, it means the secret is being recreated. Remove the key from the map and proceed with handling the route.
 			// Otherwise, no-op (new secret creation scenario and no race condition with that flow)
 			// This helps to differentiate between a new secret creation and a re-creation of a previously deleted secret.
-			key := generateKey(route)
+			key := generateKey(namespace, routeName)
 			if _, deleted := p.deletedSecrets.LoadAndDelete(key); deleted {
-				log.V(4).Info("secret recreated for route", "namespace", route.Namespace, "secret", secret.Name, "route", route.Name)
+				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
+				log.V(4).Info(msg)
 
-				// re-validate
-				// since secret re-creation will not trigger the apiserver route admission,
-				// we need to rely on the router controller for this validation.
-				if err := p.validate(route); err != nil {
+				// Ensure fetching the updated route
+				route, err := p.getUpdatedRoute(namespace, routeName)
+				if err != nil {
 					return
 				}
-				// read the re-created secret and update TLS certificate and key
-				if err := p.populateRouteTLSFromSecret(route); err != nil {
-					return
-				}
-				// call the next plugin with watch.Modified
-				p.plugin.HandleRoute(watch.Modified, route)
-				// commit the changes
-				p.plugin.Commit()
+
+				// The route should *remain* rejected until it's re-evaluated
+				// by all the plugins (including this plugin). Once passes, the route will become active again.
+				p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretRecreated", msg)
 			}
 		},
 
 		UpdateFunc: func(old interface{}, new interface{}) {
 			secretOld := old.(*kapi.Secret)
 			secretNew := new.(*kapi.Secret)
-			log.V(4).Info("secret updated for route", "namespace", route.Namespace, "secret", secretNew.Name, "old-version", secretOld.ResourceVersion, "new-version", secretNew.ResourceVersion, "route", route.Name)
+			key := generateKey(namespace, routeName)
+			msg := fmt.Sprintf("secret %q updated for route %q (old resourceVersion=%v, new resourceVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
+			log.V(4).Info(msg)
 
-			// re-validate
-			if err := p.validate(route); err != nil {
+			// Ensure fetching the updated route
+			route, err := p.getUpdatedRoute(namespace, routeName)
+			if err != nil {
 				return
 			}
-			// read referenced secret (updated data) and update TLS certificate and key
-			if err := p.populateRouteTLSFromSecret(route); err != nil {
-				return
+
+			// Update the route status to notify plugins, including this plugin, for re-evaluation.
+			// - If the route is admitted (Admitted=True), record an update event.
+			// - If the route is not admitted, record a rejection event (keep it rejected).
+			if isRouteAdmittedTrue(route.DeepCopy()) {
+				p.recorder.RecordRouteUpdate(route, "ExternalCertificateSecretUpdated", msg)
+			} else {
+				p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretUpdated", msg)
 			}
-			// call the next plugin with watch.Modified
-			p.plugin.HandleRoute(watch.Modified, route)
-			// commit the changes
-			p.plugin.Commit()
 		},
 
 		DeleteFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
-			key := generateKey(route)
-			msg := fmt.Sprintf("secret %s deleted for route %s", secret.Name, key)
+			key := generateKey(namespace, routeName)
+			msg := fmt.Sprintf("secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
 
 			// keep the secret monitor active and mark the secret as deleted for this route.
 			p.deletedSecrets.Store(key, true)
 
+			// Ensure fetching the updated route
+			route, err := p.getUpdatedRoute(namespace, routeName)
+			if err != nil {
+				return
+			}
+
+			// Reject this route
 			p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretDeleted", msg)
+			// Stop serving this route
 			p.plugin.HandleRoute(watch.Deleted, route)
 		},
 	}
@@ -276,6 +321,9 @@ func (p *RouteSecretManager) generateSecretHandler(route *routev1.Route) cache.R
 // validate checks the route's external certificate configuration.
 // If the validation fails, it records the route rejection and triggers
 // the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
+//
+// NOTE: TLS data validation and sanitization are handled by the next plugin `ExtendedValidator`,
+// by reading the "tls.crt" and "tls.key" added by populateRouteTLSFromSecret.
 func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
 	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
@@ -321,7 +369,7 @@ func (p *RouteSecretManager) unregister(route *routev1.Route) error {
 	}
 	// clean the route if present inside deletedSecrets
 	// this is required for the scenario when the associated secret is deleted, before unregistering with secretManager
-	p.deletedSecrets.Delete(generateKey(route))
+	p.deletedSecrets.Delete(generateKey(route.Namespace, route.Name))
 	return nil
 }
 
@@ -332,6 +380,29 @@ func hasExternalCertificate(route *routev1.Route) bool {
 }
 
 // generateKey creates a unique identifier for a route
-func generateKey(route *routev1.Route) string {
-	return fmt.Sprintf("%s/%s", route.Namespace, route.Name)
+func generateKey(namespace, routeName string) string {
+	return fmt.Sprintf("%s/%s", namespace, routeName)
+}
+
+// getUpdatedRoute fetches the latest version of the route using the RouteLister.
+func (p *RouteSecretManager) getUpdatedRoute(namespace, routeName string) (*routev1.Route, error) {
+	updatedRoute, err := p.routelister.Routes(namespace).Get(routeName)
+	if err != nil {
+		log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
+		return nil, err
+	}
+	return updatedRoute, nil
+}
+
+// isRouteAdmittedTrue returns true if the given route has been admitted
+// by any of its ingress controllers, otherwise false.
+func isRouteAdmittedTrue(route *routev1.Route) bool {
+	for _, ingress := range route.Status.Ingress {
+		for _, condition := range ingress.Conditions {
+			if condition.Type == routev1.RouteAdmitted && condition.Status == kapi.ConditionTrue {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -793,14 +793,14 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	var plugin router.Plugin = templatePlugin
 	var recorder controller.RouteStatusRecorder = controller.LogRejections
+	informer := factory.CreateRoutesSharedInformer()
+	routeLister := routelisters.NewRouteLister(informer.GetIndexer())
 	if o.UpdateStatus {
 		lease := writerlease.New(time.Minute, 3*time.Second)
 		go lease.Run(stopCh)
-		informer := factory.CreateRoutesSharedInformer()
 		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
 		go tracker.Run(stopCh)
-		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
 		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
 		recorder = status
 		plugin = status
@@ -812,7 +812,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		plugin = controller.NewExtendedValidator(plugin, recorder)
 	}
 	if o.AllowExternalCertificates {
-		plugin = controller.NewRouteSecretManager(plugin, recorder, secretManager, kc.CoreV1(), authorizationClient.SubjectAccessReviews())
+		plugin = controller.NewRouteSecretManager(plugin, recorder, secretManager, kc.CoreV1(), routeLister, authorizationClient.SubjectAccessReviews())
 	}
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
