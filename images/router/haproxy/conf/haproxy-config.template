@@ -186,7 +186,14 @@ defaults
 
   {{ if (gt .StatsPort -1) }}
 listen stats
+    {{ if eq "v4v6" $router_ip_v4_v6_mode }}
   bind :{{ if (gt .StatsPort 0) }}{{ .StatsPort }}{{ else }}1936{{ end }}
+  bind :::{{ if (gt .StatsPort 0) }}{{ .StatsPort }}{{ else }}1936{{ end }} v6only
+    {{- else if eq "v6" $router_ip_v4_v6_mode }}
+  bind :::{{ if (gt .StatsPort 0) }}{{ .StatsPort }}{{ else }}1936{{ end }} v6only
+    {{- else }}
+  bind :{{ if (gt .StatsPort 0) }}{{ .StatsPort }}{{ else }}1936{{ end }}
+    {{- end }}
   mode http
   # Health check monitoring uri.
   monitor-uri /healthz
