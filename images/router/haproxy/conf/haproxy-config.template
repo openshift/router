@@ -764,6 +764,8 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms" }}
               {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx }}.pem
               {{- else }}
+                {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
+                {{- end }}
                 {{- if gt (len $defaultDestinationCA) 0 }} verify required ca-file {{ $defaultDestinationCA }}
                 {{- else }} verify none
                 {{- end }}
