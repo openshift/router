@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
@@ -389,6 +390,38 @@ func parseIPList(list string) string {
 	return list
 }
 
+// maxTimeoutFirstMatchedAndClipped finds the maximum timeout managed by a given annotation among all the routes, matches it against a given pattern, and clips.
+// The goal is to get the maximum timeout among the ones set on the lowest layer backends, rather than the maximum of all values provided to the function.
+// For instance, if a route has a timeout annotation set, it will take precedence over the default timeout, even if the default timeout is greater.
+func maxTimeoutFirstMatchedAndClipped(aliases map[ServiceAliasConfigKey]ServiceAliasConfig, annotation, pattern string, values ...string) string {
+	var (
+		max         string
+		maxDuration time.Duration
+	)
+	// find max timeout in route annotations
+	for _, cfg := range aliases {
+		timeout := clipHAProxyTimeoutValue(firstMatch(pattern, cfg.Annotations[annotation]))
+		if timeout != "" {
+			// No error handling because clipHAProxyTimeoutValue returns
+			// a valid timeout or an empty string. The latter is already handled.
+			timeoutDuration, _ := time.ParseDuration(timeout)
+			if timeoutDuration > maxDuration {
+				max = timeout
+				maxDuration = timeoutDuration
+			}
+		}
+	}
+	// use values if no max was found in routes
+	if max == "" {
+		max = clipHAProxyTimeoutValue(firstMatch(pattern, values...))
+	}
+	// use max haproxy timeout if no max was found
+	if max == "" {
+		max = templateutil.HaproxyMaxTimeout
+	}
+	return max
+}
+
 var helperFunctions = template.FuncMap{
 	"endpointsForAlias":        endpointsForAlias,        //returns the list of valid endpoints
 	"processEndpointsForAlias": processEndpointsForAlias, //returns the list of valid endpoints after processing them
@@ -416,4 +449,6 @@ var helperFunctions = template.FuncMap{
 	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
 
 	"processRewriteTarget": rewritetarget.SanitizeInput, //sanitizes `haproxy.router.openshift.io/rewrite-target` annotation
+
+	"maxTimeoutFirstMatchedAndClipped": maxTimeoutFirstMatchedAndClipped, //finds the maximum timeout managed by a given annotation among all the routes, matches it against a given pattern, and clips
 }
