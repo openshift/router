@@ -270,7 +270,7 @@ func (b *Backend) UpdateServerInfo(id, ipaddr, port, appProtocol string, weight 
 	if n, err := strconv.Atoi(port); err == nil && n > 0 {
 		server.updatedPort = n
 	}
-	if appProtocol == "h2c" {
+	if appProtocol == "h2c" || appProtocol == "kubernetes.io/h2c" {
 		return errors.New("dynamically updating proto is unsupported")
 	}
 	if weight > -1 {
