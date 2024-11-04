@@ -703,6 +703,8 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
               {{- "" }} secure attr SameSite={{ $samesite }}
             {{- end }}
           {{- end }}
+          {{- with $dynamicConfigManager }} dynamic
+          {{- end }}
         {{- end }}{{/* end disable cookies check */}}
 
         {{- if matchValues (print $cfg.TLSTermination) "edge" "reencrypt" }}
@@ -760,6 +762,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
 
         {{- with $dynamicConfigManager }}
           {{- if (eq $cfg.TLSTermination "reencrypt") }}
+  dynamic-cookie-key {{ $cfg.RoutingKeyName }}
             {{- range $idx, $serverName := $dynamicConfigManager.GenerateDynamicServerNames $cfgIdx }}
   server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms" }}
               {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx }}.pem
