@@ -80,6 +80,9 @@ type ServiceAliasConfig struct {
 
 	// HTTPResponseHeaders has route-specific custom HTTP request headers.
 	HTTPRequestHeaders []HTTPHeader
+
+	// PrimaryServiceUnitKey is the key of the primary service of the route.
+	PrimaryServiceUnitKey ServiceUnitKey
 }
 
 type ServiceAliasConfigStatus string

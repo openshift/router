@@ -867,6 +867,13 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 			continue
 		}
 
+		if id != cfg.PrimaryServiceUnitKey && cfg.VerifyServiceHostname /*VerifyServiceHostname is true only if route type is reencrypt*/ {
+			// Reload to avoid enabing an endpoint with different FQDN in "verifyhost" setting.
+			// "verifyhost" is set to the primary service FQDN on dynamic servers.
+			log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for alternate backend of reencrypt route", "service", id, "backendKey", backendKey, "primaryService", cfg.PrimaryServiceUnitKey)
+			return false
+		}
+
 		newEndpoints := endpointsForAlias(cfg, service)
 
 		// As the endpoints have changed, recalculate the weights.
@@ -966,7 +973,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 
 	// Get the service weights from each service in the route. Count the active
 	// ones (with a non-zero weight)
-	serviceUnits := getServiceUnits(route)
+	serviceUnits, primaryServiceUnitKey := getServiceUnits(route)
 	activeServiceUnits := 0
 	for _, weight := range serviceUnits {
 		if weight > 0 {
@@ -984,16 +991,17 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 	}
 
 	config := ServiceAliasConfig{
-		Name:                route.Name,
-		Namespace:           route.Namespace,
-		Host:                route.Spec.Host,
-		Path:                route.Spec.Path,
-		IsWildcard:          wildcard,
-		Annotations:         route.Annotations,
-		ServiceUnits:        serviceUnits,
-		ActiveServiceUnits:  activeServiceUnits,
-		HTTPResponseHeaders: httpResponseHeadersList,
-		HTTPRequestHeaders:  httpRequestHeadersList,
+		Name:                  route.Name,
+		Namespace:             route.Namespace,
+		Host:                  route.Spec.Host,
+		Path:                  route.Spec.Path,
+		IsWildcard:            wildcard,
+		Annotations:           route.Annotations,
+		ServiceUnits:          serviceUnits,
+		PrimaryServiceUnitKey: primaryServiceUnitKey,
+		ActiveServiceUnits:    activeServiceUnits,
+		HTTPResponseHeaders:   httpResponseHeadersList,
+		HTTPRequestHeaders:    httpRequestHeadersList,
 	}
 
 	if route.Spec.Port != nil {
@@ -1335,19 +1343,22 @@ func generateDestCertKey(config *ServiceAliasConfig) string {
 // if weight < 0 or > 256 set to 0.
 // When the weight is 0 no traffic goes to the service. If they are
 // all 0 the request is returned with 503 response.
-func getServiceUnits(route *routev1.Route) map[ServiceUnitKey]int32 {
+// Also, returns the key of the primary service of the route.
+func getServiceUnits(route *routev1.Route) (map[ServiceUnitKey]int32, ServiceUnitKey) {
 	serviceUnits := make(map[ServiceUnitKey]int32)
+	var primaryServiceUnitKey ServiceUnitKey
 
 	// get the weight and number of endpoints for each service
 	key := endpointsKeyFromParts(route.Namespace, route.Spec.To.Name)
 	serviceUnits[key] = getServiceUnitWeight(route.Spec.To.Weight)
+	primaryServiceUnitKey = key
 
 	for _, svc := range route.Spec.AlternateBackends {
 		key = endpointsKeyFromParts(route.Namespace, svc.Name)
 		serviceUnits[key] = getServiceUnitWeight(svc.Weight)
 	}
 
-	return serviceUnits
+	return serviceUnits, primaryServiceUnitKey
 }
 
 // getServiceUnitWeight takes a reference to a weight and returns its value or the default.

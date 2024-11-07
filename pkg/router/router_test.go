@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,6 +41,7 @@ import (
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/controller"
 	templateplugin "github.com/openshift/router/pkg/router/template"
+	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
 	"github.com/openshift/router/pkg/router/writerlease"
 )
 
@@ -153,9 +153,13 @@ u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 -----END RSA PRIVATE KEY-----
 `,
 		DefaultCertificateDir: h.dirs["certs"],
-		ReloadFn:              func(shutdown bool) error { return nil },
-		TemplatePath:          "../../images/router/haproxy/conf/haproxy-config.template",
-		ReloadInterval:        reloadInterval,
+		// DefaultDestinationCAPath enables the host verification ("verifyhost")
+		// based on the service hostname for re-encrypt routes without
+		// DestinationCACertificate set.
+		DefaultDestinationCAPath: "dummy",
+		ReloadFn:                 func(shutdown bool) error { return nil },
+		TemplatePath:             "../../images/router/haproxy/conf/haproxy-config.template",
+		ReloadInterval:           reloadInterval,
 		HTTPResponseHeaders: []templateplugin.HTTPHeader{{
 			Name:   "x-foo",
 			Value:  "'bar'",
@@ -167,6 +171,10 @@ u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 			Action: "Set",
 		}},
 		SecretManager: &fakesm.SecretManager{},
+		DynamicConfigManager: haproxyconfigmanager.NewHAProxyConfigManager(templateplugin.ConfigManagerOptions{
+			ConnectionInfo:    "unix:///var/lib/dymmy",
+			MaxDynamicServers: 1,
+		}),
 	}
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {
@@ -670,10 +678,12 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"route with appProtocol: unknown-value": {
 			mustCreateWithConfig{
-				mustCreateEndpointSlice: mustCreateEndpointSlice{
-					name:        "servicep1",
-					serviceName: "servicep1",
-					appProtocol: "unknown-value",
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicep1",
+						serviceName: "servicep1",
+						appProtocol: "unknown-value",
+					},
 				},
 				mustCreateRoute: mustCreateRoute{
 					name:              "p1",
@@ -692,10 +702,12 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"route with appProtocol: h2c": {
 			mustCreateWithConfig{
-				mustCreateEndpointSlice: mustCreateEndpointSlice{
-					name:        "servicep2",
-					serviceName: "servicep2",
-					appProtocol: "h2c",
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicep2",
+						serviceName: "servicep2",
+						appProtocol: "h2c",
+					},
 				},
 				mustCreateRoute: mustCreateRoute{
 					name:              "p2",
@@ -713,10 +725,12 @@ func TestConfigTemplate(t *testing.T) {
 		},
 		"route with appProtocol: kubernetes.io/h2c": {
 			mustCreateWithConfig{
-				mustCreateEndpointSlice: mustCreateEndpointSlice{
-					name:        "servicep3",
-					serviceName: "servicep3",
-					appProtocol: "kubernetes.io/h2c",
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicep3",
+						serviceName: "servicep3",
+						appProtocol: "kubernetes.io/h2c",
+					},
 				},
 				mustCreateRoute: mustCreateRoute{
 					name:              "p3",
@@ -732,23 +746,71 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"Verifyhost for dynamic slot": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "serviceq",
+						serviceName: "serviceq",
+					},
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "q",
+					host:              "qexample.com",
+					targetServiceName: "serviceq",
+					weight:            int32(100),
+					time:              start,
+					tlsTermination:    routev1.TLSTerminationReencrypt,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: reencryptBackendName(h.namespace, "q"),
+					attribute:   "server",
+					value:       "_dynamic-pod-1 172.4.0.4:8765 weight 0 ssl disabled check inter 5000ms alpn h2,http/1.1 verifyhost serviceq.default.svc verify required ca-file dummy",
+					fullMatch:   true,
+				},
+			},
+		},
+		"Verifyhost for dynamic slot with alternate backend": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "serviceq1",
+						serviceName: "serviceq1",
+					},
+					{
+						name:        "serviceq2",
+						serviceName: "serviceq2",
+					},
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:                   "q1",
+					host:                   "q1example.com",
+					targetServiceName:      "serviceq1",
+					weight:                 int32(50),
+					alternateBackend:       "serviceq2",
+					alternateBackendWeight: int32(50),
+					time:                   start,
+					tlsTermination:         routev1.TLSTerminationReencrypt,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: reencryptBackendName(h.namespace, "q1"),
+					attribute:   "server",
+					value:       "_dynamic-pod-1 172.4.0.4:8765 weight 0 ssl disabled check inter 5000ms alpn h2,http/1.1 verifyhost serviceq1.default.svc verify required ca-file dummy",
+					fullMatch:   true,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
 
 	for name, expectations := range tests {
 		for _, expectation := range expectations {
-			if !reflect.DeepEqual(expectation.mustCreateEndpointSlice, mustCreateEndpointSlice{}) {
-				err := expectation.mustCreateEndpointSlice.Apply(h)
-				if err != nil {
-					t.Fatalf("%s mustCreateEndpointSlice failed: %v", name, err)
-				}
-			}
-			if !reflect.DeepEqual(expectation.mustCreateRoute, mustCreateRoute{}) {
-				err := expectation.mustCreateRoute.Apply(h)
-				if err != nil {
-					t.Fatalf("%s mustCreateRoute failed: %v", name, err)
-				}
+			err := expectation.Apply(h)
+			if err != nil {
+				t.Fatalf("%s failed: %v", name, err)
 			}
 		}
 	}
@@ -809,6 +871,8 @@ type mustCreateRoute struct {
 	// targetServiceName is the spec.to.name of the route.  If this field
 	// is empty, a name is generated based on the route's name.
 	targetServiceName string
+	// weight is the spec.to.weight of the route.
+	weight int32
 	// time is the metadata.creationTimestamp of the route.
 	time time.Time
 	// annotations is the metadata.annotations of the route.
@@ -821,12 +885,17 @@ type mustCreateRoute struct {
 	cert string
 	// httpHeaders is the spec.httpHeaders of the route.
 	httpHeaders routev1.RouteHTTPHeaders
+	// alternateBackend is the first item in spec.alternateBackends of the route.
+	alternateBackend string
+	// alternateBackendWeight is the weight of the first item in spec.alternateBackends of the route.
+	alternateBackendWeight int32
 }
 
 func (e mustCreateRoute) Apply(h *harness) error {
 	if e.name == "" {
 		return nil
 	}
+
 	annotations := map[string]string{}
 	if e.annotations != nil {
 		annotations = e.annotations
@@ -842,6 +911,23 @@ func (e mustCreateRoute) Apply(h *harness) error {
 	if e.targetServiceName != "" {
 		serviceName = e.targetServiceName
 	}
+	weight := new(int32)
+	if e.weight != int32(0) {
+		weight = &e.weight
+	}
+	alternateBackends := []routev1.RouteTargetReference{}
+	if e.alternateBackend != "" {
+		weighta := new(int32)
+		if e.alternateBackendWeight != int32(0) {
+			weighta = &e.alternateBackendWeight
+		}
+		alternateBackends = []routev1.RouteTargetReference{
+			{
+				Name:   e.alternateBackend,
+				Weight: weighta,
+			},
+		}
+	}
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			CreationTimestamp: metav1.Time{Time: e.time},
@@ -855,11 +941,12 @@ func (e mustCreateRoute) Apply(h *harness) error {
 			Path: e.path,
 			To: routev1.RouteTargetReference{
 				Name:   serviceName,
-				Weight: new(int32),
+				Weight: weight,
 			},
-			WildcardPolicy: routev1.WildcardPolicyNone,
-			TLS:            tlsConfig,
-			HTTPHeaders:    &e.httpHeaders,
+			AlternateBackends: alternateBackends,
+			WildcardPolicy:    routev1.WildcardPolicyNone,
+			TLS:               tlsConfig,
+			HTTPHeaders:       &e.httpHeaders,
 		},
 	}
 	_, err := h.routeClient.RouteV1().Routes(route.Namespace).Create(context.TODO(), route, metav1.CreateOptions{})
@@ -907,9 +994,21 @@ func (e mustCreateEndpointSlice) Apply(h *harness) error {
 }
 
 type mustCreateWithConfig struct {
-	mustCreateEndpointSlice
+	mustCreateEndpointSlices []mustCreateEndpointSlice
 	mustCreateRoute
 	mustMatchConfig
+}
+
+func (e mustCreateWithConfig) Apply(h *harness) error {
+	if err := e.mustCreateRoute.Apply(h); err != nil {
+		return err
+	}
+	for _, ep := range e.mustCreateEndpointSlices {
+		if err := ep.Apply(h); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // mustMatchConfig uses HAProxy's config parser to find config snippets
@@ -931,6 +1030,8 @@ type mustMatchConfig struct {
 	// notFound indicates whether the expectation is that value be present
 	// or that it be absent.
 	notFound bool
+	// fullMatch indicates whether the expectation is that value matches fully.
+	fullMatch bool
 }
 
 func (m mustMatchConfig) Match(parser haproxyconfparser.Parser) error {
@@ -970,12 +1071,24 @@ func matchConfig(m mustMatchConfig, parser haproxyconfparser.Parser) error {
 			}
 		}
 	case []haproxyconfparsertypes.Server:
-		for _, a := range data {
-			for _, b := range a.Params {
-				contains = contains || b.String() == m.value
+		if m.fullMatch {
+			for _, a := range data {
+				params := ""
+				for _, p := range a.Params {
+					params += " " + p.String()
+				}
+				if a.Name+" "+a.Address+params == m.value {
+					contains = true
+					break
+				}
+			}
+		} else {
+			for _, a := range data {
+				for _, b := range a.Params {
+					contains = contains || b.String() == m.value
+				}
 			}
 		}
-
 	}
 
 	if !contains && !m.notFound {
@@ -1127,4 +1240,9 @@ func edgeBackendName(ns, route string) string {
 // insecure route.
 func insecureBackendName(ns, route string) string {
 	return "be_http:" + ns + ":" + route
+}
+
+// reencryptBackendName contructs the HAProxy config's backend name for a re-encrypt route.
+func reencryptBackendName(ns, route string) string {
+	return "be_secure:" + ns + ":" + route
 }
