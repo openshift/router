@@ -161,7 +161,7 @@ defaults
   timeout server {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_TIMEOUT") "30s" }}
   timeout server-fin {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_SERVER_FIN_TIMEOUT") "1s" }}
   timeout http-request {{ firstMatch $timeSpecPattern (env "ROUTER_SLOWLORIS_TIMEOUT") "10s" }}
-  timeout http-keep-alive {{ firstMatch $timeSpecPattern (env "ROUTER_SLOWLORIS_HTTP_KEEPALIVE") "300s" }}
+  timeout http-keep-alive 1s
 
   # Long timeout for WebSocket connections.
   timeout tunnel {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_TUNNEL_TIMEOUT") "1h" }}
