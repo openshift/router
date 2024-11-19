@@ -221,11 +221,10 @@ frontend public
     {{- end }}
   mode http
 
-  # Workaround for a known issue encountered with certain HTTP clients,
-  # particularly the Apache HTTP client (prior to version 5),
-  # where closed idle connections are erroneously reused.
-  # Bug reference: https://issues.redhat.com/browse/OCPBUGS-32044.
+  {{- if isTrue (env "ROUTER_IDLE_CLOSE_ON_RESPONSE") }}
   option idle-close-on-response
+  {{- end }}
+
   tcp-request inspect-delay {{ firstMatch $timeSpecPattern (env "ROUTER_INSPECT_DELAY") "5s" }}
   tcp-request content accept if HTTP
 
@@ -346,7 +345,9 @@ frontend fe_sni
   {{- "" }} no-alpn
   mode http
 
+  {{- if isTrue (env "ROUTER_IDLE_CLOSE_ON_RESPONSE") }}
   option idle-close-on-response
+  {{- end }}
 
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
   capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
@@ -459,7 +460,9 @@ frontend fe_no_sni
   {{- "" }} no-alpn
   mode http
 
+  {{- if isTrue (env "ROUTER_IDLE_CLOSE_ON_RESPONSE") }}
   option idle-close-on-response
+  {{- end }}
 
     {{- range $idx, $captureHeader := .CaptureHTTPRequestHeaders }}
   capture request header {{ $captureHeader.Name }} len {{ $captureHeader.MaxLength }}
