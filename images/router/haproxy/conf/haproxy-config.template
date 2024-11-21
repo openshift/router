@@ -769,6 +769,15 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
               {{- else }}
                 {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
                 {{- end }}
+                {{- /*
+                    Add "verifyhost" for the primary service only. This server is not intended
+                    to be used for alternate backend endpoints. A reload will be triggered if
+                    an alternate backend endpoint is added dynamically.
+                */ -}}
+                {{- with $serviceUnit := index $.ServiceUnits $cfg.PrimaryServiceUnitKey -}}
+                    {{- if $cfg.VerifyServiceHostname }} verifyhost {{ $serviceUnit.Hostname }}
+                    {{- end }}
+                {{- end }}
                 {{- if gt (len $defaultDestinationCA) 0 }} verify required ca-file {{ $defaultDestinationCA }}
                 {{- else }} verify none
                 {{- end }}

@@ -234,10 +234,11 @@ func (r *TestRouter) AddRoute(route *routev1.Route) {
 	routeKey := getKey(route)
 
 	config := ServiceAliasConfig{
-		Host:         route.Spec.Host,
-		Path:         route.Spec.Path,
-		ServiceUnits: getServiceUnits(route),
+		Host: route.Spec.Host,
+		Path: route.Spec.Path,
 	}
+	serviceUnits, _ := getServiceUnits(route)
+	config.ServiceUnits = serviceUnits
 	config.ServiceUnitNames = r.calculateServiceWeights(config.ServiceUnits)
 
 	for key := range config.ServiceUnits {
