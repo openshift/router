@@ -100,6 +100,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	case watch.Added:
 		// register with secret monitor
 		if hasExternalCertificate(route) {
+			log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
 			if err := p.validateAndRegister(route); err != nil {
 				return err
 			}
@@ -113,10 +114,9 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 		switch {
 		case newHasExt && oldHadExt:
 			// Both new and old routes have externalCertificate
-			log.V(4).Info("Both new and old routes have externalCertificate", "namespace", route.Namespace, "route", route.Name)
 			if oldSecret != route.Spec.TLS.ExternalCertificate.Name {
 				// ExternalCertificate is updated
-				log.V(4).Info("ExternalCertificate is updated", "namespace", route.Namespace, "route", route.Name)
+				log.V(4).Info("Validating and registering updated external certificate", "namespace", route.Namespace, "oldSecret", oldSecret, "newSecret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
 				// Unregister the old and register the new external certificate
 				if err := p.unregister(route); err != nil {
 					return err
@@ -145,7 +145,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				//
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
-				log.V(4).Info("ExternalCertificate is not updated", "namespace", route.Namespace, "route", route.Name)
+				log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
 				// re-validate
 				if err := p.validate(route); err != nil {
 					return err
@@ -158,7 +158,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 
 		case newHasExt && !oldHadExt:
 			// New route has externalCertificate, old route did not
-			log.V(4).Info("New route has externalCertificate, old route did not", "namespace", route.Namespace, "route", route.Name)
+			log.V(4).Info("Validating and registering new external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
 			// register with secret monitor
 			if err := p.validateAndRegister(route); err != nil {
 				return err
@@ -166,7 +166,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 
 		case !newHasExt && oldHadExt:
 			// Old route had externalCertificate, new route does not
-			log.V(4).Info("Old route had externalCertificate, new route does not", "namespace", route.Namespace, "route", route.Name)
+			log.V(4).Info("Unregistering removed external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
 			// unregister with secret monitor
 			if err := p.unregister(route); err != nil {
 				return err
@@ -175,7 +175,8 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 
 	case watch.Deleted:
 		// unregister associated secret monitor, if registered
-		if _, exists := p.secretManager.LookupRouteSecret(route.Namespace, route.Name); exists {
+		if secretName, exists := p.secretManager.LookupRouteSecret(route.Namespace, route.Name); exists {
+			log.V(4).Info("Unregistering external certificate", "namespace", route.Namespace, "secret", secretName, "route", route.Name)
 			if err := p.unregister(route); err != nil {
 				return err
 			}
@@ -199,8 +200,7 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 	// register route with secretManager
 	handler := p.generateSecretHandler(route.Namespace, route.Name)
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
-		log.Error(err, "failed to register route")
-		return err
+		return fmt.Errorf("failed to register router: %w", err)
 	}
 	// read referenced secret and update TLS certificate and key
 	if err := p.populateRouteTLSFromSecret(route); err != nil {
@@ -248,7 +248,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
-			log.V(4).Info("secret added for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
+			log.V(4).Info("Secret added for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
 
 			// Secret re-creation scenario
 			// Check if the route key exists in the deletedSecrets map, indicating that the secret was previously deleted for this route.
@@ -257,17 +257,18 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// This helps to differentiate between a new secret creation and a re-creation of a previously deleted secret.
 			key := generateKey(namespace, routeName)
 			if _, deleted := p.deletedSecrets.LoadAndDelete(key); deleted {
-				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
-				log.V(4).Info(msg)
+				log.V(4).Info("Secret recreated for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
 
 				// Ensure fetching the updated route
-				route, err := p.getUpdatedRoute(namespace, routeName)
+				route, err := p.routelister.Routes(namespace).Get(routeName)
 				if err != nil {
+					log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 					return
 				}
 
 				// The route should *remain* rejected until it's re-evaluated
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
+				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
 				p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretRecreated", msg)
 			}
 		},
@@ -276,15 +277,16 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			secretOld := old.(*kapi.Secret)
 			secretNew := new.(*kapi.Secret)
 			key := generateKey(namespace, routeName)
-			msg := fmt.Sprintf("secret %q updated for route %q (old resourceVersion=%v, new resourceVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
-			log.V(4).Info(msg)
+			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
 
 			// Ensure fetching the updated route
-			route, err := p.getUpdatedRoute(namespace, routeName)
+			route, err := p.routelister.Routes(namespace).Get(routeName)
 			if err != nil {
+				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 				return
 			}
 
+			msg := fmt.Sprintf("secret %q updated for route %q (oldSecretVersion=%v, newSecretVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
 			// Update the route status to notify plugins, including this plugin, for re-evaluation.
 			// - If the route is admitted (Admitted=True), record an update event.
 			// - If the route is not admitted, record a rejection event (keep it rejected).
@@ -305,8 +307,9 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			p.deletedSecrets.Store(key, true)
 
 			// Ensure fetching the updated route
-			route, err := p.getUpdatedRoute(namespace, routeName)
+			route, err := p.routelister.Routes(namespace).Get(routeName)
 			if err != nil {
+				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 				return
 			}
 
@@ -382,16 +385,6 @@ func hasExternalCertificate(route *routev1.Route) bool {
 // generateKey creates a unique identifier for a route
 func generateKey(namespace, routeName string) string {
 	return fmt.Sprintf("%s/%s", namespace, routeName)
-}
-
-// getUpdatedRoute fetches the latest version of the route using the RouteLister.
-func (p *RouteSecretManager) getUpdatedRoute(namespace, routeName string) (*routev1.Route, error) {
-	updatedRoute, err := p.routelister.Routes(namespace).Get(routeName)
-	if err != nil {
-		log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
-		return nil, err
-	}
-	return updatedRoute, nil
 }
 
 // isRouteAdmittedTrue returns true if the given route has been admitted
