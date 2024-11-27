@@ -802,6 +802,115 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"valid route health check interval annotation": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicer1",
+						serviceName: "servicer1",
+						addresses:   []string{"1.1.1.1", "1.1.1.2"},
+					},
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "r1",
+					host:              "r1example.com",
+					targetServiceName: "servicer1",
+					weight:            1,
+					time:              start,
+					annotations: map[string]string{
+						"router.openshift.io/haproxy.health.check.interval": "10s",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "r1"),
+					attribute:   "server",
+					value:       "inter 10s",
+				},
+			},
+		},
+		"route health check interval annotation exceeds the haproxy maximum": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicer2",
+						serviceName: "servicer2",
+						addresses:   []string{"1.1.1.1", "1.1.1.2"},
+					},
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "r2",
+					host:              "r2example.com",
+					targetServiceName: "servicer2",
+					weight:            1,
+					time:              start,
+					annotations: map[string]string{
+						"router.openshift.io/haproxy.health.check.interval": "5000d",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "r2"),
+					attribute:   "server",
+					value:       "inter 2147483647ms",
+				},
+			},
+		},
+		"invalid route health check interval annotation": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicer3",
+						serviceName: "servicer3",
+						addresses:   []string{"1.1.1.1", "1.1.1.2"},
+					},
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "r3",
+					host:              "r3example.com",
+					targetServiceName: "servicer3",
+					weight:            1,
+					time:              start,
+					annotations: map[string]string{
+						"router.openshift.io/haproxy.health.check.interval": "abc",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "r3"),
+					attribute:   "server",
+					value:       "inter 5000ms",
+				},
+			},
+		},
+		"passthrough route health check interval annotation exceeds the haproxy maximum": {
+			mustCreateWithConfig{
+				mustCreateEndpointSlices: []mustCreateEndpointSlice{
+					{
+						name:        "servicer4",
+						serviceName: "servicer4",
+						addresses:   []string{"1.1.1.1", "1.1.1.2"},
+					},
+				},
+				mustCreateRoute: mustCreateRoute{
+					name:              "r4",
+					host:              "r4example.com",
+					targetServiceName: "servicer4",
+					weight:            1,
+					time:              start,
+					annotations: map[string]string{
+						"router.openshift.io/haproxy.health.check.interval": "9000d",
+					},
+					tlsTermination: routev1.TLSTerminationPassthrough,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: passthroughBackendName(h.namespace, "r4"),
+					attribute:   "server",
+					value:       "inter 2147483647ms",
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
@@ -963,6 +1072,8 @@ type mustCreateEndpointSlice struct {
 	serviceName string
 	// appProtocol is the appProtocol of the endpointslice.
 	appProtocol string
+	// addresses is the addresses field of the endpoint
+	addresses []string
 }
 
 func (e mustCreateEndpointSlice) Apply(h *harness) error {
@@ -972,6 +1083,10 @@ func (e mustCreateEndpointSlice) Apply(h *harness) error {
 	var appProtocol *string
 	if e.appProtocol != "" {
 		appProtocol = &e.appProtocol
+	}
+	addresses := []string{"1.1.1.1"}
+	if len(e.addresses) > 0 {
+		addresses = e.addresses
 	}
 	ep := &discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
@@ -983,7 +1098,7 @@ func (e mustCreateEndpointSlice) Apply(h *harness) error {
 			UID: h.nextUID(),
 		},
 		Endpoints: []discoveryv1.Endpoint{{
-			Addresses: []string{"1.1.1.1"},
+			Addresses: addresses,
 		}},
 		Ports: []discoveryv1.EndpointPort{{
 			AppProtocol: appProtocol,
@@ -1245,4 +1360,9 @@ func insecureBackendName(ns, route string) string {
 // reencryptBackendName contructs the HAProxy config's backend name for a re-encrypt route.
 func reencryptBackendName(ns, route string) string {
 	return "be_secure:" + ns + ":" + route
+}
+
+// passthroughBackendName contructs the HAProxy config's backend name for a passthrough route.
+func passthroughBackendName(ns, route string) string {
+	return "be_tcp:" + ns + ":" + route
 }
