@@ -17,7 +17,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	client "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
-	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/writerlease"
 )
 
@@ -59,7 +58,6 @@ func (logRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Rou
 
 // StatusAdmitter ensures routes added to the plugin have status set.
 type StatusAdmitter struct {
-	plugin router.Plugin
 	client client.RoutesGetter
 	lister routelisters.RouteLister
 
@@ -74,9 +72,8 @@ type StatusAdmitter struct {
 // route has a status field set that matches this router. The admitter manages
 // an LRU of recently seen conflicting updates to handle when two router processes
 // with differing configurations are writing updates at the same time.
-func NewStatusAdmitter(plugin router.Plugin, client client.RoutesGetter, lister routelisters.RouteLister, name, hostName string, lease writerlease.Lease, tracker ContentionTracker) *StatusAdmitter {
+func NewStatusAdmitter(client client.RoutesGetter, lister routelisters.RouteLister, name, hostName string, lease writerlease.Lease, tracker ContentionTracker) *StatusAdmitter {
 	return &StatusAdmitter{
-		plugin: plugin,
 		client: client,
 		lister: lister,
 
@@ -107,23 +104,23 @@ func (a *StatusAdmitter) HandleRoute(eventType watch.EventType, route *routev1.R
 			Status: corev1.ConditionTrue,
 		})
 	}
-	return a.plugin.HandleRoute(eventType, route)
+	return nil
 }
 
 func (a *StatusAdmitter) HandleNode(eventType watch.EventType, node *kapi.Node) error {
-	return a.plugin.HandleNode(eventType, node)
+	return nil
 }
 
 func (a *StatusAdmitter) HandleEndpoints(eventType watch.EventType, route *kapi.Endpoints) error {
-	return a.plugin.HandleEndpoints(eventType, route)
+	return nil
 }
 
 func (a *StatusAdmitter) HandleNamespaces(namespaces sets.String) error {
-	return a.plugin.HandleNamespaces(namespaces)
+	return nil
 }
 
 func (a *StatusAdmitter) Commit() error {
-	return a.plugin.Commit()
+	return nil
 }
 
 // RecordRouteRejection attempts to update the route status with a reason for a route being rejected.

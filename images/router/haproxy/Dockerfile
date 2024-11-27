@@ -17,5 +17,6 @@ USER 1001
 EXPOSE 80 443
 WORKDIR /var/lib/haproxy/conf
 ENV TEMPLATE_FILE=/var/lib/haproxy/conf/haproxy-config.template \
-    RELOAD_SCRIPT=/var/lib/haproxy/reload-haproxy
+    RELOAD_SCRIPT=/var/lib/haproxy/reload-haproxy \
+    CONFIG_CHECK_SCRIPT=/var/lib/haproxy/check-haproxy
 ENTRYPOINT ["/usr/bin/openshift-router", "--v=2"]

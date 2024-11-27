@@ -16,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/controller"
 
 	"github.com/openshift/library-go/pkg/route/secretmanager"
 	unidlingapi "github.com/openshift/router/pkg/router/unidling"
@@ -29,22 +31,30 @@ const (
 // TemplatePlugin implements the router.Plugin interface to provide
 // a template based, backend-agnostic router.
 type TemplatePlugin struct {
+	Plugin         router.Plugin
 	Router         RouterInterface
 	IncludeUDP     bool
 	ServiceFetcher ServiceLookup
+	Recorder       controller.RouteStatusRecorder
 }
 
-func newDefaultTemplatePlugin(router RouterInterface, includeUDP bool, lookupSvc ServiceLookup) *TemplatePlugin {
+func newDefaultTemplatePlugin(plugin router.Plugin, router RouterInterface, includeUDP bool, lookupSvc ServiceLookup, recorder controller.RouteStatusRecorder) *TemplatePlugin {
 	return &TemplatePlugin{
+		Plugin:         plugin,
 		Router:         router,
 		IncludeUDP:     includeUDP,
 		ServiceFetcher: lookupSvc,
+		Recorder:       recorder,
 	}
 }
 
 type TemplatePluginConfig struct {
+	Plugin                        router.Plugin
+	Recorder                      controller.RouteStatusRecorder
 	WorkingDir                    string
 	TemplatePath                  string
+	RouteConfigCheck              bool
+	ConfigCheckScriptPath         string
 	ReloadScriptPath              string
 	ReloadFn                      func(shutdown bool) error
 	ReloadInterval                time.Duration
@@ -93,7 +103,7 @@ type RouterInterface interface {
 	DeleteEndpoints(id ServiceUnitKey)
 
 	// AddRoute attempts to add a route to the router.
-	AddRoute(route *routev1.Route)
+	AddRoute(route *routev1.Route) error
 	// RemoveRoute removes the given route
 	RemoveRoute(route *routev1.Route)
 	// HasRoute indicates whether the router is configured with the given route
@@ -146,6 +156,8 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 	templateRouterCfg := templateRouterCfg{
 		dir:                           cfg.WorkingDir,
 		templates:                     templates,
+		routeConfigCheck:              cfg.RouteConfigCheck,
+		checkScriptPath:               cfg.ConfigCheckScriptPath,
 		reloadScriptPath:              cfg.ReloadScriptPath,
 		reloadFn:                      cfg.ReloadFn,
 		reloadInterval:                cfg.ReloadInterval,
@@ -169,7 +181,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		secretManager:                 cfg.SecretManager,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
-	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
+	return newDefaultTemplatePlugin(cfg.Plugin, router, cfg.IncludeUDP, lookupSvc, cfg.Recorder), err
 }
 
 // Stop instructs the router plugin to stop invoking the reload method, and waits until no further
@@ -204,15 +216,20 @@ func (p *TemplatePlugin) HandleEndpoints(eventType watch.EventType, endpoints *k
 		log.V(4).Info("deleting endpoints", "key", key)
 		p.Router.DeleteEndpoints(key)
 	}
-
-	return nil
+	if p.Plugin == nil {
+		return nil
+	}
+	return p.Plugin.HandleEndpoints(eventType, endpoints)
 }
 
 // HandleNode processes watch events on the Node resource
 // The template type of plugin currently does not need to act on such events
 // so the implementation just returns without error
 func (p *TemplatePlugin) HandleNode(eventType watch.EventType, node *kapi.Node) error {
-	return nil
+	if p.Plugin == nil {
+		return nil
+	}
+	return p.Plugin.HandleNode(eventType, node)
 }
 
 // HandleRoute processes watch events on the Route resource.
@@ -223,24 +240,38 @@ func (p *TemplatePlugin) HandleRoute(eventType watch.EventType, route *routev1.R
 	log.V(10).Info("HandleRoute: TemplatePlugin")
 	switch eventType {
 	case watch.Added, watch.Modified:
-		p.Router.AddRoute(route)
+		// Add route
+		if err := p.Router.AddRoute(route); err != nil {
+			log.V(0).Error(err, "failed to validate HAProxy config", "name", route.Name, "namespace", route.Namespace)
+			p.Recorder.RecordRouteRejection(route, "HAProxyCheckConfigFailed", "Failed to validate HAProxy config with route. Review the openshift-router logs for more details on the validation failure.")
+			return err
+		}
 	case watch.Deleted:
 		log.V(4).Info("deleting route", "namespace", route.Namespace, "name", route.Name)
 		p.Router.RemoveRoute(route)
 	}
-	return nil
+	if p.Plugin == nil {
+		return nil
+	}
+	return p.Plugin.HandleRoute(eventType, route)
 }
 
 // HandleNamespaces limits the scope of valid routes to only those that match
 // the provided namespace list.
 func (p *TemplatePlugin) HandleNamespaces(namespaces sets.String) error {
 	p.Router.FilterNamespaces(namespaces)
-	return nil
+	if p.Plugin == nil {
+		return nil
+	}
+	return p.Plugin.HandleNamespaces(namespaces)
 }
 
 func (p *TemplatePlugin) Commit() error {
 	p.Router.Commit()
-	return nil
+	if p.Plugin == nil {
+		return nil
+	}
+	return p.Plugin.Commit()
 }
 
 // endpointsKey returns the internal router key to use for the given Endpoints.

@@ -113,9 +113,13 @@ func TestMain(m *testing.M) {
 
 	createRouterDirs()
 
+	statusPlugin := controller.NewStatusAdmitter(routeClient.RouteV1(), routeLister, "default", "example.com", lease, tracker)
+
 	// The template plugin which is wrapped
 	svcFetcher := templateplugin.NewListWatchServiceLookup(client.CoreV1(), 60*time.Second, namespace)
 	pluginCfg := templateplugin.TemplatePluginConfig{
+		Plugin:     statusPlugin,
+		Recorder:   statusPlugin,
 		WorkingDir: workdir,
 		DefaultCertificate: `-----BEGIN CERTIFICATE-----
 MIIDIjCCAgqgAwIBAgIBBjANBgkqhkiG9w0BAQUFADCBoTELMAkGA1UEBhMCVVMx
@@ -176,8 +180,6 @@ u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 	}
 
 	// Wrap the template plugin with other stuff
-	statusPlugin := controller.NewStatusAdmitter(plugin, routeClient.RouteV1(), routeLister, "default", "example.com", lease, tracker)
-	plugin = statusPlugin
 	plugin = controller.NewUniqueHost(plugin, routerSelection.DisableNamespaceOwnershipCheck, statusPlugin)
 	plugin = controller.NewHostAdmitter(plugin, routerSelection.RouteAdmissionFunc(), false, false, statusPlugin)
 

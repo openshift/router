@@ -58,6 +58,8 @@ type templateRouter struct {
 	// the directory to write router output to
 	dir              string
 	templates        map[string]*template.Template
+	routeConfigCheck bool
+	checkScriptPath  string
 	reloadScriptPath string
 	reloadFn         func(shutdown bool) error
 	reloadInterval   time.Duration
@@ -136,6 +138,8 @@ type templateRouter struct {
 type templateRouterCfg struct {
 	dir                           string
 	templates                     map[string]*template.Template
+	routeConfigCheck              bool
+	checkScriptPath               string
 	reloadScriptPath              string
 	reloadFn                      func(shutdown bool) error
 	reloadInterval                time.Duration
@@ -249,6 +253,8 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	router := &templateRouter{
 		dir:                           dir,
 		templates:                     cfg.templates,
+		routeConfigCheck:              cfg.routeConfigCheck,
+		checkScriptPath:               cfg.checkScriptPath,
 		reloadScriptPath:              cfg.reloadScriptPath,
 		reloadInterval:                cfg.reloadInterval,
 		reloadCallbacks:               cfg.reloadCallbacks,
@@ -558,6 +564,24 @@ func (r *templateRouter) commitAndReload() error {
 		r.dynamicConfigManager.Notify(RouterEventReloadEnd)
 	}
 
+	return nil
+}
+
+// configCheck writes the current config, then runs the config check script
+// and returns an error if config fails validation.
+func (r *templateRouter) configCheck() error {
+	if err := r.writeConfig(); err != nil {
+		// Fail open since we don't want to misinterpret write failures as validation failures.
+		log.V(0).Error(err, "failed to write config to run check")
+		return nil
+	}
+
+	cmd := exec.Command(r.checkScriptPath, r.dir+"/conf/haproxy.config")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error validating haproxy config: %v\n%s", err, string(out))
+	}
+	log.V(4).Info("router passed haproxy config check")
 	return nil
 }
 
@@ -1083,7 +1107,7 @@ func SanitizeHeaderValue(headerValue string) string {
 
 // AddRoute adds the given route to the router state if the route
 // hasn't been seen before or has changed since it was last seen.
-func (r *templateRouter) AddRoute(route *routev1.Route) {
+func (r *templateRouter) AddRoute(route *routev1.Route) error {
 	backendKey := routeKey(route)
 
 	newConfig := r.createServiceAliasConfig(route, backendKey)
@@ -1095,7 +1119,7 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 
 	if existingConfig, exists := r.state[backendKey]; exists {
 		if configsAreEqual(newConfig, &existingConfig) {
-			return
+			return nil
 		}
 
 		log.V(4).Info("updating route", "namespace", route.Namespace, "name", route.Name)
@@ -1122,10 +1146,28 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 	}
 
 	configChanged := r.dynamicallyAddRoute(backendKey, route, newConfig)
-
 	r.state[backendKey] = *newConfig
-	r.stateChanged = true
 	r.dynamicallyConfigured = r.dynamicallyConfigured && configChanged
+
+	// Perform a config check by writing the config file with the newly added route and executing the config check
+	// script. Since we have the lock, the router must wait before reloading. If validation fails, the route is
+	// removed, and the next reload restores the configuration to its previous working state and reloads HAProxy.
+	if r.routeConfigCheck && !r.dynamicallyConfigured {
+		if err := r.configCheck(); err != nil {
+			// HAProxy Validation failed with new route, remove the route.
+			r.removeRouteInternal(route)
+			if r.secretManager != nil {
+				if r.secretManager.IsRouteRegistered(route.Namespace, route.Name) {
+					if err := r.secretManager.UnregisterRoute(route.Namespace, route.Name); err != nil {
+						log.Error(err, "failed to unregister route")
+					}
+				}
+			}
+			return err
+		}
+	}
+	r.stateChanged = true
+	return nil
 }
 
 // RemoveRoute removes the given route
