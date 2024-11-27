@@ -36,6 +36,7 @@ const (
 // RouteStatusRecorder is an object capable of recording why a route status condition changed.
 type RouteStatusRecorder interface {
 	RecordRouteRejection(route *routev1.Route, reason, message string)
+	RecordRouteUpdate(route *routev1.Route, reason, message string)
 	RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string)
 	RecordRouteUnservableInFutureVersionsClear(route *routev1.Route)
 }
@@ -47,6 +48,10 @@ type logRecorder struct{}
 
 func (logRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
 	log.V(3).Info("rejected route", "name", route.Name, "namespace", route.Namespace, "reason", reason, "message", message)
+}
+
+func (logRecorder) RecordRouteUpdate(route *routev1.Route, reason, message string) {
+	log.V(3).Info("updated route", "name", route.Name, "namespace", route.Namespace, "reason", reason, "message", message)
 }
 
 func (logRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
@@ -124,6 +129,18 @@ func (a *StatusAdmitter) HandleNamespaces(namespaces sets.String) error {
 
 func (a *StatusAdmitter) Commit() error {
 	return a.plugin.Commit()
+}
+
+// RecordRouteUpdate attempts to update the route status with a reason for a route being updated.
+// This function is intended to be used to signal route updates, keeping `Admitted=True` to
+// provide information about the change.
+func (a *StatusAdmitter) RecordRouteUpdate(route *routev1.Route, reason, message string) {
+	performIngressConditionUpdate("admit", a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{
+		Type:    routev1.RouteAdmitted,
+		Status:  corev1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
 // RecordRouteRejection attempts to update the route status with a reason for a route being rejected.
