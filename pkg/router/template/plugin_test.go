@@ -230,7 +230,7 @@ func (r *TestRouter) calculateServiceWeights(serviceUnits map[ServiceUnitKey]int
 }
 
 // AddRoute adds a ServiceAliasConfig and associated ServiceUnits for the route
-func (r *TestRouter) AddRoute(route *routev1.Route) {
+func (r *TestRouter) AddRoute(route *routev1.Route) error {
 	routeKey := getKey(route)
 
 	config := ServiceAliasConfig{
@@ -246,6 +246,7 @@ func (r *TestRouter) AddRoute(route *routev1.Route) {
 	}
 
 	r.State[routeKey] = config
+	return nil
 }
 
 // RemoveRoute removes the service alias config for Route
@@ -300,6 +301,9 @@ func getKey(route *routev1.Route) ServiceAliasConfigKey {
 
 func (r *TestRouter) Commit() {
 	// No op
+}
+func (r *TestRouter) CheckConfig() error {
+	return nil
 }
 
 // TestHandleEndpoints test endpoint watch events
@@ -380,7 +384,7 @@ func TestHandleEndpoints(t *testing.T) {
 	}
 
 	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
-	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
+	templatePlugin := newDefaultTemplatePlugin(&fakePlugin{}, router, true, nil, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
 	plugin := controller.NewUniqueHost(templatePlugin, false, controller.LogRejections)
@@ -490,7 +494,7 @@ func TestHandleTCPEndpoints(t *testing.T) {
 	}
 
 	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
-	templatePlugin := newDefaultTemplatePlugin(router, false, nil)
+	templatePlugin := newDefaultTemplatePlugin(&fakePlugin{}, router, false, nil, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
 	plugin := controller.NewUniqueHost(templatePlugin, false, controller.LogRejections)
@@ -554,7 +558,7 @@ func (r *fakeStatusRecorder) isUnservableInFutureVersions(route *routev1.Route) 
 func TestHandleRoute(t *testing.T) {
 	rejections := &fakeStatusRecorder{}
 	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
-	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
+	templatePlugin := newDefaultTemplatePlugin(&fakePlugin{}, router, true, nil, rejections)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
 	plugin := controller.NewUniqueHost(templatePlugin, false, rejections)
@@ -1198,7 +1202,7 @@ func TestHandleRouteUpgradeValidation(t *testing.T) {
 
 func TestNamespaceScopingFromEmpty(t *testing.T) {
 	router := newTestRouter(make(map[ServiceAliasConfigKey]ServiceAliasConfig))
-	templatePlugin := newDefaultTemplatePlugin(router, true, nil)
+	templatePlugin := newDefaultTemplatePlugin(&fakePlugin{}, router, true, nil, nil)
 	// TODO: move tests that rely on unique hosts to pkg/router/controller and remove them from
 	// here
 	plugin := controller.NewUniqueHost(templatePlugin, false, controller.LogRejections)

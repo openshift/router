@@ -108,6 +108,8 @@ type TemplateRouterOptions struct {
 type TemplateRouter struct {
 	WorkingDir                          string
 	TemplateFile                        string
+	RouteConfigCheck                    bool
+	ConfigCheckScript                   string
 	ReloadScript                        string
 	ReloadInterval                      time.Duration
 	DefaultCertificate                  string
@@ -171,6 +173,8 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.DefaultDestinationCAPath, "default-destination-ca-path", env("DEFAULT_DESTINATION_CA_PATH", ""), "A path to a PEM file containing the default CA bundle to use with re-encrypt routes. This CA should sign for certificates in the Kubernetes DNS space (service.namespace.svc).")
 	flag.StringVar(&o.TemplateFile, "template", env("TEMPLATE_FILE", ""), "The path to the template file to use")
 	flag.StringVar(&o.ReloadScript, "reload", env("RELOAD_SCRIPT", ""), "The path to the reload script to use")
+	flag.BoolVar(&o.RouteConfigCheck, "route-config-check", isTrue(env("ROUTE_CONFIG_CHECK", "true")), "Use configuration check script before adding routes")
+	flag.StringVar(&o.ConfigCheckScript, "check-script", env("CONFIG_CHECK_SCRIPT", ""), "The path to the config check script to use")
 	flag.DurationVar(&o.ReloadInterval, "interval", getIntervalFromEnv("RELOAD_INTERVAL", defaultReloadInterval), "Controls how often router reloads are invoked. Mutiple router reload requests are coalesced for the duration of this interval since the last reload time.")
 	flag.BoolVar(&o.BindPortsAfterSync, "bind-ports-after-sync", env("ROUTER_BIND_PORTS_AFTER_SYNC", "") == "true", "Bind ports only after route state has been synchronized")
 	flag.StringVar(&o.MaxConnections, "max-connections", env("ROUTER_MAX_CONNECTIONS", ""), "Specifies the maximum number of concurrent connections.")
@@ -552,6 +556,9 @@ func (o *TemplateRouterOptions) Validate() error {
 	if len(o.ReloadScript) == 0 {
 		return errors.New("reload script must be specified")
 	}
+	if o.RouteConfigCheck && len(o.ConfigCheckScript) == 0 {
+		return errors.New("config check script must be specified if route config checks are enabled")
+	}
 	return nil
 }
 
@@ -753,9 +760,31 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	secretManager := secretmanager.NewManager(kc, nil)
 
+	factory := o.RouterSelection.NewFactory(routeclient, projectclient.ProjectV1().Projects(), kc)
+	factory.RouteModifierFn = o.RouteUpdate
+
+	var plugin router.Plugin
+	var recorder controller.RouteStatusRecorder = controller.LogRejections
+	if o.UpdateStatus {
+		lease := writerlease.New(time.Minute, 3*time.Second)
+		go lease.Run(stopCh)
+		informer := factory.CreateRoutesSharedInformer()
+		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
+		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
+		go tracker.Run(stopCh)
+		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
+		status := controller.NewStatusAdmitter(routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
+		recorder = status
+		plugin = status
+	}
+
 	pluginCfg := templateplugin.TemplatePluginConfig{
+		Plugin:                        plugin,
+		Recorder:                      recorder,
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
+		RouteConfigCheck:              o.RouteConfigCheck,
+		ConfigCheckScriptPath:         o.ConfigCheckScript,
 		ReloadScriptPath:              o.ReloadScript,
 		ReloadInterval:                o.ReloadInterval,
 		ReloadCallbacks:               reloadCallbacks,
@@ -789,25 +818,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	plugin = templatePlugin
 	ptrTemplatePlugin = templatePlugin
 
-	factory := o.RouterSelection.NewFactory(routeclient, projectclient.ProjectV1().Projects(), kc)
-	factory.RouteModifierFn = o.RouteUpdate
-
-	var plugin router.Plugin = templatePlugin
-	var recorder controller.RouteStatusRecorder = controller.LogRejections
-	if o.UpdateStatus {
-		lease := writerlease.New(time.Minute, 3*time.Second)
-		go lease.Run(stopCh)
-		informer := factory.CreateRoutesSharedInformer()
-		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
-		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))
-		go tracker.Run(stopCh)
-		routeLister := routelisters.NewRouteLister(informer.GetIndexer())
-		status := controller.NewStatusAdmitter(plugin, routeclient.RouteV1(), routeLister, o.RouterName, o.RouterCanonicalHostname, lease, tracker)
-		recorder = status
-		plugin = status
-	}
 	if o.UpgradeValidation {
 		plugin = controller.NewUpgradeValidation(plugin, recorder, o.UpgradeValidationForceAddCondition, o.UpgradeValidationForceRemoveCondition)
 	}
