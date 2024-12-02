@@ -415,5 +415,6 @@ var helperFunctions = template.FuncMap{
 	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
 	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
 
-	"processRewriteTarget": rewritetarget.SanitizeInput, //sanitizes `haproxy.router.openshift.io/rewrite-target` annotation
+	"processRewriteTarget": rewritetarget.SanitizeRewriteTargetInput, //sanitizes `haproxy.router.openshift.io/rewrite-target` annotation
+	"processRewritePath":   rewritetarget.SanitizeRewritePathInput,   //sanitizes route path for rewrite-target functionality
 }

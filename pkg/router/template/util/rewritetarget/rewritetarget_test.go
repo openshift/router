@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_SanitizeInput(t *testing.T) {
+func Test_SanitizeRewriteTargetInput(t *testing.T) {
 	testCases := []struct {
 		name   string
 		input  string
@@ -85,7 +85,55 @@ func Test_SanitizeInput(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := rewritetarget.SanitizeInput(tc.input)
+			got := rewritetarget.SanitizeRewriteTargetInput(tc.input)
+			if got != tc.output {
+				t.Errorf("Failure: expected %s, got %s", tc.output, got)
+			}
+		})
+	}
+}
+
+func Test_SanitizeRewritePathInput(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{
+			name:   "normal path",
+			input:  `/foo/bar`,
+			output: `/foo/bar`,
+		},
+		{
+			name:   "single quotes should be escaped",
+			input:  `'foo'foo\'`,
+			output: `'\''foo'\''foo\\'\''`,
+		},
+		{
+			name:   "number sign should NOT be escaped",
+			input:  `/foo/bar#`,
+			output: `/foo/bar#`,
+		},
+		{
+			name:   "backslashes should be escaped",
+			input:  `\foo\\foo\\\foo`,
+			output: `\\foo\\\\foo\\\\\\foo`,
+		},
+		{
+			name:   "special characters should be escaped",
+			input:  `/foo\.+*?()|[]{}^$`,
+			output: `/foo\\\.\+\*\?\(\)\|\[\]\{\}\^\$`,
+		},
+		{
+			name:   "new line characters should be escaped",
+			input:  "/foo\r\n",
+			output: `/foo\r\n`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := rewritetarget.SanitizeRewritePathInput(tc.input)
 			if got != tc.output {
 				t.Errorf("Failure: expected %s, got %s", tc.output, got)
 			}
