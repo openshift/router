@@ -20,6 +20,7 @@ import (
 	kapi "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -205,6 +206,11 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 			} else {
 				tlsConfig.CACertificate = string(data)
 			}
+			// HAProxy will fail to start if intermediate CA certs use unsupported signature algorithms.
+			// However, root CAs can still use unsupported algorithms since they are self-signed.
+			if err := validateCertSignatureAlgorithms(certs); err != nil {
+				result = append(result, field.Invalid(tlsFieldPath.Child("caCertificate"), "redacted ca certificate data", err.Error()))
+			}
 		}
 
 		verifyOptions = &x509.VerifyOptions{
@@ -215,6 +221,7 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 	}
 
 	if len(tlsConfig.Certificate) > 0 {
+		// validateCertificatePEM calls validateCertSignatureAlgorithms for check for unsupported signature algorithms.
 		if _, err := validateCertificatePEM(tlsConfig.Certificate, verifyOptions); err != nil {
 			result = append(result, field.Invalid(tlsFieldPath.Child("certificate"), "redacted certificate data", err.Error()))
 		} else {
@@ -254,7 +261,7 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 	}
 
 	if len(tlsConfig.DestinationCACertificate) > 0 {
-		if _, err := cert.ParseCertsPEM([]byte(tlsConfig.DestinationCACertificate)); err != nil {
+		if certs, err := cert.ParseCertsPEM([]byte(tlsConfig.DestinationCACertificate)); err != nil {
 			errmsg := fmt.Sprintf("failed to parse destination CA certificate: %v", err)
 			result = append(result, field.Invalid(tlsFieldPath.Child("destinationCACertificate"), "redacted destination ca certificate data", errmsg))
 		} else {
@@ -262,6 +269,11 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 				result = append(result, field.Invalid(tlsFieldPath.Child("destinationCACertificate"), "redacted destination ca certificate data", err.Error()))
 			} else {
 				tlsConfig.DestinationCACertificate = string(data)
+			}
+			// Unsupported destinationCACertificates algorithms won't prevent HAProxy from starting.
+			// However, HAProxy will quietly refuse to use them at runtime. Rejecting here improves UX.
+			if err := validateCertSignatureAlgorithms(certs); err != nil {
+				result = append(result, field.Invalid(tlsFieldPath.Child("destinationCACertificate"), "redacted destination ca certificate data", err.Error()))
 			}
 		}
 	}
@@ -353,6 +365,73 @@ func validateInsecureEdgeTerminationPolicy(tls *routev1.TLSConfig, fldPath *fiel
 	return nil
 }
 
+// isSelfSignedCert determines if a certificate is self-signed by verifying that the issuer matches the subject,
+// the authority key identifier matches the subject key identifier, and the public key algorithm matches the
+// signature algorithm. This logic mirrors the approach that OpenSSL uses to set the EXFLAG_SS flag, which
+// indicates a certificate is self-signed.
+// Ref: https://github.com/openssl/openssl/blob/b85e6f534906f0bf9114386d227e481d2336a0ff/crypto/x509/v3_purp.c#L557
+func isSelfSignedCert(cert *x509.Certificate) bool {
+	issuerIsEqualToSubject := bytes.Equal(cert.RawIssuer, cert.RawSubject)
+	authorityKeyIsEqualToSubjectKey := bytes.Equal(cert.AuthorityKeyId, cert.SubjectKeyId)
+	algorithmIsConsistent := signatureAlgorithmToPublicKeyAlgorithm(cert.SignatureAlgorithm) == cert.PublicKeyAlgorithm
+	return issuerIsEqualToSubject &&
+		(cert.AuthorityKeyId == nil || authorityKeyIsEqualToSubjectKey) &&
+		algorithmIsConsistent
+}
+
+// signatureAlgorithmToPublicKeyAlgorithm maps a SignatureAlgorithm to its corresponding PublicKeyAlgorithm.
+// Unfortunately, the x509 library does not expose a public mapping function for this.
+// Returns UnknownPublicKeyAlgorithm if the mapping is not recognized.
+func signatureAlgorithmToPublicKeyAlgorithm(sigAlgo x509.SignatureAlgorithm) x509.PublicKeyAlgorithm {
+	switch sigAlgo {
+	case x509.MD2WithRSA,
+		x509.MD5WithRSA,
+		x509.SHA1WithRSA,
+		x509.SHA256WithRSA,
+		x509.SHA384WithRSA,
+		x509.SHA512WithRSA,
+		x509.SHA256WithRSAPSS,
+		x509.SHA384WithRSAPSS,
+		x509.SHA512WithRSAPSS:
+		return x509.RSA
+	case x509.DSAWithSHA1,
+		x509.DSAWithSHA256:
+		return x509.DSA
+	case x509.ECDSAWithSHA1,
+		x509.ECDSAWithSHA256,
+		x509.ECDSAWithSHA384,
+		x509.ECDSAWithSHA512:
+		return x509.ECDSA
+	case x509.PureEd25519:
+		return x509.Ed25519
+	default:
+		return x509.UnknownPublicKeyAlgorithm
+	}
+}
+
+// validateCertSignatureAlgorithms checks if the certificate list has any certs that use a
+// signature algorithm that the router no longer supports. If an unsupported cert is present, HAProxy
+// may refuse to start (server & CA certs) or may start but reject connections (destination CA certs).
+func validateCertSignatureAlgorithms(certs []*x509.Certificate) error {
+	var errs []error
+	for _, cert := range certs {
+		// Verify the signature algorithms only for certs signed by a CA.
+		// Since OpenSSL doesn't validate self-signed certificates, the signature algorithm check can be skipped.
+		// It's important that we do NOT reject self-signed certificates, as many root CAs still utilize SHA1.
+		if !isSelfSignedCert(cert) {
+			switch cert.SignatureAlgorithm {
+			case x509.SHA1WithRSA, x509.ECDSAWithSHA1, x509.DSAWithSHA1:
+				errs = append(errs, fmt.Errorf("router does not support CA-signed certs using SHA1"))
+			case x509.MD2WithRSA:
+				errs = append(errs, fmt.Errorf("router does not support CA-signed certs using MD2"))
+			case x509.MD5WithRSA:
+				errs = append(errs, fmt.Errorf("router does not support CA-signed certs using MD5"))
+			}
+		}
+	}
+	return kerrors.NewAggregate(errs)
+}
+
 // validateCertificatePEM checks if a certificate PEM is valid and
 // optionally verifies the certificate using the options.
 func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x509.Certificate, error) {
@@ -366,13 +445,8 @@ func validateCertificatePEM(certPEM string, options *x509.VerifyOptions) ([]*x50
 	}
 
 	// Reject any unsupported cert algorithms as HaProxy will refuse to start with them.
-	switch certs[0].SignatureAlgorithm {
-	case x509.SHA1WithRSA, x509.ECDSAWithSHA1:
-		return certs, fmt.Errorf("router does not support certs using SHA1")
-	case x509.MD5WithRSA:
-		return certs, fmt.Errorf("router does not support certs using MD5")
-	default:
-		// Acceptable algorithm
+	if err := validateCertSignatureAlgorithms(certs); err != nil {
+		return certs, err
 	}
 
 	if options != nil {
