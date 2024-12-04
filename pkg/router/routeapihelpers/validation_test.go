@@ -928,12 +928,37 @@ IrRGZJwgzmWX+NzqK9H3AyFk5p9oBuzmulVoJyKFzs1eN4ZIn25ifP8hP+uJHOTE
 jZrtwVw4rGVb/qM=
 -----END PRIVATE KEY-----`
 
-	// openssl req -x509 -sha1 -newkey rsa:1024 -days 3650 -keyout exampleca.key -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	// openssl req -x509 -sha1 -newkey rsa:1024 -days 3650 -keyout testCertificateRsaSha1CA.key -out testCertificateRsaSha1CA.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
+	//
+	// Key = N/A
+	// CA = self-signed
+	testCertificateRsaSha1CA = `-----BEGIN CERTIFICATE-----
+MIIDTDCCArWgAwIBAgIUdcGoZHpRH6pm5gz1y+fzIJgd2+QwDQYJKoZIhvcNAQEF
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDEyMDUxOTE0MzVaFw0zNDEyMDMx
+OTE0MzVaMIGhMQswCQYDVQQGEwJVUzELMAkGA1UECAwCU0MxFTATBgNVBAcMDERl
+ZmF1bHQgQ2l0eTEcMBoGA1UECgwTRGVmYXVsdCBDb21wYW55IEx0ZDEQMA4GA1UE
+CwwHVGVzdCBDQTEaMBgGA1UEAwwRd3d3LmV4YW1wbGVjYS5jb20xIjAgBgkqhkiG
+9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0A
+MIGJAoGBAMr2nKQT+SApiFdQ9RNTUodbpCx0h1099Yl+BMndqTatIYtqye6zLben
+lZzXAqB6V5O6p67idmmib+xPSB/JKg07avZlWnha842WyKfgaqaU6y3xLSIAmSZY
+53ZpS5Hsz/lD0nW1dCAy7CQJgnrm82PlW9UrgpRF7iYKOZPBoOJhAgMBAAGjfzB9
+MB0GA1UdDgQWBBQx59/z9UQJtp0X+keOSVoZZDtC2jAfBgNVHSMEGDAWgBQx59/z
+9UQJtp0X+keOSVoZZDtC2jAPBgNVHRMBAf8EBTADAQH/MAsGA1UdDwQEAwIBhjAd
+BgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDQYJKoZIhvcNAQEFBQADgYEA
+gJ8Xp0xyCk0NcDm2WTsHQ+rHKQeDEmm4eL/RUEzBfGf8hAdtYYUUkk9769nNv0Iz
+Na69Y0jobfn2C+1xaSfpFtpcreL6cni6BtdzNarODIKAR0xpSAMUImIYf2djpXo4
+ruZvZk7/4TbIft02vArhQ9QI+OGLgq/Nf+Lusc6Zf6s=
+-----END CERTIFICATE-----
+`
+
 	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateRsaSha1.key -out testCertificateRsaSha1.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
-	// openssl x509 -req -days 3650 -sha1 -in testCertificateRsaSha1.csr -CA exampleca.crt -CAcreateserial -CAkey exampleca.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateRsaSha1.crt
+	// openssl x509 -req -days 3650 -sha1 -in testCertificateRsaSha1.csr -CA testCertificateRsaSha1CA.crt -CAcreateserial -CAkey testCertificateRsaSha1CA.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateRsaSha1.crt
 	//
 	// Key = testCertificateRsaSha1Key
-	// CA = Unknown
+	// CA = testCertificateRsaSha1CA
 	testCertificateRsaSha1 = `-----BEGIN CERTIFICATE-----
 MIIC9DCCAl2gAwIBAgIUTWv/Z/7lOkdCELulnNZOP4azjHowDQYJKoZIhvcNAQEF
 BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
@@ -970,6 +995,133 @@ xML+gBynq4Ms/vZYADBbb1KVeEZza7ilQOhiyNPZUGssM2G7yVP8q7kCQHFCAgmO
 redbrtiWNunEy1hVHOJD6ALriPz2i1W51NMbrPV2kOy9GpV/p3oby3GmXHs+Zlo6
 bBbOLhI7o+VlGaM=
 -----END PRIVATE KEY-----`
+
+	// openssl req -x509 -newkey rsa:2048 -days 3650 -sha1 -keyout testCertificateRsaSha1SelfSigned.key -nodes -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example' -addext "basicConstraints=CA:FALSE" -out testCertificateRsaSha1SelfSigned.crt
+	//
+	// Key = testCertificateRsaSha1SelfSignedKey
+	// CA = self-signed
+	testCertificateRsaSha1SelfSigned = `-----BEGIN CERTIFICATE-----
+MIID0zCCArugAwIBAgIUYnuOhBfzAKuCC2fUAmVMR7+C1jEwDQYJKoZIhvcNAQEF
+BQAwfDEYMBYGA1UEAwwPd3d3LmV4YW1wbGUuY29tMQswCQYDVQQIDAJTQzELMAkG
+A1UEBhMCVVMxIjAgBgkqhkiG9w0BCQEWE2V4YW1wbGVAZXhhbXBsZS5jb20xEDAO
+BgNVBAoMB0V4YW1wbGUxEDAOBgNVBAsMB0V4YW1wbGUwHhcNMjQxMjA1MTc1MjM0
+WhcNMzQxMjAzMTc1MjM0WjB8MRgwFgYDVQQDDA93d3cuZXhhbXBsZS5jb20xCzAJ
+BgNVBAgMAlNDMQswCQYDVQQGEwJVUzEiMCAGCSqGSIb3DQEJARYTZXhhbXBsZUBl
+eGFtcGxlLmNvbTEQMA4GA1UECgwHRXhhbXBsZTEQMA4GA1UECwwHRXhhbXBsZTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANyrQEMLrd9QY0ZH8GbDENHh
+qDrEuaib1Xy+M8qdRQbWZBRYDLQQrveDOfp7oPT5DylYg5oH0P1K01bfqRp6+PhG
+LEr2GDu41smvUQiCCsIJTxwGKFYygFuKM4OfB6ieydTQJnZNc+1QNSDnIhizZ98O
+j9H8bnfUeHSbVjL9oONFOIUbLzqF/FzdL7yvlifFDdI998uBc2iYprh3m1NOAxQu
+6TXhxK2j34qPaBhGdtPaOXsKW0qkA0XySROSh9EWnkoQx4bdc71dmbCJflxeWkOV
+RVCHwEU1oRK3FA73LzMP9C/rSp8TiTYc39rNSq4Tnbm5EDcHEI298egp3xnsxekC
+AwEAAaNNMEswHQYDVR0OBBYEFN+n2yc9ULcaMkqTfXRGQ9AuU/H7MB8GA1UdIwQY
+MBaAFN+n2yc9ULcaMkqTfXRGQ9AuU/H7MAkGA1UdEwQCMAAwDQYJKoZIhvcNAQEF
+BQADggEBAJim5Ep7rD6wfbg2aWdltsrHeSbX/1iva/yPkFyMvDMpTpeGKqRWQlRL
+e39PyqF6QyZGsfUJsib/UzsUQD0xuabwpS2aOIy3Ie+x+xmNga1FdYvN9NbnPUyi
+7VoQ5lZSe+ZQHa5iYWuDJtrAcFUib3YrTOKtgDiHroMICWCQEnK4vwMHk0G9yvHJ
+RJVqubu+JSEwivgtQRdcUHBSz9GHgCm58YyV9we6UAVFSudpFfTRbr5gKIiP858q
+atCQ7S3S25DHcr8Hj1RmaiLmhe1o5LtG282y5zGte+8TlMnimwCoeldRVngH9Nhs
+bnqtc2ouTrKiR0Ec+QsV1a1hfhRuj2M=
+-----END CERTIFICATE-----
+`
+	testCertificateRsaSha1SelfSignedKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDcq0BDC63fUGNG
+R/BmwxDR4ag6xLmom9V8vjPKnUUG1mQUWAy0EK73gzn6e6D0+Q8pWIOaB9D9StNW
+36kaevj4RixK9hg7uNbJr1EIggrCCU8cBihWMoBbijODnweonsnU0CZ2TXPtUDUg
+5yIYs2ffDo/R/G531Hh0m1Yy/aDjRTiFGy86hfxc3S+8r5YnxQ3SPffLgXNomKa4
+d5tTTgMULuk14cSto9+Kj2gYRnbT2jl7CltKpANF8kkTkofRFp5KEMeG3XO9XZmw
+iX5cXlpDlUVQh8BFNaEStxQO9y8zD/Qv60qfE4k2HN/azUquE525uRA3BxCNvfHo
+Kd8Z7MXpAgMBAAECggEAY78lNSk6Vw9HUKWEDW9vUu/l02rJYWXPgquXTab5ZLXU
+Vz3VwC8qZ8dxlb/8ab+LEu1nz2BpH5WLImHHVqjvkYpmyxuiqJxMuq38uxPNORhs
+IgbGhPAfBUHbN0vTcm0UXpYYTLGGDWeMHGteBjxSX4l9iTXJ2XC5Yjw1Iqdy6kew
+wEACuHgROJKYFEBeufhuSOSpplrepaqpBV4g5l75BVCBYQ/nQLsKcLQgaQ42kx+x
+7YNvSlGeieEcj/Eft5zB6HxADfjyMlNwDJ2bi37oq9s9q8PKVBVFYyCOAz06ZGuo
+pwY8z2Qpi3j1D0nnPWMXjEP5NmDotORy4EFJtfSC4QKBgQD5G28GHxtp1197hMhB
+SZ8bzFQ6kBFxVHjrgjxYb8kS5j2ANm49/oW+PnnNwFbO84fgC97oQDE0K8cPBL3A
+tcsQvbvz29M2VcPu9zus6YxRcsGTyCLRg0aT4NuXtRccYg681jH1FTFZCiNpZGnx
+Z6C1+zW9CcB1aBbzjiRlbPx6+wKBgQDixl+awgDIt19HnsUVup7+zSEXxT/8ixc9
+QENdZaEC8lZJY/WzehKgZpMjmN0zTmWGU2anq6i5tbivyFXaLlZTFdpjK1eq4h/n
+JU9oJjMhZzoRA6Vhlrqiy6CTECa/fyr/d7zB9bkLveSUds/U0n4P6oU2msOtAJ8d
+SFtApbHtawKBgQDAfbRzFIKIbQa5Wcesu4kZX/EON9liq5Ws1rxu0iKcWhHYCzdw
+7EbI1Vol5aSu0nyCYmnjKgdbeyCcuFswmMnLq/Ga5Jj3eZqoA5+3Y9kr7vMqkRJm
+t3xINQ860ZKEOjmNLi74ZWH2neDzRcaf5iXHudCyvOBdWQuzNHlnbqpDFQKBgCrV
+o5tcx78h++pQUBPRo1SntHeD95khQKt+JvtORgKDec71BaT4CuqnVWWk6ytUxJKB
+0GMdZopli9QQOD80/3NELnMK7c1GVxZXEs+uX3wQvoQWNzfeu7QiWFtO8rK7N4j3
+ufy9CE3yeWmdo5YkiFFDUBRHWWylMGjckPf+FESvAoGAdZ63rjBO9XT2I/zu+Yvj
+fTror7gkwHlb5H1O/ynA/R6TdMjlCZHl1Sv6ThdS77nzrEML1U3DfmEm+D3NgtVd
+zEfT6Sd9HQFjt1qjydVxicSNPUc4Uv30WZ6+HsIqp7ER9XzYEPPsUkfQxZEghddb
+X7ziGItWQDkoCNS0SzR0rqw=
+-----END PRIVATE KEY-----
+`
+
+	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateRsaSha256Key.key -out testCertificateRsaSha256.csr -subj '/CN=www.example.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl x509 -req -days 3650 -sha256 -in testCertificateRsaSha256.csr -CA testCertificateRsaSha1CA.crt -CAcreateserial -CAkey testCertificateRsaSha1CA.key -extensions ext -extfile <(echo $'[ext]\nbasicConstraints = CA:FALSE') -out testCertificateRsaSha256.crt
+	//
+	// Key = testCertificateRsaSha256Key
+	// CA = testCertificateRsaSha1CA
+	testCertificateRsaSha256 = `-----BEGIN CERTIFICATE-----
+MIIC9DCCAl2gAwIBAgIUPntbAkSM5zU756UYskpkowJ1K+QwDQYJKoZIhvcNAQEL
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDEyMDUxOTI1NDRaFw0zNDEyMDMx
+OTI1NDRaMHwxGDAWBgNVBAMMD3d3dy5leGFtcGxlLmNvbTELMAkGA1UECAwCU0Mx
+CzAJBgNVBAYTAlVTMSIwIAYJKoZIhvcNAQkBFhNleGFtcGxlQGV4YW1wbGUuY29t
+MRAwDgYDVQQKDAdFeGFtcGxlMRAwDgYDVQQLDAdFeGFtcGxlMIGfMA0GCSqGSIb3
+DQEBAQUAA4GNADCBiQKBgQC+ev0wfcOfz1JfJ4zOBgu+oGmLzV4vZ4Lzaux/gJSI
+x/P8+WluGWIntWoTdCCOiDJ7ATF7gWJVb97865YyK3CKF1hQ82PFUlZrFZ/6clu3
+MCNapgWSBtti89NMSIjsXan0zC9DYwITlQU+Rz2qR7OuXOkqhMzNPiCAh0RT5GFp
+YQIDAQABo00wSzAJBgNVHRMEAjAAMB0GA1UdDgQWBBSuC+KO8ghLTUvdBZgUWW9c
+BvvyYDAfBgNVHSMEGDAWgBQx59/z9UQJtp0X+keOSVoZZDtC2jANBgkqhkiG9w0B
+AQsFAAOBgQB7VPQ2D/KmFNF9gDtrdn/p+XpKdq60ww4YJ4OLM/sUIaHVH28INQp+
+Pmy5gsxydOUmDfKwN7Ho4K7UUROViPdLQ/upf9yzfCF4MOz3vNhgKMU66uzKMKqu
+EKj7+XGCwvV+RGHaFIkeWFn5J3L66MvSkiKwWRnebzdry0tt6erktQ==
+-----END CERTIFICATE-----
+`
+	testCertificateRsaSha256Key = `-----BEGIN PRIVATE KEY-----
+MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAL56/TB9w5/PUl8n
+jM4GC76gaYvNXi9ngvNq7H+AlIjH8/z5aW4ZYie1ahN0II6IMnsBMXuBYlVv3vzr
+ljIrcIoXWFDzY8VSVmsVn/pyW7cwI1qmBZIG22Lz00xIiOxdqfTML0NjAhOVBT5H
+PapHs65c6SqEzM0+IICHRFPkYWlhAgMBAAECgYBXIfWN6AnDodfhVTswx006DzEY
+1YHfF2+sn929WXkYtLbkosbaqVvgJDl42qdF7AGDiQE0qPPtdzY+5hmXq41Xo2uz
+E/J3GbEN+5gvGGqEDdBXMRoRniAfF3Jxq1PTin3bBMhRiRtWT0LHYZMjg5LSK8el
+i40yqIsu8Yy1/g7dHQJBAOvtOHtRnwjRhvSqjIhl+AxHM6x1vRUk18sgRWvGItaX
+IGIvwOKzc4L4BIxCoK01VxHMbZ+xY/5vykFDHAxNaxsCQQDOr+R+Rjr8Mb8jssqN
+QIEZYyz/9J+qcAqLJytCQ3EMkuGCBlsHZD5F8b2TB37gVWw8NnSbpUSZq5wg3JjR
+hWkzAkBD86NdAXlI1PCF78liT9xNzQQ5HABF4sK0oqrcC8lk/Uo6fX6UzRLsGftV
+WqtkuARIABVi9XjTg+dBPM8LTBEZAkAksAIeC/dSZr4n5wefNRD1Ya5OLKzeww6M
+DsLV+0So17Whr+EemcOYBMYCwDTcOy2ALqZaLmbT5CtNhfq2TjkTAkAU91uLGMhR
+K9ei9NBG73K3PFbf/ZuBnu0E/5CRIKsc4bQxQigIHlXTzlmlYvWN+u69/V9d6LUV
+Kdt+vXZxxF0o
+-----END PRIVATE KEY-----
+`
+
+	// openssl req -newkey rsa:1024 -nodes -keyout testCertificateRsaSha1IntermediateKey.key -out testCertificateRsaSha1Intermediate.csr -subj '/CN=www.example-intermediate.com/ST=SC/C=US/emailAddress=example@example.com/O=Example/OU=Example'
+	// openssl req -x509 -days 3650 -sha1 -in testCertificateRsaSha1Intermediate.csr -CA testCertificateRsaSha1CA.crt -CAkey testCertificateRsaSha1CA.key -addext "keyUsage=cRLSign,  digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -out testCertificateRsaSha1Intermediate.crt
+	//
+	// Key = N/A
+	// CA = testCertificateRsaSha1CA
+	testCertificateRsaSha1Intermediate = `-----BEGIN CERTIFICATE-----
+MIIDNDCCAp2gAwIBAgIUYyFIg3U1KaCgvaPyZwFz7DCmWygwDQYJKoZIhvcNAQEF
+BQAwgaExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJTQzEVMBMGA1UEBwwMRGVmYXVs
+dCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMRAwDgYDVQQLDAdU
+ZXN0IENBMRowGAYDVQQDDBF3d3cuZXhhbXBsZWNhLmNvbTEiMCAGCSqGSIb3DQEJ
+ARYTZXhhbXBsZUBleGFtcGxlLmNvbTAeFw0yNDEyMDUxOTU0NTRaFw0zNDEyMDMx
+OTU0NTRaMIGJMSUwIwYDVQQDDBx3d3cuZXhhbXBsZS1pbnRlcm1lZGlhdGUuY29t
+MQswCQYDVQQIDAJTQzELMAkGA1UEBhMCVVMxIjAgBgkqhkiG9w0BCQEWE2V4YW1w
+bGVAZXhhbXBsZS5jb20xEDAOBgNVBAoMB0V4YW1wbGUxEDAOBgNVBAsMB0V4YW1w
+bGUwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAL9Aa2YfzuZ921IoE+hkSKMr
+2AmyIDidf9HhA9K2epJVovs7xxtrbtqZFu/sSq5yG4iiAiFQYz2dsGRGND9q0pk5
+cmMpd4fMxr9i25M4QsGYJF0fsIl0LSR1Rsnm3CCtT9UJ+uzI3R3x1MSQeUhuHA+b
+L2xbw6LChh0iNr2S4cyXAgMBAAGjfzB9MB0GA1UdDgQWBBR19g2MZ/T/pkZEOQEs
+K/bUUNSj/zAfBgNVHSMEGDAWgBQx59/z9UQJtp0X+keOSVoZZDtC2jAPBgNVHRMB
+Af8EBTADAQH/MAsGA1UdDwQEAwIBhjAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYB
+BQUHAwIwDQYJKoZIhvcNAQEFBQADgYEAWEDNW3aQ8igypoETFrg8XKuZXE1+LNSp
+dcToe9D7zh/ZjsSB1xIAIfO6/aQvinllvke95sJCMaCwxPlk9zhPNktnVBkN4F/r
+eot14he8jfoSh4rlQSxzcvUHRCETRM+InDG3SozsDBR1SXJdrIDrZF7N9EsiuRHo
+K74LMEaSYuA=
+-----END CERTIFICATE-----
+`
 
 	// openssl ecparam -out exampleca.key -name secp224r1 -genkey
 	// openssl req -x509 -sha1 -key exampleca.key -days 3650 -out exampleca.crt -addext "keyUsage=cRLSign, digitalSignature, keyCertSign" -addext "extendedKeyUsage=serverAuth, clientAuth" -nodes -subj '/C=US/ST=SC/L=Default City/O=Default Company Ltd/OU=Test CA/CN=www.exampleca.com/emailAddress=example@example.com'
@@ -1938,6 +2090,71 @@ func TestExtendedValidateRoute(t *testing.T) {
 						Termination: routev1.TLSTerminationEdge,
 						Certificate: testCertificateEcdsaSha1,
 						Key:         testCertificateEcdsaSha1Key,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
+		{
+			name: "Edge termination with self-signed cert using SHA1 with RSA key",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: testCertificateRsaSha1SelfSigned,
+						Key:         testCertificateRsaSha1SelfSignedKey,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "Reencrypt termination with destination CA root and intermediate cert using SHA1 with RSA key",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:              routev1.TLSTerminationReencrypt,
+						DestinationCACertificate: testCertificateRsaSha1CA + testCertificateRsaSha1Intermediate,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
+		{
+			name: "Reencrypt termination with destination CA root cert using SHA1 with RSA key",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:              routev1.TLSTerminationReencrypt,
+						DestinationCACertificate: testCertificateRsaSha1CA,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "Edge termination with root CA cert using SHA1 and server cert using SHA256",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: testCertificateRsaSha1CA,
+						Certificate:   testCertificateRsaSha256,
+						Key:           testCertificateRsaSha256Key,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			name: "Edge termination with root CA cert using SHA1, intermediate cert using SHA1, and server cert using SHA256",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination:   routev1.TLSTerminationEdge,
+						CACertificate: testCertificateRsaSha1CA + testCertificateRsaSha1Intermediate,
+						Certificate:   testCertificateRsaSha256,
+						Key:           testCertificateRsaSha256Key,
 					},
 				},
 			},
