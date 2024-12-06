@@ -387,29 +387,60 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 		return result
 	}
 
-	// Verify the route for incompatible SHA1 certificates within Spec.TLS.Certificate
-	// as it will prevent HaProxy from starting.
-	// There's no need to verify SHA1 certificates within Spec.TLS.CACertificate
-	// as they will be rejected by the ExtendedValidator plugin.
-	// Similarly, verifying SHA1 certificates within Spec.TLS.DestinationCACertificate
-	// is unnecessary as it will NOT prevent HaProxy from starting.
-	if len(tlsConfig.Certificate) > 0 {
-		certs, err := cert.ParseCertsPEM([]byte(tlsConfig.Certificate))
-		if err != nil {
-			// Handling cert parsing errors, like malformed or invalid certs, isn't necessary here,
-			// as the ExtendedValidator plugin is responsible for handling these errors.
-			return result
-		}
+	// Verify the route for incompatible SHA1 CA-Signed certs within Spec.TLS.Certificate, Spec.TLS.CACertificates,
+	// and Spec.TLS.DestinationCACertificate as they will be rejected in 4.16. Self-signed certificates using SHA1,
+	// including root CA certificates, remain upgradeSupported in 4.16.
+	if upgradeSupported, msg := isCertUpgradeSupported(tlsConfig.Certificate); !upgradeSupported {
+		tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("certificate")
+		result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", msg))
+	}
+	if upgradeSupported, msg := isCertUpgradeSupported(tlsConfig.CACertificate); !upgradeSupported {
+		tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("caCertificate")
+		result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", msg))
+	}
+	if upgradeSupported, msg := isCertUpgradeSupported(tlsConfig.DestinationCACertificate); !upgradeSupported {
+		tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("destinationCACertificate")
+		result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", msg))
+	}
 
-		if len(certs) < 1 {
-			return result
-		}
+	return result
+}
 
-		if certs[0].SignatureAlgorithm == x509.SHA1WithRSA || certs[0].SignatureAlgorithm == x509.ECDSAWithSHA1 {
-			tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("certificate")
-			message := "OpenShift 4.16 does not support certificates using SHA1 signature algorithms. This route will be rejected in OpenShift 4.16. To maintain functionality in OpenShift 4.16, generate a new certificate using a supported signature algorithm such as SHA256, SHA384, or SHA512, and update this route accordingly."
-			result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", message))
+// isSelfSignedCert determines if a provided certificate is
+// self-signed by checking if the issuer is equal to the subject.
+func isSelfSignedCert(cert *x509.Certificate) bool {
+	return bytes.Equal(cert.RawIssuer, cert.RawSubject)
+}
+
+// isCertUpgradeSupported verifies whether the certificate list contains any certificates
+// that will be unsupported by the router in the next OpenShift version. It returns a bool
+// indicating support status and a message string explaining unsupported cases.
+func isCertUpgradeSupported(pemCerts string) (bool, string) {
+	if len(pemCerts) == 0 {
+		return true, ""
+	}
+	certs, err := cert.ParseCertsPEM([]byte(pemCerts))
+	if err != nil {
+		// Handling cert parsing errors, like malformed or invalid certs, isn't necessary here,
+		// as the ExtendedValidator plugin is responsible for handling these errors.
+		return true, ""
+	}
+
+	for _, cert := range certs {
+		// Verify the signature algorithms only for certs signed by a CA.
+		// Self-signed certificates are not subject to validation, so their signature algorithm is not used.
+		// It's important that we do NOT reject self-signed certificates, as many root CAs still utilize SHA1.
+		if !isSelfSignedCert(cert) {
+			switch certs[0].SignatureAlgorithm {
+			case x509.SHA1WithRSA, x509.ECDSAWithSHA1:
+				sha1UnsupportedMsg := "OpenShift 4.16 does not support CA-signed certificates using SHA1 signature algorithms. This route " +
+					"will be rejected in OpenShift 4.16. To maintain functionality in OpenShift 4.16, generate a new certificate " +
+					"using a supported signature algorithm such as SHA256, SHA384, or SHA512, and update this route accordingly."
+				return false, sha1UnsupportedMsg
+			default:
+				// Acceptable algorithm
+			}
 		}
 	}
-	return result
+	return true, ""
 }
