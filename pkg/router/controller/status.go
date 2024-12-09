@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -64,6 +65,7 @@ func (logRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Rou
 
 // StatusAdmitter ensures routes added to the plugin have status set.
 type StatusAdmitter struct {
+	lock   sync.Mutex
 	plugin router.Plugin
 	client client.RoutesGetter
 	lister routelisters.RouteLister
@@ -81,6 +83,7 @@ type StatusAdmitter struct {
 // with differing configurations are writing updates at the same time.
 func NewStatusAdmitter(plugin router.Plugin, client client.RoutesGetter, lister routelisters.RouteLister, name, hostName string, lease writerlease.Lease, tracker ContentionTracker) *StatusAdmitter {
 	return &StatusAdmitter{
+		lock:   sync.Mutex{},
 		plugin: plugin,
 		client: client,
 		lister: lister,
@@ -104,6 +107,8 @@ var nowFn = getRfc3339Timestamp
 
 // HandleRoute attempts to admit the provided route on watch add / modifications.
 func (a *StatusAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	log.V(10).Info("HandleRoute: StatusAdmitter")
 	switch eventType {
 	case watch.Added, watch.Modified:
@@ -135,6 +140,8 @@ func (a *StatusAdmitter) Commit() error {
 // This function is intended to be used to signal route updates, keeping `Admitted=True` to
 // provide information about the change.
 func (a *StatusAdmitter) RecordRouteUpdate(route *routev1.Route, reason, message string) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	performIngressConditionUpdate("admit", a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{
 		Type:    routev1.RouteAdmitted,
 		Status:  corev1.ConditionTrue,
@@ -145,6 +152,8 @@ func (a *StatusAdmitter) RecordRouteUpdate(route *routev1.Route, reason, message
 
 // RecordRouteRejection attempts to update the route status with a reason for a route being rejected.
 func (a *StatusAdmitter) RecordRouteRejection(route *routev1.Route, reason, message string) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	performIngressConditionUpdate("reject", a.lease, a.tracker, a.client, a.lister, route, a.routerName, a.routerCanonicalHostname, routev1.RouteIngressCondition{
 		Type:    routev1.RouteAdmitted,
 		Status:  corev1.ConditionFalse,
@@ -156,6 +165,8 @@ func (a *StatusAdmitter) RecordRouteRejection(route *routev1.Route, reason, mess
 // RecordRouteUnservableInFutureVersions attempts to update the route status with a
 // reason for a route being unservable in future versions.
 func (a *StatusAdmitter) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	expectedCondition := routev1.RouteIngressCondition{
 		Type:    routev1.RouteUnservableInFutureVersions,
 		Status:  corev1.ConditionTrue,
@@ -179,6 +190,8 @@ func (a *StatusAdmitter) RecordRouteUnservableInFutureVersions(route *routev1.Ro
 
 // RecordRouteUnservableInFutureVersionsClear clears the UnservableInFutureVersions status back to an unset state.
 func (a *StatusAdmitter) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	// First, verify if updates are required by checking if the route ingress status matches expected values.
 	// This helps avoid unnecessary tasks in the writerlease queue and prevents unneeded lease extensions.
 	// We only do this in for the new UnservableInFutureVersions condition to avoid perturbing existing logic for the

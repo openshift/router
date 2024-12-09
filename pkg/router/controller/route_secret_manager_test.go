@@ -1290,11 +1290,8 @@ func TestSecretDelete(t *testing.T) {
 	recorder := &statusRecorder{
 		doneCh: make(chan struct{}),
 	}
-	p := &fakePluginDone{
-		doneCh: make(chan struct{}),
-	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	rsm := NewRouteSecretManager(p, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
 
 	// Create a fakeSecret and start an informer for it
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
@@ -1317,19 +1314,10 @@ func TestSecretDelete(t *testing.T) {
 	}
 
 	<-recorder.doneCh // wait until the route's status is updated
-	<-p.doneCh        // wait until p.plugin.HandleRoute() is completed
 
-	expectedRoute := route
-	expectedEventType := watch.Deleted
 	expectedRejections := []string{"sandbox-route-test:ExternalCertificateSecretDeleted"}
 	expectedDeletedSecrets := true
 
-	if !reflect.DeepEqual(expectedRoute, p.route) {
-		t.Fatalf("expected route for next plugin %v, but got %v", expectedRoute, p.route)
-	}
-	if expectedEventType != p.eventType {
-		t.Fatalf("expected %s event for next plugin, but got %s", expectedEventType, p.eventType)
-	}
 	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
 		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
 	}
@@ -1356,11 +1344,8 @@ func TestSecretRecreation(t *testing.T) {
 	recorder := &statusRecorder{
 		doneCh: make(chan struct{}),
 	}
-	p := &fakePluginDone{
-		doneCh: make(chan struct{}),
-	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	rsm := NewRouteSecretManager(p, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
 
 	// Create a fakeSecret and start an informer for it
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
@@ -1383,7 +1368,6 @@ func TestSecretRecreation(t *testing.T) {
 	}
 
 	<-recorder.doneCh // wait until the route's status is updated (deletion)
-	<-p.doneCh        // wait until p.plugin.HandleRoute() is completed (deletion)
 
 	// re-create the secret
 	recorder.doneCh = make(chan struct{}) // need a new doneCh for re-creation

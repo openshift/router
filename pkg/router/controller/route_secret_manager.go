@@ -315,8 +315,6 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 
 			// Reject this route
 			p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretDeleted", msg)
-			// Stop serving this route
-			p.plugin.HandleRoute(watch.Deleted, route)
 		},
 	}
 }
