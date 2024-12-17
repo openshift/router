@@ -19,6 +19,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const (
+	ExtCrtStatusReasonValidationFailed = "ExternalCertificateValidationFailed"
+	ExtCrtStatusReasonSecretRecreated  = "ExternalCertificateSecretRecreated"
+	ExtCrtStatusReasonSecretUpdated    = "ExternalCertificateSecretUpdated"
+	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
+	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
+)
+
 // RouteSecretManager implements the router.Plugin interface to register
 // or unregister route with secretManger if externalCertificate is used.
 // It also reads the referenced secret to update in-memory tls.Certificate and tls.Key
@@ -269,7 +277,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 				// The route should *remain* rejected until it's re-evaluated
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
 				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
-				p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretRecreated", msg)
+				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretRecreated, msg)
 			}
 		},
 
@@ -291,9 +299,9 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// - If the route is admitted (Admitted=True), record an update event.
 			// - If the route is not admitted, record a rejection event (keep it rejected).
 			if isRouteAdmittedTrue(route.DeepCopy()) {
-				p.recorder.RecordRouteUpdate(route, "ExternalCertificateSecretUpdated", msg)
+				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
 			} else {
-				p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretUpdated", msg)
+				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
 			}
 		},
 
@@ -314,7 +322,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			}
 
 			// Reject this route
-			p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretDeleted", msg)
+			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretDeleted, msg)
 		},
 	}
 }
@@ -329,7 +337,7 @@ func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
 	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
 		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
-		p.recorder.RecordRouteRejection(route, "ExternalCertificateValidationFailed", err.Error())
+		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
 	}
@@ -345,7 +353,7 @@ func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) er
 	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
 	if err != nil {
 		log.Error(err, "failed to get referenced secret")
-		p.recorder.RecordRouteRejection(route, "ExternalCertificateGetFailed", err.Error())
+		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonGetFailed, err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
 	}
