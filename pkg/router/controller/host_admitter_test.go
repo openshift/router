@@ -35,6 +35,10 @@ func (r routeStatusRecorder) RecordRouteRejection(route *routev1.Route, reason, 
 	r.rejections[r.rejectionKey(route)] = reason
 }
 
+func (r routeStatusRecorder) RecordRouteUpdate(route *routev1.Route, reason, message string) {
+	panic("not implemented")
+}
+
 func (r routeStatusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
 	delete(r.unservableInFutureVersions, r.rejectionKey(route))
 }

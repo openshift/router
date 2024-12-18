@@ -5,6 +5,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -34,6 +35,18 @@ type contentionKey string
 const (
 	stateCandidate elementState = iota
 	stateContended
+)
+
+// ignoreIngressConditionReason is a set of reasons for ingress conditions that should be ignored
+// when comparing if two route ingresses are the same. This is used to avoid false positives
+// mainly when the state of the ExternalCertificate is changed.
+var (
+	ignoreIngressConditionReason sets.String = sets.NewString(
+		ExtCrtStatusReasonValidationFailed,
+		ExtCrtStatusReasonSecretRecreated,
+		ExtCrtStatusReasonSecretUpdated,
+		ExtCrtStatusReasonSecretDeleted,
+	)
 )
 
 type trackerElement struct {
@@ -255,7 +268,7 @@ func ingressEqual(a, b *routev1.RouteIngress) bool {
 }
 
 // ingressConditionsEqual determines if the route ingress conditions are equal,
-// while ignoring LastTransitionTime.
+// while ignoring LastTransitionTime and any reason in ignoreIngressConditionReason.
 func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
 	if len(a) != len(b) {
 		return false
@@ -279,8 +292,11 @@ func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
 	return true
 }
 
-// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime.
+// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime and any reason in ignoreIngressConditionReason..
 func conditionsEqual(a, b *routev1.RouteIngressCondition) bool {
+	if ignoreIngressConditionReason.Has(a.Reason) || ignoreIngressConditionReason.Has(b.Reason) {
+		return true
+	}
 	return a.Type == b.Type &&
 		a.Status == b.Status &&
 		a.Reason == b.Reason &&
