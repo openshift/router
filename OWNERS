@@ -12,6 +12,7 @@ approvers:
   - alebedev87
   - gcs278
   - grzpiotrowski
+  - Thealisyed
 reviewers:
   - ironcladlou
   - knobunc
@@ -27,4 +28,5 @@ reviewers:
   - alebedev87
   - gcs278
   - grzpiotrowski
+  - Thealisyed
 component: Routing
