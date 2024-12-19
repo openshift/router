@@ -37,13 +37,14 @@ type RouteSecretManager struct {
 	recorder RouteStatusRecorder
 
 	secretManager secretmanager.SecretManager
+	routerName    string
 	secretsGetter corev1client.SecretsGetter
 	routelister   routelisters.RouteLister
 	sarClient     authorizationclient.SubjectAccessReviewInterface
-	// deletedSecrets tracks routes for which the associated secret was deleted after intial creation of the secret monitor.
+	// deletedSecrets tracks routes for which the associated secret was deleted after initial creation of the secret monitor.
 	// This helps to differentiate between a new secret creation and a recreation of a previously deleted secret.
 	// Populated inside DeleteFunc, and consumed or cleaned inside AddFunc and unregister().
-	// It is thread safe and "namespace/routeName" is used as it's key.
+	// It is thread safe and "namespace/routeName" is used as its key.
 	deletedSecrets sync.Map
 }
 
@@ -53,6 +54,7 @@ func NewRouteSecretManager(
 	plugin router.Plugin,
 	recorder RouteStatusRecorder,
 	secretManager secretmanager.SecretManager,
+	routerName string,
 	secretsGetter corev1client.SecretsGetter,
 	routelister routelisters.RouteLister,
 	sarClient authorizationclient.SubjectAccessReviewInterface,
@@ -61,6 +63,7 @@ func NewRouteSecretManager(
 		plugin:         plugin,
 		recorder:       recorder,
 		secretManager:  secretManager,
+		routerName:     routerName,
 		secretsGetter:  secretsGetter,
 		routelister:    routelister,
 		sarClient:      sarClient,
@@ -298,7 +301,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// Update the route status to notify plugins, including this plugin, for re-evaluation.
 			// - If the route is admitted (Admitted=True), record an update event.
 			// - If the route is not admitted, record a rejection event (keep it rejected).
-			if isRouteAdmittedTrue(route.DeepCopy()) {
+			if isRouteAdmittedTrue(route.DeepCopy(), p.routerName) {
 				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
 			} else {
 				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
@@ -394,9 +397,13 @@ func generateKey(namespace, routeName string) string {
 }
 
 // isRouteAdmittedTrue returns true if the given route has been admitted
-// by any of its ingress controllers, otherwise false.
-func isRouteAdmittedTrue(route *routev1.Route) bool {
+// by the current router, otherwise false.
+func isRouteAdmittedTrue(route *routev1.Route, routerName string) bool {
 	for _, ingress := range route.Status.Ingress {
+		if ingress.RouterName != routerName {
+			continue
+		}
+
 		for _, condition := range ingress.Conditions {
 			if condition.Type == routev1.RouteAdmitted && condition.Status == kapi.ConditionTrue {
 				return true

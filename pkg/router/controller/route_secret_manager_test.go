@@ -22,6 +22,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const testRouterName = "test-router"
+
 type testSARCreator struct {
 	allow bool
 	err   error
@@ -1126,7 +1128,7 @@ func TestRouteSecretManager(t *testing.T) {
 			recorder := &statusRecorder{
 				doneCh: make(chan struct{}),
 			}
-			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{}, &testSARCreator{allow: s.allow})
+			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, testRouterName, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{}, &testSARCreator{allow: s.allow})
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
 			if (gotErr != nil) != s.expectedError {
@@ -1184,7 +1186,7 @@ func TestSecretUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "Secret updated when route status was Admitted=True",
+			name: "Secret updated when route status was Admitted=True by the same router",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
@@ -1200,6 +1202,7 @@ func TestSecretUpdate(t *testing.T) {
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
+							RouterName: testRouterName,
 							Conditions: []routev1.RouteIngressCondition{
 								{
 									Type:   routev1.RouteAdmitted,
@@ -1212,6 +1215,35 @@ func TestSecretUpdate(t *testing.T) {
 			},
 			isRouteAdmittedTrue: true,
 		},
+		{
+			name: "Secret updated when route status was Admitted=True by some different router",
+			route: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "route-test",
+					Namespace: "sandbox",
+				},
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						ExternalCertificate: &routev1.LocalObjectReference{
+							Name: "tls-secret",
+						},
+					},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							RouterName: "some-different-router",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, s := range scenarios {
@@ -1220,7 +1252,7 @@ func TestSecretUpdate(t *testing.T) {
 				doneCh: make(chan struct{}),
 			}
 			lister := &routeLister{items: []*routev1.Route{s.route}}
-			rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+			rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
 			// Create a fakeSecret and start an informer for it
 			secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
@@ -1291,7 +1323,7 @@ func TestSecretDelete(t *testing.T) {
 		doneCh: make(chan struct{}),
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
 	// Create a fakeSecret and start an informer for it
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
@@ -1345,7 +1377,7 @@ func TestSecretRecreation(t *testing.T) {
 		doneCh: make(chan struct{}),
 	}
 	lister := &routeLister{items: []*routev1.Route{route}}
-	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, &testSecretGetter{}, lister, &testSARCreator{})
+	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
 	// Create a fakeSecret and start an informer for it
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})

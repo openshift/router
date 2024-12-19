@@ -292,7 +292,7 @@ func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
 	return true
 }
 
-// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime and any reason in ignoreIngressConditionReason..
+// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime and any reason in ignoreIngressConditionReason.
 func conditionsEqual(a, b *routev1.RouteIngressCondition) bool {
 	if ignoreIngressConditionReason.Has(a.Reason) || ignoreIngressConditionReason.Has(b.Reason) {
 		return true
