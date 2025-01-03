@@ -7,5 +7,6 @@
     '''pkg\/router\/routeapihelpers\/validation_test.go$''',
     '''pkg\/router\/template\/plugin_test.go$''',
     '''pkg\/router\/template\/router_test.go$''',
+    '''images\/router\/haproxy\/conf\/default_pub_keys.pem$''',
   ]
        
