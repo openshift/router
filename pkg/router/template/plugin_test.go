@@ -531,6 +531,9 @@ func (r *fakeStatusRecorder) RecordRouteRejection(route *routev1.Route, reason, 
 func (r *fakeStatusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
 	r.unservableInFutureVersions = append(r.unservableInFutureVersions, status{route: route, reason: reason, message: message})
 }
+func (r *fakeStatusRecorder) RecordRouteUpdate(route *routev1.Route, reason, message string) {
+	panic("not implemented")
+}
 func (r *fakeStatusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
 	var unservableInFutureVersions []status
 	for _, entry := range r.unservableInFutureVersions {

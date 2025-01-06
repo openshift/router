@@ -12,7 +12,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	routev1 "github.com/openshift/api/route/v1"
 
-	fakesm "github.com/openshift/library-go/pkg/route/secretmanager/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -628,7 +627,6 @@ func findCert(cert string, certs map[string]Certificate, isPrivateKey bool, t *t
 // TestRemoveRoute tests removing a ServiceAliasConfig from a ServiceUnit
 func TestRemoveRoute(t *testing.T) {
 	router := NewFakeTemplateRouter()
-	router.secretManager = &fakesm.SecretManager{IsRegistered: true}
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
