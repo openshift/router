@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/util/cert"
 
@@ -387,29 +388,100 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 		return result
 	}
 
-	// Verify the route for incompatible SHA1 certificates within Spec.TLS.Certificate
-	// as it will prevent HaProxy from starting.
-	// There's no need to verify SHA1 certificates within Spec.TLS.CACertificate
-	// as they will be rejected by the ExtendedValidator plugin.
-	// Similarly, verifying SHA1 certificates within Spec.TLS.DestinationCACertificate
-	// is unnecessary as it will NOT prevent HaProxy from starting.
-	if len(tlsConfig.Certificate) > 0 {
-		certs, err := cert.ParseCertsPEM([]byte(tlsConfig.Certificate))
-		if err != nil {
-			// Handling cert parsing errors, like malformed or invalid certs, isn't necessary here,
-			// as the ExtendedValidator plugin is responsible for handling these errors.
-			return result
-		}
+	// Verify the route for incompatible SHA1 CA-Signed certs within Spec.TLS.Certificate, Spec.TLS.CACertificates,
+	// and Spec.TLS.DestinationCACertificate as they will be rejected in 4.16. Self-signed certificates using SHA1,
+	// including root CA certificates, remain upgradeSupported in 4.16.
+	if err := validateCertSignatureAlgorithmsForUpgrade(tlsConfig.Certificate); err != nil {
+		tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("certificate")
+		result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", err.Error()))
+	}
+	if err := validateCertSignatureAlgorithmsForUpgrade(tlsConfig.CACertificate); err != nil {
+		tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("caCertificate")
+		result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", err.Error()))
+	}
+	if err := validateCertSignatureAlgorithmsForUpgrade(tlsConfig.DestinationCACertificate); err != nil {
+		tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("destinationCACertificate")
+		result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", err.Error()))
+	}
 
-		if len(certs) < 1 {
-			return result
-		}
+	return result
+}
 
-		if certs[0].SignatureAlgorithm == x509.SHA1WithRSA || certs[0].SignatureAlgorithm == x509.ECDSAWithSHA1 {
-			tlsCertFieldPath := field.NewPath("spec").Child("tls").Child("certificate")
-			message := "OpenShift 4.16 does not support certificates using SHA1 signature algorithms. This route will be rejected in OpenShift 4.16. To maintain functionality in OpenShift 4.16, generate a new certificate using a supported signature algorithm such as SHA256, SHA384, or SHA512, and update this route accordingly."
-			result = append(result, field.Invalid(tlsCertFieldPath, "redacted certificate data", message))
+// isSelfSignedCert determines if a certificate is self-signed by verifying that the issuer matches the subject,
+// the authority key identifier matches the subject key identifier, and the public key algorithm matches the
+// signature algorithm. This logic mirrors the approach that OpenSSL uses to set the EXFLAG_SS flag, which
+// indicates a certificate is self-signed.
+// Ref: https://github.com/openssl/openssl/blob/b85e6f534906f0bf9114386d227e481d2336a0ff/crypto/x509/v3_purp.c#L557
+func isSelfSignedCert(cert *x509.Certificate) bool {
+	issuerIsEqualToSubject := bytes.Equal(cert.RawIssuer, cert.RawSubject)
+	authorityKeyIsEqualToSubjectKey := bytes.Equal(cert.AuthorityKeyId, cert.SubjectKeyId)
+	algorithmIsConsistent := signatureAlgorithmToPublicKeyAlgorithm(cert.SignatureAlgorithm) == cert.PublicKeyAlgorithm
+	return issuerIsEqualToSubject &&
+		(cert.AuthorityKeyId == nil || authorityKeyIsEqualToSubjectKey) &&
+		algorithmIsConsistent
+}
+
+// signatureAlgorithmToPublicKeyAlgorithm maps a SignatureAlgorithm to its corresponding PublicKeyAlgorithm.
+// Unfortunately, the x509 library does not expose a public mapping function for this.
+// Returns UnknownPublicKeyAlgorithm if the mapping is not recognized.
+func signatureAlgorithmToPublicKeyAlgorithm(sigAlgo x509.SignatureAlgorithm) x509.PublicKeyAlgorithm {
+	switch sigAlgo {
+	case x509.MD2WithRSA,
+		x509.MD5WithRSA,
+		x509.SHA1WithRSA,
+		x509.SHA256WithRSA,
+		x509.SHA384WithRSA,
+		x509.SHA512WithRSA,
+		x509.SHA256WithRSAPSS,
+		x509.SHA384WithRSAPSS,
+		x509.SHA512WithRSAPSS:
+		return x509.RSA
+	case x509.DSAWithSHA1,
+		x509.DSAWithSHA256:
+		return x509.DSA
+	case x509.ECDSAWithSHA1,
+		x509.ECDSAWithSHA256,
+		x509.ECDSAWithSHA384,
+		x509.ECDSAWithSHA512:
+		return x509.ECDSA
+	case x509.PureEd25519:
+		return x509.Ed25519
+	default:
+		return x509.UnknownPublicKeyAlgorithm
+	}
+}
+
+// validateCertSignatureAlgorithmsForUpgrade checks if the certificate list has any certs that use a
+// signature algorithm that the router will not support in the next OpenShift version. If an
+// unsupported cert is present, HAProxy may refuse to start (server & CA certs) or may start but
+// reject connections (destination CA certs).
+func validateCertSignatureAlgorithmsForUpgrade(pemCerts string) error {
+	var errs []error
+	if len(pemCerts) == 0 {
+		return nil
+	}
+	certs, err := cert.ParseCertsPEM([]byte(pemCerts))
+	if err != nil {
+		// Handling cert parsing errors, like malformed or invalid certs, isn't necessary here,
+		// as the ExtendedValidator plugin is responsible for handling these errors.
+		return nil
+	}
+
+	for _, cert := range certs {
+		// Verify the signature algorithms only for certs signed by a CA.
+		// Since OpenSSL doesn't validate self-signed certificates, the signature algorithm check can be skipped.
+		// It's important that we do NOT reject self-signed certificates, as many root CAs still utilize SHA1.
+		if !isSelfSignedCert(cert) {
+			switch cert.SignatureAlgorithm {
+			case x509.SHA1WithRSA, x509.ECDSAWithSHA1:
+				sha1UnsupportedMsg := "OpenShift 4.16 does not support CA-signed certificates using SHA1 signature algorithms. This route " +
+					"will be rejected in OpenShift 4.16. To maintain functionality in OpenShift 4.16, generate a new certificate " +
+					"using a supported signature algorithm such as SHA256, SHA384, or SHA512, and update this route accordingly."
+				errs = append(errs, fmt.Errorf(sha1UnsupportedMsg))
+			default:
+				// Acceptable algorithm
+			}
 		}
 	}
-	return result
+	return kerrors.NewAggregate(errs)
 }
