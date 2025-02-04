@@ -152,8 +152,10 @@ defaults
   # backend service or alternatively, you can send a custom 503 or 404 error.
   #
   # server openshift_backend 127.0.0.1:8080
+  errorfile 504 {{ env "ROUTER_ERRORFILE_504" "/var/lib/haproxy/conf/error-page-504.http" }}
   errorfile 503 {{ env "ROUTER_ERRORFILE_503" "/var/lib/haproxy/conf/error-page-503.http" }}
   errorfile 404 {{ env "ROUTER_ERRORFILE_404" "/var/lib/haproxy/conf/error-page-404.http" }}
+  errorfile 403 {{ env "ROUTER_ERRORFILE_403" "/var/lib/haproxy/conf/error-page-403.http" }}
 
   timeout connect {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_CONNECT_TIMEOUT") "5s" }}
   timeout client {{ firstMatch $timeSpecPattern (env "ROUTER_DEFAULT_CLIENT_TIMEOUT") "30s" }}
