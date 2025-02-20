@@ -367,26 +367,40 @@ func parseIPList(list string) string {
 
 	trimmedList := strings.TrimSpace(list)
 	if trimmedList == "" {
+		log.V(0).Info("parseIPList empty list found")
 		return ""
 	}
 
 	// same behavior as the previous approach with regexp
 	if trimmedList != list {
-		log.V(7).Info("parseIPList leading/trailing spaces found")
+		log.V(0).Info("parseIPList leading/trailing spaces found")
 		return ""
 	}
 
+	var validIPs []string
+
 	ipList := strings.Fields(list)
 	for _, ip := range ipList {
-		if net.ParseIP(ip) == nil {
-			if _, _, err := net.ParseCIDR(ip); err != nil {
-				log.V(7).Info("parseIPList found not IP/CIDR item", "value", ip, "err", err)
-				return ""
-			}
+		// check if it's a valid IP
+		if net.ParseIP(ip) != nil {
+			validIPs = append(validIPs, ip)
+		} else if _, _, err := net.ParseCIDR(ip); err == nil {
+			// check if it's a valid CIDR
+			validIPs = append(validIPs, ip)
+		} else {
+			// Log invalid IP/CIDR
+			log.V(0).Info("parseIPList found invalid IP/CIDR", ip)
 		}
 	}
-	log.V(7).Info("parseIPList parsed the list", "value", list)
-	return list
+
+	if len(validIPs) == 0 {
+		log.V(0).Info("No valid IP/CIDR in the list")
+		return ""
+	}
+
+	result := strings.Join(validIPs, " ")
+	log.V(7).Info("parseIPList parsed the list", "validIPs", result)
+	return result
 }
 
 var helperFunctions = template.FuncMap{
