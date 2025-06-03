@@ -909,6 +909,44 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"backend config snippet custom ACL": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "backendconfig",
+					host: "backendconfig.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/backend-config-snippet": "acl use_specific_code path_end -i /specific\nhttp-request return status 299 if use_specific_code",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "backendconfig"),
+					attribute:   "acl",
+					value:       "use_specific_code path_end -i /specific",
+				},
+			},
+		},
+		"backend config snippet http-request": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "backendconfigreturn",
+					host: "backendconfigreturn.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/backend-config-snippet": "acl use_specific_code path_end -i /specific\nhttp-request return status 299 if use_specific_code",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					value:      "\n  acl use_specific_code path_end -i /specific\n  http-request return status 299 if use_specific_code",
+					rawContent: true,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
@@ -1145,10 +1183,15 @@ type mustMatchConfig struct {
 	notFound bool
 	// fullMatch indicates whether the expectation is that value matches fully.
 	fullMatch bool
+	// rawContent indicates whether to search for the value as raw content in the config file.
+	// This bypasses the parser and directly searches the file for the exact string.
+	rawContent bool
 }
 
 func (m mustMatchConfig) Match(parser haproxyconfparser.Parser) error {
 	switch {
+	case m.rawContent:
+		return matchRawContent(m.value, m.notFound)
 	case len(m.mapFile) != 0:
 		return matchMapFile(m.mapFile, m.value, m.notFound)
 	case len(m.section) != 0:
@@ -1363,4 +1406,28 @@ func reencryptBackendName(ns, route string) string {
 // passthroughBackendName contructs the HAProxy config's backend name for a passthrough route.
 func passthroughBackendName(ns, route string) string {
 	return "be_tcp:" + ns + ":" + route
+}
+
+func matchRawContent(searchString string, notFound bool) error {
+	// Get the main haproxy config file path
+	configFile := filepath.Join(h.workdir, "conf", "haproxy.config")
+
+	// Read the config file
+	content, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return fmt.Errorf("failed to read config file for raw content search: %v", err)
+	}
+
+	// Check if the content contains the search string
+	contains := strings.Contains(string(content), searchString)
+
+	if !contains && !notFound {
+		return fmt.Errorf("expected string not found in config: %s", searchString)
+	}
+
+	if contains && notFound {
+		return fmt.Errorf("unexpected string found in config: %s", searchString)
+	}
+
+	return nil
 }

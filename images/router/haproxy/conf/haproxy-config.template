@@ -632,6 +632,11 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
         {{- end }}
 
+        {{- /* custom ACL snippet from route-annotation */ -}}
+        {{- with $snippet := index $cfg.Annotations "haproxy.router.openshift.io/backend-config-snippet" }}
+{{ indent $snippet 2 }}
+        {{- end }}
+
   timeout check 5000ms
         {{- with $setHeaders := firstMatch $setForwardedHeadersPattern (index $cfg.Annotations $setForwardedHeadersAnnotation) $setForwardedHeadersDefaultValue }}
           {{- if eq $setHeaders "append" }}
@@ -698,7 +703,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-request replace-path ^{{ $cfg.Path }}(.*)$ '{{ processRewriteTarget $pathRewriteTarget }}'
           {{- end }}
         {{- end }}{{/* rewrite target */}}
-  
+
         {{- if not (isTrue (index $cfg.Annotations "haproxy.router.openshift.io/disable_cookies")) }}
   cookie {{ firstMatch $cookieNamePattern (index $cfg.Annotations "router.openshift.io/cookie_name") (env "ROUTER_COOKIE_NAME" "") $cfg.RoutingKeyName }} insert indirect nocache httponly
           {{- if and (matchValues (print $cfg.TLSTermination) "edge" "reencrypt") (ne $cfg.InsecureEdgeTerminationPolicy "Allow") }}
@@ -839,6 +844,11 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- else }}
   #TCP connection rate not restricted
           {{- end }}
+        {{- end }}
+
+        {{- /* custom ACL snippet from route-annotation */ -}}
+        {{- with $snippet := index $cfg.Annotations "haproxy.router.openshift.io/backend-config-snippet" }}
+{{ indent $snippet 2 }}
         {{- end }}
 
   hash-type consistent

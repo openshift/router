@@ -403,6 +403,31 @@ func parseIPList(list string) string {
 	return result
 }
 
+// indent adds a specified number of spaces to the beginning of each line in the input string.
+// If input is empty, it returns an empty string.
+// If indent is 0 or negative, it returns the input string as is.
+func indent(input string, spaces int) string {
+	if input == "" {
+		return ""
+	}
+
+	if spaces <= 0 {
+		return input
+	}
+
+	padding := strings.Repeat(" ", spaces)
+	lines := strings.Split(input, "\n")
+
+	// Process each line, adding the padding to the start of each one
+	for i, line := range lines {
+		if line != "" {
+			lines[i] = padding + line
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 var helperFunctions = template.FuncMap{
 	"endpointsForAlias":        endpointsForAlias,        //returns the list of valid endpoints
 	"processEndpointsForAlias": processEndpointsForAlias, //returns the list of valid endpoints after processing them
@@ -429,5 +454,7 @@ var helperFunctions = template.FuncMap{
 	"clipHAProxyTimeoutValue": clipHAProxyTimeoutValue, //clips extrodinarily high timeout values to be below the maximum allowed timeout value
 	"parseIPList":             parseIPList,             //parses the list of IPs/CIDRs (IPv4/IPv6)
 
-	"processRewriteTarget": rewritetarget.SanitizeInput, //sanitizes `haproxy.router.openshift.io/rewrite-target` annotation
+	"indent":                 indent,                 //indents a multiline string with specified number of spaces
+	"processRewriteTarget":   rewritetarget.SanitizeInput, //sanitizes `haproxy.router.openshift.io/rewrite-target` annotation
 }
+

@@ -1104,3 +1104,64 @@ func TestParseIPList(t *testing.T) {
 		})
 	}
 }
+
+func TestIndent(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		spaces   int
+		expected string
+	}{
+		{
+			name:     "empty input",
+			input:    "",
+			spaces:   2,
+			expected: "",
+		},
+		{
+			name:     "zero spaces",
+			input:    "line1\nline2\nline3",
+			spaces:   0,
+			expected: "line1\nline2\nline3",
+		},
+		{
+			name:     "negative spaces",
+			input:    "line1\nline2\nline3",
+			spaces:   -1,
+			expected: "line1\nline2\nline3",
+		},
+		{
+			name:     "standard indentation",
+			input:    "line1\nline2\nline3",
+			spaces:   2,
+			expected: "  line1\n  line2\n  line3",
+		},
+		{
+			name:     "with empty lines",
+			input:    "line1\n\nline3",
+			spaces:   4,
+			expected: "    line1\n\n    line3",
+		},
+		{
+			name:     "single line",
+			input:    "line1",
+			spaces:   3,
+			expected: "   line1",
+		},
+		{
+			name:     "multi-line with different content",
+			input:    "first line\nsecond line with more text\nthird",
+			spaces:   2,
+			expected: "  first line\n  second line with more text\n  third",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := indent(tc.input, tc.spaces)
+			if result != tc.expected {
+				t.Errorf("Expected:\n%s\nGot:\n%s", tc.expected, result)
+			}
+		})
+	}
+}
