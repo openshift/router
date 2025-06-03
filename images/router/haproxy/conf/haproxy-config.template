@@ -632,7 +632,6 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
         {{- end }}
 
-        {{- /* custom ACL snippet from route-annotation */ -}}
         {{- with $snippet := index $cfg.Annotations "haproxy.router.openshift.io/backend-config-snippet" }}
 {{ indent $snippet 2 }}
         {{- end }}
@@ -846,7 +845,6 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
         {{- end }}
 
-        {{- /* custom ACL snippet from route-annotation */ -}}
         {{- with $snippet := index $cfg.Annotations "haproxy.router.openshift.io/backend-config-snippet" }}
 {{ indent $snippet 2 }}
         {{- end }}
