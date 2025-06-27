@@ -6,6 +6,7 @@
 {{- define "conf/haproxy.config" }}
 {{- $workingDir := .WorkingDir }}
 {{- $routerCiphers := env "ROUTER_CIPHERS" "intermediate" }}
+{{- $routerCiphersuites := env "ROUTER_CIPHERSUITES" }}
 {{- $defaultDestinationCA := .DefaultDestinationCA }}
 {{- $dynamicConfigManager := .DynamicConfigManager }}
 {{- $router_ip_v4_v6_mode := env "ROUTER_IP_V4_V6_MODE" "v4" }}
@@ -115,8 +116,8 @@ global
     TLSv1.1, and TLSv1.2; for TLSv1.3, cipher suites are configured using the
     ssl-default-bind-ciphersuites option below.
   */}}
-  {{- with $ciphersuites := (env "ROUTER_CIPHERSUITES") }}
-  ssl-default-bind-ciphersuites {{ $ciphersuites }}
+  {{- with $routerCiphersuites }}
+  ssl-default-bind-ciphersuites {{ $routerCiphersuites }}
   {{- end }}
   {{- with $captureCookie := .CaptureHTTPCookie }}
     {{- if (gt $captureCookie.MaxLength 63) }}
