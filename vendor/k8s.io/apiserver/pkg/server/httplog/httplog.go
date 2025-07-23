@@ -31,6 +31,7 @@ import (
 	"k8s.io/apiserver/pkg/endpoints/metrics"
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/endpoints/responsewriter"
+	"k8s.io/apiserver/pkg/server/routine"
 	"k8s.io/klog/v2"
 )
 
@@ -66,6 +67,7 @@ type respLogger struct {
 	addedInfo          strings.Builder
 	addedKeyValuePairs []interface{}
 	startTime          time.Time
+	isTerminating      bool
 
 	captureErrorOutput bool
 
@@ -99,13 +101,13 @@ func DefaultStacktracePred(status int) bool {
 const withLoggingLevel = 3
 
 // WithLogging wraps the handler with logging.
-func WithLogging(handler http.Handler, pred StacktracePred) http.Handler {
+func WithLogging(handler http.Handler, pred StacktracePred, isTerminatingFn func() bool) http.Handler {
 	return withLogging(handler, pred, func() bool {
 		return klog.V(withLoggingLevel).Enabled()
-	})
+	}, isTerminatingFn)
 }
 
-func withLogging(handler http.Handler, stackTracePred StacktracePred, shouldLogRequest ShouldLogRequestPred) http.Handler {
+func withLogging(handler http.Handler, stackTracePred StacktracePred, shouldLogRequest ShouldLogRequestPred, isTerminatingFn func() bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if !shouldLogRequest() {
 			handler.ServeHTTP(w, req)
@@ -116,19 +118,40 @@ func withLogging(handler http.Handler, stackTracePred StacktracePred, shouldLogR
 		if old := respLoggerFromRequest(req); old != nil {
 			panic("multiple WithLogging calls!")
 		}
-
 		startTime := time.Now()
 		if receivedTimestamp, ok := request.ReceivedTimestampFrom(ctx); ok {
 			startTime = receivedTimestamp
 		}
 
-		rl := newLoggedWithStartTime(req, w, startTime)
-		rl.StacktraceWhen(stackTracePred)
+		isTerminating := false
+		if isTerminatingFn != nil {
+			isTerminating = isTerminatingFn()
+		}
+		rl := newLoggedWithStartTime(req, w, startTime).StacktraceWhen(stackTracePred).IsTerminating(isTerminating)
 		req = req.WithContext(context.WithValue(ctx, respLoggerContextKey, rl))
-		defer rl.Log()
 
+		var logFunc func()
+		logFunc = rl.Log
+		defer func() {
+			if logFunc != nil {
+				logFunc()
+			}
+		}()
+
+		if klog.V(3).Enabled() || (rl.isTerminating && klog.V(1).Enabled()) {
+			defer rl.Log()
+		}
 		w = responsewriter.WrapForHTTP1Or2(rl)
 		handler.ServeHTTP(w, req)
+
+		// We need to ensure that the request is logged after it is processed.
+		// In case the request is executed in a separate goroutine created via
+		// WithRoutine handler in the handler chain (i.e. above handler.ServeHTTP()
+		// would return request is completely responsed), we want the logging to
+		// happen in that goroutine too, so we append it to the task.
+		if routine.AppendTask(ctx, &routine.Task{Func: rl.Log}) {
+			logFunc = nil
+		}
 	})
 }
 
@@ -185,6 +208,12 @@ func (rl *respLogger) StacktraceWhen(pred StacktracePred) *respLogger {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
 	rl.logStacktracePred = pred
+	return rl
+}
+
+// IsTerminating informs the logger that the server is terminating.
+func (rl *respLogger) IsTerminating(is bool) *respLogger {
+	rl.isTerminating = is
 	return rl
 }
 
