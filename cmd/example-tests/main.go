@@ -58,14 +58,14 @@ func main() {
 		Long: "OpenShift Tests Extension for Cluster Version Operator",
 	}
 
-	exutil.InitStandardFlags()
+	//exutil.InitStandardFlags()
 	specs.AddBeforeAll(func() {
 		if err := exutil.InitTest(false); err != nil {
 			panic(err)
 		}
 		e2e.AfterReadingAllFlags(exutil.TestContext)
-		e2e.TestContext.DumpLogsOnFailure = true
-		exutil.TestContext.DumpLogsOnFailure = true
+		//	e2e.TestContext.DumpLogsOnFailure = true
+		//	exutil.TestContext.DumpLogsOnFailure = true
 	})
 
 	root.AddCommand(cmd.DefaultExtensionCommands(registry)...)
