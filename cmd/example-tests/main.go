@@ -21,6 +21,29 @@ func main() {
 
 	ext.AddSuite(extension.Suite{
 		Name: "openshit-router",
+		Qualifiers: []string{
+			`name.contains("[router-testing]")`,
+		},
+	})
+
+	ext.AddSuite(extension.Suite{
+		Name: "openshit-router-level0",
+		Parents: []string{
+			"openshift/openshit-router",
+		},
+		Qualifiers: []string{
+			`name.contains("LEVEL0")`,
+		},
+	})
+
+	ext.AddSuite(extension.Suite{
+		Name: "openshit-router-connectedOnly",
+		Parents: []string{
+			"openshift/openshit-router",
+		},
+		Qualifiers: []string{
+			`name.contains("ConnectedOnly")`,
+		},
 	})
 
 	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite()
