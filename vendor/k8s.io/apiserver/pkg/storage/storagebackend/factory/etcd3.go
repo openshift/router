@@ -33,11 +33,13 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/logutil"
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/kubernetes"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"k8s.io/apiserver/pkg/storage/etcd3/etcd3retry"
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -154,13 +156,13 @@ func newETCD3Check(c storagebackend.Config, timeout time.Duration, stopCh <-chan
 	// retry in a loop in the background until we successfully create the client, storing the client or error encountered
 
 	lock := sync.RWMutex{}
-	var prober *etcd3ProberMonitor
+	var prober *etcd3RetryingProberMonitor
 	clientErr := fmt.Errorf("etcd client connection not yet established")
 
 	go wait.PollImmediateUntil(time.Second, func() (bool, error) {
 		lock.Lock()
 		defer lock.Unlock()
-		newProber, err := newETCD3ProberMonitor(c)
+		newProber, err := newRetryingETCD3ProberMonitor(c)
 		// Ensure that server is already not shutting down.
 		select {
 		case <-stopCh:
@@ -228,7 +230,7 @@ func newETCD3ProberMonitor(c storagebackend.Config) (*etcd3ProberMonitor, error)
 		return nil, err
 	}
 	return &etcd3ProberMonitor{
-		client:    client,
+		client:    client.Client,
 		prefix:    c.Prefix,
 		endpoints: c.Transport.ServerList,
 	}, nil
@@ -282,7 +284,7 @@ func (t *etcd3ProberMonitor) Monitor(ctx context.Context) (metrics.StorageMetric
 	}, nil
 }
 
-var newETCD3Client = func(c storagebackend.TransportConfig) (*clientv3.Client, error) {
+var newETCD3Client = func(c storagebackend.TransportConfig) (*kubernetes.Client, error) {
 	tlsInfo := transport.TLSInfo{
 		CertFile:      c.CertFile,
 		KeyFile:       c.KeyFile,
@@ -317,6 +319,7 @@ var newETCD3Client = func(c storagebackend.TransportConfig) (*clientv3.Client, e
 	}
 	if utilfeature.DefaultFeatureGate.Enabled(genericfeatures.APIServerTracing) {
 		tracingOpts := []otelgrpc.Option{
+			otelgrpc.WithMessageEvents(otelgrpc.ReceivedEvents, otelgrpc.SentEvents),
 			otelgrpc.WithPropagators(tracing.Propagators()),
 			otelgrpc.WithTracerProvider(c.TracerProvider),
 		}
@@ -351,7 +354,7 @@ var newETCD3Client = func(c storagebackend.TransportConfig) (*clientv3.Client, e
 		Logger:               etcd3ClientLogger,
 	}
 
-	return clientv3.New(cfg)
+	return kubernetes.New(cfg)
 }
 
 type runningCompactor struct {
@@ -377,12 +380,17 @@ func startCompactorOnce(c storagebackend.TransportConfig, interval time.Duration
 	compactorsMu.Lock()
 	defer compactorsMu.Unlock()
 
+	if interval == 0 {
+		// short circuit, if the compaction request from apiserver is disabled
+		return func() {}, nil
+	}
 	key := fmt.Sprintf("%v", c) // gives: {[server1 server2] keyFile certFile caFile}
 	if compactor, foundBefore := compactors[key]; !foundBefore || compactor.interval > interval {
-		compactorClient, err := newETCD3Client(c)
+		client, err := newETCD3Client(c)
 		if err != nil {
 			return nil, err
 		}
+		compactorClient := client.Client
 
 		if foundBefore {
 			// replace compactor
@@ -434,7 +442,7 @@ func newETCD3Storage(c storagebackend.ConfigForResource, newFunc, newListFunc fu
 	// decorate the KV instance so we can track etcd latency per request.
 	client.KV = etcd3.NewETCDLatencyTracker(client.KV)
 
-	stopDBSizeMonitor, err := startDBSizeMonitorPerEndpoint(client, c.DBMetricPollInterval)
+	stopDBSizeMonitor, err := startDBSizeMonitorPerEndpoint(client.Client, c.DBMetricPollInterval)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -454,7 +462,12 @@ func newETCD3Storage(c storagebackend.ConfigForResource, newFunc, newListFunc fu
 	if transformer == nil {
 		transformer = identity.NewEncryptCheckTransformer()
 	}
-	return etcd3.New(client, c.Codec, newFunc, newListFunc, c.Prefix, resourcePrefix, c.GroupResource, transformer, c.LeaseManagerConfig), destroyFunc, nil
+
+	versioner := storage.APIObjectVersioner{}
+	decoder := etcd3.NewDefaultDecoder(c.Codec, versioner)
+	store := etcd3retry.NewRetryingEtcdStorage(etcd3.New(client, c.Codec, newFunc, newListFunc, c.Prefix, resourcePrefix, c.GroupResource, transformer, c.LeaseManagerConfig, decoder, versioner))
+	return store, destroyFunc, nil
+
 }
 
 // startDBSizeMonitorPerEndpoint starts a loop to monitor etcd database size and update the
