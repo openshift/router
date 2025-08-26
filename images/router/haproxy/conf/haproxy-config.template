@@ -227,6 +227,12 @@ listen stats
 
   {{ if .BindPorts -}}
 frontend public
+    {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
+      {{- if ne (env "ROUTER_HTTP_LOG_FORMAT") "" }}
+  log-format {{ env "ROUTER_HTTP_LOG_FORMAT" }}
+      {{- else }}
+  option httplog
+    {{- end }}
     {{ if eq "v4v6" $router_ip_v4_v6_mode }}
   bind :{{ env "ROUTER_SERVICE_HTTP_PORT" "80" }}{{ if isTrue (env "ROUTER_USE_PROXY_PROTOCOL") }} accept-proxy{{ end }}
   bind :::{{ env "ROUTER_SERVICE_HTTP_PORT" "80" }} v6only{{ if isTrue (env "ROUTER_USE_PROXY_PROTOCOL") }} accept-proxy{{ end }}
@@ -302,6 +308,9 @@ frontend public
 # that terminates encryption in this router (edge)
 frontend public_ssl
     {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
+      {{- if ne (env "ROUTER_TCP_LOG_FORMAT") "" }}
+  log-format {{ env "ROUTER_TCP_LOG_FORMAT" }}
+      {{- else }}
   option tcplog
     {{- end }}
     {{ if eq "v4v6" $router_ip_v4_v6_mode }}
@@ -343,6 +352,12 @@ backend be_sni
   server fe_sni unix@/var/lib/haproxy/run/haproxy-sni.sock weight 1 send-proxy
 
 frontend fe_sni
+  {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
+    {{- if ne (env "ROUTER_HTTPS_LOG_FORMAT") "" }}
+  log-format {{ env "ROUTER_HTTPS_LOG_FORMAT" }}
+    {{- else }}
+  option httpslog
+  {{- end }}
   # terminate ssl on edge
   bind unix@/var/lib/haproxy/run/haproxy-sni.sock ssl
   {{- if isTrue (env "ROUTER_STRICT_SNI") }} strict-sni {{ end }}
@@ -461,6 +476,12 @@ backend be_no_sni
   server fe_no_sni unix@/var/lib/haproxy/run/haproxy-no-sni.sock weight 1 send-proxy
 
 frontend fe_no_sni
+  {{- if ne (env "ROUTER_SYSLOG_ADDRESS") "" }}
+    {{- if ne (env "ROUTER_HTTPS_LOG_FORMAT") "" }}
+  log-format {{ env "ROUTER_HTTPS_LOG_FORMAT" }}
+    {{- else }}
+  option httsplog
+  {{- end }}
   # terminate ssl on edge
   bind unix@/var/lib/haproxy/run/haproxy-no-sni.sock ssl crt {{ firstMatch ".+" .DefaultCertificate "/var/lib/haproxy/conf/default_pub_keys.pem" }} accept-proxy
     {{- with (env "ROUTER_MUTUAL_TLS_AUTH") }}
