@@ -3,6 +3,7 @@ package routeapihelpers
 import (
 	"bytes"
 	"reflect"
+	"strings"
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -1281,6 +1282,169 @@ AATOmu6DIvMYCHfyKfX3jiFKwmsai2r6hJI67MWvjcEq3mztN9hg/WNwD15CgvKq
 NpZboP+JaUtgLQ==
 -----END EC PRIVATE KEY-----
 `
+
+	/*
+		// Root CA
+		openssl genrsa -out rootCA.key 4096
+		openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 -subj "/CN=RootCA" -out rootCA.crt
+
+		// Intermediate Cert
+		openssl genrsa -out intermediateCA.key 4096
+		openssl req -new -key intermediateCA.key -subj "/CN=IntermediateCA" -out intermediateCA.csr
+		openssl x509 -req -in intermediateCA.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out intermediateCA.crt -days 1825 -sha256
+
+		// Leaf certificate
+		openssl genrsa -out leaf.key 2048
+		openssl req -new -key leaf.key -subj "/CN=LeafCert" -out leaf.csr
+		openssl x509 -req -in leaf.csr -CA intermediateCA.crt -CAkey intermediateCA.key -CAcreateserial -out leaf.crt -days 825 -sha256
+
+		// create a PKCS12 with friendlyName attributes to also test the bag attributes
+		cat intermediateCA.crt rootCA.crt > chain.crt
+		openssl pkcs12 -export -out bundle.p12 \
+			-inkey leaf.key -in leaf.crt \
+			-certfile chain.crt \
+			-name "LeafCert" \
+			-caname "ChainCA" \
+			-caname "RootCA" \
+			-passout pass:
+
+		// export from p12, then the pem files will come with bag attributes
+		openssl pkcs12 -in bundle.p12 -nodes -nocerts -out leaf_extracted.key -passin pass:
+		openssl pkcs12 -in bundle.p12 -clcerts -nokeys -out leaf_extracted.crt -passin pass:
+		openssl pkcs12 -in bundle.p12 -cacerts -nokeys -out chain_extracted.crt -passin pass:
+	*/
+
+	leafKeyExtractedFromP12 = `Bag Attributes
+    friendlyName: LeafCert
+    localKeyID: 3E 8A A5 8B A2 F6 29 B6 B5 FC 4D 08 10 15 6E 23 A7 F0 E7 91
+Key Attributes: <No Attributes>
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCkQxDRgrKBK1Pw
+t7kfrtg7EB19ZDk0V+wT7wMDEn4MYegOqylKTAEACRr9u9XfqF+nrvvWMERHYxzW
+tO8fo/2WJoTyO3pQOVMjAVM1dmNGfzbb7Fi8Ws31XzrMou+6fn3b5JZksRsHtVDu
+yufpb2Bzzszut1u5ybNoeC33iqUwgvy+9n52kUYwQQZHNgyKie6DIm4VQMjnMxqh
+ObsUIcerBHuHUF725g7njbQvOyDlfgx28f2DIUjejLQk4xQCL5TAeTodH5G1ARyT
+OlPqfs/zAT4b7T7O/oEg7Assr+ubj4XVq6mlAgKj+jMUsUuRknUpF461VSPTdjYf
+b8cPgTD/AgMBAAECggEAR7MIf9MTVMOTX8LqORSqSNmnbajWOW1ZXHgbMfeb8o63
+6tM2cjpLw3a2A+Q+HmLR4hFE1wD5hMmT+HpA2GhOFADbThq9MJBdJC37Yp47BjYY
+PZXkQ89FEGJReapzhs2Y5WdZaDlQSaSQ37LM2P2nNdWiaV662JVczPCMa/1mTo5j
+SFKMm5Lj6pqUwlF10xfevOGu9CnNwQOcdSsj4JW5y5A+pNDupVVA1YfQbRaOk8ox
+jVq+Uzav3+Frj9vTBv9nQueaSvwVrnm7gpCH2u0PzIu06jG/zv5f1tZJrvdDVfqa
+k9aJ0AqEFyLB4v1J8EIPfrbXscElaTckE8BvheppWQKBgQDXDeftYZBxFkIlAh9I
+sA/3hvICGaWlFL28NeBH2c87QlCJnrdj0RuvPGGry6yiV0EFZYgNFABU5Oc2MNSR
+k0S9hJUkSIvQT/i36RsJmgiLWIOzgmDMU0bOR2bNm2ZGEeQ5gvJbNPsSKp/3JF1k
+GKiFEiQUFksJuoegYaj92A5qpwKBgQDDiXWCA+kgZzCaFx7PFqOPsqNNQfza3xGf
+lD7bkkJPwkljHhgX27BpPvtHZ31nnJlg3dHykHj/Q4W8qBbp5PkvB6y3SIND8T4E
+DqjZzZ6CewDUCnBg6y0I/th+NV5MWqyGDcL/MFs85thUfPpUZRQN2yjiD+Isp4eT
+HaEZZ9PJ6QKBgQDKkYq5i4EnRLQhcBJPwagInNAxMj9ZdGQUeRs+EuilBR4fw6Uz
+HLFbKyFFVaDTeiUBFFZHG2QEk2lHHk/coD/L1Ks3di5cljfN5IFXVgReXY4Q9OqB
+DKBRhehMG+kGb6vukG4Bg7JLtmLfxR1DQAbc8e2SDj24eD9wzw0DrxRFWQKBgAY3
+AUAfpbI89WOAZp9IZex0ThJvjXzbaDD9Qj4yWN82GqUG2NcxSVsfAFeVp3u6k3lr
+s3eVNfNPDxoe8ZN/jpf7E3dD28A2E7WHTcCWc3pMNIuIxWefMfA+QV1JjvS4URF1
+sIPx4oR+BdQxoLc7+zYxiAwfWx32OS3o3Cz1itq5AoGAMxlydJQiYKTN/UvR/9vl
+HOrsBQ3baXDB+wObIfgsDzfl/dJtNaCXgEUYH6Wd3Ri7bTCIOz6Q4HbO5SCKYlvf
+tydMJmL08kS6KWc3HwbVSsr38QuJ4/vkT6J8+IK+vykuzWeHYrJWW5HVMHc7O+lb
+4Vr/gh3ErVQ6e1qCoZQrsz4=
+-----END PRIVATE KEY-----
+	`
+
+	leafCertExtractedFromP12 = `Bag Attributes
+    friendlyName: LeafCert
+    localKeyID: 3E 8A A5 8B A2 F6 29 B6 B5 FC 4D 08 10 15 6E 23 A7 F0 E7 91
+subject=CN=LeafCert
+issuer=CN=IntermediateCA
+-----BEGIN CERTIFICATE-----
+MIID/DCCAeSgAwIBAgIUCxLemXpqHz3FCDlMZRpfyT/ORD8wDQYJKoZIhvcNAQEL
+BQAwGTEXMBUGA1UEAwwOSW50ZXJtZWRpYXRlQ0EwHhcNMjUwOTAxMTQwODA3WhcN
+MjcxMjA1MTQwODA3WjATMREwDwYDVQQDDAhMZWFmQ2VydDCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAKRDENGCsoErU/C3uR+u2DsQHX1kOTRX7BPvAwMS
+fgxh6A6rKUpMAQAJGv271d+oX6eu+9YwREdjHNa07x+j/ZYmhPI7elA5UyMBUzV2
+Y0Z/NtvsWLxazfVfOsyi77p+fdvklmSxGwe1UO7K5+lvYHPOzO63W7nJs2h4LfeK
+pTCC/L72fnaRRjBBBkc2DIqJ7oMibhVAyOczGqE5uxQhx6sEe4dQXvbmDueNtC87
+IOV+DHbx/YMhSN6MtCTjFAIvlMB5Oh0fkbUBHJM6U+p+z/MBPhvtPs7+gSDsCyyv
+65uPhdWrqaUCAqP6MxSxS5GSdSkXjrVVI9N2Nh9vxw+BMP8CAwEAAaNCMEAwHQYD
+VR0OBBYEFMdf/nLy5+AQvK3VLuZJTg95pUjWMB8GA1UdIwQYMBaAFDGYAJEppLk4
+fKU4ag9YpAxgTEhiMA0GCSqGSIb3DQEBCwUAA4ICAQAf460ywyAnvMyq71YrzgSu
+IUe2FV4kA7h3ZqO8XyMBhvJURuHiPBnDm2SKo3Wijqpwaj+AiG6+8KqKGSePRGeD
+gwofJQarFmPMKj0viwlbvewFMm2NUBnVriR4w+2sKw9yReYtqkOuc39/9YDKQkBT
+IOy3fh100We2h8MCN1TlW7Hj57UOocjibV9wOYmYM09WIvgunxDmcLK2z4IxqEl6
+OHtqROyrTlMOFnF5I7fcKOixI3FR5E2oOr34+9kXtMntdXYQ6DX1bR6zS7Md67GP
+jnFsOA7eVQq08h7vFxF7EjSnPOYWsJ3g9F0wuzviv+icOrhCff4b5sDJh4ikqpP6
+50nXr7UsRUYRjKarD81j1730bnpsvcnv2/kaeiIiPyn1NCc6A0evx0iwuh6jEuIN
+kISgIiJkBbGkjadMSYmdAOFyW5vQB3KaEmjdivamqilC7Z+3LJgGVutF8gbDUhhf
++kPM99iAFHJxfHis54gKHX7SX2622kD57kywtKS8OGczFijQscDSHN+14OVILmH/
+q+6IiqKA6mGEfd+swlxmoOu6nFwTW4YVPPBmF4xYa0a0mUL741uFhLOKMgZRjT9B
+Og/wME0I2h9hSVZfq2RdGdjWi0UZdHUFeEoCXSWrwW7cLNXk8Ep7DuFzjZeM7Sub
+xVZ5M+mV8mIUwjqpL5FqZg==
+-----END CERTIFICATE-----
+	`
+	caChainExtractedFromP12 = `Bag Attributes
+    friendlyName: ChainCA
+subject=CN=IntermediateCA
+issuer=CN=RootCA
+-----BEGIN CERTIFICATE-----
+MIIE+jCCAuKgAwIBAgIUfD/Yjn+iDvXYRthTDSzhbhmP+MgwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGUm9vdENBMB4XDTI1MDkwMTE0MDgwN1oXDTMwMDgzMTE0
+MDgwN1owGTEXMBUGA1UEAwwOSW50ZXJtZWRpYXRlQ0EwggIiMA0GCSqGSIb3DQEB
+AQUAA4ICDwAwggIKAoICAQDQjQKx4YI/TsZQNLDzm7BVzFEgTwUkm3PcjjmdznAW
+0C8hMKtHQQieJoNxZE0AzbQipdJWHu5mQPS9Ko9HGc9gS4vDq5eYHPUS4a7Z2oPo
+wEsMwtF8LDv/nhxQNkY8N2gzYusqr6ZjDCnWktLszrTAtJdbZsaNC/E27j7d3uQf
+5oV4vKsxP/Tzp9y5ajJPyYQ083UeSUpicCMhLdsd68wzW+V02rH6vVyntKoVQZ9X
+arB9VH3KkZxbjRpcpkR14777xXMtnGWU27Qhu2GYfOmd7xlgbuZjPaaH2c4DVCY/
+1qaX/NqTUzsxwbBtpjUpcZCYyqt1iPxRWcfi9vd1gJvyfnaqQ3cY7N2CdGmfqYRm
+xzLOit+6x0V6b3g5rSh8VeEWfE08Pm+xf/hwmNfD6feGgQRUJrU+OdQ0w0o4yA/D
+yP+iznWdnS7FKMlciPwi1dz9dND9RHJNrRd+mAKdgQtnSqQLSbQDwt908F0TZs/o
+h0EsZuhA6TOTobS+ElFRzyh6hBGhD1nOhXubyAX5dh6JSyMOy8gQaapzpH3l6NcT
+yl4LMfrE0zdbu/gw/3g4ZmdKOZsivrF4PUGXYxZ50yECf0W3a3FXLmXFUC35w5Ni
+E/6kZvbDyG+vIyJpEmpGpf9bqb1cgkwEG5TolSGmbqvqGO/stgGczKCWkIeoCoqI
+/wIDAQABo0IwQDAdBgNVHQ4EFgQUMZgAkSmkuTh8pThqD1ikDGBMSGIwHwYDVR0j
+BBgwFoAUXyVSePsg3W5FsQHtEks+KzquIKYwDQYJKoZIhvcNAQELBQADggIBAF8e
+Pqx7rtYf47LRE4iut6eismPQJYKEqtbPdj1zgDS1HB1BDJevoHZTvkgi1kw6rfzw
+688K6Oc2Hwy1uiXsjI+AU/6+o6d66aNkanMQ/35m1CwGeb7yZ7bjTBxRhXhbJFN9
+LTucj32n2P0jEeJEebEfSkCVRmKjP5heJneZaSSKkFN9DzJgfSPiUNrzvgzuyF09
+Ily16MayxLPj2huzB9KK+1LnvPwQg35zkyfvyOt18/b0SDYb28u+O8kBGT/uneM+
+B362j5B+PQ2XqUFz1P65JXnlVUL6c0HH4G5Wyi1zvo0gv+tkS7XNCScoudPu3mHy
+qrRU/rJkIUUOjcmaL4S5aCNGdtPY2K4KZAgDgMQQwXSqy3NQLjYzWIs/lvx0l6KU
+K7HESNN/tBOiUZjGTedA1Eu6O5QrysF5BlbukjoU02vr+UFUTC8GtWyddKZhsqSa
+Y6MZgQFveJZ6j7rw8Y3hMFM3Rybv1PrlOv3cxM8ggQ7nUZQAgUoFiG5f8B2VnqCV
+TxKVbArV5qHimBPVHHqo5Kb/boQDWEdm6OkJc1Oz7z22hbWiwdKCJt+LZYvVOg3h
+DquHvxGkMqRDez75GUk0+4ppkIwa8eHeabRYnPiUi/hn5Rf7qS73erzPi9lhmf3Z
+HdQINuU6kgNDfszKG2Nj4bBLtIzR8sX7nI+h8RvV
+-----END CERTIFICATE-----
+Bag Attributes
+    friendlyName: RootCA
+subject=CN=RootCA
+issuer=CN=RootCA
+-----BEGIN CERTIFICATE-----
+MIIFAzCCAuugAwIBAgIUMozRH6k0s2k4ff71xOQEAWA9umcwDQYJKoZIhvcNAQEL
+BQAwETEPMA0GA1UEAwwGUm9vdENBMB4XDTI1MDkwMTE0MDgwNloXDTM1MDgzMDE0
+MDgwNlowETEPMA0GA1UEAwwGUm9vdENBMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A
+MIICCgKCAgEAso9mnJFk/pHNFpWelpFMsCLQgbuAJI/oXfzpoZkdFnIFkxlslUcA
+nZQrqw5U+g5cAAdG8/G7WA23FWAumQB0nDjHvcLdQ33t7X14HwoiwsVYm9rUOnhB
+r1jb7MAf+a3e3ikPFuaQVkHr6l1lEtek7FrxrqN9Cu+p4JZa5ZlHWKfuVkotk70J
+m3YA7F4ky8DfUjBNCPGggF2eRK1Csj3fW8yWaHa9e4RdKk8bD5fgN5j6dJ34zLtY
+KcfzkfwiXJfI3GnL4zkEpJFgppfYvocysWjL6rluGCepVT4vAiJBHdSXMHn/WYKU
+fAHmbE0jQW+nEPmi6gqGbiF+QBRf9FUpmFN/Xu9Z/RnxGGMku79SBmEy6bnIinab
+m/I3pxTQk6w7Ho1D64b/a+KwWaV6jZh9eCj7eV3LYKDzaiRBa+pxHTnSHY+pPbpg
+9yiMwuVc6/8ehd4noEUhWcwpBS25mWaWqr6M70jtNpZcns6D7Ghc3wojBxCAWKQX
+cqNX5+wk9ecgf7UgvrwdIu6JprVhjjtIUeC9B/beC90ZFWAlRAj5pO5BfWHHCk7+
+ttkfuxZbONB3f876RFtGQj+/JmIkbPDd6a5S6d4mkFWS0M1hF2390ce8ghmApi2O
+9OVetZ3y5MuNR5Zh7W42WHkUX6Xeb0NFdc5AIROZ18PnX/fsNCK4smMCAwEAAaNT
+MFEwHQYDVR0OBBYEFF8lUnj7IN1uRbEB7RJLPis6riCmMB8GA1UdIwQYMBaAFF8l
+Unj7IN1uRbEB7RJLPis6riCmMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL
+BQADggIBAE1YC3L5PHP3aVJJXmOeddWzXWtcS35Q+/hGEIjazNjVu7ia5aNBRdN6
+hvxSXDXDHFj49V+XaZZ4RVwGsoO24jDJrvzx1/ux7tBOEKZ/vyOQnywmSLMpTyIh
+sP3FEEew59HnQbB9dDCAeFtr6k3AbKOMA4TwSuRblrabgDb+q2coTtuq2mTshFaQ
+9xiSw9mgfvUQZjJB/G3O2I1M9uCG8xKvtzFTEAt/cHCGSKbquNoPi1vGB322s8iu
+k1BwOgLEPuRA38DqYev3Wfbbc/C4xD3oR+ou0hfnWPDjoMo9RYPfsLnI6ubDZn7g
+Vmxxko5PlPkHA6HTTYPGoJf/qsqpxyw++5VKD+eq+rTu2G8n0JPNVXeaqNmOTwEb
+8DlkUxG6l/7/dwJRV5rjs5DDfV6wOwG0ps2TcqUYKaNmVOxLBbZtKLqpsbEh97jN
+JALzQxGvRis6710dfU0q3ZBNFQ2pM6z1NG5651oKiFUDnRy4BMEe3tnmThClnWDS
+22qjZQsatDTxNuPoMlWRHts4VwUM7ECIyr96fxWtKD4uqWDt1qpNpPKH5khe6gTm
+po2tEhaIKSIOTSGAf9HL4thKUom88nNgmKU1wf8pQfFkvB8tsmBabLTupp7y8uft
+yeKHF+gBCWmJ3VBcP9nT0o8eyJx8iuc3toRy/MUZiis8R/TL8ITd
+-----END CERTIFICATE-----
+	`
 )
 
 // TestExtendedValidateRoute ensures that a route's certificate and keys
@@ -2315,6 +2479,133 @@ func TestExtendedValidateRoute(t *testing.T) {
 				},
 			},
 			expectedErrors: 1,
+		},
+		{
+			// Validate that a key generated from p12 is allowed
+			name: "A keypair containing bag attributes should be cleaned and allowed",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12 + caChainExtractedFromP12,
+						Key:         leafKeyExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			// Wrong order of certificates should be rejected
+			name: "A certificate field that has the CA chain first should be rejected",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: caChainExtractedFromP12 + leafCertExtractedFromP12,
+						Key:         leafKeyExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
+		{
+			// Private key containing the CA chain should be rejected
+			name: "A key field containing Public Key/certificate attributes should be rejected",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12,
+						Key:         leafKeyExtractedFromP12 + caChainExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
+		{
+			// A certificate field that contains bundled private and public key should be allowed
+			name: "A certificate field that contains bundled private and public key should be allowed",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafKeyExtractedFromP12 + leafCertExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			// A private key containing 2 keys, one right and one wrong will be accepted because
+			// only the first key is considered. Tested on HAProxy / Router and this also applies
+			// to how OpenSSL parses the keys
+			name: "A private key containing 2 keys is accepted if the first key is valid",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12,
+						Key:         leafKeyExtractedFromP12 + testCertificateRsaSha256Key,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			// A private key containing 2 keys, one wrong and one right will be rejected because
+			// only the first key is considered and it doesn't match the cert
+			name: "A private key containing 2 keys is rejected if the first key is invalid",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12,
+						Key:         testCertificateRsaSha256Key + leafKeyExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
+		{
+			// A key with valid paylod but wrong PEM header should be denied
+			name: "A key with valid paylod but wrong PEM header should be denied",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12 + caChainExtractedFromP12,
+						Key:         strings.ReplaceAll(leafKeyExtractedFromP12, "PRIVATE KEY", "XYZ"),
+					},
+				},
+			},
+			expectedErrors: 3,
+		},
+		{
+			// A cert with valid paylod but wrong PEM header should be denied
+			name: "A cert with valid paylod but wrong PEM header should be denied",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: strings.Replace(leafCertExtractedFromP12+caChainExtractedFromP12, "BEGIN CERTIFICATE", "BEGIN XYZ", 2),
+						Key:         leafKeyExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
+		{
+			name: "When both Certificate and Key are empty, should not report an error",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: "",
+						Key:         "",
+					},
+				},
+			},
+			expectedErrors: 0,
 		},
 	}
 
