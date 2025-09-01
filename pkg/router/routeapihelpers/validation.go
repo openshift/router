@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"strings"
 
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/cert"
@@ -251,6 +252,14 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 			if len(keyBytes) == 0 {
 				result = append(result, field.Invalid(tlsFieldPath.Child("key"), "", "no key specified"))
 			} else {
+				// Validate that final key contains only private key, and cert contains only public keys
+				if err := validatePEMContent(keyBytes, "PRIVATE KEY"); err != nil {
+					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
+				}
+				if err := validatePEMContent(certBytes, "CERTIFICATE"); err != nil {
+					result = append(result, field.Invalid(tlsFieldPath.Child("certificate"), "redacted key data", err.Error()))
+				}
+				// Validate if the keypair is valid (eg.: the leaf certificate should be the first on certBytes)
 				if _, err := tls.X509KeyPair(certBytes, keyBytes); err != nil {
 					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
 				} else {
@@ -279,6 +288,27 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 	}
 
 	return result
+}
+
+// validatePEMContent validates that the passed content, when PEM decoded contains
+// the expected type. This validation is necessary to block attempts of passing certificates
+// inside the field that should be private key only, and vice versa. This is required
+// because otherwise passing an out of order certificate to HAProxy will break it.
+// The function will take the array of bytes of a key/cert, and the expected type
+// that the PEM should content. The match here is not strict, but will check if the
+// passed byte type CONTAINS the expected pemType
+func validatePEMContent(content []byte, pemType string) error {
+	for {
+		var pemBlock *pem.Block
+		pemBlock, content = pem.Decode(content)
+		if pemBlock == nil {
+			break
+		}
+		if !strings.Contains(pemBlock.Type, pemType) {
+			return fmt.Errorf("field contains invalid types %s, expecting only %s", pemBlock.Type, pemType)
+		}
+	}
+	return nil
 }
 
 // validateTLS tests fields for different types of TLS combinations are set.  Called
