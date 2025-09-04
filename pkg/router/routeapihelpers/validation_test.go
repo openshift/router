@@ -2534,6 +2534,37 @@ func TestExtendedValidateRoute(t *testing.T) {
 			},
 			expectedErrors: 0,
 		},
+		{
+			// A private key containing 2 keys, one right and one wrong will be accepted because
+			// only the first key is considered. Tested on HAProxy / Router and this also applies
+			// to how OpenSSL parses the keys
+			name: "A private key containing 2 keys is accepted",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12,
+						Key:         leafKeyExtractedFromP12 + testCertificateRsaSha256Key,
+					},
+				},
+			},
+			expectedErrors: 0,
+		},
+		{
+			// A private key containing 2 keys, one wrong and one right will be rejected because
+			// only the first key is considered and it doesn't match the cert
+			name: "A private key containing 2 keys on wrong order should be rejected",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						Termination: routev1.TLSTerminationEdge,
+						Certificate: leafCertExtractedFromP12,
+						Key:         testCertificateRsaSha256Key + leafKeyExtractedFromP12,
+					},
+				},
+			},
+			expectedErrors: 1,
+		},
 	}
 
 	for _, tc := range tests {
