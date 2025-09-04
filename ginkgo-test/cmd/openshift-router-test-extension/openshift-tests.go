@@ -15,11 +15,11 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
-	"github.com/openshift/router/ginkgo-test/pkg/monitor"
-	testginkgo "github.com/openshift/router/ginkgo-test/pkg/test/ginkgo"
 	exutil "github.com/openshift/origin/test/extended/util"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	exutilcloud "github.com/openshift/origin/test/extended/util/compat_otp/cloud"
+	"github.com/openshift/router/ginkgo-test/pkg/monitor"
+	testginkgo "github.com/openshift/router/ginkgo-test/pkg/test/ginkgo"
 
 	// these are loading important global flags that we need to get and set
 	_ "k8s.io/kubernetes/test/e2e"
