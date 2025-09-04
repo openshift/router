@@ -7,8 +7,7 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	wait "k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -16,12 +15,29 @@ import (
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	defer g.GinkgoRecover()
 
-	var oc = exutil.NewCLI("gatewayapi", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("gatewayapi", compat_otp.KubeConfigPath())
+
+	g.BeforeEach(func() {
+		platforms := map[string]bool{
+			"aws":      true,
+			"azure":    true,
+			"gcp":      true,
+			"ibmcloud": true,
+			"powervs":  true,
+		}
+		if !platforms[compat_otp.CheckPlatform(oc)] {
+			g.Skip("Skip for non-cloud platforms")
+		}
+
+		if isInternalLBScopeInDefaultIngresscontroller(oc) {
+			g.Skip("Skip for private cluster since GatewayClass is not accepted in cluster")
+		}
+	})
 
 	// author: iamin@redhat.com
-	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonHyperShiftHOST-High-81976-NetworkEdge Ensure that RBAC works correctly for gatewayAPI resources for unprivileged users", func() {
+	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-81976-Ensure that RBAC works correctly for gatewayAPI resources for unprivileged users", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			gwcFile             = filepath.Join(buildPruningBaseDir, "gatewayclass.yaml")
 			gwcName             = "openshift-default"
 			gwFile              = filepath.Join(buildPruningBaseDir, "gateway.yaml")
@@ -44,24 +60,10 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		platforms := map[string]bool{
-			"aws":      true,
-			"azure":    true,
-			"gcp":      true,
-			"ibmcloud": true,
-		}
-		if !platforms[exutil.CheckPlatform(oc)] {
-			g.Skip("Skip for non-cloud platforms")
-		}
-
-		if isInternalLBScopeInDefaultIngresscontroller(oc) {
-			g.Skip("Skip for private cluster since GatewayClass is not accepted in cluster")
-		}
-
-		exutil.By("1.0: Create a gatewayClass object")
-		err := oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", gwcFile).Execute()
-		if err != nil && !apierrors.IsAlreadyExists(err) {
-			e2e.Logf("Failed to create GatewayClass")
+		compat_otp.By("1.0: Create a gatewayClass object")
+		output, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", gwcFile).Output()
+		if err != nil && !strings.Contains(output, "AlreadyExists") {
+			e2e.Failf("Failed to create gatewayclass: %v", err)
 		}
 
 		waitErr := wait.PollImmediate(2*time.Second, 300*time.Second, func() (bool, error) {
@@ -75,9 +77,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		})
 		o.Expect(waitErr).NotTo(o.HaveOccurred(), "The GatewayClass was never accepted")
 
-		exutil.By("2.0: Create a gateway object as an admin")
+		compat_otp.By("2.0: Create a gateway object as an admin")
 		baseDomain := getBaseDomain(oc)
-		gateway1.hostname = "*.api.apps." + baseDomain
+		gateway1.hostname = "*.gwapi." + baseDomain
 		defer gateway1.delete(oc)
 		gateway1.create(oc)
 
@@ -92,42 +94,128 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		})
 		o.Expect(waitErr).NotTo(o.HaveOccurred(), "The Gateway was never accepted")
 
-		exutil.By("3.0: Attempt to Create a gateway object as a test user in 'openshift-ingress' namespace")
-		output, err := createUserResourceToNsFromTemplate(oc, "openshift-ingress", "--ignore-unknown-parameters=true", "-f", gwFile)
+		compat_otp.By("3.0: Attempt to Create a gateway object as a test user in 'openshift-ingress' namespace")
+		output, err = createUserResourceToNsFromTemplate(oc, "openshift-ingress", "--ignore-unknown-parameters=true", "-f", gwFile)
 		o.Expect(err).To(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring(`cannot create resource "gateways" in API group "gateway.networking.k8s.io" in the namespace "openshift-ingress`))
 
-		exutil.By("4.0: Attempt to Create a gateway object as a test user in namespace with admin access")
+		compat_otp.By("4.0: Attempt to Create a gateway object as a test user in namespace with admin access")
 		project1 := oc.Namespace()
 		output, err = createUserResourceToNsFromTemplate(oc, project1, "--ignore-unknown-parameters=true", "-f", gwFile, "-p", "NAMESPACE="+project1)
 		o.Expect(err).To(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring(`cannot create resource "gateways" in API group "gateway.networking.k8s.io" in the namespace ` + `"` + project1 + `"`))
 
-		exutil.By("5.0: Create a web-server application")
+		compat_otp.By("5.0: Create a web-server application")
 		createResourceFromFile(oc, project1, testPodSvc)
 		ensurePodWithLabelReady(oc, project1, "name=web-server-deploy")
 
-		exutil.By("6.0: Create a HTTPRoute as a test user")
+		compat_otp.By("6.0: Create a HTTPRoute as a test user")
 		httpRoute.namespace = project1
 		httpRoute.gwName = gateway1.name
-		httpRoute.hostname = "test.api.apps." + baseDomain
+		httpRoute.hostname = "ocp81976.gwapi." + baseDomain
 		httpRoute.userCreate(oc)
 
-		output, err = oc.Run("get").Args("-n", project1, "httproute", httpRoute.name, "-oyaml").Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(output).To(o.And(o.ContainSubstring(`namespace "`+project1+`" is not allowed by the parent`), o.ContainSubstring(`NotAllowedByListeners`)))
+		waitForOutputEquals(oc, project1, "httproute/"+httpRoute.name, `{.status.parents[].conditions[?(@.type=="Accepted")].status}`, "False")
+		output = getByJsonPath(oc, project1, "httproute/"+httpRoute.name, `{.status.parents[].conditions[?(@.type=="Accepted")]}`)
+		o.Expect(output).To(o.And(o.ContainSubstring(`namespace \"`+project1+`\" is not allowed by the parent`), o.ContainSubstring(`NotAllowedByListeners`)))
 
-		exutil.By("7.0: Label the namespace with the Gateway Selector")
+		compat_otp.By("7.0: Label the namespace with the Gateway Selector")
 		err = oc.AsAdmin().WithoutNamespace().Run("label").Args("ns", project1, "app=gwapi").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred(), "Adding label to the namespace failed")
 
-		exutil.By("8.0: Re-check the HTTPRoute")
-		output, err = oc.Run("get").Args("-n", project1, "httproute", httpRoute.name, "-oyaml").Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
-		o.Expect(output).To(o.And(o.ContainSubstring(`Route was valid`), o.ContainSubstring(`True`)))
+		compat_otp.By("8.0: Re-check the HTTPRoute")
+		waitForOutputEquals(oc, project1, "httproute/"+httpRoute.name, `{.status.parents[].conditions[?(@.type=="Accepted")].status}`, "True")
 
-		exutil.By("Clean up cluster resources")
+		compat_otp.By("Clean up cluster resources")
 		err = oc.AsAdmin().WithoutNamespace().Run("delete").Args("-f", gwcFile).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
+	})
+
+	// author: hongli@redhat.com
+	// https://issues.redhat.com/browse/OCPBUGS-58358
+	g.It("Author:hongli-ROSA-OSD_CCS-ARO-NonPreRelease-PreChkUpgrade-High-83185-Ensure GatewayAPI works well after upgrade", func() {
+		var (
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			gwcFile             = filepath.Join(buildPruningBaseDir, "gatewayclass.yaml")
+			gwcName             = "openshift-default"
+			gwFile              = filepath.Join(buildPruningBaseDir, "gateway.yaml")
+			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
+			httpRouteFile       = filepath.Join(buildPruningBaseDir, "httproute.yaml")
+			ns                  = "e2e-test-gatewayapi-ocp83185"
+
+			gateway = gatewayDescription{
+				name:      "gateway",
+				namespace: "openshift-ingress",
+				hostname:  "",
+				template:  gwFile,
+			}
+
+			httpRoute = httpRouteDescription{
+				name:      "route83185",
+				namespace: "",
+				gwName:    "",
+				hostname:  "",
+				template:  httpRouteFile,
+			}
+		)
+
+		compat_otp.By("1.0: Create a gatewayClass object and wait until it is Accepted")
+		output, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", gwcFile).Output()
+		if err != nil && !strings.Contains(output, "AlreadyExists") {
+			e2e.Failf("Failed to create gatewayclass: %v", err)
+		}
+		waitForOutputEquals(oc, "default", "gatewayclass/"+gwcName, `{.status.conditions[?(@.type=="Accepted")].status}`, "True")
+
+		compat_otp.By("2.0: Create a gateway object and wait until it is Programmed")
+		baseDomain := getBaseDomain(oc)
+		gateway.hostname = "*.gwapi." + baseDomain
+		gateway.create(oc)
+		waitForOutputEquals(oc, "openshift-ingress", "gateway/gateway", `{.status.conditions[?(@.type=="Programmed")].status}`, "True")
+
+		// Use admin user to create the pod/svc/httproute since they should be kept until post upgrade
+		compat_otp.By("3.0: Create a project and apply required label, then create web-server application")
+		oc.CreateSpecifiedNamespaceAsAdmin(ns)
+		err = oc.AsAdmin().WithoutNamespace().Run("label").Args("ns", ns, "app=gwapi").Execute()
+		o.Expect(err).NotTo(o.HaveOccurred(), "Adding label to the namespace failed")
+		operateResourceFromFile(oc, "create", ns, testPodSvc)
+		ensurePodWithLabelReady(oc, ns, "name=web-server-deploy")
+
+		compat_otp.By("4.0: Create a HTTPRoute and wait until it is accepted")
+		httpRoute.namespace = ns
+		httpRoute.gwName = gateway.name
+		httpRoute.hostname = "ocp83185.gwapi." + baseDomain
+		jsonCfg := parseToJSON(oc, []string{"--ignore-unknown-parameters=true", "-f", httpRoute.template, "-p", "NAME=" + httpRoute.name, "NAMESPACE=" + httpRoute.namespace, "GWNAME=" + httpRoute.gwName, "HOSTNAME=" + httpRoute.hostname})
+		err = oc.AsAdmin().WithoutNamespace().Run("create").Args("-n", ns, "-f", jsonCfg).Execute()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		waitForOutputEquals(oc, ns, "httproute/route83185", `{.status.parents[].conditions[?(@.type=="Accepted")].status}`, "True")
+	})
+
+	// author: hongli@redhat.com
+	// https://issues.redhat.com/browse/OCPBUGS-58358
+	g.It("Author:hongli-ROSA-OSD_CCS-ARO-NonPreRelease-PstChkUpgrade-High-83185-Ensure GatewayAPI works well after upgrade", func() {
+		var (
+			ns = "e2e-test-gatewayapi-ocp83185"
+		)
+
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("ns", ns).Output()
+		if err != nil || strings.Contains(output, "NotFound") {
+			g.Skip("Skipping since can not find the namespace that should be created in Pre-Upgrade test")
+		}
+
+		compat_otp.By("1.0: Check the GatewayClass status in post upgrade")
+		status := getByJsonPath(oc, "default", "gatewayclass/openshift-default", `{.status.conditions[?(@.type=="Accepted")].status}`)
+		o.Expect(status).To(o.ContainSubstring("True"))
+
+		compat_otp.By("2.0: Check istio status in post upgrade")
+		status = getByJsonPath(oc, "default", "istio/openshift-gateway", `{.status.state}`)
+		o.Expect(status).To(o.ContainSubstring("Healthy"))
+
+		compat_otp.By("3.0: Check the Gateway status in post upgrade")
+		status = getByJsonPath(oc, "openshift-ingress", "gateway/gateway", `{.status.conditions[?(@.type=="Programmed")].status}`)
+		o.Expect(status).To(o.ContainSubstring("True"))
+
+		compat_otp.By("4.0: Check the HTTPRoute in post upgrade")
+		status = getByJsonPath(oc, ns, "httproute/route83185", `{.status.parents[].conditions[?(@.type=="Accepted")].status}`)
+		o.Expect(status).To(o.ContainSubstring("True"))
 	})
 })

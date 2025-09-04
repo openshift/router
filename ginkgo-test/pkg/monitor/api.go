@@ -22,7 +22,7 @@ import (
 
 	configclientset "github.com/openshift/client-go/config/clientset/versioned"
 	clientimagev1 "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 )
 
 // Start begins monitoring the cluster referenced by the default kube configuration until
@@ -51,8 +51,8 @@ func Start(ctx context.Context) (*Monitor, error) {
 	startEventMonitoring(ctx, m, client)
 	// Monitor ClusterOperators and ClusterVersions only if we are running against an OpenShift cluster
 	// This check occurs after suite initialization and before test case start, so we get the cluster type
-	// directly from the environment variable instead of using exutil.IsKubernetesClusterFlag.
-	isK8sClusterEnv := os.Getenv(exutil.EnvIsKubernetesCluster)
+	// directly from the environment variable instead of using compat_otp.IsKubernetesClusterFlag.
+	isK8sClusterEnv := os.Getenv(compat_otp.EnvIsKubernetesCluster)
 	if isK8sClusterEnv != "yes" {
 		e2e.Logf("EnvIsKubernetesCluster = %s, start monitoring ClusterOperators and ClusterVersions", isK8sClusterEnv)
 		startClusterOperatorMonitoring(ctx, m, configClient)

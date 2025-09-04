@@ -8,18 +8,18 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	defer g.GinkgoRecover()
 
-	var oc = exutil.NewCLI("router-ipfailover", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("router-ipfailover", compat_otp.KubeConfigPath())
 	var HAInterfaces = "br-ex"
 
 	g.BeforeEach(func() {
 		g.By("Check platforms")
-		platformtype := exutil.CheckPlatform(oc)
+		platformtype := compat_otp.CheckPlatform(oc)
 		platforms := map[string]bool{
 			// 'None' also for Baremetal
 			"none":      true,
@@ -38,8 +38,14 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 			g.Skip("Skipping as we need two worker nodes")
 		}
 
+		g.By("check the cluster has remote worker profile")
+		remoteWorkerDetails, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "-l", "kubernetes.io/hostname").Output()
+		if strings.Contains(remoteWorkerDetails, "remote-worker") {
+			g.Skip("Skip as ipfailover currently doesn't support on remote-worker profile")
+		}
+
 		g.By("check whether the cluster is not ipv6 single stack")
-		stacktype := exutil.GetIPVersionStackType(oc)
+		stacktype := compat_otp.GetIPVersionStackType(oc)
 		if stacktype == "ipv6single" {
 			g.Skip("Skip as ipfailover currently doesn't support ipv6 single stack")
 		}
@@ -48,7 +54,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 
 	g.JustBeforeEach(func() {
 		g.By("Check network type")
-		networkType := exutil.CheckNetworkType(oc)
+		networkType := compat_otp.CheckNetworkType(oc)
 		if strings.Contains(networkType, "openshiftsdn") {
 			HAInterfaces = "ens3"
 		}
@@ -57,7 +63,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	// author: hongli@redhat.com
 	// might conflict with other ipfailover cases so set it as Serial
 	g.It("Author:hongli-NonHyperShiftHOST-ConnectedOnly-Critical-41025-support to deploy ipfailover [Serial]", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ipfailover.yaml")
 		var (
 			ipf = ipfailoverDescription{
@@ -84,7 +90,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	// author: mjoseph@redhat.com
 	// might conflict with other ipfailover cases so set it as Serial
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-Medium-41028-ipfailover configuration can be customized by ENV [Serial]", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ipfailover.yaml")
 		var (
 			ipf = ipfailoverDescription{
@@ -112,7 +118,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 		setEnvVariable(oc, project1, "deploy/"+ipf.name, "OPENSHIFT_HA_VIRTUAL_IPS="+virtualIP)
 
 		g.By("set other ipfailover env varibales")
-		setEnvVariable(oc, project1, "deploy/"+ipf.name, "OPENSHIFT_HA_CONFIG_NAME=IPFailover")
+		setEnvVariable(oc, project1, "deploy/"+ipf.name, "OPENSHIFT_HA_CONFIG_NAME=ipfailover")
 		setEnvVariable(oc, project1, "deploy/"+ipf.name, "OPENSHIFT_HA_VIP_GROUPS=4")
 		setEnvVariable(oc, project1, "deploy/"+ipf.name, "OPENSHIFT_HA_MONITOR_PORT=30061")
 		setEnvVariable(oc, project1, "deploy/"+ipf.name, "OPENSHIFT_HA_VRRP_ID_OFFSET=2")
@@ -134,7 +140,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 		g.By("check the ipfailover configurations and verify the other ENV variables")
 		result := describePodResource(oc, newPodName[0], project1)
 		o.Expect(result).To(o.ContainSubstring("OPENSHIFT_HA_VIP_GROUPS:         4"))
-		o.Expect(result).To(o.ContainSubstring("OPENSHIFT_HA_CONFIG_NAME:        IPFailover"))
+		o.Expect(result).To(o.ContainSubstring("OPENSHIFT_HA_CONFIG_NAME:        ipfailover"))
 		o.Expect(result).To(o.ContainSubstring("OPENSHIFT_HA_MONITOR_PORT:       30061"))
 		o.Expect(result).To(o.ContainSubstring("OPENSHIFT_HA_VRRP_ID_OFFSET:     2"))
 		o.Expect(result).To(o.ContainSubstring("OPENSHIFT_HA_REPLICA_COUNT:      3"))
@@ -150,10 +156,10 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	// author: mjoseph@redhat.com
 	// might conflict with other ipfailover cases so set it as Serial
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-Medium-41029-ipfailover can support up to a maximum of 255 VIPs for the entire cluster [Serial]", func() {
-		if exutil.CheckPlatform(oc) == "nutanix" {
+		if compat_otp.CheckPlatform(oc) == "nutanix" {
 			g.Skip("This test will not works for Nutanix")
 		}
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ipfailover.yaml")
 		var (
 			ipf = ipfailoverDescription{
@@ -191,7 +197,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	// author: mjoseph@redhat.com
 	// might conflict with other ipfailover cases so set it as Serial
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-Medium-41027-pod and service automatically switched over to standby when master fails [Disruptive]", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ipfailover.yaml")
 		var (
 			ipf = ipfailoverDescription{
@@ -242,7 +248,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	// author: mjoseph@redhat.com
 	// might conflict with other ipfailover cases so set it as Serial
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-High-41030-preemption strategy for keepalived ipfailover [Disruptive]", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ipfailover.yaml")
 		var (
 			ipf = ipfailoverDescription{
@@ -318,7 +324,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	// author: mjoseph@redhat.com
 	// might conflict with other ipfailover cases so set it as Serial
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-Medium-49214-Excluding the existing VRRP cluster ID from ipfailover deployments [Serial]", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ipfailover.yaml")
 		var (
 			ipf = ipfailoverDescription{

@@ -17,8 +17,9 @@ import (
 
 	"github.com/openshift/router/ginkgo-test/pkg/monitor"
 	testginkgo "github.com/openshift/router/ginkgo-test/pkg/test/ginkgo"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
-	exutilcloud "github.com/openshift/router/ginkgo-test/test/extended/util/cloud"
+	exutil "github.com/openshift/origin/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	exutilcloud "github.com/openshift/origin/test/extended/util/compat_otp/cloud"
 
 	// these are loading important global flags that we need to get and set
 	_ "k8s.io/kubernetes/test/e2e"
@@ -52,7 +53,7 @@ import (
 
 // 	pflag.CommandLine = pflag.NewFlagSet("empty", pflag.ExitOnError)
 // 	flag.CommandLine = flag.NewFlagSet("empty", flag.ExitOnError)
-// 	exutil.InitStandardFlags()
+// 	compat_otp.InitStandardFlags()
 
 // 	if err := func() error {
 // 		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
@@ -121,9 +122,9 @@ func newRunCommand() *cobra.Command {
 					checkClusterTypeAndSetEnvs()
 				}
 
-				e2e.AfterReadingAllFlags(exutil.TestContext)
+				e2e.AfterReadingAllFlags(compat_otp.TestContext)
 				e2e.TestContext.DumpLogsOnFailure = true
-				exutil.TestContext.DumpLogsOnFailure = true
+				compat_otp.TestContext.DumpLogsOnFailure = true
 				return opt.Run(args)
 			})
 		},
@@ -159,9 +160,9 @@ func newRunTestCommand() *cobra.Command {
 				readClusterTypeEnvsAndSetFlags()
 			}
 
-			e2e.AfterReadingAllFlags(exutil.TestContext)
+			e2e.AfterReadingAllFlags(compat_otp.TestContext)
 			e2e.TestContext.DumpLogsOnFailure = true
-			exutil.TestContext.DumpLogsOnFailure = true
+			compat_otp.TestContext.DumpLogsOnFailure = true
 			return testOpt.Run(args)
 		},
 	}
@@ -170,29 +171,29 @@ func newRunTestCommand() *cobra.Command {
 }
 
 func checkClusterTypeAndSetEnvs() {
-	if exutil.PreSetEnvK8s() == "yes" {
-		_ = os.Setenv(exutil.EnvIsExternalOIDCCluster, "no")
+	if compat_otp.PreSetEnvK8s() == "yes" {
+		_ = os.Setenv(compat_otp.EnvIsExternalOIDCCluster, "no")
 	} else {
-		exutil.PreSetEnvOIDCCluster()
+		compat_otp.PreSetEnvOIDCCluster()
 	}
 }
 
 func readClusterTypeEnvsAndSetFlags() {
-	isK8sEnv := os.Getenv(exutil.EnvIsKubernetesCluster)
-	isExtOIDCEnv := os.Getenv(exutil.EnvIsExternalOIDCCluster)
+	isK8sEnv := os.Getenv(compat_otp.EnvIsKubernetesCluster)
+	isExtOIDCEnv := os.Getenv(compat_otp.EnvIsExternalOIDCCluster)
 	if len(isK8sEnv) == 0 {
-		isK8sEnv = exutil.PreSetEnvK8s()
+		isK8sEnv = compat_otp.PreSetEnvK8s()
 		if isK8sEnv == "yes" {
 			isExtOIDCEnv = "no"
-			_ = os.Setenv(exutil.EnvIsExternalOIDCCluster, "no")
+			_ = os.Setenv(compat_otp.EnvIsExternalOIDCCluster, "no")
 		}
 	}
 	if len(isExtOIDCEnv) == 0 {
-		isExtOIDCEnv = exutil.PreSetEnvOIDCCluster()
+		isExtOIDCEnv = compat_otp.PreSetEnvOIDCCluster()
 	}
-	exutil.IsExternalOIDCClusterFlag = isExtOIDCEnv
-	exutil.IsKubernetesClusterFlag = isK8sEnv
-	e2e.Logf("Is kubernetes cluster: %s, is external OIDC cluster: %s", exutil.IsKubernetesClusterFlag, exutil.IsExternalOIDCClusterFlag)
+	compat_otp.IsExternalOIDCClusterFlag = isExtOIDCEnv
+	compat_otp.IsKubernetesClusterFlag = isK8sEnv
+	e2e.Logf("Is kubernetes cluster: %s, is external OIDC cluster: %s", compat_otp.IsKubernetesClusterFlag, compat_otp.IsExternalOIDCClusterFlag)
 }
 
 // mirrorToFile ensures a copy of all output goes to the provided OutFile, including
@@ -236,13 +237,21 @@ func bindOptions(opt *testginkgo.Options, flags *pflag.FlagSet) {
 
 func initProvider(provider string, dryRun bool) error {
 	// record the exit error to the output file
-	// if err := decodeProviderTo(provider, exutil.TestContext, dryRun); err != nil {
+	// if err := decodeProviderTo(provider, compat_otp.TestContext, dryRun); err != nil {
 	// 	e2e.Logf("Fail to decode Provider:%s, but continue to run with skeleton mode", provider)
 	// }
-	exutil.TestContext.AllowedNotReadyNodes = 100
-	exutil.TestContext.MaxNodesToGather = 0
-	exutil.AnnotateTestSuite()
-	err := exutil.InitTest(dryRun)
+	compat_otp.TestContext.AllowedNotReadyNodes = 100
+	compat_otp.TestContext.MaxNodesToGather = 0
+	// reale2e.SetViperConfig(os.Getenv("VIPERCONFIG"))
+
+	var err error
+	exutil.WithCleanup(func() { err = initCSITests(dryRun) })
+	if err != nil {
+		return err
+	}
+
+	compat_otp.AnnotateTestSuite()
+	err = compat_otp.InitTest(dryRun)
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
 	// TODO: infer SSH keys from the cluster

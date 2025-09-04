@@ -11,14 +11,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go/service/route53"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
-	clusterinfra "github.com/openshift/router/ginkgo-test/test/extended/util/clusterinfra"
+	exutil "github.com/openshift/origin/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	clusterinfra "github.com/openshift/origin/test/extended/util/compat_otp/clusterinfra"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
 // Create External DNS Controller (operand) Role and inline policy
 func createExDnsRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := exutil.FixturePath("testdata", "router", "extdns")
+	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "extdns")
 	exDnsPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-exdns-perms-policy.json")
 	exDnsRoleName := infraID + "-exdns-role"
 	exDnsPolicyName := infraID + "-exdns-perms-policy"
@@ -62,7 +63,7 @@ func deleteExDnsRolePolicy(iamClient *iam.Client, infraID, prefix string) {
 
 // Prepare roles, policies and secrets for STS cluster
 func prepareStsCredForCluster(oc *exutil.CLI, prefix string) {
-	infraID, _ := exutil.GetInfraID(oc)
+	infraID, _ := compat_otp.GetInfraID(oc)
 	oidcName := getOidc(oc)
 	iamClient := newIamClient()
 	stsClient := newStsClient()
@@ -77,7 +78,7 @@ func prepareStsCredForCluster(oc *exutil.CLI, prefix string) {
 
 // Clear up all roles, policies and secrets of the STS cluster
 func clearUpExDnsStsCluster(oc *exutil.CLI, prefix string) {
-	infraID, _ := exutil.GetInfraID(oc)
+	infraID, _ := compat_otp.GetInfraID(oc)
 	iamClient := newIamClient()
 	deleteExDnsRolePolicy(iamClient, infraID, prefix)
 
@@ -87,7 +88,7 @@ func clearUpExDnsStsCluster(oc *exutil.CLI, prefix string) {
 
 // Create the STS secret with the external dns ARN role
 func createSecretUsingRoleARN(oc *exutil.CLI, ns, exDnsRoleArn string) {
-	buildPruningBaseDir := exutil.FixturePath("testdata", "router", "extdns")
+	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "extdns")
 	awsStsCredSecret := filepath.Join(buildPruningBaseDir, "aws-sts-creds-secret.yaml")
 	updateFilebySedCmd(awsStsCredSecret, "external-dns-role-arn", exDnsRoleArn)
 
@@ -101,7 +102,7 @@ func createSecretUsingRoleARN(oc *exutil.CLI, ns, exDnsRoleArn string) {
 // Collect the Zone details from the AWS route53 and return the Hosted zone ID
 func getPrivateZoneID(oc *exutil.CLI, domainName string) string {
 	clusterinfra.GetAwsCredentialFromCluster(oc)
-	route53Client := exutil.NewRoute53Client()
+	route53Client := compat_otp.NewRoute53Client()
 	var hostedZoneDetails *route53.ListHostedZonesByNameOutput
 
 	// collect the hostZone Details from the AWS route53 using the domain name

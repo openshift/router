@@ -13,9 +13,9 @@ import (
 
 	// If using ginkgo, import your tests here
 
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	"github.com/openshift/router/ginkgo-test/pkg/version"
 	_ "github.com/openshift/router/ginkgo-test/test/extended/router"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
 )
 
 func main() {
@@ -84,9 +84,9 @@ func main() {
 			panic(fmt.Sprintf("initialize test framework failed: %+v", err.Error()))
 		}
 		readClusterTypeEnvsAndSetFlags()
-		e2e.AfterReadingAllFlags(exutil.TestContext)
+		e2e.AfterReadingAllFlags(compat_otp.TestContext)
 		e2e.TestContext.DumpLogsOnFailure = true
-		exutil.TestContext.DumpLogsOnFailure = true
+		compat_otp.TestContext.DumpLogsOnFailure = true
 	})
 
 	ext.AddSpecs(specs)

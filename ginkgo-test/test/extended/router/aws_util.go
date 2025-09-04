@@ -16,8 +16,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
-	clusterinfra "github.com/openshift/router/ginkgo-test/test/extended/util/clusterinfra"
+	exutil "github.com/openshift/origin/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	clusterinfra "github.com/openshift/origin/test/extended/util/compat_otp/clusterinfra"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -146,7 +147,7 @@ func iamDeleteRolePolicy(iamClient *iam.Client, policyName string, roleName stri
 
 // Create ALB Operator Role and inline Policy
 func createAlboRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := exutil.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "awslb")
 	alboPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-albo-perms-policy.json")
 
 	alboRoleName := infraID + "-albo-role"
@@ -182,7 +183,7 @@ func createAlboRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix s
 
 // Create ALB Controller (operand) Role and inline policy
 func createAlbcRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := exutil.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "awslb")
 	albcPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-albc-perms-policy.json")
 	albcRoleName := infraID + "-albc-role"
 	albcPolicyName := infraID + "-albc-perms-policy"
@@ -232,7 +233,7 @@ func deleteAlbcRolePolicy(iamClient *iam.Client, infraID string) {
 
 // Prepare all roles and secrets for STS cluster
 func prepareAllForStsCluster(oc *exutil.CLI) {
-	infraID, _ := exutil.GetInfraID(oc)
+	infraID, _ := compat_otp.GetInfraID(oc)
 	oidcName := getOidc(oc)
 	iamClient := newIamClient()
 	stsClient := newStsClient()
@@ -250,7 +251,7 @@ func prepareAllForStsCluster(oc *exutil.CLI) {
 // Clear up all roles for STS cluster and namespace aws-load-balancer-operator
 func clearUpAlbOnStsCluster(oc *exutil.CLI) {
 	ns := "aws-load-balancer-operator"
-	infraID, _ := exutil.GetInfraID(oc)
+	infraID, _ := compat_otp.GetInfraID(oc)
 	iamClient := newIamClient()
 	deleteAlboRolePolicy(iamClient, infraID)
 	deleteAlbcRolePolicy(iamClient, infraID)
@@ -300,7 +301,7 @@ func ensureReleaseElaticIP(oc *exutil.CLI, eipList *[]string) {
 			}
 			return true, nil
 		})
-		exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time, but unable to delete the EIP %s", eipAllocationsList[i]))
+		compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time, but unable to delete the EIP %s", eipAllocationsList[i]))
 		e2e.Logf("EIP allocation %s is released", eipAllocationsList[i])
 	}
 }

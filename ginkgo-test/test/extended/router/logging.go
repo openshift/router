@@ -8,17 +8,17 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	defer g.GinkgoRecover()
 
-	var oc = exutil.NewCLI("router-logging", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("router-logging", compat_otp.KubeConfigPath())
 
 	// author: shudili@redhat.com
-	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34166-capture and log http cookies with specific prefixes via httpCaptureCookies option", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+	g.It("Author:shudili-DEPRECATED-ROSA-OSD_CCS-ARO-High-34166-capture and log http cookies with specific prefixes via httpCaptureCookies option", func() {
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -48,61 +48,61 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1.0 Create an custom IC for logging http cookies with the specific prefix")
+		compat_otp.By("1.0 Create an custom IC for logging http cookies with the specific prefix")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "1")
 
-		exutil.By("2.0: Create a client pod, a deployment and the services in a namespace")
+		compat_otp.By("2.0: Create a client pod, a deployment and the services in a namespace")
 		ns := oc.Namespace()
 		createResourceFromFile(oc, ns, clientPod)
 		ensurePodWithLabelReady(oc, ns, clientPodLabel)
 		createResourceFromFile(oc, ns, testPodSvc)
 		ensurePodWithLabelReady(oc, ns, "name="+srvrcInfo)
 
-		exutil.By("3.0: Create a http route for the testing")
+		compat_otp.By("3.0: Create a http route for the testing")
 		routehost := "unsecure34166" + "." + ingctrl.domain
 		createRoute(oc, ns, "http", "route-http", unsecSvcName, []string{"--hostname=" + routehost})
 		ensureRouteIsAdmittedByIngressController(oc, ns, "route-http", ingctrl.name)
 
-		exutil.By("4.0: Check httpCaptureCookies configuration in haproxy")
+		compat_otp.By("4.0: Check httpCaptureCookies configuration in haproxy")
 		routerpod := getOneNewRouterPodFromRollingUpdate(oc, ingctrl.name)
 		defaultsCfg := getBlockConfig(oc, routerpod, "defaults")
 		o.Expect(defaultsCfg).To(o.ContainSubstring("capture cookie foo len 100"))
 
-		exutil.By("5.0: Curl the http route with cookie fo=nobar, expect to get 200 OK")
+		compat_otp.By("5.0: Curl the http route with cookie fo=nobar, expect to get 200 OK")
 		podIP := getPodv4Address(oc, routerpod, "openshift-ingress")
 		toDst := routehost + ":80:" + podIP
 		curlCmd := []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "fo=nobar", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("6.0: Curl the http route with cookie foo=bar, expect to get 200 OK")
+		compat_otp.By("6.0: Curl the http route with cookie foo=bar, expect to get 200 OK")
 		curlCmd = []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "foo=bar", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("7.0: Check the router logs, which should contain both the cookie foo=bar and the url")
+		compat_otp.By("7.0: Check the router logs, which should contain both the cookie foo=bar and the url")
 		logs := waitRouterLogsAppear(oc, routerpod, "foo=bar")
 		o.Expect(logs).To(o.ContainSubstring("index.html"))
 
-		exutil.By("8.0: Check the router logs, which should NOT contain the cookie fo=nobar")
+		compat_otp.By("8.0: Check the router logs, which should NOT contain the cookie fo=nobar")
 		logs, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args("-n", "openshift-ingress", "-c", "logs", routerpod).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(logs).NotTo(o.ContainSubstring("fo=nobar"))
 
-		exutil.By("9.0: Curl the http route with cookie foo22=bar22, expect to get 200 OK")
+		compat_otp.By("9.0: Curl the http route with cookie foo22=bar22, expect to get 200 OK")
 		curlCmd = []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "foo22=bar22", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("10.0: Check the router logs, which should contain both the cookie foo22=bar22 and the url")
+		compat_otp.By("10.0: Check the router logs, which should contain both the cookie foo22=bar22 and the url")
 		logs = waitRouterLogsAppear(oc, routerpod, "foo22=bar22")
 		o.Expect(logs).To(o.ContainSubstring("index.html"))
 	})
 
 	// author: shudili@redhat.com
-	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34178-capture and log http cookies with exact match via httpCaptureCookies option", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+	g.It("Author:shudili-DEPRECATED-ROSA-OSD_CCS-ARO-High-34178-capture and log http cookies with exact match via httpCaptureCookies option", func() {
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -132,54 +132,54 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1.0 Create an custom IC for logging http cookies with the exact cookie name")
+		compat_otp.By("1.0 Create an custom IC for logging http cookies with the exact cookie name")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "1")
 
-		exutil.By("2.0: Create a client pod, a deployment and the services in a namespace")
+		compat_otp.By("2.0: Create a client pod, a deployment and the services in a namespace")
 		ns := oc.Namespace()
 		createResourceFromFile(oc, ns, clientPod)
 		ensurePodWithLabelReady(oc, ns, clientPodLabel)
 		createResourceFromFile(oc, ns, testPodSvc)
 		ensurePodWithLabelReady(oc, ns, "name="+srvrcInfo)
 
-		exutil.By("3.0: Create a http route for the testing")
+		compat_otp.By("3.0: Create a http route for the testing")
 		routehost := "unsecure34178" + "." + ingctrl.domain
 		createRoute(oc, ns, "http", "route-http", unsecSvcName, []string{"--hostname=" + routehost})
 		ensureRouteIsAdmittedByIngressController(oc, ns, "route-http", ingctrl.name)
 
-		exutil.By("4.0: Check httpCaptureCookies configuration in haproxy")
+		compat_otp.By("4.0: Check httpCaptureCookies configuration in haproxy")
 		routerpod := getOneNewRouterPodFromRollingUpdate(oc, ingctrl.name)
 		defaultsCfg := getBlockConfig(oc, routerpod, "defaults")
 		o.Expect(defaultsCfg).To(o.ContainSubstring("capture cookie foo= len 100"))
 
-		exutil.By("5.0: Curl the http route with cookie fooor=nobar, expect to get 200 OK")
+		compat_otp.By("5.0: Curl the http route with cookie fooor=nobar, expect to get 200 OK")
 		podIP := getPodv4Address(oc, routerpod, "openshift-ingress")
 		toDst := routehost + ":80:" + podIP
 		curlCmd := []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "fooor=nobar", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("6.0: Curl the http route with cookie foo=bar, expect to get 200 OK")
+		compat_otp.By("6.0: Curl the http route with cookie foo=bar, expect to get 200 OK")
 		curlCmd = []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "foo=bar", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("7.0: Check the router logs, which should contain both the cookie foo=bar and the url")
+		compat_otp.By("7.0: Check the router logs, which should contain both the cookie foo=bar and the url")
 		logs := waitRouterLogsAppear(oc, routerpod, "foo=bar")
 		o.Expect(logs).To(o.ContainSubstring("index.html"))
 
-		exutil.By("8.0: Check the router logs, which should NOT contain the cookie fooor=nobar")
+		compat_otp.By("8.0: Check the router logs, which should NOT contain the cookie fooor=nobar")
 		logs, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args("-n", "openshift-ingress", "-c", "logs", routerpod).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(logs).NotTo(o.ContainSubstring("fooor=nobar"))
 	})
 
 	// author: shudili@redhat.com
-	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34188-capture and log http requests using UniqueID with custom logging format defined via httpHeader option", func() {
+	g.It("Author:shudili-DEPRECATED-ROSA-OSD_CCS-ARO-High-34188-capture and log http requests using UniqueID with custom logging format defined via httpHeader option", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -196,31 +196,31 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			ingctrlResource = "ingresscontroller/" + ingctrl.name
 		)
 
-		exutil.By("1.0 Create an custom IC for logging http cookies with maxLength 10")
+		compat_otp.By("1.0 Create an custom IC for logging http cookies with maxLength 10")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "1")
 
-		exutil.By("Patch the hostNetwork ingresscontroller with logging http requests using the UniqueID ")
+		compat_otp.By("Patch the hostNetwork ingresscontroller with logging http requests using the UniqueID ")
 		patchPath := `{"spec":{"httpHeaders":{"uniqueId":{"format":"%{+Q}b","name":"X-Request-Id"}},"logging":{"access":{"destination":{"type":"Container"},"httpLogFormat":"%ID %ci:%cp [%tr] %ft %s %TR/%Tw/%Tc/%Tr/%Ta %ST %B %CC %CS %tsc %hr %hs %{+Q}r"}}}}`
 		patchResourceAsAdmin(oc, ingctrl.namespace, ingctrlResource, patchPath)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "2")
 
-		exutil.By("2.0: Create a client pod, a deployment and the services in a namespace")
+		compat_otp.By("2.0: Create a client pod, a deployment and the services in a namespace")
 		ns := oc.Namespace()
 		createResourceFromFile(oc, ns, clientPod)
 		ensurePodWithLabelReady(oc, ns, clientPodLabel)
 		createResourceFromFile(oc, ns, testPodSvc)
 		ensurePodWithLabelReady(oc, ns, "name="+srvrcInfo)
 
-		exutil.By("3.0: Create a http route for the testing")
+		compat_otp.By("3.0: Create a http route for the testing")
 		routehost := "unsecure34188" + "." + ingctrl.domain
 		createRoute(oc, ns, "http", "route-http", unsecSvcName, []string{"--hostname=" + routehost})
 		ensureRouteIsAdmittedByIngressController(oc, ns, "route-http", ingctrl.name)
 
-		exutil.By("4.0: Check the unique-id configuration in haproxy")
+		compat_otp.By("4.0: Check the unique-id configuration in haproxy")
 		routerpod := getOneNewRouterPodFromRollingUpdate(oc, ingctrl.name)
 		defaultsCfg := getBlockConfig(oc, routerpod, "defaults")
 		o.Expect(defaultsCfg).Should(o.And(
@@ -228,20 +228,20 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			o.ContainSubstring(`unique-id-format "%{+Q}b"`),
 			o.ContainSubstring(`unique-id-header X-Request-Id`)))
 
-		exutil.By("5.0: Curl the http route, expect to get 200 OK")
+		compat_otp.By("5.0: Curl the http route, expect to get 200 OK")
 		podIP := getPodv4Address(oc, routerpod, "openshift-ingress")
 		toDst := routehost + ":80:" + podIP
 		curlCmd := []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("6.0: Checking the access log verify if the UniqueID pattern is logged and matches")
+		compat_otp.By("6.0: Checking the access log verify if the UniqueID pattern is logged and matches")
 		pattern := fmt.Sprintf(`"be_http:%s:route-http"`, ns)
 		waitRouterLogsAppear(oc, routerpod, pattern)
 	})
 
 	// author: shudili@redhat.com
-	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Medium-34189-The httpCaptureCookies option strictly adheres to the maxlength parameter", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+	g.It("Author:shudili-DEPRECATED-ROSA-OSD_CCS-ARO-Medium-34189-The httpCaptureCookies option strictly adheres to the maxlength parameter", func() {
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -271,45 +271,45 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1.0 Create an custom IC for logging http cookies with maxLength 10")
+		compat_otp.By("1.0 Create an custom IC for logging http cookies with maxLength 10")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "1")
 
-		exutil.By("2.0: Create a client pod, a deployment and the services in a namespace")
+		compat_otp.By("2.0: Create a client pod, a deployment and the services in a namespace")
 		ns := oc.Namespace()
 		createResourceFromFile(oc, ns, clientPod)
 		ensurePodWithLabelReady(oc, ns, clientPodLabel)
 		createResourceFromFile(oc, ns, testPodSvc)
 		ensurePodWithLabelReady(oc, ns, "name="+srvrcInfo)
 
-		exutil.By("3.0: Create a http route for the testing")
+		compat_otp.By("3.0: Create a http route for the testing")
 		routehost := "unsecure34189" + "." + ingctrl.domain
 		createRoute(oc, ns, "http", "route-http", unsecSvcName, []string{"--hostname=" + routehost})
 		ensureRouteIsAdmittedByIngressController(oc, ns, "route-http", ingctrl.name)
 
-		exutil.By("4.0: Check httpCaptureCookies configuration in haproxy")
+		compat_otp.By("4.0: Check httpCaptureCookies configuration in haproxy")
 		routerpod := getOneNewRouterPodFromRollingUpdate(oc, ingctrl.name)
 		defaultsCfg := getBlockConfig(oc, routerpod, "defaults")
 		o.Expect(defaultsCfg).To(o.ContainSubstring("capture cookie foo len 10"))
 
-		exutil.By("5.0: Curl the http route with cookie foo=bar8 which length less than 10, expect to get 200 OK")
+		compat_otp.By("5.0: Curl the http route with cookie foo=bar8 which length less than 10, expect to get 200 OK")
 		podIP := getPodv4Address(oc, routerpod, "openshift-ingress")
 		toDst := routehost + ":80:" + podIP
 		curlCmd := []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "foo=bar8", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("6.0: Curl the http route with cookie foo2=bar9abcdefg which length larger than 10, expect to get 200 OK")
+		compat_otp.By("6.0: Curl the http route with cookie foo2=bar9abcdefg which length larger than 10, expect to get 200 OK")
 		curlCmd = []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "-b", "foo2=bar9abcdefg", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("7.0: Check the router logs for cookie foo=bar8 which length less than 10")
+		compat_otp.By("7.0: Check the router logs for cookie foo=bar8 which length less than 10")
 		logs := waitRouterLogsAppear(oc, routerpod, "foo=bar8")
 		o.Expect(logs).To(o.ContainSubstring("index.html"))
 
-		exutil.By("8.0: Check the router logs for cookie foo2=bar9abcdefg which length larger than 10")
+		compat_otp.By("8.0: Check the router logs for cookie foo2=bar9abcdefg which length larger than 10")
 		logs = waitRouterLogsAppear(oc, routerpod, "foo2=bar9a")
 		o.Expect(logs).To(o.ContainSubstring("index.html"))
 		o.Expect(logs).NotTo(o.ContainSubstring("foo2=bar9ab"))
@@ -317,7 +317,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Medium-34191-The httpCaptureHeaders option strictly adheres to the maxlength parameter", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -351,40 +351,40 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1.0 Create an custom IC for logging http headers with the specified maxLength")
+		compat_otp.By("1.0 Create an custom IC for logging http headers with the specified maxLength")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "1")
 
-		exutil.By("2.0: Create a client pod, a deployment and the services in a namespace")
+		compat_otp.By("2.0: Create a client pod, a deployment and the services in a namespace")
 		ns := oc.Namespace()
 		createResourceFromFile(oc, ns, clientPod)
 		ensurePodWithLabelReady(oc, ns, clientPodLabel)
 		createResourceFromFile(oc, ns, testPodSvc)
 		ensurePodWithLabelReady(oc, ns, "name="+srvrcInfo)
 
-		exutil.By("3.0: Create a http route for the testing")
+		compat_otp.By("3.0: Create a http route for the testing")
 		routehostPrefix := "unsecure34191"
 		routehost := routehostPrefix + "." + ingctrl.domain
 		createRoute(oc, ns, "http", "route-http", unsecSvcName, []string{"--hostname=" + routehost})
 		ensureRouteIsAdmittedByIngressController(oc, ns, "route-http", ingctrl.name)
 
-		exutil.By("4.0: Check httpCaptureHeaders configuration in haproxy")
+		compat_otp.By("4.0: Check httpCaptureHeaders configuration in haproxy")
 		routerpod := getOneNewRouterPodFromRollingUpdate(oc, ingctrl.name)
 		frontendCfg := getBlockConfig(oc, routerpod, "frontend fe_sni")
 		o.Expect(frontendCfg).Should(o.And(
 			o.ContainSubstring("capture request header Host len 13"),
 			o.ContainSubstring("capture response header Server len 5")))
 
-		exutil.By("5.0: Curl the http route, expect to get 200 OK")
+		compat_otp.By("5.0: Curl the http route, expect to get 200 OK")
 		podIP := getPodv4Address(oc, routerpod, "openshift-ingress")
 		toDst := routehost + ":80:" + podIP
 		curlCmd := []string{"-n", ns, clientPodName, "--", "curl", "http://" + routehost + "/index.html", "-sI", "--resolve", toDst, "--connect-timeout", "10"}
 		repeatCmdOnClient(oc, curlCmd, "200 OK", 90, 6)
 
-		exutil.By("6.0: Check the router logs, which should contain the request host header and response server header with values not exceeding the maxLength")
+		compat_otp.By("6.0: Check the router logs, which should contain the request host header and response server header with values not exceeding the maxLength")
 		logs := waitRouterLogsAppear(oc, routerpod, routehostPrefix)
 		o.Expect(logs).NotTo(o.ContainSubstring(routehostPrefix + "."))
 		o.Expect(logs).To(o.ContainSubstring(server))

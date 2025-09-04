@@ -9,14 +9,14 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	defer g.GinkgoRecover()
 
-	var oc = exutil.NewCLI("router-ingressclass", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("router-ingressclass", compat_otp.KubeConfigPath())
 
 	// incorporate OCP-33960, OCP-33961, OCP-33962 and OCP-33986 into one
 	// Test case creater: aiyengar@redhat.com - OCP-33960 Setting "route.openshift.io/termination" annotation to "Edge" in ingress resource deploys "Edge" terminated route object
@@ -25,7 +25,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: aiyengar@redhat.com - OCP-33986 Setting values other than "edge/passthrough/reencrypt" for "route.openshift.io/termination" annotation are ignored by ingress object
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-33960-Setting 'route.openshift.io/termination' annotation to Edge/Passthrough/Reencrypt in ingress resource", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			testIngress         = filepath.Join(buildPruningBaseDir, "ingress-resource.yaml")
 			tmpdir              = "/tmp/OCP-33960-CA/"
@@ -36,7 +36,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			serverCrt           = tmpdir + "server.crt"
 		)
 
-		exutil.By("1. Create a server and client pod")
+		compat_otp.By("1. Create a server and client pod")
 		baseDomain := getBaseDomain(oc)
 		ns := oc.Namespace()
 		routeEdgeHost := "ingress-edge-" + ns + ".apps." + baseDomain
@@ -47,7 +47,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, "name=web-server-deploy")
 		podName := getOneRouterPodNameByIC(oc, "default")
 
-		exutil.By("2. Create a secret certificate for ingress edge and reen termination")
+		compat_otp.By("2. Create a secret certificate for ingress edge and reen termination")
 		// prepare the tmp folder and create self-signed cerfitcate and a secret
 		defer os.RemoveAll(tmpdir)
 		err := os.MkdirAll(tmpdir, 0755)
@@ -60,7 +60,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		err = oc.AsAdmin().WithoutNamespace().Run("create").Args("-n", ns, "secret", "tls", "ingress-secret", "--cert="+serverCrt, "--key="+serverKey).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("3. Create edge, passthroguh and reen routes")
+		compat_otp.By("3. Create edge, passthroguh and reen routes")
 		sedCmd := fmt.Sprintf(`sed -i'' -e 's@edgehostname@%s@g;s@passhostname@%s@g;s@reenhostname@%s@g;s@randomhostname@%s@g' %s`, routeEdgeHost, routePassHost, routeReenHost, routeRandHost, testIngress)
 		_, err = exec.Command("bash", "-c", sedCmd).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -68,42 +68,39 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		routeOutput := getRoutes(oc, ns)
 
 		// OCP-33960: Setting "route.openshift.io/termination" annotation to "Edge" in ingress resource deploys "Edge" terminated route object
-		exutil.By("4. Verify the haproxy configuration to ensure the ingress edge route is configured")
+		compat_otp.By("4. Verify the haproxy configuration to ensure the ingress edge route is configured")
 		edgeBackendName := "be_edge_http:" + ns + ":ingress-edge"
-		edgeBackendOutput := readHaproxyConfig(oc, podName, edgeBackendName, "-A15", ns)
-		o.Expect(edgeBackendOutput).To(o.ContainSubstring(`:service-unsecure:http:`))
+		ensureHaproxyBlockConfigContains(oc, podName, edgeBackendName, []string{":service-unsecure:http:"})
 
-		exutil.By("5. Check the reachability of the edge route")
+		compat_otp.By("5. Check the reachability of the edge route")
 		waitForOutsideCurlContains("https://"+routeEdgeHost, "-kI", `200`)
 
 		// OCP-33961: Setting "route.openshift.io/termination" annotation to "Passthrough" in ingress resource deploys "passthrough" terminated route object
-		exutil.By("6. Verify the haproxy configuration to ensure the ingress passthrough route is configured")
+		compat_otp.By("6. Verify the haproxy configuration to ensure the ingress passthrough route is configured")
 		passthroughBackendName := "be_tcp:" + ns + ":ingress-passth"
-		passthroughBackendOutput := readHaproxyConfig(oc, podName, passthroughBackendName, "-A5", ns)
-		o.Expect(passthroughBackendOutput).To(o.ContainSubstring(`:service-secure:https:`))
+		ensureHaproxyBlockConfigContains(oc, podName, passthroughBackendName, []string{":service-secure:https:"})
 
-		exutil.By("7. Check the reachability of the passthrough route")
+		compat_otp.By("7. Check the reachability of the passthrough route")
 		waitForOutsideCurlContains("https://"+routePassHost, "-kI", `200`)
 
 		// OCP-33962: Setting "route.openshift.io/termination" annotation to "Reencrypt" in ingress resource deploys "reen" terminated route object
-		exutil.By("8. Verify the haproxy configuration to ensure the ingress reen route is configured")
+		compat_otp.By("8. Verify the haproxy configuration to ensure the ingress reen route is configured")
 		reenBackendName := "be_secure:" + ns + ":ingress-reencrypt"
-		reenBackendOutput := readHaproxyConfig(oc, podName, reenBackendName, "-A15", ns)
-		o.Expect(reenBackendOutput).To(o.ContainSubstring(`:service-secure:https:`))
+		reenBackendOutput := ensureHaproxyBlockConfigContains(oc, podName, reenBackendName, []string{":service-secure:https:"})
 		o.Expect(reenBackendOutput).To(o.ContainSubstring(`/var/run/configmaps/service-ca/service-ca.crt`))
 
-		exutil.By("9. Check the reachability of the reen route")
+		compat_otp.By("9. Check the reachability of the reen route")
 		waitForOutsideCurlContains("https://"+routeReenHost, "-kI", `200`)
 
 		// OCP-33986: Setting values other than "edge/passthrough/reencrypt" for "route.openshift.io/termination" annotation are ignored by ingress object
-		exutil.By("10. Verify the random route type's annotation are ignored")
+		compat_otp.By("10. Verify the random route type's annotation are ignored")
 		o.Expect(routeOutput).NotTo(o.ContainSubstring("abcd"))
 
 	})
 
 	// author: hongli@redhat.com
 	g.It("Author:hongli-Critical-41117-ingress operator manages the IngressClass for each ingresscontroller", func() {
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -114,25 +111,25 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("check the ingress class created by default ingresscontroller")
+		compat_otp.By("check the ingress class created by default ingresscontroller")
 		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("ingressclass/openshift-default").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring("openshift.io/ingress-to-route"))
 
-		exutil.By("create another custom ingresscontroller")
+		compat_otp.By("create another custom ingresscontroller")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl.name, "1")
 
-		exutil.By("check the ingressclass is created by custom ingresscontroller")
+		compat_otp.By("check the ingressclass is created by custom ingresscontroller")
 		ingressclassname := "openshift-" + ingctrl.name
 		output, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("ingressclass", ingressclassname).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring("openshift.io/ingress-to-route"))
 
-		exutil.By("delete the custom ingresscontroller and ensure the ingresscalsss is removed")
+		compat_otp.By("delete the custom ingresscontroller and ensure the ingresscalsss is removed")
 		ingctrl.delete(oc)
 		output, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("ingressclass", ingressclassname).Output()
 		o.Expect(err).To(o.HaveOccurred())
@@ -144,30 +141,30 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	g.It("Author:hongli-Critical-41109-use IngressClass controller for ingress-to-route", func() {
 		var (
 			output              string
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			testIngress         = filepath.Join(buildPruningBaseDir, "ingress-with-class.yaml")
 		)
 
-		exutil.By("create project, pod, svc, and ingress that mismatch with default ingressclass")
+		compat_otp.By("create project, pod, svc, and ingress that mismatch with default ingressclass")
 		oc.SetupProject()
 		project1 := oc.Namespace()
 		createResourceFromFile(oc, project1, testPodSvc)
 		ensurePodWithLabelReady(oc, project1, "name=web-server-deploy")
 		createResourceFromFile(oc, project1, testIngress)
 
-		exutil.By("ensure no route is created from the ingress")
+		compat_otp.By("ensure no route is created from the ingress")
 		output, err := oc.Run("get").Args("route").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(output).NotTo(o.ContainSubstring("ingress-with-class"))
 
-		exutil.By("patch the ingress to use default ingressclass")
+		compat_otp.By("patch the ingress to use default ingressclass")
 		patchResourceAsUser(oc, project1, "ingress/ingress-with-class", "{\"spec\":{\"ingressClassName\": \"openshift-default\"}}")
-		exutil.By("ensure one route is created from the ingress")
-		waitForOutput(oc, project1, "route", "{.items[*].metadata.name}", "ingress-with-class")
+		compat_otp.By("ensure one route is created from the ingress")
+		waitForOutputContains(oc, project1, "route", "{.items[*].metadata.name}", "ingress-with-class")
 
 		// bug:- 1820075
-		exutil.By("Confirm the address field is getting populated with the Router domain details")
+		compat_otp.By("Confirm the address field is getting populated with the Router domain details")
 		baseDomain := getBaseDomain(oc)
 		ingressOut := getIngress(oc, project1)
 		o.Expect(ingressOut).To(o.ContainSubstring("router-default.apps." + baseDomain))
@@ -176,7 +173,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Critical-51148-host name of the route depends on the subdomain if provided", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "subdomain-routes/ocp51148-route.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			rut                 = routeDescription{
@@ -187,7 +184,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("create project and a pod")
+		compat_otp.By("create project and a pod")
 		project1 := oc.Namespace()
 		createResourceFromFile(oc, project1, testPodSvc)
 		ensurePodWithLabelReady(oc, project1, "name=web-server-deploy")
@@ -196,24 +193,24 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		rut.domain = "apps" + "." + baseDomain
 		rut.namespace = project1
 
-		exutil.By("create routes and get the details")
+		compat_otp.By("create routes and get the details")
 		rut.create(oc)
 		// to show the route details
 		getRoutes(oc, project1)
 
-		exutil.By("check the domain name is present in 'foo-unsecure1' route details")
+		compat_otp.By("check the domain name is present in 'foo-unsecure1' route details")
 		output := getByJsonPath(oc, project1, "route/foo-unsecure1", "{.spec}")
 		o.Expect(output).Should(o.ContainSubstring(`"subdomain":"foo"`))
 
-		exutil.By("check the domain name is not present in 'foo-unsecure2' route details")
+		compat_otp.By("check the domain name is not present in 'foo-unsecure2' route details")
 		output = getByJsonPath(oc, project1, "route/foo-unsecure2", "{.spec}")
 		o.Expect(output).NotTo(o.ContainSubstring("subdomain"))
 
-		exutil.By("check the domain name is present in 'foo-unsecure3' route details")
+		compat_otp.By("check the domain name is present in 'foo-unsecure3' route details")
 		output = getByJsonPath(oc, project1, "route/foo-unsecure3", "{.spec}")
 		o.Expect(output).Should(o.ContainSubstring(`"subdomain":"foo"`))
 
-		exutil.By("check the domain name is not present in 'foo-unsecure4' route details")
+		compat_otp.By("check the domain name is not present in 'foo-unsecure4' route details")
 		output = getByJsonPath(oc, project1, "route/foo-unsecure4", "{.spec}")
 		o.Expect(output).NotTo(o.ContainSubstring("subdomain"))
 
@@ -221,16 +218,16 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		if checkProxy(oc) {
 			e2e.Logf("This is proxy cluster, skiping the curling part.")
 		} else {
-			exutil.By("check the reachability of the 'foo-unsecure1' host")
+			compat_otp.By("check the reachability of the 'foo-unsecure1' host")
 			waitForCurl(oc, podName[0], baseDomain, "foo.apps.", "Hello-OpenShift", "")
 
-			exutil.By("check the reachability of the 'foo-unsecure2' host")
+			compat_otp.By("check the reachability of the 'foo-unsecure2' host")
 			waitForCurl(oc, podName[0], baseDomain, "foo-unsecure2-"+project1+".apps.", "Hello-OpenShift", "")
 
-			exutil.By("check the reachability of the 'foo-unsecure3' host")
+			compat_otp.By("check the reachability of the 'foo-unsecure3' host")
 			waitForCurl(oc, podName[0], baseDomain, "man-"+project1+".apps.", "Hello-OpenShift", "")
 
-			exutil.By("check the reachability of the 'foo-unsecure4' host")
+			compat_otp.By("check the reachability of the 'foo-unsecure4' host")
 			waitForCurl(oc, podName[0], baseDomain, "bar-"+project1+".apps.", "Hello-OpenShift", "")
 		}
 	})
@@ -238,7 +235,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-High-51429-different router deployment with same route using subdomain", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			customTemp2         = filepath.Join(buildPruningBaseDir, "subdomain-routes/route.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
@@ -256,7 +253,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("create project and a pod")
+		compat_otp.By("create project and a pod")
 		baseDomain := getBaseDomain(oc)
 		project2 := oc.Namespace()
 		createResourceFromFile(oc, project2, testPodSvc)
@@ -265,7 +262,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		rut.domain = "apps" + "." + baseDomain
 		rut.namespace = project2
 
-		exutil.By("Create a custom ingresscontroller")
+		compat_otp.By("Create a custom ingresscontroller")
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
@@ -273,19 +270,19 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		custContPod := getOneNewRouterPodFromRollingUpdate(oc, ingctrl.name)
 		defaultContPod := getOneRouterPodNameByIC(oc, "default")
 
-		exutil.By("create routes and get the details")
+		compat_otp.By("create routes and get the details")
 		rut.create(oc)
 		getRoutes(oc, project2)
 
-		exutil.By("check whether required host is present in 'foobar-unsecure' route details")
-		waitForOutput(oc, project2, "route/foobar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"foobar.apps.%s"`, baseDomain))
-		waitForOutput(oc, project2, "route/foobar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"foobar.ocp51429.%s"`, baseDomain))
+		compat_otp.By("check whether required host is present in 'foobar-unsecure' route details")
+		waitForOutputContains(oc, project2, "route/foobar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"foobar.apps.%s"`, baseDomain))
+		waitForOutputContains(oc, project2, "route/foobar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"foobar.ocp51429.%s"`, baseDomain))
 
-		exutil.By("check the router pod and ensure the routes are loaded in haproxy.config in default controller")
+		compat_otp.By("check the router pod and ensure the routes are loaded in haproxy.config in default controller")
 		searchOutput1 := pollReadPodData(oc, "openshift-ingress", defaultContPod, "cat haproxy.config", "foobar-unsecure")
 		o.Expect(searchOutput1).To(o.ContainSubstring("backend be_http:" + project2 + ":foobar-unsecure"))
 
-		exutil.By("check the router pod and ensure the routes are loaded in haproxy.config of custom controller")
+		compat_otp.By("check the router pod and ensure the routes are loaded in haproxy.config of custom controller")
 		searchOutput2 := pollReadPodData(oc, "openshift-ingress", custContPod, "cat haproxy.config", "foobar-unsecure")
 		o.Expect(searchOutput2).To(o.ContainSubstring("backend be_http:" + project2 + ":foobar-unsecure"))
 
@@ -293,20 +290,20 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		if checkProxy(oc) {
 			e2e.Logf("This is proxy cluster, skiping the curling part through default controller.")
 		} else {
-			exutil.By("check the reachability of the 'foobar-unsecure' host in default controller")
+			compat_otp.By("check the reachability of the 'foobar-unsecure' host in default controller")
 			waitForCurl(oc, podName[0], baseDomain, "foobar.apps.", "Hello-OpenShift", "")
 		}
 
-		exutil.By("check the reachability of the 'foobar-unsecure' host in custom controller")
+		compat_otp.By("check the reachability of the 'foobar-unsecure' host in custom controller")
 		custContIP := getPodv4Address(oc, custContPod, "openshift-ingress")
 		waitForCurl(oc, podName[0], baseDomain, "foobar.ocp51429.", "Hello-OpenShift", custContIP)
 
 	})
 
 	// author: mjoseph@redhat.com
-	g.It("Author:mjoseph-High-51437-Router deployment using different shard with same subdomain ", func() {
+	g.It("Author:mjoseph-NonHyperShiftHOST-ROSA-OSD_CCS-ARO-High-51437-Router deployment using different shard with same subdomain ", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			customTemp2         = filepath.Join(buildPruningBaseDir, "subdomain-routes/alpha-shard-route.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-shard.yaml")
@@ -332,7 +329,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("create project and a pod")
+		compat_otp.By("create project and a pod")
 		baseDomain := getBaseDomain(oc)
 		project3 := oc.Namespace()
 		createResourceFromFile(oc, project3, testPodSvc)
@@ -341,29 +338,29 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		rut.domain = "apps" + "." + baseDomain
 		rut.namespace = project3
 
-		exutil.By("Create first shard ingresscontroller")
+		compat_otp.By("Create first shard ingresscontroller")
 		ingctrl1.domain = ingctrl1.name + "." + baseDomain
 		defer ingctrl1.delete(oc)
 		ingctrl1.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl1.name, "1")
 		custContPod1 := getOneNewRouterPodFromRollingUpdate(oc, ingctrl1.name)
 
-		exutil.By("Create second shard ingresscontroller")
+		compat_otp.By("Create second shard ingresscontroller")
 		ingctrl2.domain = ingctrl2.name + "." + baseDomain
 		defer ingctrl2.delete(oc)
 		ingctrl2.create(oc)
 		ensureRouterDeployGenerationIs(oc, ingctrl2.name, "1")
 		custContPod2 := getOneNewRouterPodFromRollingUpdate(oc, ingctrl2.name)
 
-		exutil.By("create routes and get the details")
+		compat_otp.By("create routes and get the details")
 		rut.create(oc)
 		getRoutes(oc, project3)
 
-		exutil.By("check whether required host is present in alpha ingress controller domain")
-		waitForOutput(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.apps.%s"`, baseDomain))
-		waitForOutput(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.alpha-alpha-ocp51437.%s"`, baseDomain))
+		compat_otp.By("check whether required host is present in alpha ingress controller domain")
+		waitForOutputContains(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.apps.%s"`, baseDomain))
+		waitForOutputContains(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.alpha-ocp51437.%s"`, baseDomain))
 
-		exutil.By("check the router pod and ensure the routes are loaded in haproxy.config of alpha controller")
+		compat_otp.By("check the router pod and ensure the routes are loaded in haproxy.config of alpha controller")
 		searchOutput1 := pollReadPodData(oc, "openshift-ingress", custContPod1, "cat haproxy.config", "bar-unsecure")
 		o.Expect(searchOutput1).To(o.ContainSubstring("backend be_http:" + project3 + ":bar-unsecure"))
 
@@ -371,29 +368,29 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		if checkProxy(oc) {
 			e2e.Logf("This is proxy cluster, skiping the curling part through default controller.")
 		} else {
-			exutil.By("check the reachability of the 'bar-unsecure' host in default controller")
+			compat_otp.By("check the reachability of the 'bar-unsecure' host in default controller")
 			waitForCurl(oc, podName[0], baseDomain, "bar.apps.", "Hello-OpenShift", "")
 		}
 
-		exutil.By("check the reachability of the 'bar-unsecure' host in 'alpha shard' controller")
+		compat_otp.By("check the reachability of the 'bar-unsecure' host in 'alpha shard' controller")
 		custContIP := getPodv4Address(oc, custContPod1, "openshift-ingress")
-		waitForCurl(oc, podName[0], baseDomain, "bar.alpha-alpha-ocp51437.", "Hello-OpenShift", custContIP)
+		waitForCurl(oc, podName[0], baseDomain, "bar.alpha-ocp51437.", "Hello-OpenShift", custContIP)
 
-		exutil.By("Overwrite route with beta shard")
+		compat_otp.By("Overwrite route with beta shard")
 		_, err := oc.AsAdmin().WithoutNamespace().Run("label").Args("routes/bar-unsecure", "--overwrite", "shard=beta", "-n", project3).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("check whether required host is present in beta ingress controller domain")
-		waitForOutput(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.apps.%s"`, baseDomain))
-		waitForOutput(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.beta-beta-ocp51437.%s"`, baseDomain))
+		compat_otp.By("check whether required host is present in beta ingress controller domain")
+		waitForOutputContains(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.apps.%s"`, baseDomain))
+		waitForOutputContains(oc, project3, "route/bar-unsecure", "{.status.ingress}", fmt.Sprintf(`"host":"bar.beta-ocp51437.%s"`, baseDomain))
 
-		exutil.By("check the router pod and ensure the routes are loaded in haproxy.config of beta controller")
+		compat_otp.By("check the router pod and ensure the routes are loaded in haproxy.config of beta controller")
 		searchOutput2 := pollReadPodData(oc, "openshift-ingress", custContPod2, "cat haproxy.config", "bar-unsecure")
 		o.Expect(searchOutput2).To(o.ContainSubstring("backend be_http:" + project3 + ":bar-unsecure"))
 
-		exutil.By("check the reachability of the 'bar-unsecure' host in 'beta shard' controller")
+		compat_otp.By("check the reachability of the 'bar-unsecure' host in 'beta shard' controller")
 		custContIP2 := getPodv4Address(oc, custContPod2, "openshift-ingress")
-		waitForCurl(oc, podName[0], baseDomain, "bar.beta-beta-ocp51437.", "Hello-OpenShift", custContIP2)
+		waitForCurl(oc, podName[0], baseDomain, "bar.beta-ocp51437.", "Hello-OpenShift", custContIP2)
 	})
 
 	// bug: 1914127
@@ -403,34 +400,34 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			namespace   = "openshift-ingress"
 		)
 
-		exutil.By("check if the cluster has the router-default service")
+		compat_otp.By("check if the cluster has the router-default service")
 		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("service", "-n", namespace).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		if !strings.Contains(output, "router-default") {
 			g.Skip("This cluster has NOT the router-defaut service, skip the test.")
 		}
 
-		exutil.By("check if all COs are in good status")
+		compat_otp.By("check if all COs are in good status")
 		badOpList := checkAllClusterOperatorsStatus(oc)
 		if len(badOpList) > 0 {
 			g.Skip("Some cluster operators are NOT in good status, skip the test.")
 		}
 
-		exutil.By("check the created time of svc router-default")
+		compat_otp.By("check the created time of svc router-default")
 		jsonPath := "{.metadata.creationTimestamp}"
 		svcCreatedTime1 := getByJsonPath(oc, namespace, svcResource, jsonPath)
 		o.Expect(svcCreatedTime1).NotTo(o.BeEmpty())
 
-		exutil.By("try to delete the svc router-default, should no errors")
+		compat_otp.By("try to delete the svc router-default, should no errors")
 		defer ensureAllClusterOperatorsNormal(oc, 720)
 		err = oc.AsAdmin().WithoutNamespace().Run("delete").Args(svcResource, "-n", namespace).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("wait for new svc router-default is created")
+		compat_otp.By("wait for new svc router-default is created")
 		jsonPath = "{.metadata.name}"
-		waitForOutput(oc, namespace, svcResource, jsonPath, "router-default")
+		waitForOutputEquals(oc, namespace, svcResource, jsonPath, "router-default")
 
-		exutil.By("check the created time of the new svc router-default")
+		compat_otp.By("check the created time of the new svc router-default")
 		jsonPath = "{.metadata.creationTimestamp}"
 		svcCreatedTime2 := getByJsonPath(oc, namespace, svcResource, jsonPath)
 		o.Expect(svcCreatedTime2).NotTo(o.BeEmpty())
@@ -440,7 +437,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// bug: 2013004
 	g.It("ARO-Author:shudili-High-57089-Error syncing load balancer and failed to parse the VMAS ID on Azure platform", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			lbServices          = filepath.Join(buildPruningBaseDir, "bug2013004-lb-services.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -449,27 +446,27 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		)
 
 		// skip if platform is not AZURE
-		exutil.By("Pre-flight check for the platform type")
-		platformtype := exutil.CheckPlatform(oc)
+		compat_otp.By("Pre-flight check for the platform type")
+		platformtype := compat_otp.CheckPlatform(oc)
 		if platformtype != "azure" {
 			g.Skip("Skip for it not azure platform")
 		}
 
-		exutil.By("create a server pod")
+		compat_otp.By("create a server pod")
 		project1 := oc.Namespace()
 		createResourceFromFile(oc, project1, testPodSvc)
 		ensurePodWithLabelReady(oc, project1, "name="+srvrcInfo)
 
-		exutil.By("try to create an external load balancer service and an internal load balancer service")
+		compat_otp.By("try to create an external load balancer service and an internal load balancer service")
 		operateResourceFromFile(oc, "create", project1, lbServices)
-		waitForOutput(oc, project1, "service/"+externalSvc, "{.metadata.name}", externalSvc)
-		waitForOutput(oc, project1, "service/"+internalSvc, "{.metadata.name}", internalSvc)
+		waitForOutputEquals(oc, project1, "service/"+externalSvc, "{.metadata.name}", externalSvc)
+		waitForOutputEquals(oc, project1, "service/"+internalSvc, "{.metadata.name}", internalSvc)
 
-		exutil.By("check if the lb services have obtained the EXTERNAL-IPs")
+		compat_otp.By("check if the lb services have obtained the EXTERNAL-IPs")
 		regExp := "([0-9]+.[0-9]+.[0-9]+.[0-9]+)"
-		searchOutput1 := waitForRegexpOutput(oc, project1, "service/"+externalSvc, "{.status.loadBalancer.ingress..ip}", regExp)
+		searchOutput1 := waitForOutputMatchRegexp(oc, project1, "service/"+externalSvc, "{.status.loadBalancer.ingress..ip}", regExp)
 		o.Expect(searchOutput1).NotTo(o.ContainSubstring("NotMatch"))
-		searchOutput2 := waitForRegexpOutput(oc, project1, "service/"+internalSvc, "{.status.loadBalancer.ingress..ip}", regExp)
+		searchOutput2 := waitForOutputMatchRegexp(oc, project1, "service/"+internalSvc, "{.status.loadBalancer.ingress..ip}", regExp)
 		o.Expect(searchOutput2).NotTo(o.ContainSubstring("NotMatch"))
 	})
 
@@ -488,29 +485,29 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			resourceName = "ingress.config/cluster"
 		)
 
-		exutil.By("1. Create route and get the details")
+		compat_otp.By("1. Create route and get the details")
 		removeRoute := fmt.Sprintf("[{\"op\":\"remove\", \"path\":\"/spec/componentRoutes\", \"value\":[{\"hostname\": \"1digit9.apps.%s\", \"name\": \"downloads\", \"namespace\": \"openshift-console\"}]}]}]", getBaseDomain(oc))
 		addRoute := fmt.Sprintf("[{\"op\":\"add\", \"path\":\"/spec/componentRoutes\", \"value\":[{\"hostname\": \"1digit9.apps.%s\", \"name\": \"downloads\", \"namespace\": \"openshift-console\"}]}]}]", getBaseDomain(oc))
 		defer patchGlobalResourceAsAdmin(oc, resourceName, removeRoute)
 		patchGlobalResourceAsAdmin(oc, resourceName, addRoute)
-		waitForOutput(oc, "openshift-console", "route", "{.items..metadata.name}", "downloads-custom")
+		waitForOutputContains(oc, "openshift-console", "route", "{.items..metadata.name}", "downloads-custom")
 
-		exutil.By("2. Check the router pod and ensure the routes are loaded in haproxy.config")
+		compat_otp.By("2. Check the router pod and ensure the routes are loaded in haproxy.config")
 		podname := getOneRouterPodNameByIC(oc, "default")
 		backendConfig := pollReadPodData(oc, "openshift-ingress", podname, "cat haproxy.config", "downloads-custom")
 		o.Expect(backendConfig).To(o.ContainSubstring("backend be_edge_http:openshift-console:downloads-custom"))
 
-		exutil.By("3. Confirm from the component Route, the RFC complaint hostname")
+		compat_otp.By("3. Confirm from the component Route, the RFC complaint hostname")
 		cmd := fmt.Sprintf(`1digit9.apps.%s`, getBaseDomain(oc))
-		waitForOutput(oc, oc.Namespace(), "ingress.config.openshift.io/cluster", "{.spec.componentRoutes[0].hostname}", cmd)
+		waitForOutputContains(oc, oc.Namespace(), "ingress.config.openshift.io/cluster", "{.spec.componentRoutes[0].hostname}", cmd)
 
 		// OCP-14059: Use the default destination CA of router if the route does not specify one for reencrypt route
 		// since console route is using the reencrypt route without destination CA we are using it to check
-		exutil.By("4. Confirm from the console service the 'serving-cert-secret-name'")
+		compat_otp.By("4. Confirm from the console service the 'serving-cert-secret-name'")
 		findAnnotation := getAnnotation(oc, "openshift-console", "svc", "console")
 		o.Expect(findAnnotation).To(o.Or(o.ContainSubstring(`service.alpha.openshift.io/serving-cert-secret-name":"console-serving-cert`), o.ContainSubstring(`service.beta.openshift.io/serving-cert-secret-name":"console-serving-cert`)))
 
-		exutil.By("5. Confirm from the 'service-ca.crt' is present in haproxy.config for console route")
+		compat_otp.By("5. Confirm from the 'service-ca.crt' is present in haproxy.config for console route")
 		backendConfig1 := pollReadPodData(oc, "openshift-ingress", podname, "cat haproxy.config", "console.openshift-console.svc")
 		o.Expect(backendConfig1).To(o.ContainSubstring("required ca-file /var/run/configmaps/service-ca/service-ca.crt"))
 	})
@@ -522,17 +519,17 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			ingressCapability   = `"capability.openshift.io/name":"Ingress"`
 		)
 
-		exutil.By("Check whether 'enabledCapabilities' is enabled in cluster version resource")
+		compat_otp.By("Check whether 'enabledCapabilities' is enabled in cluster version resource")
 		searchLine, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("clusterversion", "version", "-o=jsonpath="+enabledCapabilities).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(searchLine).To(o.ContainSubstring("Ingress"))
 
-		exutil.By("Check the Ingress capability in dnsrecords crd")
+		compat_otp.By("Check the Ingress capability in dnsrecords crd")
 		searchLine, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("crd", "dnsrecords.ingress.operator.openshift.io", "-o=jsonpath="+capability).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(searchLine).To(o.ContainSubstring(ingressCapability))
 
-		exutil.By("Check the Ingress capability in ingresscontrollers crd")
+		compat_otp.By("Check the Ingress capability in ingresscontrollers crd")
 		searchLine, err = oc.AsAdmin().WithoutNamespace().Run("get").Args("crd", "ingresscontrollers.operator.openshift.io", "-o=jsonpath="+capability).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(searchLine).To(o.ContainSubstring(ingressCapability))

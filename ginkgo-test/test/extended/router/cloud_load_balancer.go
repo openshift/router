@@ -10,7 +10,7 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -18,15 +18,15 @@ import (
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	defer g.GinkgoRecover()
 
-	var oc = exutil.NewCLI("load-balancer", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("load-balancer", compat_otp.KubeConfigPath())
 
 	// incorporate OCP-21599 and 29204 into one
 	// OCP-21599:NetworkEdge ingresscontroller can set proper endpointPublishingStrategy in cloud platform
 	// OCP-29204:NetworkEdge ingresscontroller can set proper endpointPublishingStrategy in non-cloud platform
 	// author: hongli@redhat.com
 	g.It("ROSA-OSD_CCS-ARO-Author:hongli-Critical-21599-ingresscontroller can set proper endpointPublishingStrategy in all platforms", func() {
-		exutil.By("Get the platform type and check the endpointPublishingStrategy type")
-		platformtype := exutil.CheckPlatform(oc)
+		compat_otp.By("Get the platform type and check the endpointPublishingStrategy type")
+		platformtype := compat_otp.CheckPlatform(oc)
 		platforms := map[string]bool{
 			"aws":          true,
 			"azure":        true,
@@ -51,7 +51,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Critical-36891-ingress operator supports mutating load balancer scope", func() {
 		// skip on non-cloud platform
 		// ibmcloud/powervs has bug https://issues.redhat.com/browse/OCPBUGS-32776
-		platformtype := exutil.CheckPlatform(oc)
+		platformtype := compat_otp.CheckPlatform(oc)
 		platforms := map[string]bool{
 			"aws":          true,
 			"azure":        true,
@@ -66,7 +66,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skip for private cluster since Internal LB scope in default ingresscontroller")
 		}
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -79,7 +79,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			dnsRecordName = ingctrl.name + "-wildcard"
 		)
 
-		exutil.By("Create custom ingresscontroller with Internal scope")
+		compat_otp.By("Create custom ingresscontroller with Internal scope")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		// Updating LB scope `External` to `Internal` in the yaml file
@@ -94,9 +94,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			output, _ := oc.AsAdmin().WithoutNamespace().Run("describe").Args("-n", ns, "service", "router-"+ingctrl.name).Output()
 			e2e.Logf("The output of describe LB service: %v", output)
 		}
-		exutil.AssertWaitPollNoErr(err, fmt.Sprintf("ingresscontroller %s conditions not available", ingctrl.name))
+		compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("ingresscontroller %s conditions not available", ingctrl.name))
 
-		exutil.By("Get the Interanl LB ingress ip or hostname")
+		compat_otp.By("Get the Interanl LB ingress ip or hostname")
 		// AWS, IBMCloud use hostname, other cloud platforms use ip
 		internalLB, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", ns, "service", "router-"+ingctrl.name, "-o=jsonpath={.status.loadBalancer.ingress}").Output()
 		e2e.Logf("the internal LB is %v", internalLB)
@@ -106,17 +106,17 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			o.Expect(internalLB).To(o.MatchRegexp(`"ip":"10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"`))
 		}
 
-		exutil.By("Updating scope from Internal to External")
+		compat_otp.By("Updating scope from Internal to External")
 		patchScope := `{"spec":{"endpointPublishingStrategy":{"loadBalancer":{"scope":"External"}}}}`
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, patchScope)
 		// AWS needs user to delete the LoadBalancer service manually
 		if platformtype == "aws" {
-			waitForOutput(oc, "default", "co/ingress", `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
+			waitForOutputContains(oc, "default", "co/ingress", `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
 			oc.AsAdmin().WithoutNamespace().Run("delete").Args("-n", ns, "service", "router-"+ingctrl.name).Execute()
 		}
-		waitForOutput(oc, "openshift-ingress-operator", "dnsrecords/"+dnsRecordName, "{.metadata.generation}", "2")
+		waitForOutputEquals(oc, "openshift-ingress-operator", "dnsrecords/"+dnsRecordName, "{.metadata.generation}", "2")
 
-		exutil.By("Ensure the ingress LB is updated and the IP is not private")
+		compat_otp.By("Ensure the ingress LB is updated and the IP is not private")
 		externalLB, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", ns, "service", "router-"+ingctrl.name, "-o=jsonpath={.status.loadBalancer.ingress}").Output()
 		e2e.Logf("the external LB is %v", externalLB)
 		if platformtype == "aws" {
@@ -126,7 +126,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			o.Expect(externalLB).To(o.MatchRegexp(`"ip":"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"`))
 		}
 
-		exutil.By("Ensure the dnsrecord with new LB IP/hostname are published")
+		compat_otp.By("Ensure the dnsrecord with new LB IP/hostname are published")
 		publishStatus, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", "openshift-ingress-operator", "dnsrecord", dnsRecordName, `-o=jsonpath={.status.zones[*].conditions[?(@.type == "Published")].status})`).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(publishStatus).NotTo(o.ContainSubstring("False"))
@@ -135,13 +135,13 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-High-52837-switching of AWS CLB to NLB without deletion of ingresscontroller", func() {
 		// skip if platform is not AWS
-		exutil.SkipIfPlatformTypeNot(oc, "AWS")
+		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 		// skip if private cluster in 4.19+
 		if isInternalLBScopeInDefaultIngresscontroller(oc) {
 			g.Skip("Skip for private cluster since Internal LB scope in default ingresscontroller")
 		}
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -153,31 +153,31 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("Create one custom ingresscontroller")
+		compat_otp.By("Create one custom ingresscontroller")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("patch the existing custom ingress controller with NLB")
+		compat_otp.By("patch the existing custom ingress controller with NLB")
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/ocp52837", "{\"spec\":{\"endpointPublishingStrategy\":{\"loadBalancer\":{\"providerParameters\":{\"aws\":{\"type\":\"NLB\"}}}}}}")
 		// the LB svc keep the same but just annotation is updated
-		waitForOutput(oc, ns, "service/router-"+ingctrl.name, `{.metadata.annotations}`, "aws-load-balancer-type")
+		waitForOutputContains(oc, ns, "service/router-"+ingctrl.name, `{.metadata.annotations}`, "aws-load-balancer-type")
 
-		exutil.By("check the LB service and ensure the annotations are updated")
+		compat_otp.By("check the LB service and ensure the annotations are updated")
 		findAnnotation := getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
 		e2e.Logf("all annotations are: %v", findAnnotation)
 		o.Expect(findAnnotation).To(o.ContainSubstring(`"service.beta.kubernetes.io/aws-load-balancer-type":"nlb"`))
 		o.Expect(findAnnotation).NotTo(o.ContainSubstring("aws-load-balancer-proxy-protocol"))
 
-		exutil.By("patch the existing custom ingress controller with CLB")
+		compat_otp.By("patch the existing custom ingress controller with CLB")
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/ocp52837", "{\"spec\":{\"endpointPublishingStrategy\":{\"loadBalancer\":{\"providerParameters\":{\"aws\":{\"type\":\"Classic\"}}}}}}")
-		waitForOutput(oc, ns, "service/router-"+ingctrl.name, `{.metadata.annotations}`, "aws-load-balancer-proxy-protocol")
+		waitForOutputContains(oc, ns, "service/router-"+ingctrl.name, `{.metadata.annotations}`, "aws-load-balancer-proxy-protocol")
 
 		// Classic LB doesn't has explicit "classic" annotation but it needs proxy-protocol annotation
 		// so we use "aws-load-balancer-proxy-protocol" to check if using CLB
-		exutil.By("check the LB service and ensure the annotations are updated")
+		compat_otp.By("check the LB service and ensure the annotations are updated")
 		findAnnotation = getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
 		e2e.Logf("all annotations are: %v", findAnnotation)
 		o.Expect(findAnnotation).To(o.ContainSubstring("aws-load-balancer-proxy-protocol"))
@@ -187,9 +187,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-High-72126-Support multiple cidr blocks for one NSG rule in the IngressController", func() {
 		g.By("Pre-flight check for the platform type")
-		exutil.SkipIfPlatformTypeNot(oc, "Azure")
+		compat_otp.SkipIfPlatformTypeNot(oc, "Azure")
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-azure-cidr.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -201,7 +201,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1. Create the custom ingresscontroller with 3995 CIDRs, by default 2 CIDRs are occupied on non private cluster, and 3 more are occupied on profile with windows node")
+		compat_otp.By("1. Create the custom ingresscontroller with 3995 CIDRs, by default 2 CIDRs are occupied on non private cluster, and 3 more are occupied on profile with windows node")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
@@ -212,19 +212,19 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			output, _ := oc.AsAdmin().WithoutNamespace().Run("describe").Args("-n", ns, "service", "router-"+ingctrl.name).Output()
 			e2e.Logf("The output of describe LB service: %v", output)
 		}
-		exutil.AssertWaitPollNoErr(err, fmt.Sprintf("ingresscontroller %s conditions not available", ingctrl.name))
+		compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("ingresscontroller %s conditions not available", ingctrl.name))
 
-		exutil.By("2. Check the LB service event to ensure no exceeds maximum number error")
+		compat_otp.By("2. Check the LB service event to ensure no exceeds maximum number error")
 		output1, _ := oc.AsAdmin().WithoutNamespace().Run("describe").Args("-n", ns, "service", "router-"+ingctrl.name).Output()
 		o.Expect(output1).To(o.ContainSubstring(`Ensured load balancer`))
 		o.Expect(output1).NotTo(o.ContainSubstring(`exceeds the maximum number of source IP addresses`))
 
-		exutil.By("3. Patch the custom ingress controller and add 6 more IPs to allowedSourceRanges")
+		compat_otp.By("3. Patch the custom ingress controller and add 6 more IPs to allowedSourceRanges")
 		jsonPatch := `[{"op":"add", "path": "/spec/endpointPublishingStrategy/loadBalancer/allowedSourceRanges/-", "value":"1.1.32.118/32"},{"op":"add", "path": "/spec/endpointPublishingStrategy/loadBalancer/allowedSourceRanges/-", "value":"1.1.32.120/32"},{"op":"add", "path": "/spec/endpointPublishingStrategy/loadBalancer/allowedSourceRanges/-", "value":"1.1.32.122/32"},{"op":"add", "path": "/spec/endpointPublishingStrategy/loadBalancer/allowedSourceRanges/-", "value":"1.1.32.124/32"},{"op":"add", "path": "/spec/endpointPublishingStrategy/loadBalancer/allowedSourceRanges/-", "value":"1.1.32.126/32"},{"op":"add", "path": "/spec/endpointPublishingStrategy/loadBalancer/allowedSourceRanges/-", "value":"1.1.32.128/32"}]`
 		_, err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("-n", ingctrl.namespace, "ingresscontroller", ingctrl.name, "--type=json", "-p", jsonPatch).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("4. Check the error message in event of the Load Balancer service")
+		compat_otp.By("4. Check the error message in event of the Load Balancer service")
 		// on some profiles it needs more than 6 seconds until the message appears
 		expectedMessage := `exceeds the maximum number of source IP addresses \(400[1-9] > 4000\)`
 		err = wait.PollImmediate(3*time.Second, 30*time.Second, func() (bool, error) {
@@ -234,15 +234,15 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 			return false, nil
 		})
-		exutil.AssertWaitPollNoErr(err, fmt.Sprintf("reached max time allowed but the error message doesn't appear", err))
+		compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("reached max time allowed but the error message doesn't appear", err))
 	})
 
 	// author: hongli@redhat.com
 	g.It("Author:hongli-NonHyperShiftHOST-ROSA-OSD_CCS-High-75439-AWS CLB supports to choose subnets", func() {
 		g.By("Pre-flight check for the platform type")
-		exutil.SkipIfPlatformTypeNot(oc, "AWS")
+		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -254,27 +254,27 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1. Get public subnets and skip conditionally")
+		compat_otp.By("1. Get public subnets and skip conditionally")
 		publicSubnetList := getPublicSubnetList(oc)
 		if len(publicSubnetList) < 1 {
 			g.Skip("Skipping since no public subnet found")
 		}
 
-		exutil.By("2. Create the custom ingresscontroller with CLB")
+		compat_otp.By("2. Create the custom ingresscontroller with CLB")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		defer ingctrl.delete(oc)
 		ingctrl.create(oc)
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("3. Patch the custom ingresscontroller, then delete the LB svc manually")
+		compat_otp.By("3. Patch the custom ingresscontroller, then delete the LB svc manually")
 		jsonPatch := fmt.Sprintf(`{"spec":{"endpointPublishingStrategy":{"type":"LoadBalancerService","loadBalancer":{"providerParameters":{"type":"AWS","aws":{"type":"Classic","classicLoadBalancer":{"subnets":{"ids":null,"names":[%s]}}}}}}}}`, strings.Join(publicSubnetList, ","))
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPatch)
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
+		waitForOutputContains(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
 		oc.AsAdmin().WithoutNamespace().Run("delete").Args("-n", ns, "service", "router-"+ingctrl.name).Execute()
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("4. Ensure the ingress LB svc is provisioned and the subnets annotation is added")
+		compat_otp.By("4. Ensure the ingress LB svc is provisioned and the subnets annotation is added")
 		externalLB := getByJsonPath(oc, ns, "service/router-"+ingctrl.name, "{.status.loadBalancer.ingress}")
 		o.Expect(externalLB).To(o.MatchRegexp(`"hostname":.*elb.*amazonaws.com`))
 		findAnnotation := getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
@@ -285,9 +285,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-NonHyperShiftHOST-ROSA-OSD_CCS-High-75440-AWS NLB supports to choose subnets", func() {
 		g.By("Pre-flight check for the platform type")
-		exutil.SkipIfPlatformTypeNot(oc, "AWS")
+		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -299,13 +299,13 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1. Get public subnets and skip conditionally")
+		compat_otp.By("1. Get public subnets and skip conditionally")
 		publicSubnetList := getPublicSubnetList(oc)
 		if len(publicSubnetList) < 1 {
 			g.Skip("Skipping since no public subnet found")
 		}
 
-		exutil.By("2. Create the custom ingresscontroller with NLB")
+		compat_otp.By("2. Create the custom ingresscontroller with NLB")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		// Updating LB type from `Classic` to `NLB` in the yaml file
@@ -316,17 +316,17 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ingctrl.create(oc)
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("3. Annotate and patch the custom ingresscontroller, enable LB svc can be auto deleted")
+		compat_otp.By("3. Annotate and patch the custom ingresscontroller, enable LB svc can be auto deleted")
 		annotation := `ingress.operator.openshift.io/auto-delete-load-balancer=`
 		err = oc.AsAdmin().WithoutNamespace().Run("annotate").Args("-n", ingctrl.namespace, "ingresscontroller/"+ingctrl.name, annotation, "--overwrite").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		jsonPatch := fmt.Sprintf(`{"spec":{"endpointPublishingStrategy":{"type":"LoadBalancerService","loadBalancer":{"providerParameters":{"type":"AWS","aws":{"type":"NLB","networkLoadBalancer":{"subnets":{"ids":null,"names":[%s]}}}}}}}}`, strings.Join(publicSubnetList, ","))
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPatch)
 		// the old svc should be auto deleted in a few seconds and wait the new one has the annotation
-		waitForOutput(oc, ns, "service/router-"+ingctrl.name, `{.metadata.annotations}`, "service.beta.kubernetes.io/aws-load-balancer-subnets")
+		waitForOutputContains(oc, ns, "service/router-"+ingctrl.name, `{.metadata.annotations}`, "service.beta.kubernetes.io/aws-load-balancer-subnets")
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("4. Ensure the ingress LB svc is provisioned and subnets annotation is added")
+		compat_otp.By("4. Ensure the ingress LB svc is provisioned and subnets annotation is added")
 		externalLB := getByJsonPath(oc, ns, "service/router-"+ingctrl.name, "{.status.loadBalancer.ingress}")
 		o.Expect(externalLB).To(o.MatchRegexp(`"hostname":.*elb.*amazonaws.com`))
 		findAnnotation := getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
@@ -336,14 +336,14 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-ROSA-OSD_CCS-High-75499-Allocating and updating EIPs on AWS NLB cluster", func() {
 		g.By("Pre-flight check for the platform type")
-		exutil.SkipIfPlatformTypeNot(oc, "AWS")
+		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 		// Number of EIPs should be same to number of public subnets
 		num := len(getPublicSubnetList(oc))
 		if num < 1 {
 			g.Skip("Skipping since no public subnet found")
 		}
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -355,19 +355,19 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1. Create the required elastic address")
+		compat_otp.By("1. Create the required elastic address")
 		var eipAllocationsList []string
 		defer ensureReleaseElaticIP(oc, &eipAllocationsList)
 		eipAllocationsList = allocateElaticIP(oc, num)
 		e2e.Logf("The allocated eip list is %s ", eipAllocationsList)
 
-		exutil.By("2. Create another set of elastic address")
+		compat_otp.By("2. Create another set of elastic address")
 		var eipAllocationsList1 []string
 		defer ensureReleaseElaticIP(oc, &eipAllocationsList1)
 		eipAllocationsList1 = allocateElaticIP(oc, num)
 		e2e.Logf("The allocated second eip list is %s ", eipAllocationsList1)
 
-		exutil.By("3. Create the custom ingresscontroller with NLB")
+		compat_otp.By("3. Create the custom ingresscontroller with NLB")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		// Updating LB type from `Classic` to `NLB` in the yaml file
@@ -378,58 +378,58 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ingctrl.create(oc)
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("4. Patch the custom ingresscontroller with the EIPs")
+		compat_otp.By("4. Patch the custom ingresscontroller with the EIPs")
 		jsonPatch := fmt.Sprintf(`{"spec":{"endpointPublishingStrategy":{"type":"LoadBalancerService","loadBalancer":{"providerParameters":{"type":"AWS","aws":{"type":"NLB","networkLoadBalancer":{"eipAllocations":["%s"]}}}}}}}`, strings.Join(eipAllocationsList, "\",\""))
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPatch)
 
-		exutil.By("5: Ensure the status of ingresscontroller which is in Progressing with the below message")
+		compat_otp.By("5: Ensure the status of ingresscontroller which is in Progressing with the below message")
 		jsonPath := `{.status.conditions[?(@.type=="Available")].status}{.status.conditions[?(@.type=="Progressing")].status}{.status.conditions[?(@.type=="Degraded")].status}`
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueTrueFalse")
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
+		waitForOutputEquals(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueTrueFalse")
+		waitForOutputContains(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
 
-		exutil.By("6. Delete the LB svc manually and check controller availability")
+		compat_otp.By("6. Delete the LB svc manually and check controller availability")
 		oc.AsAdmin().WithoutNamespace().Run("delete").Args("-n", ns, "service", "router-"+ingctrl.name).Execute()
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("7. Ensure the eip annotation is added and ingress LB svc is provisioned")
+		compat_otp.By("7. Ensure the eip annotation is added and ingress LB svc is provisioned")
 		findAnnotation := getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
 		o.Expect(findAnnotation).To(o.ContainSubstring("service.beta.kubernetes.io/aws-load-balancer-eip-allocations\":\"" + strings.Replace(strings.Join(eipAllocationsList, ","), "\"", "", -1)))
 		externalLB := getByJsonPath(oc, ns, "service/router-"+ingctrl.name, "{.status.loadBalancer.ingress}")
 		o.Expect(externalLB).To(o.MatchRegexp(`"hostname":.*elb.*amazonaws.com`))
 
-		exutil.By("8: Ensure the status of ingresscontroller is not degraded")
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueFalseFalse")
+		compat_otp.By("8: Ensure the status of ingresscontroller is not degraded")
+		waitForOutputEquals(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueFalseFalse")
 
-		exutil.By("9:Patch the controller with a new set of EIP and observer the status of ingresscontroller is again in Progressing with the below message")
+		compat_otp.By("9:Patch the controller with a new set of EIP and observer the status of ingresscontroller is again in Progressing with the below message")
 		jsonPatch1 := fmt.Sprintf(`{"spec":{"endpointPublishingStrategy":{"type":"LoadBalancerService","loadBalancer":{"providerParameters":{"type":"AWS","aws":{"type":"NLB","networkLoadBalancer":{"eipAllocations":["%s"]}}}}}}}`, strings.Join(eipAllocationsList1, "\",\""))
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPatch1)
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueTrueFalse")
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
+		waitForOutputEquals(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueTrueFalse")
+		waitForOutputContains(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
 
-		exutil.By("10. Again delete the LB svc manually and check controller availability")
+		compat_otp.By("10. Again delete the LB svc manually and check controller availability")
 		oc.AsAdmin().WithoutNamespace().Run("delete").Args("-n", ns, "service", "router-"+ingctrl.name).Execute()
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("11. Ensure the new eip annotation is added and ingress LB svc is provisioned")
+		compat_otp.By("11. Ensure the new eip annotation is added and ingress LB svc is provisioned")
 		findAnnotation1 := getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
 		o.Expect(findAnnotation1).To(o.ContainSubstring("service.beta.kubernetes.io/aws-load-balancer-eip-allocations\":\"" + strings.Replace(strings.Join(eipAllocationsList1, ","), "\"", "", -1)))
 		newExternalLB := getByJsonPath(oc, ns, "service/router-"+ingctrl.name, "{.status.loadBalancer.ingress}")
 		o.Expect(newExternalLB).To(o.MatchRegexp(`"hostname":.*elb.*amazonaws.com`))
 
-		exutil.By("12: Ensure the status of ingresscontroller is now working fine")
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueFalseFalse")
+		compat_otp.By("12: Ensure the status of ingresscontroller is now working fine")
+		waitForOutputEquals(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueFalseFalse")
 	})
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-ROSA-OSD_CCS-High-75617-Update with 'auto-delete-loadbalancer' annotation and unmanaged EIP allocation annotation on AWS NLB cluster", func() {
 		g.By("Pre-flight check for the platform type")
-		exutil.SkipIfPlatformTypeNot(oc, "AWS")
+		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 		// The number of EIPs should be same to number of public subnets
 		num := len(getPublicSubnetList(oc))
 		if num < 1 {
 			g.Skip("Skipping since no public subnet found")
 		}
 
-		buildPruningBaseDir := exutil.FixturePath("testdata", "router")
+		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 
@@ -448,13 +448,13 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			}
 		)
 
-		exutil.By("1. Create the required elastic address")
+		compat_otp.By("1. Create the required elastic address")
 		var eipAllocationsList []string
 		defer ensureReleaseElaticIP(oc, &eipAllocationsList)
 		eipAllocationsList = allocateElaticIP(oc, num)
 		e2e.Logf("The allocated eip list is %s ", eipAllocationsList)
 
-		exutil.By("2. Create the custom ingresscontroller with NLB")
+		compat_otp.By("2. Create the custom ingresscontroller with NLB")
 		baseDomain := getBaseDomain(oc)
 		ingctrl.domain = ingctrl.name + "." + baseDomain
 		// Updating LB type from `Classic` to `NLB` in the yaml file
@@ -465,53 +465,53 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ingctrl.create(oc)
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("3. Annotate and patch the custom ingresscontroller, enabling LB svc to be auto deleted")
+		compat_otp.By("3. Annotate and patch the custom ingresscontroller, enabling LB svc to be auto deleted")
 		setAnnotationAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, `ingress.operator.openshift.io/auto-delete-load-balancer=`)
 		jsonPatch := fmt.Sprintf(`{"spec":{"endpointPublishingStrategy":{"type":"LoadBalancerService","loadBalancer":{"providerParameters":{"type":"AWS","aws":{"type":"NLB","networkLoadBalancer":{"eipAllocations":["%s"]}}}}}}}`, strings.Join(eipAllocationsList, "\",\""))
 		patchResourceAsAdmin(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPatch)
 		ensureCustomIngressControllerAvailable(oc, ingctrl.name)
 
-		exutil.By("4. Ensure the ingress LB svc is provisioned and eip annotation is added")
+		compat_otp.By("4. Ensure the ingress LB svc is provisioned and eip annotation is added")
 		externalLB := getByJsonPath(oc, ns, "service/router-"+ingctrl.name, "{.status.loadBalancer.ingress}")
 		o.Expect(externalLB).To(o.MatchRegexp(`"hostname":.*elb.*amazonaws.com`))
 		findAnnotation := getAnnotation(oc, ns, "service", "router-"+ingctrl.name)
 		o.Expect(findAnnotation).To(o.ContainSubstring("service.beta.kubernetes.io/aws-load-balancer-eip-allocations\":\"" + strings.Replace(strings.Join(eipAllocationsList, ","), "\"", "", -1)))
 
-		exutil.By("5: Ensure the status of ingresscontroller is not degraded")
+		compat_otp.By("5: Ensure the status of ingresscontroller is not degraded")
 		jsonPath := `{.status.conditions[?(@.type=="Available")].status}{.status.conditions[?(@.type=="Progressing")].status}{.status.conditions[?(@.type=="Degraded")].status}`
-		waitForOutput(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueFalseFalse")
+		waitForOutputEquals(oc, ingctrl.namespace, "ingresscontroller/"+ingctrl.name, jsonPath, "TrueFalseFalse")
 
-		exutil.By("6. Create a new set of elastic address")
+		compat_otp.By("6. Create a new set of elastic address")
 		var eipAllocationsList1 []string
 		defer ensureReleaseElaticIP(oc, &eipAllocationsList1)
 		eipAllocationsList1 = allocateElaticIP(oc, num)
 		e2e.Logf("The allocated second eip list is %s ", eipAllocationsList1)
 
-		exutil.By("7. Create another custom ingresscontroller with NLB")
+		compat_otp.By("7. Create another custom ingresscontroller with NLB")
 		ingctrl2.domain = ingctrl2.name + "." + baseDomain
 		defer ingctrl2.delete(oc)
 		ingctrl2.create(oc)
 		ensureCustomIngressControllerAvailable(oc, ingctrl2.name)
 
-		exutil.By("8. Set an EIP annotation on the LB service directly")
+		compat_otp.By("8. Set an EIP annotation on the LB service directly")
 		setAnnotationAsAdmin(oc, ns, "svc/router-"+ingctrl2.name, `service.beta.kubernetes.io/aws-load-balancer-eip-allocations=`+strings.Join(eipAllocationsList1, ","))
 		findAnnotation1 := getAnnotation(oc, ns, "service", "router-"+ingctrl2.name)
 		o.Expect(findAnnotation1).To(o.ContainSubstring(`"service.beta.kubernetes.io/aws-load-balancer-eip-allocations":"` + strings.Join(eipAllocationsList1, ",") + "\""))
 
-		exutil.By("9: Ensure the status of ingresscontroller is Progressing with the below message")
-		waitForOutput(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, jsonPath, "TrueTrueFalse")
-		waitForOutput(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
+		compat_otp.By("9: Ensure the status of ingresscontroller is Progressing with the below message")
+		waitForOutputEquals(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, jsonPath, "TrueTrueFalse")
+		waitForOutputContains(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, `{.status.conditions[?(@.type == "Progressing")].message}`, "To effectuate this change, you must delete the service")
 
-		exutil.By("10. Patch the custom ingresscontroller with same EIP values")
+		compat_otp.By("10. Patch the custom ingresscontroller with same EIP values")
 		jsonPatch2 := fmt.Sprintf(`{"spec":{"endpointPublishingStrategy":{"type":"LoadBalancerService","loadBalancer":{"providerParameters":{"type":"AWS","aws":{"type":"NLB","networkLoadBalancer":{"eipAllocations":["%s"]}}}}}}}`, strings.Join(eipAllocationsList1, "\",\""))
 		patchResourceAsAdmin(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, jsonPatch2)
 		ensureCustomIngressControllerAvailable(oc, ingctrl2.name)
 
-		exutil.By("11. Ensure the ingress LB svc is provisioned")
+		compat_otp.By("11. Ensure the ingress LB svc is provisioned")
 		externalLB2 := getByJsonPath(oc, ns, "service/router-"+ingctrl2.name, "{.status.loadBalancer.ingress}")
 		o.Expect(externalLB2).To(o.MatchRegexp(`"hostname":.*elb.*amazonaws.com`))
 
-		exutil.By("12: Ensure the status of ingresscontroller is not degraded after the patching")
-		waitForOutput(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, jsonPath, "TrueFalseFalse")
+		compat_otp.By("12: Ensure the status of ingresscontroller is not degraded after the patching")
+		waitForOutputEquals(oc, ingctrl2.namespace, "ingresscontroller/"+ingctrl2.name, jsonPath, "TrueFalseFalse")
 	})
 })

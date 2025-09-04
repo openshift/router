@@ -7,28 +7,29 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 	netutils "k8s.io/utils/net"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	defer g.GinkgoRecover()
-	var oc = exutil.NewCLI("coredns", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("coredns", compat_otp.KubeConfigPath())
 
 	// incorporate OCP-56047 and OCP-40718 into one
 	// Test case creater: shudili@redhat.com - OCP-56047-Set CoreDNS cache entries for forwarded zones
 	// Test case creater: jechen@redhat.com - OCP-40718-CoreDNS cache should use 900s for positive responses and 30s for negative responses
 	g.It("Author:shudili-Critical-40718-CoreDNS cache should use 900s for positive responses and 30s for negative responses [Disruptive]", func() {
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
 		// OCP-40718
-		exutil.By("1. Check the cache entries of the default corefiles in CoreDNS")
+		compat_otp.By("1. Check the cache entries of the default corefiles in CoreDNS")
 		zoneInCoreFile1 := pollReadDnsCorefile(oc, oneDnsPod, ".:5353", "-A20", "cache 900")
 		o.Expect(zoneInCoreFile1).Should(o.And(
 			o.ContainSubstring("cache 900"),
@@ -36,12 +37,12 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 		// OCP-56047
 		// bug: 2006803
-		exutil.By("2. Patch the dns.operator/default and add a custom forward zone config")
+		compat_otp.By("2. Patch the dns.operator/default and add a custom forward zone config")
 		resourceName := "dns.operator.openshift.io/default"
 		jsonPatch := "[{\"op\":\"add\", \"path\":\"/spec/servers\", \"value\":[{\"forwardPlugin\":{\"policy\":\"Random\",\"upstreams\":[\"8.8.8.8\"]},\"name\":\"test\",\"zones\":[\"mytest.ocp\"]}]}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, jsonPatch)
 
-		exutil.By("3. Check the cache entries of the custom forward zone in CoreDNS")
+		compat_otp.By("3. Check the cache entries of the custom forward zone in CoreDNS")
 		zoneInCoreFile := pollReadDnsCorefile(oc, oneDnsPod, "mytest.ocp", "-A15", "cache 900")
 		o.Expect(zoneInCoreFile).Should(o.And(
 			o.ContainSubstring("cache 900"),
@@ -50,7 +51,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	// Bug: 1916907
 	g.It("Author:mjoseph-High-40867-Deleting the internal registry should not corrupt /etc/hosts [Disruptive]", func() {
-		exutil.By("Step1: Get the Cluster IP of image-registry")
+		compat_otp.By("Step1: Get the Cluster IP of image-registry")
 		// Skip the test case if openshift-image-registry namespace is not found
 		clusterIP, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
 			"service", "image-registry", "-n", "openshift-image-registry", "-o=jsonpath={.spec.clusterIP}").Output()
@@ -59,11 +60,11 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		}
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Step2: SSH to the node and confirm the /etc/hosts have the same clusterIP")
-		allNodeList, _ := exutil.GetAllNodes(oc)
+		compat_otp.By("Step2: SSH to the node and confirm the /etc/hosts have the same clusterIP")
+		allNodeList, _ := compat_otp.GetAllNodes(oc)
 		// get a random node
 		node := getRandomElementFromList(allNodeList)
-		hostOutput, err := exutil.DebugNodeWithChroot(oc, node, "cat", "/etc/hosts")
+		hostOutput, err := compat_otp.DebugNodeWithChroot(oc, node, "cat", "/etc/hosts")
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(hostOutput).To(o.And(
 			o.ContainSubstring("127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4"),
@@ -74,21 +75,23 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		// Set status variables
 		expectedStatus := map[string]string{"Available": "True", "Progressing": "False", "Degraded": "False"}
 
-		exutil.By("Step3: Delete the image-registry svc and check whether it receives a new Cluster IP")
+		compat_otp.By("Step3: Delete the image-registry svc and check whether it receives a new Cluster IP")
 		err1 := oc.AsAdmin().WithoutNamespace().Run("delete").Args("svc", "image-registry", "-n", "openshift-image-registry").Execute()
 		o.Expect(err1).NotTo(o.HaveOccurred())
 		err = waitCoBecomes(oc, "image-registry", 240, expectedStatus)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Step4: Get the new Cluster IP of image-registry")
+		compat_otp.By("Step4: Get the new Cluster IP of image-registry")
 		newClusterIP, err2 := oc.AsAdmin().WithoutNamespace().Run("get").Args(
 			"service", "image-registry", "-n", "openshift-image-registry", "-o=jsonpath={.spec.clusterIP}").Output()
 		o.Expect(err2).NotTo(o.HaveOccurred())
 		o.Expect(newClusterIP).NotTo(o.ContainSubstring(clusterIP))
 		e2e.Logf("The new cluster IP is %v", newClusterIP)
 
-		exutil.By("Step5: SSH to the node and confirm the /etc/hosts details, after deletion")
-		waitForOutputOnDebugNodeBasedOnEtcHosts(oc, node, newClusterIP)
+		compat_otp.By("Step5: SSH to the node and confirm the /etc/hosts details, after deletion")
+		cmdList := []string{"cat", "/etc/hosts"}
+		expectedString := fmt.Sprintf(`%s image-registry.openshift-image-registry.svc image-registry.openshift-image-registry.svc.cluster.local # openshift-generated-node-resolver`, newClusterIP)
+		waitForDebugNodeOutputContains(oc, "default", node, cmdList, expectedString, 90*time.Second)
 	})
 
 	// author: shudili@redhat.com
@@ -103,33 +106,33 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			cfgPolicyRr     = "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers/policy\", \"value\":\"RoundRobin\"}]"
 			cfgPolicySeq    = "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers/policy\", \"value\":\"Sequential\"}]"
 		)
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("Check default values of forward policy for CoreDNS")
+		compat_otp.By("Check default values of forward policy for CoreDNS")
 		policy := pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "policy sequential")
 		o.Expect(policy).To(o.ContainSubstring("policy sequential"))
 
-		exutil.By("Patch dns operator with multiple ipv4 upstreams, and check multiple ipv4 forward upstreams in CoreDNS")
+		compat_otp.By("Patch dns operator with multiple ipv4 upstreams, and check multiple ipv4 forward upstreams in CoreDNS")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgMulIPv4Upstreams)
 		upstreams := pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "10.100.1.11")
 		o.Expect(upstreams).To(o.ContainSubstring("forward . 10.100.1.11:53 10.100.1.12:53 10.100.1.13:5353"))
 
-		exutil.By("Check default forward policy in CoreDNS after multiple ipv4 forward upstreams are configured")
+		compat_otp.By("Check default forward policy in CoreDNS after multiple ipv4 forward upstreams are configured")
 		o.Expect(upstreams).To(o.ContainSubstring("policy sequential"))
 
-		exutil.By("Patch dns operator with policy random for upstream resolvers, and then check forward policy random in Corefile of coredns")
+		compat_otp.By("Patch dns operator with policy random for upstream resolvers, and then check forward policy random in Corefile of coredns")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgPolicyRandom)
 		policy = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "policy random")
 		o.Expect(policy).To(o.ContainSubstring("policy random"))
 
-		exutil.By("Patch dns operator with policy roundrobin for upstream resolvers, and then check forward policy roundrobin in Corefile of coredns")
+		compat_otp.By("Patch dns operator with policy roundrobin for upstream resolvers, and then check forward policy roundrobin in Corefile of coredns")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgPolicyRr)
 		policy = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "policy round_robin")
 		o.Expect(policy).To(o.ContainSubstring("policy round_robin"))
 
-		exutil.By("Patch dns operator with policy sequential for upstream resolvers, and then check forward policy sequential in Corefile of coredns")
+		compat_otp.By("Patch dns operator with policy sequential for upstream resolvers, and then check forward policy sequential in Corefile of coredns")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgPolicySeq)
 		policy = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "policy sequential")
 		o.Expect(policy).To(o.ContainSubstring("policy sequential"))
@@ -142,20 +145,20 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			cfgLogLevelDebug = "[{\"op\":\"replace\", \"path\":\"/spec/logLevel\", \"value\":\"Debug\"}]"
 			cfgLogLevelTrace = "[{\"op\":\"replace\", \"path\":\"/spec/logLevel\", \"value\":\"Trace\"}]"
 		)
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("Check default log level of CoreDNS")
+		compat_otp.By("Check default log level of CoreDNS")
 		logOutput := pollReadDnsCorefile(oc, oneDnsPod, "log", "-A2", "class error")
 		o.Expect(logOutput).To(o.ContainSubstring("class error"))
 
-		exutil.By("Patch dns operator with logLevel Debug for CoreDNS, and then check log class for logLevel Debug in both CM and the Corefile of coredns")
+		compat_otp.By("Patch dns operator with logLevel Debug for CoreDNS, and then check log class for logLevel Debug in both CM and the Corefile of coredns")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgLogLevelDebug)
 		logOutput = pollReadDnsCorefile(oc, oneDnsPod, "log", "-A2", "class denial error")
 		o.Expect(logOutput).To(o.ContainSubstring("class denial error"))
 
-		exutil.By("Patch dns operator with logLevel Trace for CoreDNS, and then check log class for logLevel Trace in Corefile of coredns")
+		compat_otp.By("Patch dns operator with logLevel Trace for CoreDNS, and then check log class for logLevel Trace in Corefile of coredns")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgLogLevelTrace)
 		logOutput = pollReadDnsCorefile(oc, oneDnsPod, "log", "-A2", "class all")
 		o.Expect(logOutput).To(o.ContainSubstring("class all"))
@@ -200,12 +203,12 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 				"{\"address\":\"1001::cccc\",\"port\":53,\"type\":\"Network\"}]}]"
 			expMulIPv6Upstreams = "forward . [1001::AAAA]:5353 [1001::BBBB]:53 [1001::CCCC]:53"
 		)
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
 		// OCP-40717
-		exutil.By("Check the readiness probe period and timeout parameters are both set to 3 seconds")
+		compat_otp.By("Check the readiness probe period and timeout parameters are both set to 3 seconds")
 		output, err := oc.AsAdmin().Run("get").Args("pod/"+oneDnsPod, "-n", "openshift-dns", "-o=jsonpath={.spec.containers[0].readinessProbe.periodSeconds}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring(`3`))
@@ -214,28 +217,28 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		o.Expect(output1).To(o.ContainSubstring(`3`))
 
 		// OCP-46867
-		exutil.By("Check default values of forward upstream resolvers for CoreDNS")
+		compat_otp.By("Check default values of forward upstream resolvers for CoreDNS")
 		upstreams := pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "resolv.conf")
 		o.Expect(upstreams).To(o.ContainSubstring("forward . /etc/resolv.conf"))
 
-		exutil.By("Patch dns operator with multiple ipv4 upstreams")
+		compat_otp.By("Patch dns operator with multiple ipv4 upstreams")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgMulIPv4Upstreams)
 
-		exutil.By("Check multiple ipv4 forward upstream resolvers in CoreDNS")
+		compat_otp.By("Check multiple ipv4 forward upstream resolvers in CoreDNS")
 		upstreams = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", expMulIPv4Upstreams)
 		o.Expect(upstreams).To(o.ContainSubstring(expMulIPv4Upstreams))
 
-		exutil.By("Patch dns operator with a single ipv4 upstream, and then check the single ipv4 forward upstream resolver for CoreDNS")
+		compat_otp.By("Patch dns operator with a single ipv4 upstream, and then check the single ipv4 forward upstream resolver for CoreDNS")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgOneIPv4Upstreams)
 		upstreams = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", expOneIPv4Upstreams)
 		o.Expect(upstreams).To(o.ContainSubstring(expOneIPv4Upstreams))
 
-		exutil.By("Patch dns operator with max 15 ipv4 upstreams, and then the max 15 ipv4 forward upstream resolvers for CoreDNS")
+		compat_otp.By("Patch dns operator with max 15 ipv4 upstreams, and then the max 15 ipv4 forward upstream resolvers for CoreDNS")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgMax15Upstreams)
 		upstreams = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", expMax15Upstreams)
 		o.Expect(upstreams).To(o.ContainSubstring(expMax15Upstreams))
 
-		exutil.By("Patch dns operator with multiple ipv6 upstreams, and then check the multiple ipv6 forward upstream resolvers for CoreDNS")
+		compat_otp.By("Patch dns operator with multiple ipv6 upstreams, and then check the multiple ipv6 forward upstream resolvers for CoreDNS")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgMulIPv6Upstreams)
 		upstreams = pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", "1001")
 		o.Expect(upstreams).To(o.ContainSubstring(expMulIPv6Upstreams))
@@ -269,31 +272,31 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			invalidCfgNumberPolicy = "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers/policy\", \"value\":\"2\"}]"
 			invalidCfgRandomPolicy = "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers/policy\", \"value\":\"random\"}]"
 		)
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("Try to add one more upstream resolver, totally 16 upstream resolvers by patching dns operator")
+		compat_otp.By("Try to add one more upstream resolver, totally 16 upstream resolvers by patching dns operator")
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+cfgAddOneUpstreams, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("have at most 15 items"))
 
-		exutil.By("Try to add a upstream resolver with a string as an address")
+		compat_otp.By("Try to add a upstream resolver with a string as an address")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgStringUpstreams, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Invalid value: \"str_test\""))
 
-		exutil.By("Try to add a upstream resolver with a number as an address")
+		compat_otp.By("Try to add a upstream resolver with a number as an address")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgNumberUpstreams, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Invalid value: \"100\""))
 
-		exutil.By("Try to configure the polciy with a string")
+		compat_otp.By("Try to configure the polciy with a string")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgSringPolicy, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"string_test\""))
 
-		exutil.By("Try to configure the polciy with a number")
+		compat_otp.By("Try to configure the polciy with a number")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgNumberPolicy, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"2\""))
 
-		exutil.By("Try to configure the polciy with a similar string like random")
+		compat_otp.By("Try to configure the polciy with a similar string like random")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgRandomPolicy, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"random\""))
 	})
@@ -308,38 +311,38 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			invalidCfgNumberOPLogLevel = "[{\"op\":\"replace\", \"path\":\"/spec/operatorLogLevel\", \"value\":\"2\"}]"
 			invalidCfgTraceOPLogLevel  = "[{\"op\":\"replace\", \"path\":\"/spec/operatorLogLevel\", \"value\":\"trace\"}]"
 		)
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("Try to configure log level with a string")
+		compat_otp.By("Try to configure log level with a string")
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgStringLogLevel, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"string_test\""))
 
-		exutil.By("Try to configure log level with a number")
+		compat_otp.By("Try to configure log level with a number")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgNumberLogLevel, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"2\""))
 
-		exutil.By("Try to configure log level with a similar string like trace")
+		compat_otp.By("Try to configure log level with a similar string like trace")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgTraceLogLevel, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"trace\""))
 
-		exutil.By("Try to configure dns operator log level with a string")
+		compat_otp.By("Try to configure dns operator log level with a string")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgStringOPLogLevel, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"string_test\""))
 
-		exutil.By("Try to configure dns operator log level with a number")
+		compat_otp.By("Try to configure dns operator log level with a number")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgNumberOPLogLevel, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"2\""))
 
-		exutil.By("Try to configure dns operator log level with a similar string like trace")
+		compat_otp.By("Try to configure dns operator log level with a similar string like trace")
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+invalidCfgTraceOPLogLevel, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("Unsupported value: \"trace\""))
 	})
 
 	g.It("Author:shudili-Low-46875-Different LogLevel logging function of CoreDNS flag [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
 			clientPodLabel      = "app=hello-pod"
@@ -353,24 +356,24 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			cfgDebug            = "[{\"op\":\"replace\", \"path\":\"/spec/logLevel\", \"value\":\"Debug\"}]"
 			cfgTrace            = "[{\"op\":\"replace\", \"path\":\"/spec/logLevel\", \"value\":\"Trace\"}]"
 		)
-		exutil.By("Prepare the dns testing node and pod")
+		compat_otp.By("Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 		podList := []string{oneDnsPod}
 
-		exutil.By("Create a dns server pod")
+		compat_otp.By("Create a dns server pod")
 		project1 := oc.Namespace()
-		defer exutil.RecoverNamespaceRestricted(oc, project1)
-		exutil.SetNamespacePrivileged(oc, project1)
+		defer compat_otp.RecoverNamespaceRestricted(oc, project1)
+		compat_otp.SetNamespacePrivileged(oc, project1)
 		replaceCoreDnsImage(oc, coreDNSSrvPod)
 		err := oc.AsAdmin().Run("create").Args("-f", coreDNSSrvPod, "-n", project1).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		ensurePodWithLabelReady(oc, project1, srvPodLabel)
 
-		exutil.By("get the user's dns server pod's IP")
+		compat_otp.By("get the user's dns server pod's IP")
 		srvPodIP := getPodv4Address(oc, srvPodName, project1)
 
-		exutil.By("patch upstream dns resolver with the user's dns server, and then wait the corefile is updated")
+		compat_otp.By("patch upstream dns resolver with the user's dns server, and then wait the corefile is updated")
 		dnsUpstreamResolver := "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers/upstreams\", \"value\":[{\"address\":\"" + srvPodIP + "\",\"port\":53,\"type\":\"Network\"}]}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsUpstreamResolver)
 		// Converting the IPV6 address to upper case for searching in the coreDNS file
@@ -380,27 +383,27 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		}
 		pollReadDnsCorefile(oc, oneDnsPod, "forward", "-A2", srvPodIP)
 
-		exutil.By("create a client pod")
+		compat_otp.By("create a client pod")
 		createResourceFromFile(oc, project1, clientPod)
 		ensurePodWithLabelReady(oc, project1, clientPodLabel)
 
-		exutil.By("Let client send out SERVFAIL nslookup to the dns server, and check the desired SERVFAIL logs from a coredns pod")
+		compat_otp.By("Let client send out SERVFAIL nslookup to the dns server, and check the desired SERVFAIL logs from a coredns pod")
 		output := nslookupsAndWaitForDNSlog(oc, clientPodName, failedDNSReq, podList, failedDNSReq+".")
 		o.Expect(output).To(o.ContainSubstring(failedDNSReq))
 
-		exutil.By("Patch dns operator with logLevel Debug for CoreDNS, and wait the Corefile is updated")
+		compat_otp.By("Patch dns operator with logLevel Debug for CoreDNS, and wait the Corefile is updated")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgDebug)
 		pollReadDnsCorefile(oc, oneDnsPod, "log", "-A2", "class denial error")
 
-		exutil.By("Let client send out NXDOMAIN nslookup to the dns server, and check the desired NXDOMAIN logs from a coredns pod")
+		compat_otp.By("Let client send out NXDOMAIN nslookup to the dns server, and check the desired NXDOMAIN logs from a coredns pod")
 		output = nslookupsAndWaitForDNSlog(oc, clientPodName, nxDNSReq, podList, "-type=mx", nxDNSReq+".")
 		o.Expect(output).To(o.ContainSubstring(nxDNSReq))
 
-		exutil.By("Patch dns operator with logLevel Trace for CoreDNS, and wait the Corefile is updated")
+		compat_otp.By("Patch dns operator with logLevel Trace for CoreDNS, and wait the Corefile is updated")
 		patchGlobalResourceAsAdmin(oc, resourceName, cfgTrace)
 		pollReadDnsCorefile(oc, oneDnsPod, "log", "-A2", "class all")
 
-		exutil.By("Let client send out normal nslookup which will get correct response, and check the desired TRACE logs from a coredns pod")
+		compat_otp.By("Let client send out normal nslookup which will get correct response, and check the desired TRACE logs from a coredns pod")
 		output = nslookupsAndWaitForDNSlog(oc, clientPodName, normalDNSReq, podList, normalDNSReq+".")
 		o.Expect(output).To(o.ContainSubstring(normalDNSReq))
 	})
@@ -408,7 +411,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// Bug: 1949361, 1884053, 1756344
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-55821-Check CoreDNS default bufsize, readinessProbe path and policy", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodLabel      = "app=hello-pod"
 			clientPodName       = "hello-pod"
@@ -416,30 +419,30 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		)
 		project1 := oc.Namespace()
 
-		exutil.By("Check updated value in dns operator file")
+		compat_otp.By("Check updated value in dns operator file")
 		output, err := oc.AsAdmin().Run("get").Args("cm/dns-default", "-n", "openshift-dns", "-o=jsonpath={.data.Corefile}").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring("bufsize 1232"))
 
-		exutil.By("Check the cache value in Corefile of coredns under all dns-default-xxx pods")
+		compat_otp.By("Check the cache value in Corefile of coredns under all dns-default-xxx pods")
 		podList := getAllDNSPodsNames(oc)
 		keepSearchInAllDNSPods(oc, podList, "bufsize 1232")
 
-		exutil.By("Create a client pod")
+		compat_otp.By("Create a client pod")
 		createResourceFromFile(oc, project1, clientPod)
 		ensurePodWithLabelReady(oc, project1, clientPodLabel)
 
-		exutil.By("Client send out a dig for google.com to check response")
+		compat_otp.By("Client send out a dig for google.com to check response")
 		digOutput, err2 := oc.Run("exec").Args(clientPodName, "--", "dig", "google.com").Output()
 		o.Expect(err2).NotTo(o.HaveOccurred())
 		o.Expect(digOutput).To(o.ContainSubstring("udp: 1232"))
 
-		exutil.By("Client send out a dig for NXDOMAIN to check response")
+		compat_otp.By("Client send out a dig for NXDOMAIN to check response")
 		digOutput1, err3 := oc.Run("exec").Args(clientPodName, "--", "dig", "nxdomain.google.com").Output()
 		o.Expect(err3).NotTo(o.HaveOccurred())
 		o.Expect(digOutput1).To(o.ContainSubstring("udp: 1232"))
 
-		exutil.By("Check the different DNS records")
+		compat_otp.By("Check the different DNS records")
 		ingressContPod := getPodListByLabel(oc, "openshift-ingress-operator", "name=ingress-operator")
 		// To identify which address type the cluster IP belongs
 		clusterIP := getSvcClusterIPByName(oc, "openshift-dns", "dns-default")
@@ -460,14 +463,14 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		o.Expect(digOutput4).To(o.ContainSubstring("ingress-canary.openshift-ingress-canary.svc.cluster.local."))
 
 		// bug:- 1884053
-		exutil.By("Check Readiness probe configured to use the '/ready' path")
+		compat_otp.By("Check Readiness probe configured to use the '/ready' path")
 		dnsPodName2 := getRandomElementFromList(podList)
 		output2, err4 := oc.AsAdmin().Run("get").Args("pod/"+dnsPodName2, "-n", "openshift-dns", "-o=jsonpath={.spec.containers[0].readinessProbe.httpGet}").Output()
 		o.Expect(err4).NotTo(o.HaveOccurred())
 		o.Expect(output2).To(o.ContainSubstring(`"path":"/ready"`))
 
 		// bug:- 1756344
-		exutil.By("Check the policy is sequential in Corefile of coredns under all dns-default-xxx pods")
+		compat_otp.By("Check the policy is sequential in Corefile of coredns under all dns-default-xxx pods")
 		keepSearchInAllDNSPods(oc, podList, "policy sequential")
 	})
 
@@ -480,28 +483,28 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			cacheWrongValue   = "[{\"op\":\"replace\", \"path\":\"/spec/cache\", \"value\":{\"negativeTTL\":\"-9s\", \"positiveTTL\":\"1.6\"}}]"
 		)
 
-		exutil.By("1. Prepare the dns testing node and pod")
+		compat_otp.By("1. Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("2. Patch the dns.operator/default with postive and negative cache values")
+		compat_otp.By("2. Patch the dns.operator/default with postive and negative cache values")
 		patchGlobalResourceAsAdmin(oc, resourceName, cacheValue)
 
-		exutil.By("3. Check the cache value in Corefile of coredn")
+		compat_otp.By("3. Check the cache value in Corefile of coredn")
 		cache := pollReadDnsCorefile(oc, oneDnsPod, "cache 604801", "-A2", "denial")
 		o.Expect(cache).To(o.ContainSubstring("denial 9984 1800"))
 
-		exutil.By("4. Patch the dns.operator/default with smallest cache values and verify the same")
+		compat_otp.By("4. Patch the dns.operator/default with smallest cache values and verify the same")
 		patchGlobalResourceAsAdmin(oc, resourceName, cacheSmallValue)
 		cache1 := pollReadDnsCorefile(oc, oneDnsPod, "cache 1", "-A2", "denial")
 		o.Expect(cache1).To(o.ContainSubstring("denial 9984 1"))
 
-		exutil.By("5. Patch the dns.operator/default with decimal cache values and verify the same")
+		compat_otp.By("5. Patch the dns.operator/default with decimal cache values and verify the same")
 		patchGlobalResourceAsAdmin(oc, resourceName, cacheDecimalValue)
 		cache2 := pollReadDnsCorefile(oc, oneDnsPod, "cache 96", "-A2", "denial")
 		o.Expect(cache2).To(o.ContainSubstring("denial 9984 2"))
 
-		exutil.By("6. Patch the dns.operator/default with unrelasitc cache values and check the error messages")
+		compat_otp.By("6. Patch the dns.operator/default with unrelasitc cache values and check the error messages")
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("patch").Args(resourceName, "--patch="+cacheWrongValue, "--type=json").Output()
 		o.Expect(output).To(o.ContainSubstring("spec.cache.positiveTTL: Invalid value: \"1.6\""))
 		o.Expect(output).To(o.ContainSubstring("spec.cache.negativeTTL: Invalid value: \"-9s\""))
@@ -510,26 +513,26 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-High-39842-CoreDNS supports dual stack ClusterIP Services for OCP4.8 or higher", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-v4v6rc.yaml")
 			unsecsvcName        = "service-unsecurev4v6"
 			secsvcName          = "service-securev4v6"
 		)
 
-		exutil.By("check the IP stack tpye, skip for non-dualstack platform")
+		compat_otp.By("check the IP stack tpye, skip for non-dualstack platform")
 		ipStackType := checkIPStackType(oc)
 		e2e.Logf("the cluster IP stack type is: %v", ipStackType)
 		if ipStackType != "dualstack" {
 			g.Skip("Skip for non-dualstack platform")
 		}
 
-		exutil.By("deploy a project, a backend pod and its services resources")
+		compat_otp.By("deploy a project, a backend pod and its services resources")
 		project1 := oc.Namespace()
 		createResourceFromFile(oc, project1, testPodSvc)
 		ensurePodWithLabelReady(oc, project1, "name=web-server-v4v6rc")
 		srvPod := getPodListByLabel(oc, project1, "name=web-server-v4v6rc")[0]
 
-		exutil.By("check the services v4v6 addresses")
+		compat_otp.By("check the services v4v6 addresses")
 		IPAddresses := getByJsonPath(oc, project1, "service/"+unsecsvcName, "{.spec.clusterIPs}")
 		o.Expect(IPAddresses).To(o.MatchRegexp(`[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`))
 		o.Expect(strings.Count(IPAddresses, ":") >= 2).To(o.BeTrue())
@@ -538,7 +541,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		o.Expect(IPAddresses).To(o.MatchRegexp(`[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}`))
 		o.Expect(strings.Count(IPAddresses, ":") >= 2).To(o.BeTrue())
 
-		exutil.By("check the services names can be resolved to their v4v6 addresses")
+		compat_otp.By("check the services names can be resolved to their v4v6 addresses")
 		IPAddress1 := getByJsonPath(oc, project1, "service/"+unsecsvcName, "{.spec.clusterIPs[0]}")
 		IPAddress2 := getByJsonPath(oc, project1, "service/"+unsecsvcName, "{.spec.clusterIPs[1]}")
 		cmdOnPod := []string{"-n", project1, srvPod, "--", "getent", "ahosts", unsecsvcName}
@@ -556,7 +559,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// no master nodes on HyperShift guest cluster so this case is not available
 	g.It("NonHyperShiftHOST-Author:mjoseph-High-56325-DNS pod should not work on nodes with taint configured [Disruptive]", func() {
 
-		exutil.By("Check whether the dns pods eviction annotation is set or not")
+		compat_otp.By("Check whether the dns pods eviction annotation is set or not")
 		podList := getAllDNSPodsNames(oc)
 		dnsPodName := getRandomElementFromList(podList)
 		findAnnotation := getAnnotation(oc, "openshift-dns", "po", dnsPodName)
@@ -568,7 +571,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		masterNodeName := getRandomElementFromList(strings.Split(masterNodes, " "))
 		workerNodeName := getRandomElementFromList(strings.Split(workerNodes, " "))
 
-		exutil.By("Apply NoSchedule taint to worker node and confirm the dns pod is not scheduled")
+		compat_otp.By("Apply NoSchedule taint to worker node and confirm the dns pod is not scheduled")
 		defer deleteTaint(oc, "node", workerNodeName, "dedicated-")
 		addTaint(oc, "node", workerNodeName, "dedicated=Kafka:NoSchedule")
 		// Confirming one node is not schedulable with dns pod
@@ -578,7 +581,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			e2e.Logf("Number of Nodes Misscheduled: 1 is not expected")
 		}
 
-		exutil.By("Apply NoSchedule taint to master node and confirm the dns pod is not scheduled on it")
+		compat_otp.By("Apply NoSchedule taint to master node and confirm the dns pod is not scheduled on it")
 		defer deleteTaint(oc, "node", masterNodeName, "dns-taint-")
 		addTaint(oc, "node", masterNodeName, "dns-taint=test:NoSchedule")
 		// Confirming two nodes are not schedulable with dns pod
@@ -590,15 +593,15 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	})
 
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-56884-Confirm the coreDNS version and Kubernetes version of the oc client", func() {
-		var kubernetesVersion = "v1.32"
+		var kubernetesVersion = "v1.33"
 		var coreDNS = "CoreDNS-1.11.3"
 
-		exutil.By("1.Check the Kubernetes version")
+		compat_otp.By("1.Check the Kubernetes version")
 		ocClientOutput, err := oc.AsAdmin().WithoutNamespace().Run("version").Args("--client=false").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(ocClientOutput).To(o.ContainSubstring(kubernetesVersion))
 
-		exutil.By("2.Check all default dns pods for coredns version")
+		compat_otp.By("2.Check all default dns pods for coredns version")
 		cmd := fmt.Sprintf("coredns --version")
 		podList := getAllDNSPodsNames(oc)
 		dnsPod := getRandomElementFromList(podList)
@@ -610,7 +613,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// Bug: 1916907
 	// Bug: OCPBUGS-35063
 	g.It("Author:mjoseph-NonHyperShiftHOST-Longduration-NonPreRelease-High-56539-Disabling the internal registry should not corrupt /etc/hosts [Disruptive]", func() {
-		exutil.By("Step1: Get the Cluster IP of image-registry")
+		compat_otp.By("Step1: Get the Cluster IP of image-registry")
 		// Skip the test case if openshift-image-registry namespace is not found
 		clusterIP, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
 			"service", "image-registry", "-n", "openshift-image-registry", "-o=jsonpath={.spec.clusterIP}").Output()
@@ -619,11 +622,11 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		}
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Step2: SSH to the node and confirm the /etc/hosts have the same clusterIP")
-		allNodeList, _ := exutil.GetAllNodes(oc)
+		compat_otp.By("Step2: SSH to the node and confirm the /etc/hosts have the same clusterIP")
+		allNodeList, _ := compat_otp.GetAllNodes(oc)
 		// get a random node
 		node := getRandomElementFromList(allNodeList)
-		hostOutput, err := exutil.DebugNodeWithChroot(oc, node, "cat", "/etc/hosts")
+		hostOutput, err := compat_otp.DebugNodeWithChroot(oc, node, "cat", "/etc/hosts")
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(hostOutput).To(o.And(
 			o.ContainSubstring("127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4"),
@@ -634,9 +637,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		// Set status variables
 		expectedStatus := map[string]string{"Available": "True", "Progressing": "False", "Degraded": "False"}
 
-		exutil.By("Step3: Disable the internal registry and check /host details")
+		compat_otp.By("Step3: Disable the internal registry and check /host details")
 		defer func() {
-			exutil.By("Recover image registry change")
+			compat_otp.By("Recover image registry change")
 			err4 := oc.AsAdmin().Run("patch").Args("configs.imageregistry/cluster", "-p", "{\"spec\":{\"managementState\":\"Managed\"}}", "--type=merge").Execute()
 			o.Expect(err4).NotTo(o.HaveOccurred())
 			err = waitCoBecomes(oc, "image-registry", 240, expectedStatus)
@@ -650,8 +653,8 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		_, err = oc.WithoutNamespace().AsAdmin().Run("patch").Args("configs.imageregistry/cluster", "-p", `{"spec":{"managementState":"Removed"}}`, "--type=merge").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Step4: SSH to the node and confirm the /etc/hosts details, after disabling")
-		hostOutput2, err5 := exutil.DebugNodeWithChroot(oc, node, "cat", "/etc/hosts")
+		compat_otp.By("Step4: SSH to the node and confirm the /etc/hosts details, after disabling")
+		hostOutput2, err5 := compat_otp.DebugNodeWithChroot(oc, node, "cat", "/etc/hosts")
 		o.Expect(err5).NotTo(o.HaveOccurred())
 		o.Expect(hostOutput2).To(o.And(
 			o.ContainSubstring("127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4"),
@@ -661,22 +664,22 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-Critical-60350-Check the max number of domains in the search path list of any pod", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "testpod-60350.yaml")
 			clientPodLabel      = "app=testpod-60350"
 			clientPodName       = "testpod-60350"
 		)
 		project1 := oc.Namespace()
 
-		exutil.By("Create a pod with 32 DNS search list")
+		compat_otp.By("Create a pod with 32 DNS search list")
 		createResourceFromFile(oc, project1, clientPod)
 		ensurePodWithLabelReady(oc, project1, clientPodLabel)
 
-		exutil.By("Check the pod event logs and confirm there is no Search Line limits")
+		compat_otp.By("Check the pod event logs and confirm there is no Search Line limits")
 		checkPodEvent := describePodResource(oc, clientPodName, project1)
 		o.Expect(checkPodEvent).NotTo(o.ContainSubstring("Warning  DNSConfigForming"))
 
-		exutil.By("Check the resulting pod have all those search entries in its /etc/resolf.conf")
+		compat_otp.By("Check the resulting pod have all those search entries in its /etc/resolf.conf")
 		execOutput, err := oc.Run("exec").Args(clientPodName, "--", "sh", "-c", "cat /etc/resolv.conf").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(execOutput).To(o.ContainSubstring("8th.com 9th.com 10th.com 11th.com 12th.com 13th.com 14th.com 15th.com 16th.com 17th.com 18th.com 19th.com 20th.com 21th.com 22th.com 23th.com 24th.com 25th.com 26th.com 27th.com 28th.com 29th.com 30th.com 31th.com 32th.com"))
@@ -684,22 +687,22 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-Critical-60492-Check the max number of characters in the search path of any pod", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "testpod-60492.yaml")
 			clientPodLabel      = "app=testpod-60492"
 			clientPodName       = "testpod-60492"
 		)
 		project1 := oc.Namespace()
 
-		exutil.By("Create a pod with a single search path with 253 characters")
+		compat_otp.By("Create a pod with a single search path with 253 characters")
 		createResourceFromFile(oc, project1, clientPod)
 		ensurePodWithLabelReady(oc, project1, clientPodLabel)
 
-		exutil.By("Check the pod event logs and confirm there is no Search Line limits")
+		compat_otp.By("Check the pod event logs and confirm there is no Search Line limits")
 		checkPodEvent := describePodResource(oc, clientPodName, project1)
 		o.Expect(checkPodEvent).NotTo(o.ContainSubstring("Warning  DNSConfigForming"))
 
-		exutil.By("Check the resulting pod have all those search entries in its /etc/resolf.conf")
+		compat_otp.By("Check the resulting pod have all those search entries in its /etc/resolf.conf")
 		execOutput, err := oc.Run("exec").Args(clientPodName, "--", "sh", "-c", "cat /etc/resolv.conf").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(execOutput).To(o.ContainSubstring("t47x6d4lzz1zxm1bakrmiceb0tljzl9n8r19kqu9s3731ectkllp9mezn7cldozt25nlenyh5jus5b9rr687u2icimakjpyf4rsux3c66giulc0d2ipsa6bpa6dykgd0mc25r1m89hvzjcix73sdwfbu5q67t0c131i1fqne0o7we20ve2emh1046h9m854wfxo0spb2gv5d65v9x2ibuiti7rhr2y8u72hil5cutp63sbhi832kf3v4vuxa0"))
@@ -707,7 +710,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-Critical-51536-Support CoreDNS forwarding DNS requests over TLS using ForwardPlugin [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			cmFile              = filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
@@ -715,74 +718,74 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			resourceName        = "dns.operator.openshift.io/default"
 		)
 
-		exutil.By("1.Prepare the dns testing node and pod")
+		compat_otp.By("1.Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("2.Create a dns server pod")
+		compat_otp.By("2.Create a dns server pod")
 		project1 := oc.Namespace()
-		defer exutil.RecoverNamespaceRestricted(oc, project1)
-		exutil.SetNamespacePrivileged(oc, project1)
+		defer compat_otp.RecoverNamespaceRestricted(oc, project1)
+		compat_otp.SetNamespacePrivileged(oc, project1)
 		replaceCoreDnsImage(oc, coreDNSSrvPod)
 		err := oc.AsAdmin().Run("create").Args("-f", coreDNSSrvPod, "-n", project1).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		ensurePodWithLabelReady(oc, project1, srvPodLabel)
 
-		exutil.By("3.Get the user's dns server pod's IP")
+		compat_otp.By("3.Get the user's dns server pod's IP")
 		srvPodIP := getPodv4Address(oc, srvPodName, project1)
 
-		exutil.By("4.Create configmap client-ca-xxxxx in namespace openshift-config")
+		compat_otp.By("4.Create configmap client-ca-xxxxx in namespace openshift-config")
 		defer deleteConfigMap(oc, "openshift-config", "ca-51536-bundle")
 		createConfigMapFromFile(oc, "openshift-config", "ca-51536-bundle", cmFile)
 
-		exutil.By("5.Patch the dns.operator/default with transport option as TLS for forwardplugin")
+		compat_otp.By("5.Patch the dns.operator/default with transport option as TLS for forwardplugin")
 		dnsForwardPlugin := "[{\"op\":\"replace\", \"path\":\"/spec\", \"value\":{\"servers\":[{\"forwardPlugin\":{\"policy\":\"Sequential\",\"transportConfig\": {\"tls\":{\"caBundle\": {\"name\": \"ca-51536-bundle\"}, \"serverName\": \"dns.ocp51536.ocp\"}, \"transport\": \"TLS\"}, \"upstreams\":[\"" + srvPodIP + "\"]}, \"name\": \"test\", \"zones\":[\"ocp51536.ocp\"]}]}}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsForwardPlugin)
 
-		exutil.By("6.Check and confirm the upstream resolver's IP(srvPodIP) and custom CAbundle name appearing in the dns pod")
+		compat_otp.By("6.Check and confirm the upstream resolver's IP(srvPodIP) and custom CAbundle name appearing in the dns pod")
 		forward := pollReadDnsCorefile(oc, oneDnsPod, srvPodIP, "-b6", "ocp51536")
 		o.Expect(forward).To(o.ContainSubstring("ocp51536.ocp:5353"))
 		o.Expect(forward).To(o.ContainSubstring("forward . tls://" + srvPodIP))
 		o.Expect(forward).To(o.ContainSubstring("tls_servername dns.ocp51536.ocp"))
 		o.Expect(forward).To(o.ContainSubstring("tls /etc/pki/dns.ocp51536.ocp-ca-ca-51536-bundle"))
 
-		exutil.By("7.Check no error logs from dns operator pod")
+		compat_otp.By("7.Check no error logs from dns operator pod")
 		dnsOperatorPodName := getPodListByLabel(oc, "openshift-dns-operator", "name=dns-operator")
-		podLogs, errLogs := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp51536.ocp:5353 -A3`)
+		podLogs, errLogs := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp51536.ocp:5353 -A3`)
 		o.Expect(errLogs).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs).To(o.ContainSubstring(`msg="reconciling request: /default"`))
 	})
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-Low-51857-Support CoreDNS forwarding DNS requests over TLS - non existing CA bundle [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
 			resourceName        = "dns.operator.openshift.io/default"
 		)
 
-		exutil.By("1.Prepare the dns testing node and pod")
+		compat_otp.By("1.Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("2.Create a dns server pod")
+		compat_otp.By("2.Create a dns server pod")
 		project1 := oc.Namespace()
-		defer exutil.RecoverNamespaceRestricted(oc, project1)
-		exutil.SetNamespacePrivileged(oc, project1)
+		defer compat_otp.RecoverNamespaceRestricted(oc, project1)
+		compat_otp.SetNamespacePrivileged(oc, project1)
 		replaceCoreDnsImage(oc, coreDNSSrvPod)
 		err := oc.AsAdmin().Run("create").Args("-f", coreDNSSrvPod, "-n", project1).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		ensurePodWithLabelReady(oc, project1, srvPodLabel)
 
-		exutil.By("3.Get the user's dns server pod's IP")
+		compat_otp.By("3.Get the user's dns server pod's IP")
 		srvPodIP := getPodv4Address(oc, srvPodName, project1)
 
-		exutil.By("4.Patch the dns.operator/default with non existing CA bundle for forwardplugin")
+		compat_otp.By("4.Patch the dns.operator/default with non existing CA bundle for forwardplugin")
 		dnsForwardPlugin := "[{\"op\":\"replace\", \"path\":\"/spec\", \"value\":{\"servers\":[{\"forwardPlugin\":{\"policy\":\"Sequential\",\"transportConfig\": {\"tls\":{\"caBundle\": {\"name\": \"ca-51857-bundle\"}, \"serverName\": \"dns.ocp51857.ocp\"}, \"transport\": \"TLS\"}, \"upstreams\":[\"" + srvPodIP + "\"]}, \"name\": \"test\", \"zones\":[\"ocp51857.ocp\"]}]}}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsForwardPlugin)
 
-		exutil.By("5.Check and confirm the upstream resolver's IP(srvPodIP) appearing without the custom CAbundle name")
+		compat_otp.By("5.Check and confirm the upstream resolver's IP(srvPodIP) appearing without the custom CAbundle name")
 		forward := pollReadDnsCorefile(oc, oneDnsPod, srvPodIP, "-b6", "ocp51857")
 		o.Expect(forward).To(o.ContainSubstring("ocp51857.ocp:5353"))
 		o.Expect(forward).To(o.ContainSubstring("forward . tls://" + srvPodIP))
@@ -790,9 +793,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		o.Expect(forward).To(o.ContainSubstring("tls"))
 		o.Expect(forward).NotTo(o.ContainSubstring("/etc/pki/dns.ocp51857.ocp-ca-ca-51857-bundle"))
 
-		exutil.By("6.Check and confirm the non configured CABundle warning message from dns operator pod")
+		compat_otp.By("6.Check and confirm the non configured CABundle warning message from dns operator pod")
 		dnsOperatorPodName := getPodListByLabel(oc, "openshift-dns-operator", "name=dns-operator")
-		podLogs1, errLogs := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp51857.ocp:5353 -A3`)
+		podLogs1, errLogs := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp51857.ocp:5353 -A3`)
 		o.Expect(errLogs).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs1).To(o.ContainSubstring(`level=warning msg="source ca bundle configmap ca-51857-bundle does not exist"`))
 		o.Expect(podLogs1).To(o.ContainSubstring(`level=warning msg="failed to get destination ca bundle configmap ca-ca-51857-bundle: configmaps \"ca-ca-51857-bundle\" not found"`))
@@ -800,7 +803,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-Critical-51946-Support CoreDNS forwarding DNS requests over TLS using UpstreamResolvers [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
@@ -813,21 +816,21 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			dnsPodLabel         = "dns.operator.openshift.io/daemonset-dns=default"
 		)
 
-		exutil.By("1.Prepare the dns testing node and pod")
+		compat_otp.By("1.Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("2.Create a dns server pod")
+		compat_otp.By("2.Create a dns server pod")
 		project1 := oc.Namespace()
-		defer exutil.RecoverNamespaceRestricted(oc, project1)
-		exutil.SetNamespacePrivileged(oc, project1)
+		defer compat_otp.RecoverNamespaceRestricted(oc, project1)
+		compat_otp.SetNamespacePrivileged(oc, project1)
 		replaceCoreDnsImage(oc, coreDNSSrvPod)
 		err := oc.AsAdmin().Run("create").Args("-f", coreDNSSrvPod, "-n", project1).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		ensurePodWithLabelReady(oc, project1, srvPodLabel)
 		srvPodIP := getPodv4Address(oc, srvPodName, project1)
 
-		exutil.By("3.Generate a new self-signed CA")
+		compat_otp.By("3.Generate a new self-signed CA")
 		defer os.RemoveAll(dirname)
 		err = os.MkdirAll(dirname, 0755)
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -841,15 +844,15 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		_, err = exec.Command("bash", "-c", opensslCmd).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("4.Create configmap ca-xxxxx-bundle in namespace openshift-config")
+		compat_otp.By("4.Create configmap ca-xxxxx-bundle in namespace openshift-config")
 		defer deleteConfigMap(oc, "openshift-config", "ca-51946-bundle")
 		createConfigMapFromFile(oc, "openshift-config", "ca-51946-bundle", caCert)
 
-		exutil.By("5.Patch the dns.operator/default with transport option as TLS for upstreamresolver")
+		compat_otp.By("5.Patch the dns.operator/default with transport option as TLS for upstreamresolver")
 		dnsUpstreamResolver := "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers\", \"value\":{\"transportConfig\": {\"tls\":{\"caBundle\": {\"name\": \"ca-51946-bundle\"}, \"serverName\": \"dns.ocp51946.ocp\"}, \"transport\": \"TLS\"}, \"upstreams\":[{\"address\":\"" + srvPodIP + "\",  \"port\": 853, \"type\":\"Network\"}]}}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsUpstreamResolver)
 
-		exutil.By("6.Check and confirm the upstream resolver's IP(srvPodIP) and custom CAbundle name appearing in the dns pod")
+		compat_otp.By("6.Check and confirm the upstream resolver's IP(srvPodIP) and custom CAbundle name appearing in the dns pod")
 		// Converting the IPV6 address to upper case for searching in the coreDNS file
 		if strings.Count(srvPodIP, ":") >= 2 {
 			srvPodIP = fmt.Sprintf("%s", strings.ToUpper(srvPodIP))
@@ -857,7 +860,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		}
 		// since new configmap is mounted so dns pod is restarted
 		waitErr := waitForResourceToDisappear(oc, ns, "pod/"+oneDnsPod)
-		exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but pod %s is not terminated", oneDnsPod))
+		compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but pod %s is not terminated", oneDnsPod))
 		ensurePodWithLabelReady(oc, ns, dnsPodLabel)
 		newDnsPod := getDNSPodName(oc)
 		upstreams := readDNSCorefile(oc, newDnsPod, srvPodIP, "-A4")
@@ -865,61 +868,61 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		o.Expect(upstreams).To(o.ContainSubstring("tls_servername dns.ocp51946.ocp"))
 		o.Expect(upstreams).To(o.ContainSubstring("tls /etc/pki/dns.ocp51946.ocp-ca-ca-51946-bundle"))
 
-		exutil.By("7.Check no error logs from dns operator pod")
+		compat_otp.By("7.Check no error logs from dns operator pod")
 		dnsOperatorPodName := getPodListByLabel(oc, "openshift-dns-operator", "name=dns-operator")
-		podLogs, errLogs := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], srvPodIP+` -A3`)
+		podLogs, errLogs := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], srvPodIP+` -A3`)
 		o.Expect(errLogs).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs).To(o.ContainSubstring(`msg="reconciling request: /default"`))
 	})
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-52077-CoreDNS forwarding DNS requests over TLS with CLEAR TEXT [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
 			resourceName        = "dns.operator.openshift.io/default"
 		)
 
-		exutil.By("1.Prepare the dns testing node and pod")
+		compat_otp.By("1.Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("2.Create a dns server pod")
+		compat_otp.By("2.Create a dns server pod")
 		project1 := oc.Namespace()
-		defer exutil.RecoverNamespaceRestricted(oc, project1)
-		exutil.SetNamespacePrivileged(oc, project1)
+		defer compat_otp.RecoverNamespaceRestricted(oc, project1)
+		compat_otp.SetNamespacePrivileged(oc, project1)
 		replaceCoreDnsImage(oc, coreDNSSrvPod)
 		err := oc.AsAdmin().Run("create").Args("-f", coreDNSSrvPod, "-n", project1).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		ensurePodWithLabelReady(oc, project1, srvPodLabel)
 
-		exutil.By("3.Get the user's dns server pod's IP")
+		compat_otp.By("3.Get the user's dns server pod's IP")
 		srvPodIP := getPodv4Address(oc, srvPodName, project1)
 
-		exutil.By("4.Patch the dns.operator/default with transport option as Cleartext for forwardplugin")
+		compat_otp.By("4.Patch the dns.operator/default with transport option as Cleartext for forwardplugin")
 		dnsForwardPlugin := "[{\"op\":\"add\", \"path\":\"/spec/servers\", \"value\":[{\"forwardPlugin\":{\"policy\":\"Sequential\",\"transportConfig\": {\"transport\": \"Cleartext\"}, \"upstreams\":[\"" + srvPodIP + "\"]}, \"name\": \"test\", \"zones\":[\"ocp52077.ocp\"]}]}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsForwardPlugin)
 
-		exutil.By("5.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
+		compat_otp.By("5.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
 		forward := pollReadDnsCorefile(oc, oneDnsPod, srvPodIP, "-b6", "ocp52077")
 		o.Expect(forward).To(o.ContainSubstring("ocp52077.ocp:5353"))
 		o.Expect(forward).To(o.ContainSubstring("forward . " + srvPodIP))
 
-		exutil.By("6.Check no error logs from dns operator pod")
+		compat_otp.By("6.Check no error logs from dns operator pod")
 		dnsOperatorPodName := getPodListByLabel(oc, "openshift-dns-operator", "name=dns-operator")
-		podLogs1, errLogs1 := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp52077.ocp:5353 -A3`)
+		podLogs1, errLogs1 := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp52077.ocp:5353 -A3`)
 		o.Expect(errLogs1).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs1).To(o.ContainSubstring(`msg="reconciling request: /default"`))
 		// Patching to remove the forwardplugin configurations.
 		dnsDefault := "[{\"op\":\"remove\", \"path\":\"/spec/servers\"}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsDefault)
 
-		exutil.By("7.Patch dns.operator/default with transport option as Cleartext for upstreamresolver")
+		compat_otp.By("7.Patch dns.operator/default with transport option as Cleartext for upstreamresolver")
 		dnsUpstreamResolver := "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers\", \"value\":{\"transportConfig\":{\"transport\":\"Cleartext\"}, \"upstreams\":[{\"address\":\"" + srvPodIP + "\", \"type\":\"Network\"}]}}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsUpstreamResolver)
 
-		exutil.By("8.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
+		compat_otp.By("8.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
 		// Converting the IPV6 address to upper case for searching in the coreDNS file
 		if strings.Count(srvPodIP, ":") >= 2 {
 			srvPodIP = fmt.Sprintf("%s", strings.ToUpper(srvPodIP))
@@ -928,62 +931,62 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		upstreams := pollReadDnsCorefile(oc, oneDnsPod, srvPodIP, "-A2", "forward")
 		o.Expect(upstreams).To(o.ContainSubstring("forward . " + srvPodIP + ":53"))
 
-		exutil.By("9.Check no error logs from dns operator pod")
-		podLogs, errLogs := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], srvPodIP+`:53 -A3`)
+		compat_otp.By("9.Check no error logs from dns operator pod")
+		podLogs, errLogs := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], srvPodIP+`:53 -A3`)
 		o.Expect(errLogs).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs).To(o.ContainSubstring(`msg="reconciling request: /default"`))
 	})
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-52497-Support CoreDNS forwarding DNS requests over TLS - using system CA [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
 			resourceName        = "dns.operator.openshift.io/default"
 		)
 
-		exutil.By("1.Prepare the dns testing node and pod")
+		compat_otp.By("1.Prepare the dns testing node and pod")
 		defer deleteDnsOperatorToRestore(oc)
 		oneDnsPod := forceOnlyOneDnsPodExist(oc)
 
-		exutil.By("2.Create a dns server pod")
+		compat_otp.By("2.Create a dns server pod")
 		project1 := oc.Namespace()
-		defer exutil.RecoverNamespaceRestricted(oc, project1)
-		exutil.SetNamespacePrivileged(oc, project1)
+		defer compat_otp.RecoverNamespaceRestricted(oc, project1)
+		compat_otp.SetNamespacePrivileged(oc, project1)
 		replaceCoreDnsImage(oc, coreDNSSrvPod)
 		err := oc.AsAdmin().Run("create").Args("-f", coreDNSSrvPod, "-n", project1).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 		ensurePodWithLabelReady(oc, project1, srvPodLabel)
 
-		exutil.By("3.Get the user's dns server pod's IP")
+		compat_otp.By("3.Get the user's dns server pod's IP")
 		srvPodIP := getPodv4Address(oc, srvPodName, project1)
 
-		exutil.By("4.Patch the dns.operator/default with transport option as tls for forwardplugin")
+		compat_otp.By("4.Patch the dns.operator/default with transport option as tls for forwardplugin")
 		dnsForwardPlugin := "[{\"op\":\"add\", \"path\":\"/spec/servers\", \"value\":[{\"forwardPlugin\":{\"policy\":\"Sequential\",\"transportConfig\": {\"tls\":{\"serverName\": \"dns.ocp52497.ocp\"}, \"transport\": \"TLS\"}, \"upstreams\":[\"" + srvPodIP + "\"]}, \"name\": \"test\", \"zones\":[\"ocp52497.ocp\"]}]}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsForwardPlugin)
 
-		exutil.By("5.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
+		compat_otp.By("5.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
 		forward := pollReadDnsCorefile(oc, oneDnsPod, srvPodIP, "-b6", "ocp52497")
 		o.Expect(forward).To(o.ContainSubstring("ocp52497.ocp:5353"))
 		o.Expect(forward).To(o.ContainSubstring("forward . tls://" + srvPodIP))
 		o.Expect(forward).To(o.ContainSubstring("tls_servername dns.ocp52497.ocp"))
 		o.Expect(forward).To(o.ContainSubstring("tls"))
 
-		exutil.By("6.Check no error logs from dns operator pod")
+		compat_otp.By("6.Check no error logs from dns operator pod")
 		dnsOperatorPodName := getPodListByLabel(oc, "openshift-dns-operator", "name=dns-operator")
-		podLogs1, errLogs1 := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp52497.ocp:5353 -A3`)
+		podLogs1, errLogs1 := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], `ocp52497.ocp:5353 -A3`)
 		o.Expect(errLogs1).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs1).To(o.ContainSubstring(`msg="reconciling request: /default"`))
 		// Patching to remove the forwardplugin configurations.
 		dnsDefault := "[{\"op\":\"remove\", \"path\":\"/spec/servers\"}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsDefault)
 
-		exutil.By("7.Patch dns.operator/default with transport option as tls for upstreamresolver")
+		compat_otp.By("7.Patch dns.operator/default with transport option as tls for upstreamresolver")
 		dnsUpstreamResolver := "[{\"op\":\"replace\", \"path\":\"/spec/upstreamResolvers\", \"value\":{\"transportConfig\": {\"tls\":{\"serverName\": \"dns.ocp52497.ocp\"}, \"transport\": \"TLS\"}, \"upstreams\":[{\"address\":\"" + srvPodIP + "\",  \"port\": 853, \"type\":\"Network\"}]}}]"
 		patchGlobalResourceAsAdmin(oc, resourceName, dnsUpstreamResolver)
 
-		exutil.By("8.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
+		compat_otp.By("8.Check and confirm the upstream resolver's IP(srvPodIP) appearing in the dns pod")
 		// Converting the IPV6 address to upper case for searching in the coreDNS file
 		if strings.Count(srvPodIP, ":") >= 2 {
 			srvPodIP = fmt.Sprintf("%s", strings.ToUpper(srvPodIP))
@@ -994,8 +997,8 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		o.Expect(upstreams).To(o.ContainSubstring("tls_servername dns.ocp52497.ocp"))
 		o.Expect(upstreams).To(o.ContainSubstring("tls"))
 
-		exutil.By("9.Check no error logs from dns operator pod")
-		podLogs, errLogs := exutil.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], srvPodIP+` -A3`)
+		compat_otp.By("9.Check no error logs from dns operator pod")
+		podLogs, errLogs := compat_otp.GetSpecificPodLogs(oc, "openshift-dns-operator", "dns-operator", dnsOperatorPodName[0], srvPodIP+` -A3`)
 		o.Expect(errLogs).NotTo(o.HaveOccurred(), "Error in getting logs from the pod")
 		o.Expect(podLogs).To(o.ContainSubstring(`msg="reconciling request: /default"`))
 	})
@@ -1003,20 +1006,20 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// Bug: 2095941, OCPBUGS-5943
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-High-63553-Annotation 'TopologyAwareHints' presents should not cause any pathological events", func() {
 		// OCPBUGS-5943
-		exutil.By("Check dns daemon set for minReadySeconds to 9, maxSurge to 10% and maxUnavailable to 0")
+		compat_otp.By("Check dns daemon set for minReadySeconds to 9, maxSurge to 10% and maxUnavailable to 0")
 		jsonPath := `{.spec.minReadySeconds}-{.spec.updateStrategy.rollingUpdate.maxSurge}-{.spec.updateStrategy.rollingUpdate.maxUnavailable}`
 		spec := getByJsonPath(oc, "openshift-dns", "daemonset/dns-default", jsonPath)
 		o.Expect(spec).To(o.ContainSubstring("9-10%-0"))
 
 		// Checking whether there are windows nodes
-		windowNodeList, err := exutil.GetAllNodesbyOSType(oc, "windows")
+		windowNodeList, err := compat_otp.GetAllNodesbyOSType(oc, "windows")
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		if len(windowNodeList) > 1 {
 			g.Skip("This case will not work on clusters having windows nodes")
 		}
 
-		exutil.By("Check whether the topology-aware-hints annotation is auto set or not")
+		compat_otp.By("Check whether the topology-aware-hints annotation is auto set or not")
 		// Get all dns pods then check the resident nodes labels one by one
 		// search unique `topology.kubernetes.io/zone` info on worker nodes
 		zoneList := []string{}
@@ -1051,37 +1054,37 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-Critical-73379-DNSNameResolver CR get updated with IP addresses and TTL of the DNS name [Serial]", func() {
 		// skip the test if featureSet is not there
-		if !exutil.IsTechPreviewNoUpgrade(oc) {
+		if !compat_otp.IsTechPreviewNoUpgrade(oc) {
 			g.Skip("featureSet: TechPreviewNoUpgrade is required for this test, skipping")
 		}
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodLabel      = "app=hello-pod"
 			clientPodName       = "hello-pod"
 			egressFirewall      = filepath.Join(buildPruningBaseDir, "egressfirewall-wildcard.yaml")
 		)
 
-		exutil.By("1. Create egressfirewall file")
+		compat_otp.By("1. Create egressfirewall file")
 		project1 := oc.Namespace()
 		operateResourceFromFile(oc, "create", project1, egressFirewall)
 		waitEgressFirewallApplied(oc, "default", project1)
 
-		exutil.By("2. Create a client pod")
+		compat_otp.By("2. Create a client pod")
 		createResourceFromFile(oc, project1, clientPod)
 		ensurePodWithLabelReady(oc, project1, clientPodLabel)
 
-		exutil.By("3. Verify the record created with the dns name in the DNSNameResolver CR")
+		compat_otp.By("3. Verify the record created with the dns name in the DNSNameResolver CR")
 		wildcardDnsName := getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..spec.name}")
 		o.Expect(wildcardDnsName).To(o.ContainSubstring("*.google.com."))
 
-		exutil.By("4. Verify the allowed rules which matches the wildcard take effect.")
+		compat_otp.By("4. Verify the allowed rules which matches the wildcard take effect.")
 		// as per the egress firewall, only domains having "*.google.com" will only allowed
 		checkDomainReachability(oc, clientPodName, project1, "www.google.com", true)
 		checkDomainReachability(oc, clientPodName, project1, "www.redhat.com", false)
 		checkDomainReachability(oc, clientPodName, project1, "calendar.google.com", true)
 
-		exutil.By("5. Confirm the wildcard entry is resolved to dnsName with IP address and TTL value")
+		compat_otp.By("5. Confirm the wildcard entry is resolved to dnsName with IP address and TTL value")
 		// resolved DNS names
 		dnsName := getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..status.resolvedNames..dnsName}")
 		o.Expect(dnsName).To(o.ContainSubstring("www.google.com. calendar.google.com."))
@@ -1097,11 +1100,11 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// Bug: OCPBUGS-33750
 	g.It("Author:mjoseph-NonHyperShiftHOST-ConnectedOnly-High-75426-DNSNameResolver CR should resolve multiple DNS names [Serial]", func() {
 		// skip the test if featureSet is not there
-		if !exutil.IsTechPreviewNoUpgrade(oc) {
+		if !compat_otp.IsTechPreviewNoUpgrade(oc) {
 			g.Skip("featureSet: TechPreviewNoUpgrade is required for this test, skipping")
 		}
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodLabel      = "app=hello-pod"
 			clientPodName       = "hello-pod"
@@ -1109,11 +1112,11 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			egressFirewall2     = filepath.Join(buildPruningBaseDir, "egressfirewall-multiDomain.yaml")
 		)
 
-		exutil.By("1. Create four egressfirewall rules and client pods in different namepaces, then wait until there are available")
+		compat_otp.By("1. Create four egressfirewall rules and client pods in different namepaces, then wait until there are available")
 		var project []string
 		for i := range 4 {
 			project = append(project, oc.Namespace())
-			exutil.SetNamespacePrivileged(oc, project[i])
+			compat_otp.SetNamespacePrivileged(oc, project[i])
 			operateResourceFromFile(oc, "create", project[i], clientPod)
 			operateResourceFromFile(oc, "create", project[i], egressFirewall)
 			ensurePodWithLabelReady(oc, project[i], clientPodLabel)
@@ -1121,13 +1124,13 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			oc.SetupProject()
 		}
 
-		exutil.By("2. Check whether the default dnsnameresolver CR got created and its resolved dns name")
+		compat_otp.By("2. Check whether the default dnsnameresolver CR got created and its resolved dns name")
 		wildcardDnsName := getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..spec.name}")
 		o.Expect(wildcardDnsName).To(o.ContainSubstring("*.google.com."))
 		randomNS := getRandomElementFromList(project)
 		checkDomainReachability(oc, clientPodName, randomNS, "www.google.com", true)
 
-		exutil.By("3. Edit some egressfirewalls")
+		compat_otp.By("3. Edit some egressfirewalls")
 		updateValueTest1 := "[{\"op\":\"replace\",\"path\":\"/spec/egress/0/to/dnsName\", \"value\":\"www.yahoo.com\"}]"
 		updateValueTest2 := "[{\"op\":\"add\",\"path\":\"/spec/egress/1\", \"value\":{\"type\":\"Deny\",\"to\":{\"dnsName\":\"www.redhat.com\"}}}]"
 		updateValueTest3 := "[{\"op\":\"add\",\"path\":\"/spec/egress/0\", \"value\":{\"type\":\"Deny\",\"to\":{\"dnsName\":\"calendar.google.com\"}}}]"
@@ -1141,7 +1144,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		waitEgressFirewallApplied(oc, "default", project[2])
 		waitEgressFirewallApplied(oc, "default", project[3])
 
-		exutil.By("4. Check the changes made to dnsnameresolver CR and its resolved dns name in different namespace")
+		compat_otp.By("4. Check the changes made to dnsnameresolver CR and its resolved dns name in different namespace")
 		wildcardDnsName = getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..spec.name}")
 		o.Expect(wildcardDnsName).To(o.And(o.ContainSubstring(
 			"calendar.google.com."), o.ContainSubstring(
@@ -1156,7 +1159,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		checkDomainReachability(oc, clientPodName, project[2], "www.google.com", true)
 		checkDomainReachability(oc, clientPodName, project[3], "calendar.google.com", true)
 
-		exutil.By("5. Delete an egressfirewall and confirm the same")
+		compat_otp.By("5. Delete an egressfirewall and confirm the same")
 		err1 := oc.AsAdmin().WithoutNamespace().Run("delete").Args("egressfirewall", "default", "-n", project[0]).Execute()
 		o.Expect(err1).NotTo(o.HaveOccurred())
 		// the firewall was previous blocking the dns resolution of 'google.com' in the namespace and now not
@@ -1164,7 +1167,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		wildcardDnsName = getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..spec.name}")
 		o.Expect(wildcardDnsName).NotTo(o.ContainSubstring("www.yahoo.com."))
 
-		exutil.By("6. Recreate an egressfirewall and confirm the same")
+		compat_otp.By("6. Recreate an egressfirewall and confirm the same")
 		// Updating in the yaml file with dnsName '*.google.com' as 'amazon.com'
 		sedCmd := fmt.Sprintf(`sed -i'' -e 's|"\*.google.com\"|www.amazon.com|g' %s`, egressFirewall)
 		_, sedErr := exec.Command("bash", "-c", sedCmd).Output()
@@ -1175,26 +1178,26 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 		wildcardDnsName = getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..spec.name}")
 		o.Expect(wildcardDnsName).To(o.ContainSubstring("www.amazon.com."))
 
-		exutil.By("7. Create another egressfirewall and its client pod in a different namespace")
+		compat_otp.By("7. Create another egressfirewall and its client pod in a different namespace")
 		project5 := oc.Namespace()
-		exutil.SetNamespacePrivileged(oc, project5)
+		compat_otp.SetNamespacePrivileged(oc, project5)
 		operateResourceFromFile(oc, "create", project5, egressFirewall2)
 		waitEgressFirewallApplied(oc, "default", project5)
 		operateResourceFromFile(oc, "create", project5, clientPod)
 		ensurePodWithLabelReady(oc, project5, clientPodLabel)
 
-		exutil.By("8. Verify the  three dnsnameresolver records created in DNSNameResolver CR")
+		compat_otp.By("8. Verify the  three dnsnameresolver records created in DNSNameResolver CR")
 		wildcardDnsNames := getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..spec.name}")
 		o.Expect(wildcardDnsNames).To(o.And(o.ContainSubstring("*.google.com."), o.ContainSubstring(
 			"www.facebook.com."), o.ContainSubstring("registry-1.docker.io.")))
 
-		exutil.By("9. Verify the dns records are resolved based on allowed rules only")
+		compat_otp.By("9. Verify the dns records are resolved based on allowed rules only")
 		checkDomainReachability(oc, clientPodName, project5, "www.facebook.com:80", true)
 		checkDomainReachability(oc, clientPodName, project5, "registry-1.docker.io", true)
 		// as per the egress firewall, domain name having "www.facebook.com" with port 80 will only resolved
 		checkDomainReachability(oc, clientPodName, project5, "www.facebook.com:443", false)
 
-		exutil.By("10. Confirm the dns records are resolved with IP address and TTL value")
+		compat_otp.By("10. Confirm the dns records are resolved with IP address and TTL value")
 		// resolved DNS names
 		dnsName := getByJsonPath(oc, "openshift-ovn-kubernetes", "dnsnameresolver", "{.items..status.resolvedNames..dnsName}")
 		o.Expect(dnsName).To(o.And(o.ContainSubstring("www.facebook.com."), o.ContainSubstring("registry-1.docker.io.")))

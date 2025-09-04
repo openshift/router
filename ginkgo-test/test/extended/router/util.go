@@ -20,8 +20,9 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
-	clusterinfra "github.com/openshift/router/ginkgo-test/test/extended/util/clusterinfra"
+	exutil "github.com/openshift/origin/test/extended/util"
+	"github.com/openshift/origin/test/extended/util/compat_otp"
+	clusterinfra "github.com/openshift/origin/test/extended/util/compat_otp/clusterinfra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -244,7 +245,7 @@ func parseToJSON(oc *exutil.CLI, parameters []string) string {
 		jsonCfg = output
 		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("fail to process %v", parameters))
+	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("fail to process %v", parameters))
 	e2e.Logf("the file of resource is %s", jsonCfg)
 	return jsonCfg
 }
@@ -274,12 +275,17 @@ func ensureCustomIngressControllerAvailable(oc *exutil.CLI, icName string) {
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("describe").Args("-n", ns, "ingresscontroller", icName).Output()
 		e2e.Logf("The description of ingresscontroller %v is:\n%v", icName, output)
 	}
-	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("max time reached but ingresscontroller %v is not available", icName))
+	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("max time reached but ingresscontroller %v is not available", icName))
 }
 
 func ensureRouteIsAdmittedByIngressController(oc *exutil.CLI, ns, routeName, icName string) {
 	jsonPath := fmt.Sprintf(`{.status.ingress[?(@.routerName=="%s")].conditions[?(@.type=="Admitted")].status}`, icName)
-	waitForOutput(oc, ns, "route/"+routeName, jsonPath, "True")
+	waitForOutputEquals(oc, ns, "route/"+routeName, jsonPath, "True")
+}
+
+func ensureRouteIsNotAdmittedByIngressController(oc *exutil.CLI, ns, routeName, icName string) {
+	jsonPath := fmt.Sprintf(`{.status.ingress[?(@.routerName=="%s")].conditions[?(@.type=="Admitted")].status}`, icName)
+	waitForOutputEquals(oc, ns, "route/"+routeName, jsonPath, "False")
 }
 
 func getOnePodNameByLabel(oc *exutil.CLI, ns, label string) string {
@@ -304,14 +310,14 @@ func getOneNewRouterPodFromRollingUpdate(oc *exutil.CLI, icName string) string {
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but NewReplicaSet not found"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but NewReplicaSet not found"))
 	e2e.Logf("the new ReplicaSet labels is %s", rsLabel)
 	err := waitForPodWithLabelReady(oc, ns, rsLabel)
 	if err != nil {
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", ns).Output()
 		e2e.Logf("All current router pods are:\n%v", output)
 	}
-	exutil.AssertWaitPollNoErr(err, "the new router pod failed to be ready within allowed time!")
+	compat_otp.AssertWaitPollNoErr(err, "the new router pod failed to be ready within allowed time!")
 	return getOnePodNameByLabel(oc, ns, rsLabel)
 }
 
@@ -329,7 +335,7 @@ func ensureRouterDeployGenerationIs(oc *exutil.CLI, icName, expectGeneration str
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached and the expected deployment generation is %v but got %v", expectGeneration, actualGeneration))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached and the expected deployment generation is %v but got %v", expectGeneration, actualGeneration))
 }
 
 func waitForPodWithLabelReady(oc *exutil.CLI, ns, label string) error {
@@ -357,7 +363,7 @@ func ensurePodWithLabelReady(oc *exutil.CLI, ns, label string) {
 		logs, _ := oc.AsAdmin().WithoutNamespace().Run("logs").Args("-n", ns, "-l", label, "--tail=10").Output()
 		e2e.Logf("The logs of all labeled pods are:\n%v", logs)
 	}
-	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("max time reached but the pods with label %v are not ready", label))
+	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("max time reached but the pods with label %v are not ready", label))
 }
 
 func waitForPodWithLabelAppear(oc *exutil.CLI, ns, label string) error {
@@ -407,7 +413,7 @@ func createResourceFromFile(oc *exutil.CLI, ns, file string) {
 func createResourceFromWebServer(oc *exutil.CLI, ns, file, srvrcInfo string) []string {
 	createResourceFromFile(oc, ns, file)
 	err := waitForPodWithLabelReady(oc, ns, "name="+srvrcInfo)
-	exutil.AssertWaitPollNoErr(err, "backend server pod failed to be ready state within allowed time!")
+	compat_otp.AssertWaitPollNoErr(err, "backend server pod failed to be ready state within allowed time!")
 	srvPodList := getPodListByLabel(oc, ns, "name="+srvrcInfo)
 	return srvPodList
 }
@@ -484,7 +490,7 @@ func getAnnotation(oc *exutil.CLI, ns, resource, resourceName string) string {
 }
 
 func setEnvVariable(oc *exutil.CLI, ns, resource, envstring string) {
-	err := oc.WithoutNamespace().Run("set").Args("env", "-n", ns, resource, envstring).Execute()
+	err := oc.AsAdmin().WithoutNamespace().Run("set").Args("env", "-n", ns, resource, envstring).Execute()
 	o.Expect(err).NotTo(o.HaveOccurred())
 	time.Sleep(10 * time.Second)
 }
@@ -551,43 +557,134 @@ func readPodEnv(oc *exutil.CLI, routername, ns string, envname string) string {
 	return output
 }
 
-// to check the route data in haproxy.config
-// grepOptions can specify the lines of the context, e.g. "-A20" or "-C10"
-// searchString2 is the config to be checked, since it might exists in multiple routes so use
-// searchString1 to locate the specified route config
-// after configuring the route the searchString2 need some time to be updated in haproxy.config so wait.Poll is required
-func readHaproxyConfig(oc *exutil.CLI, routerPodName, searchString1, grepOption, searchString2 string) string {
+// to check the route data is present in the haproxy.config
+// blockCfgStart is the used to get the bulk config from the getBlockConfig function
+// searchList is used to locate the specified route config
+func ensureHaproxyBlockConfigContains(oc *exutil.CLI, routerPodName string, blockCfgStart string, searchList []string) string {
+	var (
+		haproxyCfg string
+		j          = 0
+	)
+
 	e2e.Logf("Polling and search haproxy config file")
-	cmd1 := fmt.Sprintf("grep \"%s\" haproxy.config %s | grep \"%s\"", searchString1, grepOption, searchString2)
-	cmd2 := fmt.Sprintf("grep \"%s\" haproxy.config %s", searchString1, grepOption)
 	waitErr := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
-		_, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerPodName, "--", "bash", "-c", cmd1).Output()
-		if err != nil {
-			e2e.Logf("string not found, wait and try again...")
-			return false, nil
+		haproxyCfg = getBlockConfig(oc, routerPodName, blockCfgStart)
+		for i := j; i < len(searchList); i++ {
+			if strings.Contains(haproxyCfg, searchList[i]) {
+				e2e.Logf("Found the given string %v in haproxy.config", searchList[i])
+				j++
+				if j == len(searchList) {
+					e2e.Logf("All the given strings are found in haproxy.config")
+					return true, nil
+				}
+			} else {
+				e2e.Logf("The given string %v is still not found in haproxy.config, retrying...", searchList[i])
+				return false, nil
+			}
 		}
-		return true, nil
+		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but config not found"))
-	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerPodName, "--", "bash", "-c", cmd2).Output()
-	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the part of haproxy.config that matching \"%s\" is:\n%v", searchString1, output)
-	return output
+
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but the given string was not found in haproxy.config"))
+	e2e.Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
+	return haproxyCfg
 }
 
-// used to wait the route data disappeared in haproxy.config
-func waitConfigurationDisappearedInHaproxy(oc *exutil.CLI, routerpod, searchStarted, config string) {
-	searchRe := regexp.MustCompile(config)
+// similar to ensureHaproxyBlockConfigContains function, this function uses regexp searching not string searching
+func ensureHaproxyBlockConfigMatchRegexp(oc *exutil.CLI, routerPodName string, blockCfgStart string, searchList []string) string {
+	var (
+		haproxyCfg string
+		j          = 0
+	)
+
+	e2e.Logf("Polling and search haproxy config file")
 	waitErr := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
-		haproxyCfg := getBlockConfig(oc, routerpod, searchStarted)
-		configInfo := searchRe.FindStringSubmatch(haproxyCfg)
-		if len(configInfo) > 0 {
-			return false, nil
-		} else {
-			return true, nil
+		haproxyCfg = getBlockConfig(oc, routerPodName, blockCfgStart)
+		for i := j; i < len(searchList); i++ {
+			searchInfo := regexp.MustCompile(searchList[i]).FindStringSubmatch(haproxyCfg)
+			if len(searchInfo) > 0 {
+				e2e.Logf("Found the given string %v in haproxy.config", searchList[i])
+				j++
+				if j == len(searchList) {
+					e2e.Logf("All the given strings are found in haproxy.config")
+					return true, nil
+				}
+			} else {
+				e2e.Logf("The given string %v is still not found in haproxy.config, retrying...", searchList[i])
+				return false, nil
+			}
 		}
+		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but config not disappeared"))
+
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but expected string was not found in haproxy.config"))
+	e2e.Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
+	return haproxyCfg
+}
+
+// to check the route data is not present in the haproxy.config
+// blockCfgStart is the used to get the bulk config from the getBlockConfig function
+// searchList is used to locate the specified route config
+func ensureHaproxyBlockConfigNotContains(oc *exutil.CLI, routerPodName string, blockCfgStart string, searchList []string) string {
+	var (
+		haproxyCfg string
+		j          = 0
+	)
+
+	e2e.Logf("Polling and search haproxy config file")
+	waitErr := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
+		haproxyCfg = getBlockConfig(oc, routerPodName, blockCfgStart)
+		for i := j; i < len(searchList); i++ {
+			if !strings.Contains(haproxyCfg, searchList[i]) {
+				e2e.Logf("Could not found the given string %v in haproxy.config as expected", searchList[i])
+				j++
+				if j == len(searchList) {
+					e2e.Logf("Could not found all given strings in haproxy.config as expected")
+					return true, nil
+				}
+			} else {
+				e2e.Logf("The given string %v is still present in haproxy.config, retrying...", searchList[i])
+				return false, nil
+			}
+		}
+		return false, nil
+	})
+
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but given string is still present in haproxy.config"))
+	e2e.Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
+	return haproxyCfg
+}
+
+// similar to ensureHaproxyBlockConfigNotContains function, this function uses regexp searching not string searching
+func ensureHaproxyBlockConfigNotMatchRegexp(oc *exutil.CLI, routerPodName string, blockCfgStart string, searchList []string) string {
+	var (
+		haproxyCfg string
+		j          = 0
+	)
+
+	e2e.Logf("Polling and search haproxy config file")
+	waitErr := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
+		haproxyCfg = getBlockConfig(oc, routerPodName, blockCfgStart)
+		for i := j; i < len(searchList); i++ {
+			searchInfo := regexp.MustCompile(searchList[i]).FindStringSubmatch(haproxyCfg)
+			if len(searchInfo) == 0 {
+				e2e.Logf("Could not found the given string %v in haproxy.config as expected", searchList[i])
+				j++
+				if j == len(searchList) {
+					e2e.Logf("Could not found all given strings in haproxy.config as expected")
+					return true, nil
+				}
+			} else {
+				e2e.Logf("The given string %v is still present in haproxy.config, retrying...", searchList[i])
+				return false, nil
+			}
+		}
+		return false, nil
+	})
+
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but given string is still present in haproxy.config"))
+	e2e.Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
+	return haproxyCfg
 }
 
 // used to get block content of haproxy.conf, for example, get one route's whole backend's configuration specified by searchString(for exmpale: "be_edge_http:" + project1 + ":r1-edg")
@@ -619,6 +716,7 @@ func getBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 			break
 		}
 	}
+	e2e.Logf("The block configuration in haproxy that matching \"%s\" is:\n%v", searchString, result)
 	return result
 }
 
@@ -661,10 +759,14 @@ func checkRouteCertificationInRouterPod(oc *exutil.CLI, ns, routeName, routerpod
 		cmd = "ls /var/lib/haproxy/router/certs/"
 	}
 
-	waitErr := wait.Poll(3*time.Second, 12*time.Second, func() (bool, error) {
+	waitErr := wait.Poll(3*time.Second, 120*time.Second, func() (bool, error) {
 		flag := false
 		certCfg, err = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerpod, "--", "bash", "-c", cmd).Output()
-		o.Expect(err).NotTo(o.HaveOccurred())
+		if err != nil {
+			// make sure the certification is present
+			e2e.Logf("Tried to get the certification configuration, but got error(trying...):\n%v", err)
+			return false, nil
+		}
 		if option == "--hasCert" && strings.Contains(certCfg, certName) {
 			flag = true
 		}
@@ -673,13 +775,13 @@ func checkRouteCertificationInRouterPod(oc *exutil.CLI, ns, routeName, routerpod
 		}
 		return flag, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but the certification with seaching option %s not matched", option))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but the certification with seaching option %s not matched", option))
 	return certCfg
 }
 
 func getImagePullSpecFromPayload(oc *exutil.CLI, image string) string {
 	var pullspec string
-	baseDir := exutil.FixturePath("testdata", "router")
+	baseDir := compat_otp.FixturePath("testdata", "router")
 	indexTmpPath := filepath.Join(baseDir, getRandomString())
 	dockerconfigjsonpath := filepath.Join(indexTmpPath, ".dockerconfigjson")
 	defer exec.Command("rm", "-rf", indexTmpPath).Output()
@@ -721,7 +823,7 @@ func ensureLogsContainString(oc *exutil.CLI, ns, label, match string) {
 		}
 		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but cannot find the string in the logs."))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but cannot find the string in the logs."))
 }
 
 // This function will identify the master and backup pod of the ipfailover pods
@@ -729,29 +831,35 @@ func ensureIpfailoverMasterBackup(oc *exutil.CLI, ns string, podList []string) (
 	var masterPod, backupPod string
 	// The sleep is given for the election process to finish
 	time.Sleep(10 * time.Second)
-	podLogs1, err1 := exutil.GetSpecificPodLogs(oc, ns, "", podList[0], "Entering")
-	o.Expect(err1).NotTo(o.HaveOccurred())
-	logList1 := strings.Split((strings.TrimSpace(podLogs1)), "\n")
-	e2e.Logf("The first pod log's last line is:- %v", logList1[len(logList1)-1])
-	podLogs2, err2 := exutil.GetSpecificPodLogs(oc, ns, "", podList[1], "Entering")
-	o.Expect(err2).NotTo(o.HaveOccurred())
-	logList2 := strings.Split((strings.TrimSpace(podLogs2)), "\n")
-	e2e.Logf("The second pod log's last line is:- %v", logList2[len(logList2)-1])
+	waitErr := wait.Poll(3*time.Second, 90*time.Second, func() (bool, error) {
+		podLogs1, err1 := compat_otp.GetSpecificPodLogs(oc, ns, "", podList[0], "Entering")
+		o.Expect(err1).NotTo(o.HaveOccurred())
+		logList1 := strings.Split((strings.TrimSpace(podLogs1)), "\n")
+		e2e.Logf("The first pod log's failover status:- %v", podLogs1)
+		podLogs2, err2 := compat_otp.GetSpecificPodLogs(oc, ns, "", podList[1], "Entering")
+		o.Expect(err2).NotTo(o.HaveOccurred())
+		logList2 := strings.Split((strings.TrimSpace(podLogs2)), "\n")
+		e2e.Logf("The second pod log's failover status:- %v", podLogs2)
 
-	switch {
-	// Checking whether the first pod is failover state master and second pod backup
-	case strings.Contains(logList1[len(logList1)-1], "Entering MASTER STATE"):
-		o.Expect(logList2[len(logList2)-1]).To(o.ContainSubstring("Entering BACKUP STATE"))
-		masterPod = podList[0]
-		backupPod = podList[1]
-	// Checking whether the second pod is failover state master and first pod backup
-	case strings.Contains(logList1[len(logList1)-1], "Entering BACKUP STATE"):
-		o.Expect(logList2[len(logList2)-1]).To(o.ContainSubstring("Entering MASTER STATE"))
-		masterPod = podList[1]
-		backupPod = podList[0]
-	default:
-		e2e.Failf("The pod is niether MASTER nor BACKUP and hence IPfailover didn't happened")
-	}
+		// Checking whether the first pod is failover state master and second pod backup
+		if strings.Contains(logList1[len(logList1)-1], "(ipfailover_VIP_1) Entering MASTER STATE") {
+			if strings.Contains(logList2[len(logList2)-1], "(ipfailover_VIP_1) Entering BACKUP STATE") {
+				masterPod = podList[0]
+				backupPod = podList[1]
+				return true, nil
+			}
+			// Checking whether the second pod is failover state master and first pod backup
+		} else if strings.Contains(logList1[len(logList1)-1], "(ipfailover_VIP_1) Entering BACKUP STATE") {
+			if strings.Contains(logList2[len(logList2)-1], "(ipfailover_VIP_1) Entering MASTER STATE") {
+				masterPod = podList[1]
+				backupPod = podList[0]
+				return true, nil
+			}
+		}
+		e2e.Logf("The ipfailover seems not yet converged, retrying again...")
+		return false, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but IPfailover seems not working as expected."))
 	e2e.Logf("The Master pod is %v and Backup pod is %v", masterPod, backupPod)
 	return masterPod, backupPod
 }
@@ -878,7 +986,7 @@ func pollReadDnsCorefile(oc *exutil.CLI, dnsPodName, searchString1, grepOption, 
 		output, _ = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, dnsPodName, "--", "bash", "-c", "cat /etc/coredns/Corefile").Output()
 		e2e.Logf("The existing Corefile is: %v", output)
 	}
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but Corefile is not updated"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but Corefile is not updated"))
 	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, dnsPodName, "--", "bash", "-c", cmd2).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
 	e2e.Logf("the part of Corefile that matching \"%s\" is: %v", searchString1, output)
@@ -915,7 +1023,7 @@ func ensureClusterOperatorProgress(oc *exutil.CLI, coName string) {
 		}
 		return primary, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
 		"reached max time allowed but CO %v didn't goto Progressing status.", coName))
 }
 
@@ -958,7 +1066,7 @@ func ensureClusterOperatorNormal(oc *exutil.CLI, coName string, healthyThreshold
 			e2e.Logf("The output of describe router-default service: %v", output)
 		}
 	}
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but CO %v is still abnoraml.", coName))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but CO %v is still abnoraml.", coName))
 }
 
 // this function ensure all cluster's operators become normal
@@ -1010,13 +1118,13 @@ func forceOnlyOneDnsPodExist(oc *exutil.CLI) string {
 			output, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", ns, "-l", dnsPodLabel).Output()
 			e2e.Logf("All current dns pods are:\n%v", output)
 		}
-		exutil.AssertWaitPollNoErr(err1, fmt.Sprintf("max time reached but pod %s is not terminated", dnsPodName))
+		compat_otp.AssertWaitPollNoErr(err1, fmt.Sprintf("max time reached but pod %s is not terminated", dnsPodName))
 		err2 := waitForPodWithLabelReady(oc, ns, dnsPodLabel)
 		if err2 != nil {
 			output, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", ns, "-l", dnsPodLabel).Output()
 			e2e.Logf("All current dns pods are:\n%v", output)
 		}
-		exutil.AssertWaitPollNoErr(err2, fmt.Sprintf("max time reached but no dns pod ready"))
+		compat_otp.AssertWaitPollNoErr(err2, fmt.Sprintf("max time reached but no dns pod ready"))
 	}
 	return getDNSPodName(oc)
 }
@@ -1048,7 +1156,7 @@ func getRandomElementFromList(list []string) string {
 func waitForRangeOfPodsToDisappear(oc *exutil.CLI, resource string, podList []string) {
 	for _, podName := range podList {
 		err := waitForResourceToDisappear(oc, resource, "pod/"+podName)
-		exutil.AssertWaitPollNoErr(err, fmt.Sprintf("%s pod %s is NOT deleted", resource, podName))
+		compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("%s pod %s is NOT deleted", resource, podName))
 	}
 }
 
@@ -1073,7 +1181,7 @@ func keepSearchInAllDNSPods(oc *exutil.CLI, podList []string, expStr string) {
 			}
 			return primary, nil
 		})
-		exutil.AssertWaitPollNoErr(waitErr, "can't find "+expStr+" in the Corefile of pod "+podName)
+		compat_otp.AssertWaitPollNoErr(waitErr, "can't find "+expStr+" in the Corefile of pod "+podName)
 	}
 }
 
@@ -1097,7 +1205,7 @@ func waitRouterLogsAppear(oc *exutil.CLI, routerpod, searchStr string) string {
 	containerName := getByJsonPath(oc, "openshift-ingress", "pod/"+routerpod, "{.spec.containers[*].name}")
 	logCmd := []string{routerpod, "-n", "openshift-ingress"}
 	if strings.Contains(containerName, "logs") {
-		logCmd = []string{routerpod, "-c", "logs", "-n", "openshift-ingress"}
+		logCmd = []string{routerpod, "-c", strings.Split(containerName, " ")[1], "-n", "openshift-ingress"}
 	}
 	err := wait.Poll(10*time.Second, 300*time.Second, func() (bool, error) {
 		output, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args(logCmd...).Output()
@@ -1114,7 +1222,7 @@ func waitRouterLogsAppear(oc *exutil.CLI, routerpod, searchStr string) string {
 		}
 		return primary, nil
 	})
-	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("expected string \"%s\" is not found in the router pod's logs", searchStr))
+	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("expected string \"%s\" is not found in the router pod's logs", searchStr))
 	return result
 }
 
@@ -1183,20 +1291,20 @@ func slicingElement(element string, podList []string) []string {
 // this function checks whether given pod becomes primary or not
 func waitForPrimaryPod(oc *exutil.CLI, ns string, pod string, vip string) {
 	cmd := fmt.Sprintf("ip address |grep %s", vip)
-	var output string
-	var err error
-	waitErr := wait.Poll(5*time.Second, 10*time.Second, func() (bool, error) {
-		output, err = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, pod, "--", "bash", "-c", cmd).Output()
+	waitErr := wait.Poll(5*time.Second, 50*time.Second, func() (bool, error) {
+		output, _ := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, pod, "--", "bash", "-c", cmd).Output()
 		primary := false
 		if strings.Contains(output, vip) {
 			e2e.Logf("The new pod %v is the master", pod)
 			primary = true
 		} else {
-			e2e.Logf("pod failed to become master yet, retrying...", output)
+			e2e.Logf("pod failed to become master yet, retrying...the error is %v", output)
 		}
 		return primary, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached, pod failed to become master and the error is ", err))
+	// for debugging
+	output1, _ := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, pod, "--", "bash", "-c", "ip address").Output()
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached, pod failed to become master and the entire ip details of the pod is %v", output1))
 }
 
 // this function will search the specific data from the given pod
@@ -1222,13 +1330,13 @@ func pollReadPodData(oc *exutil.CLI, ns, routername, executeCmd, searchString st
 		return true, nil
 	})
 	e2e.Logf("the matching part is: %s", output)
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but cannot find the search string."))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but cannot find the search string."))
 	return output
 }
 
 // this function create external dns operator
 func createExternalDNSOperator(oc *exutil.CLI) {
-	buildPruningBaseDir := exutil.FixturePath("testdata", "router", "extdns")
+	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "extdns")
 	operatorGroup := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 	subscription := filepath.Join(buildPruningBaseDir, "subscription.yaml")
 	nsOperator := filepath.Join(buildPruningBaseDir, "ns-external-dns-operator.yaml")
@@ -1260,7 +1368,7 @@ func createExternalDNSOperator(oc *exutil.CLI) {
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(errCheck, fmt.Sprintf("subscription external-dns-operator is not correct status"))
+	compat_otp.AssertWaitPollNoErr(errCheck, fmt.Sprintf("subscription external-dns-operator is not correct status"))
 
 	// checking csv status
 	csvName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("sub", "external-dns-operator", "-n", operatorNamespace, "-o=jsonpath={.status.installedCSV}").Output()
@@ -1276,7 +1384,7 @@ func createExternalDNSOperator(oc *exutil.CLI) {
 		return false, nil
 
 	})
-	exutil.AssertWaitPollNoErr(errCheck, fmt.Sprintf("csv %v is not correct status", csvName))
+	compat_otp.AssertWaitPollNoErr(errCheck, fmt.Sprintf("csv %v is not correct status", csvName))
 }
 
 // Skip the test if there is no 'qe-app-registry' or 'redhat-operators' catalogsource in the cluster
@@ -1305,7 +1413,7 @@ func deleteNamespace(oc *exutil.CLI, ns string) {
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(err, fmt.Sprintf("Namespace %s is not deleted in 3 minutes", ns))
+	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("Namespace %s is not deleted in 3 minutes", ns))
 }
 
 // Get OIDC from STS cluster
@@ -1319,7 +1427,7 @@ func getOidc(oc *exutil.CLI) string {
 
 // this function create aws-load-balancer-operator
 func createAWSLoadBalancerOperator(oc *exutil.CLI) {
-	buildPruningBaseDir := exutil.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "awslb")
 	operatorGroup := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 	subscription := filepath.Join(buildPruningBaseDir, "subscription-src-qe.yaml")
 	subSTS := filepath.Join(buildPruningBaseDir, "subscription-src-qe-sts.yaml")
@@ -1330,7 +1438,7 @@ func createAWSLoadBalancerOperator(oc *exutil.CLI) {
 	msg, err := oc.AsAdmin().WithoutNamespace().Run("apply").Args("-f", namespaceFile).Output()
 	e2e.Logf("err %v, msg %v", err, msg)
 
-	if exutil.IsSTSCluster(oc) {
+	if compat_otp.IsSTSCluster(oc) {
 		e2e.Logf("This is STS cluster, create ALB operator and controller secrets via AWS SDK")
 		prepareAllForStsCluster(oc)
 	}
@@ -1349,7 +1457,7 @@ func createAWSLoadBalancerOperator(oc *exutil.CLI) {
 		_, err = exec.Command("bash", "-c", sedCmd).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
 	}
-	if exutil.IsSTSCluster(oc) {
+	if compat_otp.IsSTSCluster(oc) {
 		e2e.Logf("Updating and applying subcripton with Role ARN on STS cluster")
 		sedCmd := fmt.Sprintf(`sed -i'' -e 's|fakeARN-for-albo|%s|g' %s`, os.Getenv("ALBO_ROLE_ARN"), subSTS)
 		_, err := exec.Command("bash", "-c", sedCmd).Output()
@@ -1370,7 +1478,7 @@ func createAWSLoadBalancerOperator(oc *exutil.CLI) {
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(errCheck, fmt.Sprintf("subscription aws-load-balancer-operator is not correct status"))
+	compat_otp.AssertWaitPollNoErr(errCheck, fmt.Sprintf("subscription aws-load-balancer-operator is not correct status"))
 
 	// checking csv status
 	csvName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("sub", "aws-load-balancer-operator", "-n", ns, "-o=jsonpath={.status.installedCSV}").Output()
@@ -1390,7 +1498,7 @@ func createAWSLoadBalancerOperator(oc *exutil.CLI) {
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("logs").Args(deployName, "-n", ns, "--tail=10").Output()
 		e2e.Logf("The logs of albo deployment: %v", output)
 	}
-	exutil.AssertWaitPollNoErr(errCheck, fmt.Sprintf("csv %v is not correct status", csvName))
+	compat_otp.AssertWaitPollNoErr(errCheck, fmt.Sprintf("csv %v is not correct status", csvName))
 }
 
 func patchAlbControllerWithRoleArn(oc *exutil.CLI, ns string) {
@@ -1419,7 +1527,7 @@ func waitForLoadBalancerProvision(oc *exutil.CLI, ns string, ingressName string)
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the Load Balancer is not provisioned"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the Load Balancer is not provisioned"))
 }
 
 // openssl generate the ca.key and ca.crt
@@ -1484,7 +1592,7 @@ func waitForOutsideCurlContains(url string, curlOptions string, expected string)
 		result, err := exec.Command("bash", "-c", debug_cmd).Output()
 		e2e.Logf("debug: the result of curl is %s and err is %v", result, err)
 	}
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but not get expected string"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but not get expected string"))
 	return string(output)
 }
 
@@ -1512,7 +1620,7 @@ func waitForCurl(oc *exutil.CLI, podName, baseDomain string, routestring string,
 		}
 		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the route is not reachable"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the route is not reachable"))
 }
 
 // used to send the nslookup command until the desired dns logs appear
@@ -1529,7 +1637,7 @@ func nslookupsAndWaitForDNSlog(oc *exutil.CLI, podName, searchLog string, dnsPod
 		}
 		return primary, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached,but expected string \"%s\" is not found in the dns logs", searchLog))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached,but expected string \"%s\" is not found in the dns logs", searchLog))
 	return output
 }
 
@@ -1590,7 +1698,7 @@ func checkProxy(oc *exutil.CLI) bool {
 
 // this function will advertise unicast peers for Nutanix
 func unicastIPFailover(oc *exutil.CLI, ns, failoverName string) {
-	platformtype := exutil.CheckPlatform(oc)
+	platformtype := compat_otp.CheckPlatform(oc)
 
 	if platformtype == "nutanix" || platformtype == "none" {
 		getPodListByLabel(oc, oc.Namespace(), "ipfailover=hello-openshift")
@@ -1607,30 +1715,25 @@ func unicastIPFailover(oc *exutil.CLI, ns, failoverName string) {
 	}
 }
 
-// this function is to obtain the route details based on namespaces
-func getRouteDetails(oc *exutil.CLI, namespace, resourceName, jsonPath, matchString string, noMatchIfPresent bool) {
+// this function is to retrieve the status of the route after using RouteSelectors
+func checkRouteDetailsRemoved(oc *exutil.CLI, namespace, routeName, ingresscontrollerName string) {
 	e2e.Logf("polling for route details")
+	jsonPath := fmt.Sprintf(`{.status.ingress[?(@.routerName=="%s")]}`, ingresscontrollerName)
 	waitErr := wait.Poll(5*time.Second, 150*time.Second, func() (bool, error) {
-		resourceNames, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("route", "-n", namespace, resourceName,
+		status, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("route", "-n", namespace, routeName,
 			"-ojsonpath="+jsonPath).Output()
 		if err != nil {
 			e2e.Logf("there is some execution error and it is  %v, retrying...", err)
 			return false, nil
 		}
-		if noMatchIfPresent == true {
-			if strings.Contains(resourceNames, matchString) {
-				e2e.Logf("the matched string is still in the logs, retrying...")
-				return false, nil
-			}
-		} else {
-			if !strings.Contains(resourceNames, matchString) {
-				e2e.Logf("cannot find the matched string in the logs, retrying...")
-				return false, nil
-			}
+		if strings.Contains(status, "Admitted") {
+			e2e.Logf("the matched string is still in the logs, retrying...")
+			return false, nil
 		}
+		e2e.Logf("The route status is cleared!")
 		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the route details are not reachable"))
+	o.Expect(waitErr).NotTo(o.HaveOccurred(), "The route %s yielded unexpected results", routeName)
 }
 
 // used to execute a command on the internal or external client for the desired times
@@ -1731,7 +1834,7 @@ func repeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration t
 	})
 
 	e2e.Logf("The matchedTimesList is: %v", matchedTimesList)
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but can't execute the cmd successfully for the desired times"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but can't execute the cmd successfully for the desired times"))
 
 	// return the last succecessful curl output and the succecessful curl times list for the expected list
 	return output, matchedTimesList
@@ -1778,7 +1881,7 @@ func waitForErrorOccur(oc *exutil.CLI, cmd interface{}, expectedErrorInfo string
 		}
 	})
 
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but can't execute the cmd successfully in the desired time duration"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but can't execute the cmd successfully in the desired time duration"))
 	return output
 }
 
@@ -1791,9 +1894,17 @@ func checkGivenStringPresentOrNot(shouldContain bool, iterateObject []string, se
 	}
 }
 
-// this function check output of fetch command is polled
-func waitForOutput(oc *exutil.CLI, ns, resourceName, jsonPath, expected string) {
-	waitErr := wait.PollImmediate(5*time.Second, 180*time.Second, func() (bool, error) {
+// this function is pollinng to check output which should contain the expected string
+func waitForOutputContains(oc *exutil.CLI, ns, resourceName, jsonPath, expected string, args ...interface{}) {
+	waitDuration := 180 * time.Second
+	for _, arg := range args {
+		duration, ok := arg.(time.Duration)
+		if ok {
+			waitDuration = duration
+		}
+	}
+
+	waitErr := wait.PollImmediate(5*time.Second, waitDuration, func() (bool, error) {
 		output := getByJsonPath(oc, ns, resourceName, jsonPath)
 		if strings.Contains(output, expected) {
 			return true, nil
@@ -1801,13 +1912,42 @@ func waitForOutput(oc *exutil.CLI, ns, resourceName, jsonPath, expected string) 
 		e2e.Logf("The output of jsonpath does NOT contain the expected string: %v, retrying...", expected)
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but cannot find the expected string"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but cannot find the expected string"))
+}
+
+// this function is pollinng to check output which should equal the expected string
+func waitForOutputEquals(oc *exutil.CLI, ns, resourceName, jsonPath, expected string, args ...interface{}) {
+	waitDuration := 180 * time.Second
+	for _, arg := range args {
+		duration, ok := arg.(time.Duration)
+		if ok {
+			waitDuration = duration
+		}
+	}
+
+	waitErr := wait.PollImmediate(5*time.Second, waitDuration, func() (bool, error) {
+		output := getByJsonPath(oc, ns, resourceName, jsonPath)
+		if output == expected {
+			return true, nil
+		}
+		e2e.Logf("The output of jsonpath does NOT equal the expected string: %v, retrying...", expected)
+		return false, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but cannot find the expected string"))
 }
 
 // this function keep checking util the searching for the regular expression matches
-func waitForRegexpOutput(oc *exutil.CLI, ns, resourceName, jsonPath, regExpress string) string {
+func waitForOutputMatchRegexp(oc *exutil.CLI, ns, resourceName, jsonPath, regExpress string, args ...interface{}) string {
 	result := "NotMatch"
-	wait.Poll(5*time.Second, 180*time.Second, func() (bool, error) {
+	waitDuration := 180 * time.Second
+	for _, arg := range args {
+		duration, ok := arg.(time.Duration)
+		if ok {
+			waitDuration = duration
+		}
+	}
+
+	wait.Poll(5*time.Second, waitDuration, func() (bool, error) {
 		sourceRange := getByJsonPath(oc, ns, resourceName, jsonPath)
 		searchRe := regexp.MustCompile(regExpress)
 		searchInfo := searchRe.FindStringSubmatch(sourceRange)
@@ -1818,6 +1958,27 @@ func waitForRegexpOutput(oc *exutil.CLI, ns, resourceName, jsonPath, regExpress 
 		return false, nil
 	})
 	return result
+}
+
+// this function is pollinng to check output which should NOT contain the expected string
+func waitForOutputNotContains(oc *exutil.CLI, ns, resourceName, jsonPath, expected string, args ...interface{}) {
+	waitDuration := 180 * time.Second
+	for _, arg := range args {
+		duration, ok := arg.(time.Duration)
+		if ok {
+			waitDuration = duration
+		}
+	}
+
+	waitErr := wait.PollImmediate(5*time.Second, waitDuration, func() (bool, error) {
+		output := getByJsonPath(oc, ns, resourceName, jsonPath)
+		if !strings.Contains(output, expected) {
+			return true, nil
+		}
+		e2e.Logf("The output of jsonpath contained the expected string: %v, retrying...", expected)
+		return false, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but still contained the expected string"))
 }
 
 // this function check output of oc describe command is polled
@@ -1837,7 +1998,7 @@ func waitForDescriptionContains(oc *exutil.CLI, ns, resourceName, value string) 
 		}
 		return false, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the desired searchString does not appear"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but the desired searchString does not appear"))
 }
 
 // this function will search in the polled and described resource details
@@ -1856,7 +2017,7 @@ func searchInDescribeResource(oc *exutil.CLI, resource, resourceName, match stri
 		}
 		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but cannot find the search string."))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but cannot find the search string."))
 	return output
 }
 
@@ -2065,6 +2226,64 @@ func getValidIPv6Addresses(addressInfo string) (IPList []string) {
 	return IPList
 }
 
+// used to backup the config.yaml file under a microshift node before the testing
+func backupConfigYaml(oc *exutil.CLI, ns, caseID, nodeName string) {
+	backupConfig := fmt.Sprintf(`
+if test -f /etc/microshift/config.yaml ; then
+    cp /etc/microshift/config.yaml /etc/microshift/config.yaml.backup%s
+else
+    touch /etc/microshift/config.yaml.no%s
+fi
+`, caseID, caseID)
+	_, err := oc.AsAdmin().WithoutNamespace().Run("debug").Args("-n", ns, "--quiet=true", "node/"+nodeName, "--", "chroot", "/host", "bash", "-c", backupConfig).Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// used to restore the config.yaml file under a microshift node after the testing
+func restoreConfigYaml(oc *exutil.CLI, ns, caseID, nodeName string) {
+	recoverCmd := fmt.Sprintf(`
+if test -f /etc/microshift/config.yaml.no%s; then
+    rm -f /etc/microshift/config.yaml
+    rm -f /etc/microshift/config.yaml.no%s
+elif test -f /etc/microshift/config.yaml.backup%s ; then
+    rm -f /etc/microshift/config.yaml
+    cp /etc/microshift/config.yaml.backup%s /etc/microshift/config.yaml
+    rm -f /etc/microshift/config.yaml.backup%s
+fi
+`, caseID, caseID, caseID, caseID, caseID)
+	defer func() {
+		_, err := oc.AsAdmin().WithoutNamespace().Run("debug").Args("-n", ns, "--quiet=true", "node/"+nodeName, "--", "chroot", "/host", "bash", "-c", recoverCmd).Output()
+		o.Expect(err).NotTo(o.HaveOccurred())
+		restartMicroshiftService(oc, ns, nodeName)
+	}()
+}
+
+// used to append ingress configurtion to the original config.yaml file under a microshift node during the testing
+func appendIngressToConfigYaml(oc *exutil.CLI, ns, caseID, nodeName, ingressConfig string) {
+	customConfig := fmt.Sprintf(`
+rm /etc/microshift/config.yaml -f
+if test -f /etc/microshift/config.yaml.backup%s ; then
+    cp /etc/microshift/config.yaml.backup%s /etc/microshift/config.yaml
+fi
+cat >> /etc/microshift/config.yaml << EOF
+%s
+EOF`, caseID, caseID, ingressConfig)
+	_, err := oc.AsAdmin().WithoutNamespace().Run("debug").Args("-n", ns, "--quiet=true", "node/"+nodeName, "--", "chroot", "/host", "bash", "-c", customConfig).Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	output, err := oc.AsAdmin().WithoutNamespace().Run("debug").Args("-n", ns, "--quiet=true", "node/"+nodeName, "--", "chroot", "/host", "bash", "-c", "microshift show-config").Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	o.Expect(output).NotTo(o.ContainSubstring("error: invalid configuration"))
+	e2e.Logf("microshift show-config is: \n%v", output)
+	restartMicroshiftService(oc, ns, nodeName)
+}
+
+func getRouterDeploymentGeneration(oc *exutil.CLI, deploymentName string) int {
+	actualGen, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("deployment/"+deploymentName, "-n", "openshift-ingress", "-o=jsonpath={.metadata.generation}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	actualGenerationInt, _ := strconv.Atoi(actualGen)
+	return actualGenerationInt
+}
+
 // Convert the given IPv6 string to IPv6 PTR record
 // ie, from "fd03::a" to "a.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.3.0.d.f.ip6.arpa"
 func convertV6AddressToPTR(ipv6Address string) string {
@@ -2078,23 +2297,40 @@ func convertV6AddressToPTR(ipv6Address string) string {
 	return PtrString
 }
 
-// this function checks the output of the /etc/hosts
-func waitForOutputOnDebugNodeBasedOnEtcHosts(oc *exutil.CLI, node string, clusterIP string) {
-	var expectedString = "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4\n::1         localhost localhost.localdomain localhost6 localhost6.localdomain6\n" + clusterIP + " image-registry.openshift-image-registry.svc image-registry.openshift-image-registry.svc.cluster.local # openshift-generated-node-resolver"
-	waitErr := wait.Poll(10*time.Second, 90*time.Second, func() (bool, error) {
-		hostOutput, err := exutil.DebugNodeRetryWithOptionsAndChroot(oc, node, []string{}, "cat", "/etc/hosts")
+// this function is polling to check the output of the cmd executed on a debug node, which should contain the expected string
+func waitForDebugNodeOutputContains(oc *exutil.CLI, ns, node string, cmdList []string, expectedString string, args ...interface{}) string {
+	var output string
+	count := 0
+	waitDuration := 180 * time.Second
+	for _, arg := range args {
+		duration, ok := arg.(time.Duration)
+		if ok {
+			waitDuration = duration
+		}
+	}
+
+	e2e.Logf("The expected string is: \n%s", expectedString)
+	waitErr := wait.Poll(10*time.Second, waitDuration*time.Second, func() (bool, error) {
+		// hostOutput, err := compat_otp.DebugNodeRetryWithOptionsAndChroot(oc, node, []string{}, "cat", "/etc/hosts")
+		output, err := compat_otp.DebugNodeRetryWithOptionsAndChroot(oc, node, []string{"--quiet=true", "--to-namespace=" + ns}, cmdList...)
 		o.Expect(err).NotTo(o.HaveOccurred())
-		e2e.Logf("The /etc/hosts output is: %v", hostOutput)
+		if count%5 == 0 {
+			e2e.Logf("The output of the cmd executed on the debug node is:\n%s", output)
+		}
+		count++
 
 		// Comparing the output
-		if strings.Contains(hostOutput, expectedString) {
-			e2e.Logf("the cluster ip of the image-registry in /etc/hosts string is matching...")
-			return true, nil
+		if !strings.Contains(output, expectedString) {
+			e2e.Logf("Failed to find the expected string, retring...")
+			return false, nil
 		}
-		o.Expect(hostOutput).NotTo(o.And(o.ContainSubstring("error"), o.ContainSubstring("failed"), o.ContainSubstring("timed out")))
-		return false, nil
+
+		e2e.Logf(`Find the expected string in the debug node's output: %s`, output)
+		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached and the expected ip %v is not in the output string", clusterIP))
+
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Max time reached, but the expected string was not found by checking the output of cmd executed on the debug node"))
+	return output
 }
 
 // Get clusterIP of a service
@@ -2176,7 +2412,7 @@ func checkNodeStatus(oc *exutil.CLI, nodeName string, expectedStatus string) {
 	if errWait != nil {
 		e2e.Logf("Expect Node %s in state %v, kubelet status is %s with error", nodeName, expectedStatus, statusOutput, err.Error())
 	}
-	exutil.AssertWaitPollNoErr(errWait, fmt.Sprintf("Node %s is not in expected status %s", nodeName, expectedStatus))
+	compat_otp.AssertWaitPollNoErr(errWait, fmt.Sprintf("Node %s is not in expected status %s", nodeName, expectedStatus))
 }
 
 func restartMicroshiftService(oc *exutil.CLI, ns, nodeName string) {
@@ -2202,7 +2438,7 @@ func waitEgressFirewallApplied(oc *exutil.CLI, efName, ns string) string {
 		}
 		return true, nil
 	})
-	exutil.AssertWaitPollNoErr(checkErr, fmt.Sprintf("reached max time allowed but cannot find the egressfirewall details."))
+	compat_otp.AssertWaitPollNoErr(checkErr, fmt.Sprintf("reached max time allowed but cannot find the egressfirewall details."))
 	return output
 }
 
@@ -2309,8 +2545,8 @@ func scaleDeploy(oc *exutil.CLI, ns, deployName string, num int) []string {
 	}
 	_, err := oc.AsAdmin().WithoutNamespace().Run("scale").Args("-n", ns, "deployment/"+deployName, "--replicas="+strconv.Itoa(num)).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	waitForOutput(oc, ns, "deployment/"+deployName, "{.status.availableReplicas}", expReplicas)
-	podList, err := exutil.GetAllPodsWithLabel(oc, ns, "name="+deployName)
+	waitForOutputEquals(oc, ns, "deployment/"+deployName, "{.status.availableReplicas}", expReplicas)
+	podList, err := compat_otp.GetAllPodsWithLabel(oc, ns, "name="+deployName)
 	o.Expect(err).NotTo(o.HaveOccurred())
 	return podList
 }

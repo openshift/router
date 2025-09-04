@@ -9,18 +9,18 @@ import (
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	defer g.GinkgoRecover()
 
-	var oc = exutil.NewCLI("route-weight", exutil.KubeConfigPath())
+	var oc = compat_otp.NewCLI("route-weight", compat_otp.KubeConfigPath())
 
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-10889-Sticky session could work normally after set weight for route", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -45,7 +45,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			routeName    = "edge10889"
 		)
 
-		exutil.By("Deploy two sets of web-server and services")
+		compat_otp.By("Deploy two sets of web-server and services")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -54,20 +54,20 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, deploy1Label)
 		ensurePodWithLabelReady(oc, ns, deploy2Label)
 
-		exutil.By("Create edge route and set route-backends with multi serivces")
+		compat_otp.By("Create edge route and set route-backends with multi serivces")
 		createRoute(oc, ns, "edge", routeName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+routeName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, routeName, "default")
 		// Note: the "balance roundrobin" is used for the route once set route-backends, no need to annotate the route"
 		err := oc.Run("set").Args("route-backends", routeName, "service-unsecure1=60", "service-unsecure2=40").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check haproxy.config and ensure deploy2 pod is added")
+		compat_otp.By("Check haproxy.config and ensure deploy2 pod is added")
 		routerPod := getOneRouterPodNameByIC(oc, "default")
 		backendBegin := "be_edge_http:" + ns + ":" + routeName
-		backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		backendConfig := ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 170"))
 
-		exutil.By("Access the route, ensure web server 2 is in service and save the cookie")
+		compat_otp.By("Access the route, ensure web server 2 is in service and save the cookie")
 		defer os.RemoveAll(fileDir)
 		err = os.MkdirAll(fileDir, 0755)
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -76,12 +76,12 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		expectedOutput := []string{"Hello-OpenShift web-server-deploy2"}
 		repeatCmdOnClient(oc, curlCmd, expectedOutput, 60, 1)
 
-		exutil.By("Access the route several times withoug cookie and ensure web server 1 is in service as well")
+		compat_otp.By("Access the route several times withoug cookie and ensure web server 1 is in service as well")
 		curlCmd = fmt.Sprintf(`curl https://%s -sk --connect-timeout 10`, edgeRouteHost)
 		expectedOutput = []string{"Hello-OpenShift web-server-deploy1"}
 		repeatCmdOnClient(oc, curlCmd, expectedOutput, 60, 1)
 
-		exutil.By("Access the route with the saved cookie for 6 times, ensure only web server 2 provides the service")
+		compat_otp.By("Access the route with the saved cookie for 6 times, ensure only web server 2 provides the service")
 		curlCmd = fmt.Sprintf(`curl https://%s -sk -b %s --connect-timeout 10`, edgeRouteHost, cookie)
 		expectedOutput = []string{"Hello-OpenShift web-server-deploy1", "Hello-OpenShift web-server-deploy2"}
 		_, result := repeatCmdOnClient(oc, curlCmd, expectedOutput, 90, 6)
@@ -94,7 +94,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-15382: Set max backends weight for ab routing
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Low-11351-Set backends weight to zero for ab routing", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -117,7 +117,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			routeName    = "edge11351"
 		)
 
-		exutil.By("Deploy two sets of web-server and services")
+		compat_otp.By("Deploy two sets of web-server and services")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -126,19 +126,19 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, deploy1Label)
 		ensurePodWithLabelReady(oc, ns, deploy2Label)
 
-		exutil.By("Create edge route and set route-backends with multi serivces")
+		compat_otp.By("Create edge route and set route-backends with multi serivces")
 		createRoute(oc, ns, "edge", routeName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+routeName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, routeName, "default")
 		err := oc.Run("set").Args("route-backends", routeName, "service-unsecure1=0", "service-unsecure2=1").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check haproxy.config and ensure weight of deploy2 is 1")
+		compat_otp.By("Check haproxy.config and ensure weight of deploy2 is 1")
 		routerPod := getOneRouterPodNameByIC(oc, "default")
 		backendBegin := "be_edge_http:" + ns + ":" + routeName
-		backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		backendConfig := ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 1"))
 
-		exutil.By("Access the route for 6 times, ensure only deploy2 is in service")
+		compat_otp.By("Access the route for 6 times, ensure only deploy2 is in service")
 		edgeRouteHost := getRouteHost(oc, ns, routeName)
 		curlCmd := fmt.Sprintf(`curl https://%s -sk --connect-timeout 10`, edgeRouteHost)
 		expectedOutput := []string{"Hello-OpenShift web-server-deploy1", "Hello-OpenShift web-server-deploy2"}
@@ -146,31 +146,31 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		o.Expect(result[0]).To(o.Equal(0))
 		o.Expect(result[1]).To(o.Equal(6))
 
-		exutil.By("Set route-backends to zero for all serivces/backends")
+		compat_otp.By("Set route-backends to zero for all serivces/backends")
 		err = oc.Run("set").Args("route-backends", routeName, "--zero=true").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check haproxy.config and ensure weight of deploy2 is 0")
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		compat_otp.By("Check haproxy.config and ensure weight of deploy2 is 0")
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 0"))
 
-		exutil.By("Access the route for 6 times, ensure all request are failing")
+		compat_otp.By("Access the route for 6 times, ensure all request are failing")
 		curlCmd = fmt.Sprintf(`curl https://%s -skI --connect-timeout 10`, edgeRouteHost)
 		expectedOutput = []string{"503"}
 		_, result = repeatCmdOnClient(oc, curlCmd, expectedOutput, 90, 6)
 		o.Expect(result[0]).To(o.Equal(6))
 
-		exutil.By("Attempt to set route-backends to char")
+		compat_otp.By("Attempt to set route-backends to char")
 		output, err := oc.Run("set").Args("route-backends", routeName, "service-unsecure1=abc", "service-unsecure2=^*%").Output()
 		o.Expect(err).To(o.HaveOccurred())
 		o.Expect(output).To(o.MatchRegexp("invalid argument.*WEIGHT must be a number"))
 
-		exutil.By("Attempt to set route-backends to negative weight")
+		compat_otp.By("Attempt to set route-backends to negative weight")
 		output, err = oc.Run("set").Args("route-backends", routeName, "service-unsecure1=-80", "service-unsecure2=-20").Output()
 		o.Expect(err).To(o.HaveOccurred())
 		o.Expect(output).To(o.MatchRegexp("negative percentages are not allowed"))
 
-		exutil.By("Attempt to set route-backends weight to 257")
+		compat_otp.By("Attempt to set route-backends weight to 257")
 		output, err = oc.Run("set").Args("route-backends", routeName, "service-unsecure1=257", "service-unsecure2=0").Output()
 		o.Expect(err).To(o.HaveOccurred())
 		o.Expect(output).To(o.MatchRegexp("weight must be an integer between 0 and 256"))
@@ -182,7 +182,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-12076: Set backends weight for unsecure route
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-High-11608-Set backends weight for edge/passthrough/reencrypt/unsecure route", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 			destCA              = filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 
@@ -209,7 +209,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			unsecureRouteName = "unsecure11608"
 		)
 
-		exutil.By("Deploy two sets of web-server and services")
+		compat_otp.By("Deploy two sets of web-server and services")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -218,54 +218,54 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, deploy1Label)
 		ensurePodWithLabelReady(oc, ns, deploy2Label)
 
-		exutil.By("Create edge route and set route-backends with multi serivces")
+		compat_otp.By("Create edge route and set route-backends with multi serivces")
 		createRoute(oc, ns, "edge", edgeRouteName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+edgeRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, edgeRouteName, "default")
 		err := oc.Run("set").Args("route-backends", edgeRouteName, "service-unsecure1=10", "service-unsecure2=10").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Create passthrough route and set route-backends with multi serivces")
+		compat_otp.By("Create passthrough route and set route-backends with multi serivces")
 		createRoute(oc, ns, "passthrough", passRouteName, webServerDeploy1.svcSecureName, []string{})
-		waitForOutput(oc, ns, "route/"+passRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, passRouteName, "default")
 		err = oc.Run("set").Args("route-backends", passRouteName, "service-secure1=20%", "service-secure2=80%").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Create reencrypt route and set route-backends with multi serivces")
+		compat_otp.By("Create reencrypt route and set route-backends with multi serivces")
 		createRoute(oc, ns, "reencrypt", reenRouteName, webServerDeploy1.svcSecureName, []string{"--dest-ca-cert=" + destCA})
-		waitForOutput(oc, ns, "route/"+reenRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, reenRouteName, "default")
 		// Note: the "balance roundrobin" is used for the route once set route-backends, no need to annotate the route"
 		err = oc.Run("set").Args("route-backends", reenRouteName, "service-secure1=256", "service-secure2=256").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Create unsecure route and set route-backends with multi serivces")
+		compat_otp.By("Create unsecure route and set route-backends with multi serivces")
 		createRoute(oc, ns, "http", unsecureRouteName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+unsecureRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, unsecureRouteName, "default")
 		// Note: the "balance roundrobin" is used for the route once set route-backends, no need to annotate the route"
 		err = oc.Run("set").Args("route-backends", unsecureRouteName, "service-unsecure1=50", "service-unsecure2=100").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check edge route weight in haproxy.config")
+		compat_otp.By("Check edge route weight in haproxy.config")
 		routerPod := getOneRouterPodNameByIC(oc, "default")
 		backendBegin := "be_edge_http:" + ns + ":" + edgeRouteName
-		backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		backendConfig := ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 256"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
 
-		exutil.By("Check passthrough route weight in haproxy.config")
+		compat_otp.By("Check passthrough route weight in haproxy.config")
 		backendBegin = "be_tcp:" + ns + ":" + passRouteName
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A10", "pod:"+webServerDeploy2.deployName)
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 64"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
 
-		exutil.By("Check reencryp route weight in haproxy.config")
+		compat_otp.By("Check reencryp route weight in haproxy.config")
 		backendBegin = "be_secure:" + ns + ":" + reenRouteName
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 256"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
 
-		exutil.By("Check unsecure route weight in haproxy.config")
+		compat_otp.By("Check unsecure route weight in haproxy.config")
 		backendBegin = "be_http:" + ns + ":" + unsecureRouteName
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 128"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
 	})
@@ -275,7 +275,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-13521: The passthrough route with multiple service will set load balance policy to RoundRobin by default
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-12088-Set multiple backends weight for route", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -317,7 +317,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			routeName    = "pass12088"
 		)
 
-		exutil.By("Deploy four sets of web-server and services, three of them will be set as alternate backends")
+		compat_otp.By("Deploy four sets of web-server and services, three of them will be set as alternate backends")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -332,24 +332,23 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, deploy3Label)
 		ensurePodWithLabelReady(oc, ns, deploy4Label)
 
-		exutil.By("Create edge route and set route-backends with multi serivces")
+		compat_otp.By("Create edge route and set route-backends with multi serivces")
 		createRoute(oc, ns, "passthrough", routeName, webServerDeploy1.svcSecureName, []string{})
-		waitForOutput(oc, ns, "route/"+routeName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, routeName, "default")
 		// Note: the "balance roundrobin" is used for the route once set route-backends, no need to annotate the route"
 		err := oc.Run("set").Args("route-backends", routeName, "service-secure1=10", "service-secure2=20", "service-secure3=30", "service-secure4=40").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check haproxy.config and ensure weight of deploy2/3/4 is added and balance is roundrobin")
+		compat_otp.By("Check haproxy.config and ensure weight of deploy2/3/4 is added and balance is roundrobin")
 		routerPod := getOneRouterPodNameByIC(oc, "default")
 		backendBegin := "be_tcp:" + ns + ":" + routeName
-		backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A10", "pod:"+webServerDeploy3.deployName)
+		backendConfig := ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy3.deployName, "balance roundrobin"})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 64"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 128"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy3.deployName + ".+weight 192"))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy4.deployName + ".+weight 256"))
-		o.Expect(backendConfig).To(o.ContainSubstring("balance roundrobin"))
 
-		exutil.By("Attempt to set route-backends more than 3 alternate backends")
+		compat_otp.By("Attempt to set route-backends more than 3 alternate backends")
 		output, err := oc.Run("set").Args("route-backends", routeName, "service-secure1=1", "service-secure2=1", "service-secure3=1", "service-secure4=1", "service-secure5=1").Output()
 		o.Expect(err).To(o.HaveOccurred())
 		o.Expect(output).To(o.MatchRegexp("cannot specify more than 3 .*backends"))
@@ -358,7 +357,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-15902-Endpoint will end up weight 1 when scaled weight per endpoint is less than 1", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -381,7 +380,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			routeName    = "edge15902"
 		)
 
-		exutil.By("Deploy two sets of web-server and services")
+		compat_otp.By("Deploy two sets of web-server and services")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -390,20 +389,21 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, deploy1Label)
 		ensurePodWithLabelReady(oc, ns, deploy2Label)
 
-		exutil.By("Scale deploy1 to replicas 2")
+		compat_otp.By("Scale deploy1 to replicas 2")
 		scaleDeploy(oc, ns, webServerDeploy1.deployName, 2)
-		waitForOutput(oc, ns, "deployment/"+webServerDeploy1.deployName, "{.status.readyReplicas}", "2")
+		waitForOutputEquals(oc, ns, "deployment/"+webServerDeploy1.deployName, "{.status.readyReplicas}", "2")
 
-		exutil.By("Create edge route and set route-backends with multi serivces")
+		compat_otp.By("Create edge route and set route-backends with multi serivces")
 		createRoute(oc, ns, "edge", routeName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+routeName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, routeName, "default")
 		err := oc.Run("set").Args("route-backends", routeName, "service-unsecure1=1", "service-unsecure2=256").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check haproxy.config and ensure weight of each deploy1 pod is 1")
+		compat_otp.By("Check haproxy.config and ensure weight of each deploy1 pod is 1")
 		routerPod := getOneRouterPodNameByIC(oc, "default")
 		backendBegin := "be_edge_http:" + ns + ":" + routeName
-		backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
+		backendConfig := ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
+		// backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A22", "pod:"+webServerDeploy2.deployName)
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 1"))
 		o.Expect(strings.Count(backendConfig, "weight 1")).To(o.Equal(2))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
@@ -415,7 +415,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-15995: Each endpoint gets weight/numberOfEndpoints portion of the requests - reencrypt route
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-15910-Each endpoint gets weight/numberOfEndpoints portion of the requests", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 			destCA              = filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 
@@ -442,7 +442,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			unsecureRouteName = "unsecure15910"
 		)
 
-		exutil.By("Deploy two sets of web-server and services")
+		compat_otp.By("Deploy two sets of web-server and services")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -451,64 +451,64 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, deploy1Label)
 		ensurePodWithLabelReady(oc, ns, deploy2Label)
 
-		exutil.By("Scale deploy1 to replicas 2 and scale deploy2 to replicas 3")
+		compat_otp.By("Scale deploy1 to replicas 2 and scale deploy2 to replicas 3")
 		scaleDeploy(oc, ns, webServerDeploy1.deployName, 2)
-		waitForOutput(oc, ns, "deployment/"+webServerDeploy1.deployName, "{.status.readyReplicas}", "2")
+		waitForOutputEquals(oc, ns, "deployment/"+webServerDeploy1.deployName, "{.status.readyReplicas}", "2")
 		scaleDeploy(oc, ns, webServerDeploy2.deployName, 3)
-		waitForOutput(oc, ns, "deployment/"+webServerDeploy2.deployName, "{.status.readyReplicas}", "3")
+		waitForOutputEquals(oc, ns, "deployment/"+webServerDeploy2.deployName, "{.status.readyReplicas}", "3")
 
-		exutil.By("Create edge route and set route-backends with multi serivces")
+		compat_otp.By("Create edge route and set route-backends with multi serivces")
 		createRoute(oc, ns, "edge", edgeRouteName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+edgeRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, edgeRouteName, "default")
 		err := oc.Run("set").Args("route-backends", edgeRouteName, "service-unsecure1=10", "service-unsecure2=10").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Create passthrough route and set route-backends with multi serivces")
+		compat_otp.By("Create passthrough route and set route-backends with multi serivces")
 		createRoute(oc, ns, "passthrough", passRouteName, webServerDeploy1.svcSecureName, []string{})
-		waitForOutput(oc, ns, "route/"+passRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, passRouteName, "default")
 		err = oc.Run("set").Args("route-backends", passRouteName, "service-secure1=20%", "service-secure2=80%").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Create reencrypt route and set route-backends with multi serivces")
+		compat_otp.By("Create reencrypt route and set route-backends with multi serivces")
 		createRoute(oc, ns, "reencrypt", reenRouteName, webServerDeploy1.svcSecureName, []string{"--dest-ca-cert=" + destCA})
-		waitForOutput(oc, ns, "route/"+reenRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, reenRouteName, "default")
 		err = oc.Run("set").Args("route-backends", reenRouteName, "service-secure1=256", "service-secure2=256").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Create unsecure route and set route-backends with multi serivces")
+		compat_otp.By("Create unsecure route and set route-backends with multi serivces")
 		createRoute(oc, ns, "http", unsecureRouteName, webServerDeploy1.svcUnsecureName, []string{})
-		waitForOutput(oc, ns, "route/"+unsecureRouteName, "{.status.ingress[0].conditions[0].status}", "True")
+		ensureRouteIsAdmittedByIngressController(oc, ns, unsecureRouteName, "default")
 		err = oc.Run("set").Args("route-backends", unsecureRouteName, "service-unsecure1=50", "service-unsecure2=100").Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("Check edge route weight in haproxy.config")
+		compat_otp.By("Check edge route weight in haproxy.config")
 		routerPod := getOneRouterPodNameByIC(oc, "default")
 		backendBegin := "be_edge_http:" + ns + ":" + edgeRouteName
-		backendConfig := readHaproxyConfig(oc, routerPod, backendBegin, "-A25", "pod:"+webServerDeploy2.deployName)
+		backendConfig := ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 256"))
 		o.Expect(strings.Count(backendConfig, "weight 256")).To(o.Equal(2))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 170"))
 		o.Expect(strings.Count(backendConfig, "weight 170")).To(o.Equal(3))
 
-		exutil.By("Check passthrough route weight in haproxy.config")
+		compat_otp.By("Check passthrough route weight in haproxy.config")
 		backendBegin = "be_tcp:" + ns + ":" + passRouteName
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A15", "pod:"+webServerDeploy2.deployName)
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 96"))
 		o.Expect(strings.Count(backendConfig, "weight 96")).To(o.Equal(2))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
 		o.Expect(strings.Count(backendConfig, "weight 256")).To(o.Equal(3))
 
-		exutil.By("Check reencryp route weight in haproxy.config")
+		compat_otp.By("Check reencryp route weight in haproxy.config")
 		backendBegin = "be_secure:" + ns + ":" + reenRouteName
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A25", "pod:"+webServerDeploy2.deployName)
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 256"))
 		o.Expect(strings.Count(backendConfig, "weight 256")).To(o.Equal(2))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 170"))
 		o.Expect(strings.Count(backendConfig, "weight 170")).To(o.Equal(3))
 
-		exutil.By("Check unsecure route weight in haproxy.config")
+		compat_otp.By("Check unsecure route weight in haproxy.config")
 		backendBegin = "be_http:" + ns + ":" + unsecureRouteName
-		backendConfig = readHaproxyConfig(oc, routerPod, backendBegin, "-A25", "pod:"+webServerDeploy2.deployName)
+		backendConfig = ensureHaproxyBlockConfigContains(oc, routerPod, backendBegin, []string{"pod:" + webServerDeploy2.deployName})
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy1.deployName + ".+weight 192"))
 		o.Expect(strings.Count(backendConfig, "weight 192")).To(o.Equal(2))
 		o.Expect(backendConfig).To(o.MatchRegexp("server pod:" + webServerDeploy2.deployName + ".+weight 256"))
@@ -518,7 +518,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-67093-Alternate Backends and Weights for a route work well", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
 			testPodSvcTP        = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -552,7 +552,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			service3Name = webServerDeploy3.svcUnsecureName
 		)
 
-		exutil.By("Create 3 server pods and 3 unsecure services")
+		compat_otp.By("Create 3 server pods and 3 unsecure services")
 		ns := oc.Namespace()
 		webServerDeploy1.namespace = ns
 		webServerDeploy1.create(oc)
@@ -564,13 +564,13 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		ensurePodWithLabelReady(oc, ns, srv2Label)
 		ensurePodWithLabelReady(oc, ns, srv3Label)
 
-		exutil.By("Expose a route with the unsecure service inside the project")
+		compat_otp.By("Expose a route with the unsecure service inside the project")
 		output, SrvErr := oc.Run("expose").Args("service", service1Name).Output()
 		o.Expect(SrvErr).NotTo(o.HaveOccurred())
 		o.Expect(output).To(o.ContainSubstring(service1Name))
 
 		// the below test step was for [OCPBUGS-29690] haproxy shouldn't be oom
-		exutil.By("check the default weights for the selected routes are 1")
+		compat_otp.By("check the default weights for the selected routes are 1")
 		routerpod := getOneRouterPodNameByIC(oc, "default")
 		srvPod1Name, err := oc.Run("get").Args("pods", "-l", srv1Label, "-o=jsonpath=\"{.items[0].metadata.name}\"").Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
@@ -591,22 +591,22 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		o.Expect(err).NotTo(o.HaveOccurred())
 		o.Expect(srvPodNum).To(o.Equal(weight1Num))
 
-		exutil.By("patch the route with alternate backends and weights")
+		compat_otp.By("patch the route with alternate backends and weights")
 		patchRrAlBackend := "{\"metadata\":{\"annotations\":{\"haproxy.router.openshift.io/balance\": \"roundrobin\"}}, " +
 			"\"spec\": {\"to\": {\"kind\": \"Service\", \"name\": \"" + service1Name + "\", \"weight\": 20}, \"alternateBackends\": [{\"kind\": \"Service\", \"name\": \"" + service2Name + "\", \"weight\": 10}, {\"kind\": \"Service\", \"name\": \"" + service3Name + "\", \"weight\": 10}]}}"
 		err = oc.AsAdmin().WithoutNamespace().Run("patch").Args("-n", ns, "route/"+service1Name, "--type=merge", "-p", patchRrAlBackend).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		exutil.By("check the route's backend config")
+		compat_otp.By("check the route's backend config")
 		backend := "be_http:" + ns + ":" + service1Name
 		bk1Re := regexp.MustCompile("server pod:" + srvPod1Name + ".+weight 256")
 		bk2Re := regexp.MustCompile("server pod:" + srvPod2Name + ".+weight 128")
 		bk3Re := regexp.MustCompile("server pod:" + srvPod3Name + ".+weight 128")
-		bk1 := readHaproxyConfig(oc, routerpod, backend, "-A27", "pod:"+srvPod1Name)
+		bk1 := ensureHaproxyBlockConfigContains(oc, routerpod, backend, []string{"pod:" + srvPod1Name})
 		o.Expect(len(bk1Re.FindStringSubmatch(bk1)[0]) > 1).To(o.BeTrue())
-		bk2 := readHaproxyConfig(oc, routerpod, backend, "-A27", "pod:"+srvPod2Name)
+		bk2 := ensureHaproxyBlockConfigContains(oc, routerpod, backend, []string{"pod:" + srvPod2Name})
 		o.Expect(len(bk2Re.FindStringSubmatch(bk2)[0]) > 1).To(o.BeTrue())
-		bk3 := readHaproxyConfig(oc, routerpod, backend, "-A27", "pod:"+srvPod3Name)
+		bk3 := ensureHaproxyBlockConfigContains(oc, routerpod, backend, []string{"pod:" + srvPod3Name})
 		o.Expect(len(bk3Re.FindStringSubmatch(bk3)[0]) > 1).To(o.BeTrue())
 	})
 })

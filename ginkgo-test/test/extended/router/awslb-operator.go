@@ -4,12 +4,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/router/ginkgo-test/test/extended/util/architecture"
+	"github.com/openshift/origin/test/extended/util/compat_otp/architecture"
 
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
-	exutil "github.com/openshift/router/ginkgo-test/test/extended/util"
-	clusterinfra "github.com/openshift/router/ginkgo-test/test/extended/util/clusterinfra"
+	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	clusterinfra "github.com/openshift/origin/test/extended/util/compat_otp/clusterinfra"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
@@ -17,7 +17,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	defer g.GinkgoRecover()
 
 	var (
-		oc                = exutil.NewCLI("awslb", exutil.KubeConfigPath())
+		oc                = compat_otp.NewCLI("awslb", compat_otp.KubeConfigPath())
 		operatorNamespace = "aws-load-balancer-operator"
 		operatorPodLabel  = "control-plane=controller-manager"
 	)
@@ -25,9 +25,9 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	g.BeforeEach(func() {
 		// skip ARM64 arch
 		architecture.SkipNonAmd64SingleArch(oc)
-		exutil.SkipIfPlatformTypeNot(oc, "AWS")
+		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 		// skip if us-gov region
-		region, err := exutil.GetAWSClusterRegion(oc)
+		region, err := compat_otp.GetAWSClusterRegion(oc)
 		o.Expect(err).NotTo(o.HaveOccurred())
 		if strings.Contains(region, "us-gov") {
 			g.Skip("Skipping for the aws cluster in us-gov region.")
@@ -42,7 +42,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	})
 
 	g.AfterEach(func() {
-		if exutil.IsSTSCluster(oc) {
+		if compat_otp.IsSTSCluster(oc) {
 			e2e.Logf("This is STS cluster so clear up AWS IAM resources as well as albo namespace")
 			clearUpAlbOnStsCluster(oc)
 		}
@@ -51,7 +51,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ConnectedOnly-LEVEL0-High-51189-Install aws-load-balancer-operator and controller [Serial]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router", "awslb")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router", "awslb")
 			AWSLBController     = filepath.Join(buildPruningBaseDir, "awslbcontroller.yaml")
 			operandCRName       = "cluster"
 			operandPodLabel     = "app.kubernetes.io/name=aws-load-balancer-operator"
@@ -64,7 +64,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 		defer oc.AsAdmin().WithoutNamespace().Run("delete").Args("awsloadbalancercontroller", operandCRName).Output()
 		_, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", AWSLBController).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
-		if exutil.IsSTSCluster(oc) {
+		if compat_otp.IsSTSCluster(oc) {
 			patchAlbControllerWithRoleArn(oc, operatorNamespace)
 		}
 		ensurePodWithLabelReady(oc, operatorNamespace, operandPodLabel)
@@ -73,7 +73,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ConnectedOnly-Medium-51191-Provision ALB by creating an ingress [Serial]", func() {
 		var (
-			buildPruningBaseDir = exutil.FixturePath("testdata", "router", "awslb")
+			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router", "awslb")
 			AWSLBController     = filepath.Join(buildPruningBaseDir, "awslbcontroller.yaml")
 			podsvc              = filepath.Join(buildPruningBaseDir, "podsvc.yaml")
 			ingress             = filepath.Join(buildPruningBaseDir, "ingress-test.yaml")
@@ -88,7 +88,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 		defer oc.AsAdmin().WithoutNamespace().Run("delete").Args("awsloadbalancercontroller", operandCRName).Output()
 		_, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", AWSLBController).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
-		if exutil.IsSTSCluster(oc) {
+		if compat_otp.IsSTSCluster(oc) {
 			patchAlbControllerWithRoleArn(oc, operatorNamespace)
 		}
 		ensurePodWithLabelReady(oc, operatorNamespace, operandPodLabel)
