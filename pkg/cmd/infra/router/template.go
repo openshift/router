@@ -22,6 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apiserver/pkg/apis/apiserver"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
@@ -662,7 +663,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			return err
 		}
 		authn, _, err := authenticatorfactory.DelegatingAuthenticatorConfig{
-			Anonymous:               true,
+			Anonymous: &apiserver.AnonymousAuthConfig{
+				Enabled: true,
+			},
 			TokenAccessReviewClient: tokenClient,
 			CacheTTL:                10 * time.Second,
 			WebhookRetryBackoff:     authoptions.DefaultAuthWebhookRetryBackoff(),
