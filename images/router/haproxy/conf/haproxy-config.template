@@ -184,22 +184,6 @@ defaults
   option contstats
   {{- end }}
 
-  # Prevent failures at startup due to name resolution
-  default-server init-addr last,none resolvers ingress_dns
-
-# Define a resolver to be used when servers are specified by name and
-# therefore requires name resolution. Server name resolution typically
-# occurs only at startup. With this configuration, name resolution
-# will occur once every 10s. Successful name resolution results in the
-# server being marked UP while failure results in the server being
-# marked DOWN. Note this only occurs when servers are specified by
-# name.
-resolvers ingress_dns
-  parse-resolv-conf
-  resolve_retries 1
-  timeout retry 5s
-  timeout resolve 10s
-  
   {{ if (gt .StatsPort -1) }}
 listen stats
     {{ if eq "v4v6" $router_ip_v4_v6_mode }}
