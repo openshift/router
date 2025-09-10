@@ -73,6 +73,9 @@ if [ -n "${ROUTER_SHUTDOWN-}" ]; then
   exit 1
 fi
 
+# DO NOT MERGE! Make sure node is configured to keep coredumps
+sysctl -w fs.suid_dumpable=1
+
 reload_status=0
 if [ -n "$old_pids" ]; then
   /usr/sbin/haproxy -f $config_file -p $pid_file -x /var/lib/haproxy/run/haproxy.sock -sf $old_pids
