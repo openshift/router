@@ -78,10 +78,11 @@ func protocolPtr(p kapi.Protocol) *kapi.Protocol {
 func newEndpointSliceTestSetup(plugin router.Plugin, initialObjects ...runtime.Object) (*fakekubeclient.Clientset, chan struct{}) {
 	stopCh := make(chan struct{})
 	client := fakekubeclient.NewSimpleClientset(initialObjects...)
+	fakeProject := &fakeproject.FakeProjectV1{}
 
 	factory.NewDefaultRouterControllerFactory(
 		fakerouterclient.NewSimpleClientset(),
-		&fakeproject.FakeProjects{},
+		fakeProject.Projects(),
 		client,
 		false, // watch endpoints
 	).Create(plugin, false, stopCh)

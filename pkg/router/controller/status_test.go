@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -1924,6 +1925,10 @@ func (i *fakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 	return nil, nil
 }
 
+func (i *fakeInformer) AddEventHandlerWithOptions(handler cache.ResourceEventHandler, options cache.HandlerOptions) (cache.ResourceEventHandlerRegistration, error) {
+	panic("not implemented")
+}
+
 func (i *fakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	panic("not implemented")
 }
@@ -1948,11 +1953,19 @@ func (i *fakeInformer) Run(stopCh <-chan struct{}) {
 	panic("not implemented")
 }
 
+func (i *fakeInformer) RunWithContext(ctx context.Context) {
+	panic("not implemented")
+}
+
 func (i *fakeInformer) HasSynced() bool {
 	panic("not implemented")
 }
 
 func (i *fakeInformer) LastSyncResourceVersion() string {
+	panic("not implemented")
+}
+
+func (i *fakeInformer) SetWatchErrorHandlerWithContext(handler cache.WatchErrorHandlerWithContext) error {
 	panic("not implemented")
 }
 
