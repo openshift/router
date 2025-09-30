@@ -131,6 +131,15 @@ global
     {{- end }}
   {{- end }}
 
+  # The user can provide a set of default supported groups using the ROUTER_CURVES variable.
+  # By default when a ROUTER_CURVES is not defined X25519, P-256, and P-521 are used.
+  {{- if (env "ROUTER_CURVES") }}
+  ssl-default-bind-curves {{ env "ROUTER_CURVES" }}
+  {{- else }}
+  # Default to modern secure curves if not set
+  ssl-default-bind-curves X25519:P-256:P-384:P-521
+  {{- end }}
+
 defaults
   {{- with $value := env "ROUTER_MAX_CONNECTIONS" "50000" }}
     {{- if isInteger $value }}
