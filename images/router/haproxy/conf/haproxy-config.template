@@ -147,6 +147,10 @@ defaults
   log global
   {{- end }}
 
+  # Enable the backport patch for https://issues.redhat.com/browse/OCPBUGS-60885
+  # which drops SSL handshakes for dead connections.
+  option abortonclose
+
   # To configure custom default errors, you can either uncomment the
   # line below (server ... 127.0.0.1:8080) and point it to your custom
   # backend service or alternatively, you can send a custom 503 or 404 error.
