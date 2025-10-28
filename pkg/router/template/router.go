@@ -872,6 +872,38 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 
 		newEndpoints := endpointsForAlias(cfg, service)
 
+		// If a service is idled, createRouterEndpoints returns a slice
+		// containing 1 endpoint (namely the idled service's ClusterIP
+		// address), which has NoHealthCheck set.  It is crucial that
+		// health checks not be enabled for an idled service lest the
+		// health check itself unidle the service.
+		//
+		// A route can have multiple associated services, any one of
+		// which could be idled, so we need to check all of the service
+		// units.
+		//
+		// Even if there is only a single service-unit associated with
+		// the route, we cannot determine here whether a service was
+		// scaled from 1 active endpoint (which *would not* have had
+		// health checks enabled) to 1 idled-service endpoint, or
+		// whether the service was scaled from multiple active endpoints
+		// (which *would* have had health checks enabled) to 1 active
+		// endpoint and then updated to 1 idled-service endpoint, so the
+		// only safe thing to do is to force a reload if the route has
+		// *any* endpoint with NoHealthCheck set.
+		//
+		// TODO: Extend the dynamic configuration manager to use the
+		// "disable health" and "enable health" commands, and use those
+		// commands instead of forcing a reload.
+		// https://docs.haproxy.org/2.8/management.html#9.3-disable%20health
+		// https://docs.haproxy.org/2.8/management.html#9.3-enable%20health
+		for _, ep := range newEndpoints {
+			if ep.NoHealthCheck {
+				log.V(4).Info("router will reload to disable health check for idled service", "service", id, "backendKey", backendKey)
+				return false
+			}
+		}
+
 		// As the endpoints have changed, recalculate the weights.
 		newWeights := r.calculateServiceWeights(cfg.ServiceUnits, cfg.PreferPort)
 
