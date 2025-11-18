@@ -183,6 +183,9 @@ defaults
   {{- if isTrue (env "ROUTER_HAPROXY_CONTSTATS") }}
   option contstats
   {{- end }}
+  {{- if isTrue (env "ROUTER_ABORT_ON_CLOSE") }}
+  option abortonclose
+  {{- end }}
 
   {{ if (gt .StatsPort -1) }}
 listen stats
