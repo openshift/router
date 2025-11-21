@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/utils/diff"
 )
 
 const (

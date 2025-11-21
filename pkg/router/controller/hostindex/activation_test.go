@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/utils/diff"
 
 	routev1 "github.com/openshift/api/route/v1"
 )

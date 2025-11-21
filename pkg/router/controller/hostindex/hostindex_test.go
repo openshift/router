@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/utils/diff"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
