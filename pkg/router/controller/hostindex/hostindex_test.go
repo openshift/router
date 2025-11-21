@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/diff"
-
+	"github.com/google/go-cmp/cmp"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func oldest(changes Changed, active []*routev1.Route, routes ...*routev1.Route) (updated, displaced []*routev1.Route) {
@@ -354,12 +353,12 @@ func Test_hostIndex(t *testing.T) {
 
 			activates := changesToMap(changed.GetActivated())
 			if !reflect.DeepEqual(tt.activates, activates) {
-				t.Errorf("Unexpected activated changes: %s", diff.ObjectReflectDiff(tt.activates, activates))
+				t.Errorf("Unexpected activated changes: %s", cmp.Diff(tt.activates, activates))
 			}
 
 			displaces := changesToMap(changed.GetDisplaced())
 			if !reflect.DeepEqual(tt.displaces, displaces) {
-				t.Errorf("Unexpected displaced changes: %s", diff.ObjectReflectDiff(tt.displaces, displaces))
+				t.Errorf("Unexpected displaced changes: %s", cmp.Diff(tt.displaces, displaces))
 			}
 
 			active := make(map[string][]string)
@@ -373,10 +372,10 @@ func Test_hostIndex(t *testing.T) {
 				}
 			}
 			if !reflect.DeepEqual(tt.active, active) {
-				t.Errorf("Unexpected active: %s", diff.ObjectReflectDiff(tt.active, active))
+				t.Errorf("Unexpected active: %s", cmp.Diff(tt.active, active))
 			}
 			if !reflect.DeepEqual(tt.inactive, inactive) {
-				t.Errorf("Unexpected inactive: %s", diff.ObjectReflectDiff(tt.inactive, inactive))
+				t.Errorf("Unexpected inactive: %s", cmp.Diff(tt.inactive, inactive))
 			}
 		})
 	}
@@ -465,12 +464,12 @@ func Test_Filter(t *testing.T) {
 
 			activates := changesToMap(changed.GetActivated())
 			if !reflect.DeepEqual(tt.activates, activates) {
-				t.Errorf("Unexpected activated changes: %s", diff.ObjectReflectDiff(tt.activates, activates))
+				t.Errorf("Unexpected activated changes: %s", cmp.Diff(tt.activates, activates))
 			}
 
 			displaces := changesToMap(changed.GetDisplaced())
 			if !reflect.DeepEqual(tt.displaces, displaces) {
-				t.Errorf("Unexpected displaced changes: %s", diff.ObjectReflectDiff(tt.displaces, displaces))
+				t.Errorf("Unexpected displaced changes: %s", cmp.Diff(tt.displaces, displaces))
 			}
 
 			active := make(map[string][]string)
@@ -484,10 +483,10 @@ func Test_Filter(t *testing.T) {
 				}
 			}
 			if !reflect.DeepEqual(tt.active, active) {
-				t.Errorf("Unexpected active: %s", diff.ObjectReflectDiff(tt.active, active))
+				t.Errorf("Unexpected active: %s", cmp.Diff(tt.active, active))
 			}
 			if !reflect.DeepEqual(tt.inactive, inactive) {
-				t.Errorf("Unexpected inactive: %s", diff.ObjectReflectDiff(tt.inactive, inactive))
+				t.Errorf("Unexpected inactive: %s", cmp.Diff(tt.inactive, inactive))
 			}
 		})
 	}
