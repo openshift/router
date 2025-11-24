@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"flag"
 	"io"
-	"io/ioutil"
 	_ "net/http/pprof"
 	"os"
 	"strings"
@@ -137,7 +136,7 @@ be_edge_http:openshift-console:downloads,BACKEND,0,0,0,0,1,0,0,0,0,0,,0,0,0,0,UP
 		if index < (len(scrapes) - 1) {
 			index++
 		}
-		return ioutil.NopCloser(r), nil
+		return io.NopCloser(r), nil
 	}
 	r := prometheus.NewRegistry()
 	if err := r.Register(e); err != nil {
