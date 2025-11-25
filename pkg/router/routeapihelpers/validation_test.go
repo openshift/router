@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	routev1 "github.com/openshift/api/route/v1"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 const (
@@ -2619,7 +2619,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 			if len(errs) == 0 {
 				if tc.expectRoute != nil {
 					if e, a := tc.expectRoute, tc.route; !reflect.DeepEqual(e, a) {
-						t.Errorf("got unexpected route differences: %s", diff.ObjectReflectDiff(e, a))
+						t.Errorf("got unexpected route differences: %s", cmp.Diff(e, a))
 					}
 				}
 

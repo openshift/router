@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/diff"
+	"github.com/google/go-cmp/cmp"
 
 	routev1 "github.com/openshift/api/route/v1"
 )
@@ -121,19 +121,19 @@ func TestOldestFirst(t *testing.T) {
 			changes := &routeChanges{}
 			gotUpdated, gotDisplaced := OldestFirst(changes, tt.args.active, tt.args.inactive...)
 			if !reflect.DeepEqual(gotUpdated, tt.wantUpdated) {
-				t.Errorf("OldestFirst() updated: %s", diff.ObjectReflectDiff(tt.wantUpdated, gotUpdated))
+				t.Errorf("OldestFirst() updated: %s", cmp.Diff(tt.wantUpdated, gotUpdated))
 			}
 			if !reflect.DeepEqual(gotDisplaced, tt.wantDisplaced) {
-				t.Errorf("OldestFirst() displaced: %s", diff.ObjectReflectDiff(tt.wantDisplaced, gotDisplaced))
+				t.Errorf("OldestFirst() displaced: %s", cmp.Diff(tt.wantDisplaced, gotDisplaced))
 			}
 
 			activates := changesToMap(changes.GetActivated())
 			if !reflect.DeepEqual(tt.activates, activates) {
-				t.Errorf("Unexpected activated changes: %s", diff.ObjectReflectDiff(tt.activates, activates))
+				t.Errorf("Unexpected activated changes: %s", cmp.Diff(tt.activates, activates))
 			}
 			displaces := changesToMap(changes.GetDisplaced())
 			if !reflect.DeepEqual(tt.displaces, displaces) {
-				t.Errorf("Unexpected displaced changes: %s", diff.ObjectReflectDiff(tt.displaces, displaces))
+				t.Errorf("Unexpected displaced changes: %s", cmp.Diff(tt.displaces, displaces))
 			}
 
 		})
@@ -261,19 +261,19 @@ func TestSameNamespace(t *testing.T) {
 			changes := &routeChanges{}
 			gotUpdated, gotDisplaced := SameNamespace(changes, tt.args.active, tt.args.inactive...)
 			if !reflect.DeepEqual(gotUpdated, tt.wantUpdated) {
-				t.Errorf("SameNamespace() updated: %s", diff.ObjectReflectDiff(tt.wantUpdated, gotUpdated))
+				t.Errorf("SameNamespace() updated: %s", cmp.Diff(tt.wantUpdated, gotUpdated))
 			}
 			if !reflect.DeepEqual(gotDisplaced, tt.wantDisplaced) {
-				t.Errorf("SameNamespace() displaced: %s", diff.ObjectReflectDiff(tt.wantDisplaced, gotDisplaced))
+				t.Errorf("SameNamespace() displaced: %s", cmp.Diff(tt.wantDisplaced, gotDisplaced))
 			}
 
 			activates := changesToMap(changes.GetActivated())
 			if !reflect.DeepEqual(tt.activates, activates) {
-				t.Errorf("Unexpected activated changes: %s", diff.ObjectReflectDiff(tt.activates, activates))
+				t.Errorf("Unexpected activated changes: %s", cmp.Diff(tt.activates, activates))
 			}
 			displaces := changesToMap(changes.GetDisplaced())
 			if !reflect.DeepEqual(tt.displaces, displaces) {
-				t.Errorf("Unexpected displaced changes: %s", diff.ObjectReflectDiff(tt.displaces, displaces))
+				t.Errorf("Unexpected displaced changes: %s", cmp.Diff(tt.displaces, displaces))
 			}
 
 		})
