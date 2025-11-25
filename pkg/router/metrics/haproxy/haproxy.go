@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -712,7 +712,7 @@ func NewPrometheusCollector(opts PrometheusOptions) (*Exporter, error) {
 		procExporter := prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
 			Namespace: namespace,
 			PidFn: func() (int, error) {
-				content, err := ioutil.ReadFile(opts.PidFile)
+				content, err := os.ReadFile(opts.PidFile)
 				if err != nil {
 					return 0, fmt.Errorf("can't read haproxy pid file: %s", err)
 				}
