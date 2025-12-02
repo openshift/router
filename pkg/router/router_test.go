@@ -912,9 +912,9 @@ func TestConfigTemplate(t *testing.T) {
 		"Secure Redirect Strips Port": {
 			mustCreateWithConfig{
 				mustCreateRoute: mustCreateRoute{
-					name: "secure-redirect-route",
-					host: "secure.example.com",
-					time: start,
+					name:                          "secure-redirect-route",
+					host:                          "secure.example.com",
+					time:                          start,
 					insecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
 					tlsTermination:                routev1.TLSTerminationEdge,
 				},
