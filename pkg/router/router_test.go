@@ -922,7 +922,7 @@ func TestConfigTemplate(t *testing.T) {
 					section:     "frontend",
 					sectionName: "public",
 					attribute:   "http-request",
-					value:       `redirect location https://%[hdr(host),regsub(:[0-9]+$,,)]%[path] code 301 if secure_redirect`,
+					value:       `redirect location https://%[req.hdr(host),regsub(:[0-9]+$,,)]%[path] code 302 if secure_redirect`,
 				},
 			},
 		},
