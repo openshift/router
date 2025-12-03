@@ -224,7 +224,7 @@ func (b *Backend) EnableServer(name string) error {
 // DisableServer stops serving traffic for a haproxy backend server.
 func (b *Backend) DisableServer(name string) error {
 	log.V(4).Info("disabling server with maint state", "server", name)
-	return b.UpdateServerState(name, BackendServerStateMaint)
+	return b.UpdateServerState(name, BackendServerStateDrain)
 }
 
 // Commit commits all the pending changes made to a haproxy backend.
