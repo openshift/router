@@ -3,7 +3,6 @@ package testing
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -38,7 +37,7 @@ type fakeHAProxy struct {
 }
 
 func startFakeHAProxyServer(prefix string) (*fakeHAProxy, error) {
-	f, err := ioutil.TempFile(os.TempDir(), prefix)
+	f, err := os.CreateTemp(os.TempDir(), prefix)
 	if err != nil {
 		return nil, err
 	}

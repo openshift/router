@@ -2,7 +2,6 @@ package haproxy
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
@@ -180,7 +179,7 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 func (cm *haproxyConfigManager) Initialize(router templaterouter.RouterInterface, certPath string) {
 	certBytes := []byte{}
 	if len(certPath) > 0 {
-		if b, err := ioutil.ReadFile(certPath); err != nil {
+		if b, err := os.ReadFile(certPath); err != nil {
 			log.Error(err, "loading router default certificate", "certPath", certPath)
 		} else {
 			certBytes = b

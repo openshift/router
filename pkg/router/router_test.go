@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -97,7 +96,7 @@ func TestMain(m *testing.M) {
 
 	var plugin router.Plugin
 
-	workdir, err := ioutil.TempDir("", "router")
+	workdir, err := os.MkdirTemp("", "router")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -661,7 +660,7 @@ func TestConfigTemplate(t *testing.T) {
 					tlsTermination: routev1.TLSTerminationEdge,
 					cert: func() string {
 						defaultCertFileName := filepath.Join(h.workdir, "router", "certs", "default.pem")
-						content, err := ioutil.ReadFile(defaultCertFileName)
+						content, err := os.ReadFile(defaultCertFileName)
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -950,7 +949,7 @@ func TestConfigTemplate(t *testing.T) {
 					if len(expectation.mustMatchConfig.mapFile) != 0 {
 						fileName = filepath.Join(h.workdir, "conf", expectation.mustMatchConfig.mapFile)
 					}
-					if content, err := ioutil.ReadFile(fileName); err != nil {
+					if content, err := os.ReadFile(fileName); err != nil {
 						t.Error(err)
 					} else {
 						t.Logf("%s:\n%s", fileName, string(content))
@@ -1218,7 +1217,7 @@ func matchConfig(m mustMatchConfig, parser haproxyconfparser.Parser) error {
 func matchMapFile(mapFileName, entry string, notFound bool) error {
 	fileName := filepath.Join(h.workdir, "conf", mapFileName)
 
-	content, err := ioutil.ReadFile(fileName)
+	content, err := os.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
