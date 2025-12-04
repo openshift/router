@@ -13,6 +13,9 @@ approvers:
   - gcs278
   - grzpiotrowski
   - Thealisyed
+  - rikatz
+  - davidesalerno
+  - bentito
 reviewers:
   - ironcladlou
   - knobunc
@@ -29,4 +32,7 @@ reviewers:
   - gcs278
   - grzpiotrowski
   - Thealisyed
+  - rikatz
+  - davidesalerno
+  - bentito
 component: Routing
