@@ -12,6 +12,7 @@ import (
 
 	"k8s.io/apiserver/pkg/server/healthz"
 
+	"github.com/openshift/router/pkg/router/crl"
 	"github.com/openshift/router/pkg/router/metrics/probehttp"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 )
@@ -73,6 +74,15 @@ func ControllerLive() healthz.HealthChecker {
 		return nil
 	})
 
+}
+
+func CRLsUpdated() healthz.HealthChecker {
+	return healthz.NamedCheck("crls-updated", func(r *http.Request) error {
+		if !crl.GetCRLsUpdated() {
+			return fmt.Errorf("missing CRLs")
+		}
+		return nil
+	})
 }
 
 // ProxyProtocolHTTPBackendAvailable returns a healthz check that verifies a backend supporting
