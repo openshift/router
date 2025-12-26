@@ -31,8 +31,11 @@ func init() {
 //
 // Example:
 //   configPath := testdata.FixturePath("manifests/config.yaml")
+//   configPath := testdata.FixturePath("testdata", "router", "file.yaml")
 //   data, err := os.ReadFile(configPath)
-func FixturePath(relativePath string) string {
+func FixturePath(pathComponents ...string) string {
+	// Join all path components into a single relative path
+	relativePath := filepath.Join(pathComponents...)
 	targetPath := filepath.Join(fixtureDir, relativePath)
 
 	// Check if already extracted
@@ -45,12 +48,29 @@ func FixturePath(relativePath string) string {
 		panic(fmt.Sprintf("failed to create directory for %s: %v", relativePath, err))
 	}
 
-	// Try to restore single asset
-	if err := RestoreAsset(fixtureDir, relativePath); err != nil {
+	// Bindata stores assets with "testdata/" prefix
+	// e.g., bindata has "testdata/router/file.yaml" but tests call FixturePath("router/file.yaml")
+	bindataPath := filepath.Join("testdata", relativePath)
+
+	// Extract to temp directory first to handle path mismatch
+	tempDir, err := os.MkdirTemp("", "bindata-extract-")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create temp directory: %v", err))
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Try to restore single asset or directory to temp location
+	if err := RestoreAsset(tempDir, bindataPath); err != nil {
 		// If single file fails, try restoring as directory
-		if err := RestoreAssets(fixtureDir, relativePath); err != nil {
+		if err := RestoreAssets(tempDir, bindataPath); err != nil {
 			panic(fmt.Sprintf("failed to restore fixture %s: %v", relativePath, err))
 		}
+	}
+
+	// Move extracted files from temp location to target location
+	extractedPath := filepath.Join(tempDir, bindataPath)
+	if err := os.Rename(extractedPath, targetPath); err != nil {
+		panic(fmt.Sprintf("failed to move extracted files from %s to %s: %v", extractedPath, targetPath, err))
 	}
 
 	// Set appropriate permissions for directories

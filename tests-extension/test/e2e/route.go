@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"os/exec"
@@ -28,7 +29,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: zzhao@redhat.com - OCP-12122 Alias will be invalid after removing it
 	g.It("Author:mjoseph-Critical-10024-Route could NOT be updated after created", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp2         = filepath.Join(buildPruningBaseDir, "subdomain-routes/route.yaml")
 			unSecSvcName        = "service-unsecure"
@@ -96,7 +97,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-10043-Set balance leastconn for passthrough routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			svcName             = "service-secure"
 		)
@@ -122,7 +123,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// bugzilla: 1368525
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Medium-10207-NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
@@ -217,7 +218,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-10660-Service endpoint can be work well if the mapping pod ip is updated", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 			serverName          = "web-server-deploy"
@@ -252,7 +253,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Low-10943-NetworkEdge Set invalid timeout server for route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 		)
@@ -286,7 +287,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// combine OCP-9651, OCP-9717
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonHyperShiftHOST-Critical-11036-NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			SvcName             = "service-secure"
 			unSecSvc            = "service-unsecure"
@@ -351,7 +352,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Medium-11067-NetworkEdge oc help information should contain option wildcard-policy", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			svcName             = "service-secure"
 		)
@@ -384,7 +385,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// merge OCP-11042(NetworkEdge NetworkEdge Disable haproxy hash based sticky session for edge termination routes) to OCP-11130
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-11130-NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
@@ -467,7 +468,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com - OCP-11325: Limit the number of http request per ip
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-11619-Limit the number of TCP connection per IP in specified time period", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		)
 
@@ -535,7 +536,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Critical-11635-NetworkEdge Set timeout server for passthough route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			secureSvcName       = "httpbin-svc-secure"
 		)
@@ -577,7 +578,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			secSvcName          = "service-secure"
@@ -616,7 +617,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-11982-NetworkEdge Set timeout server for http route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			insecureSvcName     = "httpbin-svc-insecure"
 		)
@@ -656,7 +657,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// bug: 1374772
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-12091-haproxy config information should be clean when changing the service to another route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
@@ -747,7 +748,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com - OCP-12506: Hostname of componentRoutes should be RFC compliant
 	// Test case creater: zzhao@redhat.com - OCP-15115: Harden haproxy to prevent the PROXY header from being passed for reencrypt route
 	g.It("Author:mjoseph-High-12506-reencrypt route with no cert if a router is configured with a default wildcard cert", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		caCert := filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 
@@ -780,7 +781,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com - OCP-12562 The path specified in route can work well for edge terminated
 	// Test case creater: hongli@redhat.com - OCP-12575 The path specified in route can work well for unsecure
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-12562-The path specified in route can work well for edge/unsecure termination", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		unSecSvc := "service-unsecure"
 		edgeRoute := "12562-edge"
@@ -837,7 +838,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// Test case creater: hongli@redhat.com
 	g.It("Author:mjoseph-Critical-12564-The path specified in route can work well for reencrypt terminated", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		caCert := filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 
@@ -871,7 +872,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: zzhao@redhat.com - OCP-13248 The hostname should be converted to available route when met special character
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-12652-The later route should be HostAlreadyClaimed when there is a same host exist", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -936,7 +937,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonHyperShiftHOST-Critical-13753-NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -988,7 +989,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//combine OCP-9650
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonHyperShiftHOST-Critical-13839-NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			SvcName             = "service-secure"
 			unSecSvc            = "service-unsecure"
@@ -1033,7 +1034,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonHyperShiftHOST-Critical-14678-NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			unSecSvcName        = "service-unsecure"
 			signedPod           = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 		)
@@ -1121,7 +1122,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Low-14680-NetworkEdge Add invalid value in annotation whitelist to route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 		)
@@ -1165,7 +1166,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: zzhao@redhat.com - OCP-15072: The router can do a case-insensitive match of a hostname for passthrough route
 	// Test case creater: zzhao@redhat.com - OCP-15073: The router can do a case-insensitive match of a hostname for reencrypt route
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-High-15028-router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		caCert := filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 		UnsecureSvcName := "service-unsecure"
@@ -1219,7 +1220,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: zzhao@redhat.com - OCP-15113: Harden haproxy to prevent the PROXY header from being passed for unsecure route
 	// Test case creater: zzhao@redhat.com - OCP-15114: Harden haproxy to prevent the PROXY header from being passed for edge route
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-High-15113-Harden haproxy to prevent the PROXY header from being passed for unsecure/edge route", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 		UnsecureSvcName := "httpbin-svc-insecure"
 
@@ -1262,7 +1263,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// merge OCP-15874(NetworkEdge can set cookie name for reencrypt routes by annotation) to OCP-15873
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-15873-NetworkEdge can set cookie name for edge/reen routes by annotation", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
@@ -1356,7 +1357,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Medium-16732-NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -1403,7 +1404,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "websocket-deploy.yaml")
 			unsecSvcName        = "ws-unsecure"
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
@@ -1445,7 +1446,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//combining OCP-18482 and OCP-18489 into one test
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Critical-18482-NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 			secSvcName          = "service-secure"
@@ -1499,7 +1500,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Medium-18490-NetworkEdge limits multiple backend pods max concurrent connections", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 		)
@@ -1537,7 +1538,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// Test case creater: zzhao@redhat.com
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Medium-19804-Unsecure route with path and another tls route with same hostname can work at the same time", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		unSecSvc := "service-unsecure"
 		edgeRoute := "19804-edge"
@@ -1570,7 +1571,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//combining OCP-34106 and OCP-34168 into one
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-34106-NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 		)
@@ -1609,7 +1610,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Critical-38671-NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -1674,7 +1675,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-38672-NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			secSvcName          = "service-secure"
 		)
@@ -1710,7 +1711,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: aiyengar@redhat.com
 	g.It("Author:aiyengar-ROSA-OSD_CCS-ARO-Medium-42230-route can be configured to whitelist more than 61 ips/CIDRs", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			output              string
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		)
@@ -1752,7 +1753,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-High-45399-ingress controller continue to function normally with unexpected high timeout value", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			output              string
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		)
@@ -1799,7 +1800,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonPreRelease-PreChkUpgrade-High-45955-Unidling a route work without user intervention", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			ns                  = "ocp45955"
 		)
@@ -1874,7 +1875,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("This is proxy cluster, skip the test.")
 		}
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "49802-route.yaml")
 			rut                 = routeDescription{
@@ -1919,7 +1920,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Critical-53696-Route status should updates accordingly when ingress routes cleaned up [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp53696",
@@ -2075,7 +2076,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Medium-63004-Ipv6 addresses are also acceptable for whitelisting", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			output              string
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		)
@@ -2106,7 +2107,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-High-73771-router can load secret", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			requiredRole        = filepath.Join(buildPruningBaseDir, "ocp73771-role.yaml")
 			unsecsvcName        = "service-unsecure"
@@ -2206,7 +2207,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Critical-77080-NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			unSecSvcName        = "service-unsecure"
 			secSvcName          = "service-secure"
 			signedPod           = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
@@ -2294,7 +2295,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Critical-77082-NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPod             = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 		)
@@ -2353,7 +2354,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Combines OCP-77091 and OCP 77086 tests for allowlist epic NE:1100
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-77091-NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPod             = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 		)
@@ -2407,7 +2408,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// OCPBUGS-47773
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-85274-Route spec path that have specail characters should not cause HaProxy error and ingress degraded", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 			ingressJsonPath     = `{.status.conditions[?(@.type=="Available")].status}{.status.conditions[?(@.type=="Progressing")].status}{.status.conditions[?(@.type=="Degraded")].status}`

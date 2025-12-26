@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,7 +30,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 			secSvcName          = "service-secure"
@@ -139,7 +140,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//Combine tls cases OCP-12573 and OCP-19799
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-12573-Default haproxy router should be able to skip invalid cert route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 			secSvcName          = "service-secure"
@@ -237,7 +238,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-14089-Route cannot be accessed if the backend cannot be matched by the default destination CA of router", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			secSvcName          = "service-secure"
 		)
@@ -264,7 +265,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// also includes OCP-25665/25666/25668/25703
 	// author: hongli@redhat.com
 	g.It("Author:hongli-WRS-ROSA-OSD_CCS-ARO-Critical-25702-V-BR.12-the tlsSecurityProfile in ingresscontroller can be updated", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -326,7 +327,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-WRS-Critical-43284-V-CM.01-setting tlssecurityprofile to TLSv1.3", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -363,7 +364,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: hongli@redhat.com
 	g.It("Author:hongli-WRS-LEVEL0-Critical-43300-V-ACS.05-enable client certificate with optional policy", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		cmFile := filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 		var (
@@ -397,7 +398,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: hongli@redhat.com
 	g.It("Author:hongli-WRS-Medium-43301-V-ACS.05-enable client certificate with required policy", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		cmFile := filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 		var (
@@ -473,7 +474,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Critical-50842-destination-ca-certificate-secret annotation for destination CA Opaque certifcate", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 		ingressTemp := filepath.Join(buildPruningBaseDir, "ingress-destCA.yaml")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
@@ -538,7 +539,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Critical-51980-destination-ca-certificate-secret annotation for destination CA TLS certifcate", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 		ingressTemp := filepath.Join(buildPruningBaseDir, "ingress-destCA.yaml")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")

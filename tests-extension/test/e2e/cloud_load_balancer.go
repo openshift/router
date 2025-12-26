@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -66,7 +67,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skip for private cluster since Internal LB scope in default ingresscontroller")
 		}
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -141,7 +142,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skip for private cluster since Internal LB scope in default ingresscontroller")
 		}
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -189,7 +190,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		g.By("Pre-flight check for the platform type")
 		compat_otp.SkipIfPlatformTypeNot(oc, "Azure")
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-azure-cidr.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -242,7 +243,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		g.By("Pre-flight check for the platform type")
 		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -287,7 +288,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		g.By("Pre-flight check for the platform type")
 		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -343,7 +344,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skipping since no public subnet found")
 		}
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 		var (
@@ -429,7 +430,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skipping since no public subnet found")
 		}
 
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		ns := "openshift-ingress"
 

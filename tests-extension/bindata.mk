@@ -1,5 +1,4 @@
 # Bindata generation for testdata files
-# This file is included by the main Makefile
 
 # Testdata path
 TESTDATA_PATH := test/testdata
@@ -16,16 +15,15 @@ $(GO_BINDATA):
 
 # Generate bindata.go from testdata directory
 .PHONY: bindata
-bindata: $(GO_BINDATA) $(TESTDATA_PATH)/bindata.go
-
-$(TESTDATA_PATH)/bindata.go: $(GO_BINDATA) $(shell find $(TESTDATA_PATH) -type f -not -name 'bindata.go' 2>/dev/null)
+bindata: clean-bindata $(GO_BINDATA)
 	@echo "Generating bindata from $(TESTDATA_PATH)..."
-	@mkdir -p $(@D)
+	@mkdir -p $(TESTDATA_PATH)
 	$(GO_BINDATA) -nocompress -nometadata \
-		-pkg testdata -o $@ -prefix "test" $(TESTDATA_PATH)/...
-	@gofmt -s -w $@
-	@echo "Bindata generated successfully at $@"
+		-pkg testdata -o $(TESTDATA_PATH)/bindata.go -prefix "test" $(TESTDATA_PATH)/...
+	@gofmt -s -w $(TESTDATA_PATH)/bindata.go
+	@echo "Bindata generated successfully at $(TESTDATA_PATH)/bindata.go"
 
 .PHONY: clean-bindata
 clean-bindata:
-	rm -f $(TESTDATA_PATH)/bindata.go
+	@echo "Cleaning bindata..."
+	@rm -f $(TESTDATA_PATH)/bindata.go

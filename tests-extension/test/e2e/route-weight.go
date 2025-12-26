@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +20,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-10889-Sticky session could work normally after set weight for route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -91,7 +92,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-15382: Set max backends weight for ab routing
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Low-11351-Set backends weight to zero for ab routing", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -176,7 +177,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-12076: Set backends weight for unsecure route
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-High-11608-Set backends weight for edge/passthrough/reencrypt/unsecure route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 			destCA              = filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 
@@ -261,7 +262,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-13521: The passthrough route with multiple service will set load balance policy to RoundRobin by default
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-12088-Set multiple backends weight for route", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -339,7 +340,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-15902-Endpoint will end up weight 1 when scaled weight per endpoint is less than 1", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{
@@ -394,7 +395,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	//          OCP-15995: Each endpoint gets weight/numberOfEndpoints portion of the requests - reencrypt route
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Medium-15910-Each endpoint gets weight/numberOfEndpoints portion of the requests", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			webServerTemplate   = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 			destCA              = filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 
@@ -489,7 +490,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-67093-Alternate Backends and Weights for a route work well", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvcTP        = filepath.Join(buildPruningBaseDir, "template-web-server-deploy.yaml")
 
 			webServerDeploy1 = webServerDeployDescription{

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"context"
 	"fmt"
 	"os"
@@ -147,7 +148,7 @@ func iamDeleteRolePolicy(iamClient *iam.Client, policyName string, roleName stri
 
 // Create ALB Operator Role and inline Policy
 func createAlboRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "awslb")
 	alboPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-albo-perms-policy.json")
 
 	alboRoleName := infraID + "-albo-role"
@@ -183,7 +184,7 @@ func createAlboRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix s
 
 // Create ALB Controller (operand) Role and inline policy
 func createAlbcRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := compat_otp.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "awslb")
 	albcPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-albc-perms-policy.json")
 	albcRoleName := infraID + "-albc-role"
 	albcPolicyName := infraID + "-albc-perms-policy"

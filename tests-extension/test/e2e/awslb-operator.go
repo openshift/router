@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"path/filepath"
 	"strings"
 
@@ -54,7 +55,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ConnectedOnly-LEVEL0-High-51189-Install aws-load-balancer-operator and controller [Serial]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router", "awslb")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "awslb")
 			AWSLBController     = filepath.Join(buildPruningBaseDir, "awslbcontroller.yaml")
 			operandCRName       = "cluster"
 			operandPodLabel     = "app.kubernetes.io/name=aws-load-balancer-operator"
@@ -76,7 +77,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ALBO", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ROSA-OSD_CCS-ConnectedOnly-Medium-51191-Provision ALB by creating an ingress [Serial]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router", "awslb")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "awslb")
 			AWSLBController     = filepath.Join(buildPruningBaseDir, "awslbcontroller.yaml")
 			podsvc              = filepath.Join(buildPruningBaseDir, "podsvc.yaml")
 			ingress             = filepath.Join(buildPruningBaseDir, "ingress-test.yaml")

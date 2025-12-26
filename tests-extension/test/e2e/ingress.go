@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,7 +26,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: aiyengar@redhat.com - OCP-33986 Setting values other than "edge/passthrough/reencrypt" for "route.openshift.io/termination" annotation are ignored by ingress object
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-33960-Setting 'route.openshift.io/termination' annotation to Edge/Passthrough/Reencrypt in ingress resource", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			testIngress         = filepath.Join(buildPruningBaseDir, "ingress-resource.yaml")
 			tmpdir              = "/tmp/OCP-33960-CA/"
@@ -102,7 +103,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	g.It("Author:hongli-Critical-41109-use IngressClass controller for ingress-to-route", func() {
 		var (
 			output              string
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			testIngress         = filepath.Join(buildPruningBaseDir, "ingress-with-class.yaml")
 		)
@@ -132,7 +133,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: hongli@redhat.com
 	g.It("Author:hongli-Critical-41117-ingress operator manages the IngressClass for each ingresscontroller", func() {
-		buildPruningBaseDir := compat_otp.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -171,7 +172,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Critical-51148-host name of the route depends on the subdomain if provided", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "subdomain-routes/ocp51148-route.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			rut                 = routeDescription{
@@ -233,7 +234,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-High-51429-different router deployment with same route using subdomain", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			customTemp2         = filepath.Join(buildPruningBaseDir, "subdomain-routes/route.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
@@ -300,7 +301,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-NonHyperShiftHOST-ROSA-OSD_CCS-ARO-High-51437-Router deployment using different shard with same subdomain ", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			customTemp2         = filepath.Join(buildPruningBaseDir, "subdomain-routes/alpha-shard-route.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-shard.yaml")
@@ -434,7 +435,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// bug: 2013004
 	g.It("ARO-Author:shudili-High-57089-Error syncing load balancer and failed to parse the VMAS ID on Azure platform", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			lbServices          = filepath.Join(buildPruningBaseDir, "bug2013004-lb-services.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -535,7 +536,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// OCPBUGS-49769
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-85280-Haproxy router pods should validate the key and cert content before accepting", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			unSecSvcName        = "service-unsecure"
 			svcPort             = "27017"
@@ -596,7 +597,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-85950-Propagate ingress labels to routes", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			testIngress         = filepath.Join(buildPruningBaseDir, "ingress-with-class.yaml")
 			ingressName         = "unsecure-ingress85950"

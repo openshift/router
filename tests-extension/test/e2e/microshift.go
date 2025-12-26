@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"math/rand"
 	"os"
@@ -24,7 +25,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	g.It("Author:mjoseph-MicroShiftOnly-High-60136-reencrypt route using Ingress resource for Microshift with destination CA certificate", func() {
 		var (
 			e2eTestNamespace    = "e2e-ne-ocp60136-" + getRandomString()
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			ingressFile         = filepath.Join(buildPruningBaseDir, "microshift-ingress-destca.yaml")
 		)
@@ -65,7 +66,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	g.It("Author:mjoseph-MicroShiftOnly-Critical-60149-http route using Ingress resource for Microshift", func() {
 		var (
 			e2eTestNamespace    = "e2e-ne-ocp60149-" + getRandomString()
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			ingressFile         = filepath.Join(buildPruningBaseDir, "microshift-ingress-http.yaml")
 			httpRoute           = "service-unsecure-test.example.com"
@@ -107,7 +108,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	g.It("Author:mjoseph-MicroShiftOnly-Critical-60266-creation of edge and passthrough routes for Microshift", func() {
 		var (
 			e2eTestNamespace    = "e2e-ne-ocp60266-" + getRandomString()
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			edgeRouteHost       = "route-edge-" + e2eTestNamespace + ".apps.example.com"
 			passRouteHost       = "route-pass-" + e2eTestNamespace + ".apps.example.com"
@@ -165,7 +166,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 	g.It("Author:mjoseph-MicroShiftOnly-Critical-60283-creation of http and re-encrypt routes for Microshift", func() {
 		var (
 			e2eTestNamespace    = "e2e-ne-ocp60283-" + getRandomString()
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			httpRouteHost       = "route-http-" + e2eTestNamespace + ".apps.example.com"
 			reenRouteHost       = "route-reen-" + e2eTestNamespace + ".apps.example.com"
@@ -223,7 +224,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 
 	g.It("Author:shudili-MicroShiftOnly-High-72802-make router namespace ownership check configurable for the default microshift configuration", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -344,7 +345,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 
 	g.It("Author:shudili-MicroShiftOnly-High-73152-Expose router as load balancer service type", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			unsecsvcName        = "service-unsecure"
@@ -409,7 +410,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 
 	g.It("Author:shudili-MicroShiftOnly-High-73202-Add configurable listening IP addresses and listening ports", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			unsecsvcName        = "service-unsecure"
@@ -504,7 +505,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge", func() {
 
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-Longduration-High-73203-configuring listening IP addresses and listening Ports [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			unsecsvcName        = "service-unsecure"
@@ -677,7 +678,7 @@ ingress:
 
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-Longduration-Medium-73621-Disable/Enable namespace ownership support for router [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -771,7 +772,7 @@ ingress:
 	g.It("Author:shudili-MicroShiftOnly-High-77349-introduce ingress controller customization with microshift config.yaml [Disruptive]", func() {
 
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			unsecsvcName        = "service-unsecure"
 			caseID              = "77349"
@@ -885,7 +886,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-High-80508-supporting customerized default certification for Ingress Controller [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -1145,7 +1146,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-80517-mTLS supporting client certificate with Optional or Required policy [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -1274,7 +1275,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-High-80518-mTLS supporting client certificate with the subject filter [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unSecSvcName        = "service-unsecure"
@@ -1388,7 +1389,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-80520-supporting wildcard routeAdmissionPolicy for the Ingress Controller [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -1476,7 +1477,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-81996-capture and log http cookies with specific prefixes via httpCaptureCookies option [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -1587,7 +1588,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-81997-capture and log http cookies with exact match via httpCaptureCookies option [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -1689,7 +1690,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-82000-capture and log specific http Request header via httpCaptureHeaders option [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -1789,7 +1790,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-High-82003-The httpCaptureHeaders option strictly adheres to the maxlength parameter [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -1858,7 +1859,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-High-82004-custom http 503 and 404 error pages for ingress route [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			configmapName       = "custom-82004-error-code-pages"
 			cmFile1             = filepath.Join(buildPruningBaseDir, "error-page-503.http")
 			cmFile2             = filepath.Join(buildPruningBaseDir, "error-page-404.http")
@@ -1939,7 +1940,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-82014-httpLogFormat for logging http requests [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -2036,7 +2037,7 @@ ingress:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-MicroShiftOnly-NonPreRelease-High-82015-logging destination to a syslog server [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = compat_otp.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
