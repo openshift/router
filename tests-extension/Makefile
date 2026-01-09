@@ -9,7 +9,7 @@ BINARY := bin/router-tests-ext
 build: bindata
 	@echo "Building extension binary..."
 	@mkdir -p bin
-	go build -o $(BINARY) ./cmd
+	GOTOOLCHAIN=auto GOSUMDB=sum.golang.org go build -o $(BINARY) ./cmd
 	@echo "Binary built successfully at $(BINARY)"
 
 # Clean generated files

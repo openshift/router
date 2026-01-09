@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -23,6 +22,7 @@ import (
 	o "github.com/onsi/gomega"
 	exutil "github.com/openshift/origin/test/extended/util"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 	clusterinfra "github.com/openshift/origin/test/extended/util/compat_otp/clusterinfra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -831,7 +831,7 @@ func checkRouteCertificationInRouterPod(oc *exutil.CLI, ns, routeName, routerpod
 
 func getImagePullSpecFromPayload(oc *exutil.CLI, image string) string {
 	var pullspec string
-	baseDir := testdata.FixturePath("testdata", "router")
+	baseDir := testdata.FixturePath("router")
 	indexTmpPath := filepath.Join(baseDir, getRandomString())
 	dockerconfigjsonpath := filepath.Join(indexTmpPath, ".dockerconfigjson")
 	defer exec.Command("rm", "-rf", indexTmpPath).Output()
@@ -1405,7 +1405,7 @@ func removePrivilegedLabelFromNamespace(oc *exutil.CLI, ns string) {
 // createExternalDNSCatalogSource creates the catalogsource with Konflux FBC build
 func createExternalDNSCatalogSource(oc *exutil.CLI) {
 	var (
-		buildPruningBaseDir = testdata.FixturePath("testdata", "router", "extdns")
+		buildPruningBaseDir = testdata.FixturePath("router/extdns")
 		nsOperator          = filepath.Join(buildPruningBaseDir, "ns-external-dns-operator.yaml")
 		catSrcTemplate      = filepath.Join(buildPruningBaseDir, "catalog-source.yaml")
 		operatorNamespace   = "external-dns-operator"
@@ -1423,7 +1423,7 @@ func createExternalDNSCatalogSource(oc *exutil.CLI) {
 // createAWSLoadBalancerCatalogSource creates the catalogsource with Konflux FBC build
 func createAWSLoadBalancerCatalogSource(oc *exutil.CLI) {
 	var (
-		buildPruningBaseDir = testdata.FixturePath("testdata", "router", "awslb")
+		buildPruningBaseDir = testdata.FixturePath("router/awslb")
 		namespaceFile       = filepath.Join(buildPruningBaseDir, "namespace.yaml")
 		catSrcTemplate      = filepath.Join(buildPruningBaseDir, "catalog-source.yaml")
 		operatorNamespace   = "aws-load-balancer-operator"
@@ -1440,7 +1440,7 @@ func createAWSLoadBalancerCatalogSource(oc *exutil.CLI) {
 
 // this function create external dns operator
 func createExternalDNSOperator(oc *exutil.CLI) {
-	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "extdns")
+	buildPruningBaseDir := testdata.FixturePath("router/extdns")
 	operatorGroup := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 	subscription := filepath.Join(buildPruningBaseDir, "subscription.yaml")
 	operatorNamespace := "external-dns-operator"
@@ -1510,7 +1510,7 @@ func getOidc(oc *exutil.CLI) string {
 
 // this function create aws-load-balancer-operator
 func createAWSLoadBalancerOperator(oc *exutil.CLI) {
-	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := testdata.FixturePath("router/awslb")
 	operatorGroup := filepath.Join(buildPruningBaseDir, "operatorgroup.yaml")
 	subscription := filepath.Join(buildPruningBaseDir, "subscription-src-qe.yaml")
 	subSTS := filepath.Join(buildPruningBaseDir, "subscription-src-qe-sts.yaml")

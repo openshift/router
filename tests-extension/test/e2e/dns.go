@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +12,7 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 	netutils "k8s.io/utils/net"
 )
@@ -24,7 +24,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-High-39842-CoreDNS supports dual stack ClusterIP Services for OCP4.8 or higher", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-v4v6rc.yaml")
 			unsecsvcName        = "service-unsecurev4v6"
 			secsvcName          = "service-securev4v6"
@@ -388,7 +388,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:shudili-Low-46875-Different LogLevel logging function of CoreDNS flag [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
 			clientPodLabel      = "app=hello-pod"
@@ -456,7 +456,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-Critical-51536-Support CoreDNS forwarding DNS requests over TLS using ForwardPlugin [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			cmFile              = filepath.Join(buildPruningBaseDir, "ca-bundle.pem")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
@@ -504,7 +504,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-Low-51857-Support CoreDNS forwarding DNS requests over TLS - non existing CA bundle [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
@@ -549,7 +549,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-Critical-51946-Support CoreDNS forwarding DNS requests over TLS using UpstreamResolvers [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
@@ -622,7 +622,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-52077-CoreDNS forwarding DNS requests over TLS with CLEAR TEXT [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
@@ -684,7 +684,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-52497-Support CoreDNS forwarding DNS requests over TLS - using system CA [Disruptive]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			coreDNSSrvPod       = filepath.Join(buildPruningBaseDir, "coreDNS-pod.yaml")
 			srvPodName          = "test-coredns"
 			srvPodLabel         = "name=test-coredns"
@@ -787,7 +787,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 	// Bug: 1949361, 1884053, 1756344
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-55821-Check CoreDNS default bufsize, readinessProbe path and policy", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodLabel      = "app=hello-pod"
 			clientPodName       = "hello-pod"
@@ -959,7 +959,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-Critical-60350-Check the max number of domains in the search path list of any pod", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "testpod-60350.yaml")
 			clientPodLabel      = "app=testpod-60350"
 			clientPodName       = "testpod-60350"
@@ -982,7 +982,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 
 	g.It("Author:mjoseph-Critical-60492-Check the max number of characters in the search path of any pod", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "testpod-60492.yaml")
 			clientPodLabel      = "app=testpod-60492"
 			clientPodName       = "testpod-60492"
@@ -1058,7 +1058,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			g.Skip("featureSet: TechPreviewNoUpgrade is required for this test, skipping")
 		}
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodLabel      = "app=hello-pod"
 			clientPodName       = "hello-pod"
@@ -1104,7 +1104,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_DNS", func() {
 			g.Skip("featureSet: TechPreviewNoUpgrade is required for this test, skipping")
 		}
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodLabel      = "app=hello-pod"
 			clientPodName       = "hello-pod"

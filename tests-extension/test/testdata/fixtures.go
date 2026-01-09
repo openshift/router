@@ -30,12 +30,9 @@ func init() {
 // Files are extracted to a temporary directory that persists for the test run.
 //
 // Example:
-//   configPath := testdata.FixturePath("manifests/config.yaml")
-//   configPath := testdata.FixturePath("testdata", "router", "file.yaml")
+//   configPath := testdata.FixturePath("router/config.yaml")
 //   data, err := os.ReadFile(configPath)
-func FixturePath(pathComponents ...string) string {
-	// Join all path components into a single relative path
-	relativePath := filepath.Join(pathComponents...)
+func FixturePath(relativePath string) string {
 	targetPath := filepath.Join(fixtureDir, relativePath)
 
 	// Check if already extracted
@@ -131,8 +128,8 @@ func MustGetFixtureData(relativePath string) []byte {
 // Use this to validate fixtures before accessing them.
 //
 // Example:
-//   if testdata.FixtureExists("manifests/deployment.yaml") {
-//       path := testdata.FixturePath("manifests/deployment.yaml")
+//   if testdata.FixtureExists("router/deployment.yaml") {
+//       path := testdata.FixturePath("router/deployment.yaml")
 //   }
 func FixtureExists(relativePath string) bool {
 	cleanPath := relativePath
@@ -165,8 +162,8 @@ func ListFixtures() []string {
 // ListFixturesInDir returns all fixtures within a specific directory.
 //
 // Example:
-//   manifests := testdata.ListFixturesInDir("manifests")
-//   // Returns: ["manifests/deployment.yaml", "manifests/service.yaml", ...]
+//   manifests := testdata.ListFixturesInDir("router")
+//   // Returns: ["router/deployment.yaml", "router/service.yaml", ...]
 func ListFixturesInDir(dir string) []string {
 	allFixtures := ListFixtures()
 	var matching []string
@@ -183,28 +180,28 @@ func ListFixturesInDir(dir string) []string {
 }
 
 // GetManifest is a convenience function for accessing manifest files.
-// Equivalent to FixturePath("manifests/" + name).
+// Equivalent to FixturePath("router/" + name).
 //
 // Example:
 //   deploymentPath := testdata.GetManifest("deployment.yaml")
 func GetManifest(name string) string {
-	return FixturePath(filepath.Join("manifests", name))
+	return FixturePath(filepath.Join("router", name))
 }
 
 // GetConfig is a convenience function for accessing config files.
-// Equivalent to FixturePath("configs/" + name).
+// Equivalent to FixturePath("router/" + name).
 //
 // Example:
 //   configPath := testdata.GetConfig("settings.yaml")
 func GetConfig(name string) string {
-	return FixturePath(filepath.Join("configs", name))
+	return FixturePath(filepath.Join("router", name))
 }
 
 // ValidateFixtures checks that all expected fixtures are present in bindata.
 // Call this in BeforeAll to catch missing testdata early.
 //
 // Example:
-//   required := []string{"manifests/deployment.yaml", "configs/config.yaml"}
+//   required := []string{"router/deployment.yaml", "router/config.yaml"}
 //   if err := testdata.ValidateFixtures(required); err != nil {
 //       panic(err)
 //   }

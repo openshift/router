@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
@@ -22,7 +22,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: mjoseph@redhat.com - OCP-40821 The 'tune.bufsize' and 'tune.maxwrite' values can be defined per haproxy router basis
 	// Test case creater: shudili@redhat.com - OCP-40822 The 'headerBufferBytes' and 'headerBufferMaxRewriteBytes' strictly honours the default minimum values
 	g.It("Author:mjoseph-Critical-40747-The 'tune.bufsize' and 'tune.maxwrite' values can be modified by ingresscontroller tuningOptions", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-tuning.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -98,7 +98,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: shudili@redhat.com - OCP-41110 The threadCount ingresscontroller parameter controls the nbthread option for the haproxy router
 	// Test case creater: mjoseph@redhat.com - OCP-41128 Ingresscontroller should not accept invalid nbthread setting
 	g.It("Author:shudili-LEVEL0-Critical-41110-The threadCount ingresscontroller parameter controls the nbthread option for the haproxy router", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -161,7 +161,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: aiyengar@redhat.com
 	g.It("Author:aiyengar-Critical-43105-The tcp client/server fin and default timeout for the ingresscontroller can be modified via tuningOptions parameterss", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -201,7 +201,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: shudili@redhat.com - OCP-43111 The tcp client/server and tunnel timeouts for ingresscontroller will remain unchanged for negative values
 	// Test case creater: shudili@redhat.com - OCP-43112 timeout tunnel parameter for the haproxy pods an be modified with TuningOptions option in the ingresscontroller
 	g.It("Author:aiyengar-LEVEL0-Critical-43112-Timeout tunnel parameter for the haproxy pods an be modified with TuningOptions option in the ingresscontroller", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -244,7 +244,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: aiyengar@redhat.com
 	g.It("Author:aiyengar-Critical-43113-Tcp inspect-delay for the haproxy pod can be modified via the TuningOptions parameters in the ingresscontroller", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -281,7 +281,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: shudili@redhat.com - OCP-50662 Make ROUTER_BACKEND_CHECK_INTERVAL Configurable
 	// Test case creater: shudili@redhat.com - OCP-50663 Negative Test of Make ROUTER_BACKEND_CHECK_INTERVAL Configurable
 	g.It("Author:shudili-High-50662-Make ROUTER_BACKEND_CHECK_INTERVAL Configurable", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := "    tuningOptions:\n      healthCheckInterval: 20s\n"
 		customTemp1 := addExtraParametersToYamlFile(baseTemp, "spec:", extraParas)
@@ -373,7 +373,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: shudili@redhat.com - OCP-50928 Negative test of Support a Configurable ROUTER_MAX_CONNECTIONS in HAproxy
 	g.It("Author:shudili-High-50926-Support a Configurable ROUTER_MAX_CONNECTIONS in HAproxy", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-tuning.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp50926",
@@ -461,7 +461,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: shudili@redhat.com - OCP-53605 Expose a Configurable Reload Interval in HAproxy
 	// Test case creater: shudili@redhat.com - OCP-53608 Negative Test of Expose a Configurable Reload Interval in HAproxy
 	g.It("Author:shudili-High-53605-Expose a Configurable Reload Interval in HAproxy", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := "    tuningOptions:\n      reloadInterval: 15s\n"
 		customTemp1 := addExtraParametersToYamlFile(baseTemp, "spec:", extraParas)
@@ -564,7 +564,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-LEVEL0-High-55367-Default HAProxy maxconn value to 50000 for OCP 4.12 and later", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp55367",
@@ -625,7 +625,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-86153-Supporting HTTPKeepAliveTimeout tuning option", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp86153",

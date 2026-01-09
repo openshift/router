@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"net"
 	"os"
@@ -15,6 +14,7 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -27,7 +27,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	// Includes OCP-27560: support NodePortService for custom Ingresscontroller
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-Critical-21873-The replicas of router deployment is controlled by ingresscontroller", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -71,7 +71,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skip since nodeSelector is set to ControlPlane by default on this cluster")
 		}
 
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -111,7 +111,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-22636-The namespaceSelector of router is controlled by ingresscontroller", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvName             = "service-unsecure"
@@ -163,7 +163,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-High-22637-The routeSelector of router is controlled by ingresscontroller", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvName             = "service-unsecure"
@@ -258,7 +258,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-30059-NetworkEdge Create an ingresscontroller that logs to a sidecar container", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-sidecar.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -319,7 +319,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-30060-NetworkEdge Create an ingresscontroller that logs to external rsyslog instance", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			syslogPod           = filepath.Join(buildPruningBaseDir, "rsyslogd-pod.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
@@ -394,7 +394,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Medium-30264-ROUTER_SYSLOG_ADDRESS changes according to the logging configuration", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-sidecar.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp30264",
@@ -452,7 +452,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-Critical-33763-ingresscontroller supports AWS NLB", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp33763",
@@ -491,7 +491,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// Due to bug https://issues.redhat.com/browse/OCPBUGS-43431, this case may not run on HCP cluster.
 	g.It("Author:mjoseph-NonHyperShiftHOST-High-38674-hard-stop-after annotation can be applied globally on all ingresscontroller [Disruptive]", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -555,7 +555,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	})
 
 	g.It("Author:mjoseph-High-38675-hard-stop-after annotation can be applied on per ingresscontroller", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl38675one = ingressControllerDescription{
@@ -606,7 +606,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonPreRelease-PreChkUpgrade-High-38812-upgrade with router shards", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			ns                  = "ingress-upgrade"
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-shard.yaml")
@@ -658,7 +658,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-NonPreRelease-PstChkUpgrade-High-38812-upgrade with router shards", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
 			ns                  = "ingress-upgrade"
@@ -685,7 +685,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	// Bug: 1960284
 	g.It("Author:hongli-Critical-42276-enable annotation traffic-policy.network.alpha.openshift.io/local-with-fallback on LB and nodePort service", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -728,7 +728,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-High-46287-ingresscontroller supports to update maxlength for syslog message", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-syslog.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -776,7 +776,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Low-46288-ingresscontroller should deny invalid maxlengh value for syslog message", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-syslog.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -812,7 +812,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		compat_otp.By("Pre-flight check for the platform type")
 		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -844,7 +844,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		compat_otp.By("Pre-flight check for the platform type")
 		compat_otp.SkipIfPlatformTypeNot(oc, "AWS")
 
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -876,7 +876,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-High-54868-Configurable dns Management for LoadBalancerService Ingress Controllers on AWS", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 			ingctrl1            = ingressControllerDescription{
 				name:      "ocp54868cus11",
@@ -987,7 +987,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-Low-54995-Negative Test of Configurable dns Management for LoadBalancerService Ingress Controllers on AWS", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp54995",
@@ -1028,7 +1028,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-LEVEL0-Critical-55223-Configuring list of IP address ranges using allowedSourceRanges in LoadBalancerService", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp55223",
@@ -1083,7 +1083,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-High-55341-configuring list of IP address ranges using load-balancer-source-ranges annotation", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -1143,7 +1143,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Medium-55381-Configuring wrong data for allowedSourceRanges in LoadBalancerService", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp55381",
@@ -1202,7 +1202,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// bug: 2007246
 	g.It("Author:shudili-Medium-56772-Ingress Controller does not set allowPrivilegeEscalation in the router deployment [Serial]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			scc                 = filepath.Join(buildPruningBaseDir, "scc-bug2007246.json")
 			ingctrl             = ingressControllerDescription{
@@ -1248,7 +1248,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-NonPreRelease-Medium-60012-matchExpressions for routeSelector defined in an ingress-controller", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -1357,7 +1357,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-NonPreRelease-Medium-60013-matchExpressions for namespaceSelector defined in an ingress-controller", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -1470,7 +1470,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// OCPBUGS-853
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-62530-openshift ingress operator is failing to update router-certs [Serial]", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp62530",
@@ -1554,7 +1554,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Test cases should be run on AWS cluster with ovn network plugin, skip for other platforms or other network plugin!!")
 		}
 		compat_otp.By("0. Create a custom ingress controller")
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customIngressControllerTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -1632,7 +1632,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 			g.Skip("Skip since this is not a shared vpc cluster")
 		}
 
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp1 := filepath.Join(buildPruningBaseDir, "ingresscontroller-external.yaml")
 		customTemp2 := filepath.Join(buildPruningBaseDir, "ingresscontroller-clb.yaml")
 		var (
@@ -1707,7 +1707,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-High-65827-allow Ingress to modify the HAProxy Log Length when using a Sidecar", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-sidecar.yaml")
 		var (
 			ingctrl = ingressControllerDescription{
@@ -1755,7 +1755,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-Low-65903-ingresscontroller should deny invalid maxlengh value when using a Sidecar", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		customTemp1 := filepath.Join(buildPruningBaseDir, "ingresscontroller-syslog.yaml")
 		customTemp2 := filepath.Join(buildPruningBaseDir, "ingresscontroller-sidecar.yaml")
 
@@ -1806,7 +1806,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// OCPBUGS-33657(including OCPBUGS-35027 and OCPBUGS-35454 in OCP-75907)
 	// guest hypershift cluster had not the ingress-operator pod, skipped on it
 	g.It("Author:shudili-NonHyperShiftHOST-ROSA-OSD_CCS-ARO-High-75907-Ingress Operator should not always remain in the progressing state [Disruptive]", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		privateTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-private.yaml")
 		hostnetworkTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-hostnetwork-only.yaml")
 
@@ -2040,7 +2040,7 @@ spec:
 	// OCPBUGS-33657(including OCPBUGS-34757, OCPBUGS-34110 and OCPBUGS-34888 in OCP-75909)
 	// guest hypershift cluster had not the ingress-operator pod, skipped on it
 	g.It("Author:shudili-NonHyperShiftHOST-ROSA-OSD_CCS-ARO-High-75909-Ingress Operator should not always remain in the progressing state [Disruptive]", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		nodePortTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		privateTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-private.yaml")
 		hostnetworkTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-hostnetwork-only.yaml")
@@ -2145,7 +2145,7 @@ spec:
 	// [OCPBUGS-43063](https://issues.redhat.com/browse/OCPBUGS-43063)
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-77283-Router should support SHA1 CA certificates in the default certificate chain", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "77283",
@@ -2236,7 +2236,7 @@ spec:
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-86155-Supporting ClosedClientConnectionPolicy in the IngressController", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp86155",

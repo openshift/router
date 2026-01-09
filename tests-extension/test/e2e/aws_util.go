@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"context"
 	"fmt"
 	"os"
@@ -19,6 +18,7 @@ import (
 	o "github.com/onsi/gomega"
 	exutil "github.com/openshift/origin/test/extended/util"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 	clusterinfra "github.com/openshift/origin/test/extended/util/compat_otp/clusterinfra"
 	"k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
@@ -148,7 +148,7 @@ func iamDeleteRolePolicy(iamClient *iam.Client, policyName string, roleName stri
 
 // Create ALB Operator Role and inline Policy
 func createAlboRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := testdata.FixturePath("router/awslb")
 	alboPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-albo-perms-policy.json")
 
 	alboRoleName := infraID + "-albo-role"
@@ -184,7 +184,7 @@ func createAlboRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix s
 
 // Create ALB Controller (operand) Role and inline policy
 func createAlbcRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "awslb")
+	buildPruningBaseDir := testdata.FixturePath("router/awslb")
 	albcPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-albc-perms-policy.json")
 	albcRoleName := infraID + "-albc-role"
 	albcPolicyName := infraID + "-albc-perms-policy"

@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	o "github.com/onsi/gomega"
 
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
@@ -19,7 +19,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34166-capture and log http cookies with specific prefixes via httpCaptureCookies option", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -102,7 +102,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34178-capture and log http cookies with exact match via httpCaptureCookies option", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -178,7 +178,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34188-capture and log http requests using UniqueID with custom logging format defined via httpHeader option", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			baseTemp            = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -240,7 +240,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Medium-34189-The httpCaptureCookies option strictly adheres to the maxlength parameter", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:
@@ -315,7 +315,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Medium-34191-The httpCaptureHeaders option strictly adheres to the maxlength parameter", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     logging:

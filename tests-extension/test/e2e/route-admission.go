@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
@@ -19,7 +19,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-27594-Set namespaceOwnership of routeAdmission to InterNamespaceAllowed", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			srvrcInfo           = "web-server-deploy"
@@ -86,7 +86,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-27595-Set namespaceOwnership of routeAdmission to Strict", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			e2eTestNamespace2   = "e2e-ne-ocp27595-" + getRandomString()
@@ -136,7 +136,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// For OCP-27596 and OCP-27605
 	g.It("Author:mjoseph-ROSA-OSD_CCS-ARO-Critical-27596-Update the namespaceOwnership of routeAdmission", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			ingctrl             = ingressControllerDescription{
 				name:      "ocp27596",
@@ -191,7 +191,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// Test case creater: hongli@redhat.com
 	g.It("Author:mjoseph-NonHyperShiftHOST-Critical-30190-Set wildcardPolicy of routeAdmission to WildcardsAllowed", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			srvName             = "service-unsecure"
@@ -249,7 +249,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// For OCP-30191 and OCP-30192
 	g.It("Author:mjoseph-NonHyperShiftHOST-Medium-30191-Set wildcardPolicy of routeAdmission to WildcardsDisallowed", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			srvName             = "service-unsecure"

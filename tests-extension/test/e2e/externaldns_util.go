@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"context"
 	"fmt"
 	"os"
@@ -14,12 +13,13 @@ import (
 	o "github.com/onsi/gomega"
 	exutil "github.com/openshift/origin/test/extended/util"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
 // Create External DNS Controller (operand) Role and inline policy
 func createExDnsRolePolicy(iamClient *iam.Client, infraID string, oidcArnPrefix string, oidcName string) string {
-	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "extdns")
+	buildPruningBaseDir := testdata.FixturePath("router/extdns")
 	exDnsPermissionPolicyFile := filepath.Join(buildPruningBaseDir, "sts-exdns-perms-policy.json")
 	exDnsRoleName := infraID + "-exdns-role"
 	exDnsPolicyName := infraID + "-exdns-perms-policy"
@@ -88,7 +88,7 @@ func clearUpExDnsStsCluster(oc *exutil.CLI, prefix string) {
 
 // Create the STS secret with the external dns ARN role
 func createSecretUsingRoleARN(oc *exutil.CLI, ns, exDnsRoleArn string) {
-	buildPruningBaseDir := testdata.FixturePath("testdata", "router", "extdns")
+	buildPruningBaseDir := testdata.FixturePath("router/extdns")
 	awsStsCredSecret := filepath.Join(buildPruningBaseDir, "aws-sts-creds-secret.yaml")
 	updateFilebySedCmd(awsStsCredSecret, "external-dns-role-arn", exDnsRoleArn)
 

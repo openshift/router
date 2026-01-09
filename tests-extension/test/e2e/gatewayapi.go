@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	g "github.com/onsi/ginkgo/v2"
 	o "github.com/onsi/gomega"
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 	wait "k8s.io/apimachinery/pkg/util/wait"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
@@ -39,7 +39,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-High-81976-Ensure that RBAC works correctly for gatewayAPI resources for unprivileged users", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			gwcFile             = filepath.Join(buildPruningBaseDir, "gatewayclass.yaml")
 			gwcName             = "openshift-default"
 			gwFile              = filepath.Join(buildPruningBaseDir, "gateway.yaml")
@@ -137,7 +137,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// https://issues.redhat.com/browse/OCPBUGS-58358
 	g.It("Author:hongli-ROSA-OSD_CCS-ARO-NonPreRelease-PreChkUpgrade-High-83185-Ensure GatewayAPI works well after upgrade", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			gwcFile             = filepath.Join(buildPruningBaseDir, "gatewayclass.yaml")
 			gwcName             = "openshift-default"
 			gwFile              = filepath.Join(buildPruningBaseDir, "gateway.yaml")
@@ -224,7 +224,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: iamin@redhat.com
 	g.It("Author:iamin-ROSA-OSD_CCS-ARO-High-86110-View metrics showing who is using Gateway API", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			gwcFile             = filepath.Join(buildPruningBaseDir, "gatewayclass.yaml")
 			gwcName             = "openshift-default"
 			gwFile              = filepath.Join(buildPruningBaseDir, "gateway.yaml")

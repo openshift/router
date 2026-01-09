@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +10,7 @@ import (
 	o "github.com/onsi/gomega"
 
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
@@ -23,7 +23,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: hongli@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-11903-haproxy cookies based sticky session for unsecure routes", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
 			clientPodName       = "hello-pod"
@@ -104,7 +104,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -149,7 +149,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -185,7 +185,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			unsecSvcName        = "service-unsecure"
@@ -224,7 +224,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			secsvcName          = "service-secure"
@@ -271,7 +271,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 		}
 
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "web-server-signed-deploy.yaml")
 			srvrcInfo           = "web-server-deploy"
 			secsvcName          = "service-secure"

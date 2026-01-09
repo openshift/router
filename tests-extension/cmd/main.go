@@ -41,10 +41,23 @@ func main() {
 	})
 
 	// Build test specs from Ginkgo
-	specs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite()
+	allSpecs, err := g.BuildExtensionTestSpecsFromOpenShiftGinkgoSuite()
 	if err != nil {
 		panic(fmt.Sprintf("couldn't build extension test specs from ginkgo: %+v", err.Error()))
 	}
+
+	// IMPORTANT: Filter out upstream Kubernetes tests
+	// Only keep tests that have "Author:" in the name (component-specific tests)
+	// This excludes upstream K8s feature tests like [Feature:BootstrapTokens], [Feature:DRA], etc.
+	var filteredSpecs []*et.ExtensionTestSpec
+	allSpecs.Walk(func(spec *et.ExtensionTestSpec) {
+		if strings.Contains(spec.Name, "Author:") {
+			filteredSpecs = append(filteredSpecs, spec)
+		}
+	})
+
+	// Create new specs collection from filtered list
+	specs := et.ExtensionTestSpecs(filteredSpecs)
 
 	// Apply platform filters based on Platform: labels
 	specs.Walk(func(spec *et.ExtensionTestSpec) {

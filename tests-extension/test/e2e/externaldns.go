@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	o "github.com/onsi/gomega"
 
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_ExtDNS", func() {
@@ -42,7 +42,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ExtDNS", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ConnectedOnly-ROSA-OSD_CCS-LEVEL0-High-48138-Support External DNS on AWS platform", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "extdns")
+			buildPruningBaseDir = testdata.FixturePath("router/extdns")
 			sampleAWS           = filepath.Join(buildPruningBaseDir, "sample-aws-rt.yaml")
 			crName              = "sample-aws-rt"
 			operandLabel        = operandLabelKey + crName
@@ -92,7 +92,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ExtDNS", func() {
 	// author: hongli@redhat.com
 	g.It("ConnectedOnly-ARO-Author:hongli-High-48139-Support External DNS on Azure DNS provider", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "extdns")
+			buildPruningBaseDir = testdata.FixturePath("router/extdns")
 			sampleAzure         = filepath.Join(buildPruningBaseDir, "sample-azure-rt.yaml")
 			crName              = "sample-azure-rt"
 			operandLabel        = operandLabelKey + crName
@@ -150,7 +150,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ExtDNS", func() {
 	// author: hongli@redhat.com
 	g.It("Author:hongli-ConnectedOnly-High-48140-Support External DNS on GCP DNS provider", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "extdns")
+			buildPruningBaseDir = testdata.FixturePath("router/extdns")
 			sampleGCP           = filepath.Join(buildPruningBaseDir, "sample-gcp-svc.yaml")
 			crName              = "sample-gcp-svc"
 			operandLabel        = operandLabelKey + crName
@@ -205,7 +205,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ExtDNS", func() {
 	// author: mjoseph@redhat.com
 	g.It("Author:mjoseph-ConnectedOnly-ROSA-OSD_CCS-Critical-68826-External DNS support for preexisting Route53 for Shared VPC clusters", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "extdns")
+			buildPruningBaseDir = testdata.FixturePath("router/extdns")
 			sampleAWSVPC        = filepath.Join(buildPruningBaseDir, "sample-aws-sharedvpc-rt.yaml")
 			crName              = "sample-aws-sharedvpc-rt"
 			operandLabel        = operandLabelKey + crName
@@ -289,7 +289,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_ExtDNS on STS", fu
 	// this case runs only on AWS STS and hypershift cluster
 	g.It("Author:mjoseph-ConnectedOnly-ROSA-OSD_CCS-High-74949-ExternalDNS operand support on STS cluster", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router", "extdns")
+			buildPruningBaseDir = testdata.FixturePath("router/extdns")
 			sampleAWSSTS        = filepath.Join(buildPruningBaseDir, "sample-aws-sts-rt.yaml")
 			crName              = "sample-aws-sts-rt"
 			operandLabel        = operandLabelKey + crName

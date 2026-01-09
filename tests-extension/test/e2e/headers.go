@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/openshift/router-tests-extension/test/testdata"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -16,6 +15,7 @@ import (
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
 	compat_otp "github.com/openshift/origin/test/extended/util/compat_otp"
+	"github.com/openshift/router-tests-extension/test/testdata"
 )
 
 var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
@@ -28,7 +28,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// OCP-34157 [HAProxy-frontend-capture] capture and log specific http Request header via "httpCaptureHeaders" option
 	// OCP-34163 [HAProxy-frontend-capture] capture and log specific http Response headers via "httpCaptureHeaders" option
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-Critical-34157-NetworkEdge capture and log specific http Request header via httpCaptureHeaders option", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		testPodSvc := filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 		unsecsvcName := "httpbin-svc-insecure"
 		clientPod := filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
@@ -97,7 +97,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// includes OCP-34231 and OCP-34247
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-34231-Configure Ingresscontroller to preserve existing header with forwardedHeaderPolicy set to Append", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     httpHeaders:
@@ -185,7 +185,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// includes OCP-34233 and OCP-34246
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-Critical-34233-Configure Ingresscontroller to replace any existing Forwarded header with forwardedHeaderPolicy set to Replace", func() {
-		buildPruningBaseDir := testdata.FixturePath("testdata", "router")
+		buildPruningBaseDir := testdata.FixturePath("router")
 		baseTemp := filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 		extraParas := fmt.Sprintf(`
     httpHeaders:
@@ -269,7 +269,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-High-34234-Configure Ingresscontroller to set the headers if they are not already set with forwardedHeaderPolicy set to Ifnone", func() {
 		// OCP-34236(forwardedHeaderPolicy option defaults to Append if none is defined in the ingresscontroller configuration)
 		var (
-			buildPruningBaseDir   = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir   = testdata.FixturePath("router")
 			baseTemp              = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc            = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecSvcName          = "httpbin-svc-insecure"
@@ -374,7 +374,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-62528-adding/deleting http headers to an edge route by a router owner", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
@@ -548,7 +548,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-66560-adding/deleting http headers to a http route by a router owner", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecsvcName        = "httpbin-svc-insecure"
@@ -674,7 +674,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-Medium-66566-supported max http headers, max length of a http header name, max length value of a http header", func() {
 		var (
-			buildPruningBaseDir      = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir      = testdata.FixturePath("router")
 			customTemp               = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc               = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecsvcName             = "httpbin-svc-insecure"
@@ -901,7 +901,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-Medium-66568-negative test of adding/deleting http headers", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecsvcName        = "httpbin-svc-insecure"
@@ -1033,7 +1033,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-NonPreRelease-Longduration-ConnectedOnly-Medium-66569-set different type of values for a http header name and its value", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecsvcName        = "httpbin-svc-insecure"
@@ -1160,7 +1160,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-66572-adding/deleting http headers to a http route by an ingress-controller as a cluster administrator", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecsvcName        = "httpbin-svc-insecure"
@@ -1290,7 +1290,7 @@ var _ = g.Describe("[sig-network-edge] Network_Edge Component_Router", func() {
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-66662-adding/deleting http headers to a reen route by a router owner", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			serverPod           = filepath.Join(buildPruningBaseDir, "httpbin-pod-withprivilege.json")
 			secsvc              = filepath.Join(buildPruningBaseDir, "httpbin-service_secure.json")
@@ -1516,7 +1516,7 @@ DNS.2 = *.%s.%s.svc
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-67009-adding/deleting http headers to an edge route by an ingress-controller as a cluster administrator", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			clientPod           = filepath.Join(buildPruningBaseDir, "test-client-pod.yaml")
@@ -1694,7 +1694,7 @@ DNS.2 = *.%s.%s.svc
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-67010-adding/deleting http headers to a reen route by an ingress-controller as a cluster administrator", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			serverPod           = filepath.Join(buildPruningBaseDir, "httpbin-pod-withprivilege.json")
 			secsvc              = filepath.Join(buildPruningBaseDir, "httpbin-service_secure.json")
@@ -1926,7 +1926,7 @@ DNS.2 = *.%s.%s.svc
 	// author: shudili@redhat.com
 	g.It("Author:shudili-ROSA-OSD_CCS-ARO-ConnectedOnly-High-77284-http request with duplicated headers should not cause disruption to a router pod", func() {
 		var (
-			buildPruningBaseDir = testdata.FixturePath("testdata", "router")
+			buildPruningBaseDir = testdata.FixturePath("router")
 			customTemp          = filepath.Join(buildPruningBaseDir, "ingresscontroller-np.yaml")
 			testPodSvc          = filepath.Join(buildPruningBaseDir, "httpbin-deploy.yaml")
 			unsecsvcName        = "httpbin-svc-insecure"
