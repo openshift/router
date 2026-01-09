@@ -262,7 +262,7 @@ frontend public
 
   # check if we need to redirect/force using https.
   acl secure_redirect base,map_reg_int(/var/lib/haproxy/conf/os_route_http_redirect.map) -m bool
-  redirect scheme https if secure_redirect
+  http-request redirect location https://%[req.hdr(host),regsub(:[0-9]+$,,)]%[url] code 302 if secure_redirect
 
     {{- range $idx, $http_request_header := .HTTPRequestHeaders }}
       {{- if eq $http_request_header.Action "Set" }}
