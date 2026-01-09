@@ -909,6 +909,23 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"Secure Redirect Strips Port": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name:                          "secure-redirect-route",
+					host:                          "secure.example.com",
+					time:                          start,
+					insecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+					tlsTermination:                routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "frontend",
+					sectionName: "public",
+					attribute:   "http-request",
+					value:       `redirect location https://%[req.hdr(host),regsub(:[0-9]+$,,)]%[url] code 302 if secure_redirect`,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
@@ -990,6 +1007,8 @@ type mustCreateRoute struct {
 	// cert is the spec.tls.certificate of the route.  It should be
 	// specified only if tlsTermination is "edge" or "reencrypt".
 	cert string
+	// insecureEdgeTerminationPolicy is the spec.tls.insecureEdgeTerminationPolicy of the route.
+	insecureEdgeTerminationPolicy routev1.InsecureEdgeTerminationPolicyType
 	// httpHeaders is the spec.httpHeaders of the route.
 	httpHeaders routev1.RouteHTTPHeaders
 	// alternateBackend is the first item in spec.alternateBackends of the route.
@@ -1007,11 +1026,12 @@ func (e mustCreateRoute) Apply(h *harness) error {
 	if e.annotations != nil {
 		annotations = e.annotations
 	}
-	tlsConfig := &routev1.TLSConfig{}
+	var tlsConfig *routev1.TLSConfig
 	if e.tlsTermination != "" {
 		tlsConfig = &routev1.TLSConfig{
-			Termination: routev1.TLSTerminationType(e.tlsTermination),
-			Certificate: e.cert,
+			Termination:                   routev1.TLSTerminationType(e.tlsTermination),
+			Certificate:                   e.cert,
+			InsecureEdgeTerminationPolicy: e.insecureEdgeTerminationPolicy,
 		}
 	}
 	serviceName := "service" + e.name
