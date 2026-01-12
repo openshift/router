@@ -367,7 +367,7 @@ func parseIPList(list string) string {
 
 	trimmedList := strings.TrimSpace(list)
 	if trimmedList == "" {
-		log.V(0).Info("parseIPList empty list found")
+		log.V(7).Info("parseIPList empty list found")
 		return ""
 	}
 
