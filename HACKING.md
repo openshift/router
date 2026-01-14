@@ -41,6 +41,8 @@ Example:
 
 Alternatively, after setting `IMAGE`, you can run `make dwim` (do what I mean) to accomplish the above steps in one command.
 
+In case OpenShift is deployed as single node, `push` can be changed to `scp` by running `make dwim-single` instead. Node needs sshkey configured. No need to set `IMAGE` envvar.
+
 When done testing, use `make -f hack/Makefile.debug reset` to re-enable the CVO and Ingress Operator.
 
 ## Tests
