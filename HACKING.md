@@ -51,3 +51,82 @@ Run unit tests:
 ```
 $ make check
 ```
+
+## Local Run and Debugging
+
+The steps below configures the local development environment to run OpenShift router.
+
+> Note that a local router cannot properly proxy requests, since it cannot reach the overlay network in the
+Kubernetes cluster. This mode is mostly useful for debugging controller behavior and configuration builder,
+improving the "code + run + test + debug" workflow on these scenarios. Once the router seems to be building
+proper configurations, a fully working OpenShift environment should be used to complete the exploratory e2e
+tests.
+
+### Install HAProxy
+
+HAProxy needs to be installed, either from the package manager or compiled from the sources. The steps below
+describe how to compile HAProxy from sources.
+
+```bash
+sudo yum install -y pcre2-devel
+mkdir -p ~/ws/haproxy
+cd ~/ws/haproxy
+# Choose a version from https://www.haproxy.org, column "Latest version" points to the source tarball.
+curl -LO https://www.haproxy.org/download/2.8/src/haproxy-2.8.18.tar.gz
+tar xzf haproxy-2.8.18.tar.gz
+cd haproxy-2.8.18/
+make TARGET=linux-glibc USE_OPENSSL=1 USE_PROMEX=1 USE_PCRE2=1 USE_PCRE2_JIT=1
+./haproxy -vv
+sudo cp haproxy /usr/sbin/
+```
+
+### Run OpenShift router locally
+
+Prepare the local environment and start router with default options:
+
+```bash
+make local-run
+```
+
+Prepare means create and clean `/var/lib/haproxy` and sub-directories, which router uses to configure HAProxy.
+
+### Debug locally
+
+Here is the VSCode launch configuration that starts OpenShift router in debug mode.
+
+> Run `make local-prepare` before the very first run, and whenever a clean environment is needed.
+
+`.vscode/launch.json` content, merge its content with any previous one:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch OpenShift router",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "cwd": ".",
+            "program": "cmd/openshift-router",
+            "env": {
+                "KUBECONFIG": "/PATH/TO/KUBECONFIG.yaml",
+                "ROUTER_SERVICE_HTTP_PORT": "9090",
+                "ROUTER_SERVICE_HTTPS_PORT": "9443",
+                "STATS_USERNAME": "admin",
+                "STATS_PASSWORD": "admin",
+                "STATS_PORT": "1936",
+            },
+            "args": [
+                "--template=images/router/haproxy/conf/haproxy-config.template",
+                "--reload=images/router/haproxy/reload-haproxy",
+            ],
+        }
+    ]
+}
+```
+
+Caveats:
+
+1. On debug mode, the binary name is not `openshift-router`, making the bootstrap code to fail. Temporarily patch `cmd/openshift-router/main.go` and hardcode `openshift-router` in the `CommandFor()` call.
+1. A haproxy instance should be left behind depending on how the router is stopped. Run `killall haproxy` in case the router complains when trying to listen to sockets.
