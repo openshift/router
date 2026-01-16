@@ -1,1 +1,5 @@
 /openshift-router
+
+# OTE (OpenShift Tests Extension) generated files
+tests-extension/bin/
+tests-extension/test/testdata/bindata.go
