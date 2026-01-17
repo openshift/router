@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -103,7 +102,7 @@ func ProxyProtocolHTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 
 		// read full body
 		defer res.Body.Close()
-		if _, err := io.Copy(ioutil.Discard, res.Body); err != nil {
+		if _, err := io.Copy(io.Discard, res.Body); err != nil {
 			log.V(4).Info("error discarding probe body contents", "error", err)
 		}
 

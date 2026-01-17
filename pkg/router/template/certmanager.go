@@ -3,7 +3,6 @@ package templaterouter
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -182,7 +181,7 @@ func newSimpleCertificateWriter() certificateWriter {
 // .pem will be added to id.
 func (cm *simpleCertificateWriter) WriteCertificate(directory string, id string, cert []byte) error {
 	fileName := filepath.Join(directory, id+".pem")
-	err := ioutil.WriteFile(fileName, cert, 0644)
+	err := os.WriteFile(fileName, cert, 0644)
 
 	if err != nil {
 		log.Error(err, "error writing certificate file", "file", fileName)
