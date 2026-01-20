@@ -16,6 +16,7 @@ approvers:
   - rikatz
   - davidesalerno
   - bentito
+  - jcmoraisjr
 reviewers:
   - ironcladlou
   - knobunc
@@ -35,4 +36,5 @@ reviewers:
   - rikatz
   - davidesalerno
   - bentito
+  - jcmoraisjr
 component: Routing
