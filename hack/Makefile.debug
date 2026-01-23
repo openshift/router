@@ -6,24 +6,35 @@ REGISTRY ?= quay.io
 IMAGE ?= openshift/openshift-router
 TAG ?= latest
 IMAGEBUILDER ?= podman
+LOCAL_IMAGE ?= localhost/$(IMAGE):$(TAG)
+REMOTE_IMAGE ?= $(REGISTRY)/$(IMAGE):$(TAG)
+OPENSHIFT_ENDPOINT ?= $(shell oc config view --minify --template '{{(index .clusters 0).cluster.server}}' | grep -o '//[^ :]*' | sed 's/^..//')
 
 new-openshift-router-image:
 	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-	$(IMAGEBUILDER) build -t $(IMAGE):$(TAG) -f hack/Dockerfile.debug .
+	$(IMAGEBUILDER) build -t $(LOCAL_IMAGE) -f hack/Dockerfile.debug .
 
 push:
-	$(IMAGEBUILDER) tag $(IMAGE):$(TAG) $(REGISTRY)/$(IMAGE):$(TAG)
-	$(IMAGEBUILDER) push $(REGISTRY)/$(IMAGE):$(TAG)
+	$(IMAGEBUILDER) tag $(LOCAL_IMAGE) $(REMOTE_IMAGE)
+	$(IMAGEBUILDER) push $(REMOTE_IMAGE)
 
-set-image:
+shutdown-operators:
 	oc scale --replicas 0 -n openshift-cluster-version deployments/cluster-version-operator
 	oc scale --replicas 0 -n openshift-ingress-operator deployments ingress-operator
 	oc -n openshift-ingress scale deployment --replicas=0 router-default
+
+set-image:
 	oc -n openshift-ingress patch deployment router-default -p '{"spec":{"template":{"spec":{"$$setElementOrder/containers":[{"name":"router"}],"containers":[{"imagePullPolicy":"Always","name":"router"}]}}}}'
-	oc -n openshift-ingress set image deployment/router-default router=$(REGISTRY)/$(IMAGE):$(TAG)
+	oc -n openshift-ingress set image deployment/router-default router=$(REMOTE_IMAGE)
 	oc -n openshift-ingress scale deployment --replicas=1 router-default
 
-dwim:  new-openshift-router-image push set-image
+dwim:  new-openshift-router-image push shutdown-operators set-image
+
+# Only for single node deployments, need sshkey configured
+dwim-single: new-openshift-router-image shutdown-operators
+	podman save $(LOCAL_IMAGE) | gzip | ssh core@$(OPENSHIFT_ENDPOINT) sudo podman load
+	oc -n openshift-ingress set image deployment/router-default router=$(LOCAL_IMAGE)
+	oc -n openshift-ingress scale deployment --replicas=1 router-default
 
 reset:
 	oc scale --replicas 1 -n openshift-cluster-version deployments/cluster-version-operator
