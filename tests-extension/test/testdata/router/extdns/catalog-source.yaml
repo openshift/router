@@ -1,0 +1,21 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+objects:
+- apiVersion: operators.coreos.com/v1alpha1
+  kind: CatalogSource
+  metadata:
+    name: "${CATALOG_NAME}"
+    namespace: "${NAMESPACE}"
+  spec:
+    displayName: Konflux ExtDNS
+    image: "${IMAGE}"
+    sourceType: grpc
+    grpcPodConfig:
+      securityContextConfig: legacy
+parameters:
+- name: CATALOG_NAME
+  value: "extdns-konflux-fbc"
+- name: IMAGE
+  value: "quay.io/redhat-user-workloads/external-dns-operator-tenant/ext-dns-optr-fbc-v4-21/external-dns-fbc-container-ext-dns-optr-fbc-v4-21:candidate"
+- name: NAMESPACE
+  value: external-dns-operator
