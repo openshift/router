@@ -20,9 +20,6 @@ const (
 	// BackendServerStateDrain indicates a server is ready but draining.
 	BackendServerStateDrain BackendServerState = "drain"
 
-	// BackendServerStateDown indicates a server is down.
-	BackendServerStateDown BackendServerState = "down"
-
 	// BackendServerStateMaint indicates a server is under maintainence.
 	BackendServerStateMaint BackendServerState = "maint"
 
@@ -83,7 +80,6 @@ type BackendServerInfo struct {
 	Port          int
 	CurrentWeight int32
 	InitialWeight int32
-	State         BackendServerState
 }
 
 // Backend represents a specific haproxy backend.
@@ -159,7 +155,6 @@ func (b *Backend) Refresh() error {
 			FQDN:          v.FQDN,
 			CurrentWeight: v.UserVisibleWeight,
 			InitialWeight: v.InitialWeight,
-			State:         getManagedServerState(v),
 		}
 
 		b.servers[v.Name] = newBackendServer(info)
@@ -317,7 +312,7 @@ func newBackendServer(info BackendServerInfo) *backendServer {
 		updatedIPAddress: info.IPAddress,
 		updatedPort:      info.Port,
 		updatedWeight:    strconv.Itoa(int(info.CurrentWeight)),
-		updatedState:     info.State,
+		updatedState:     "", // empty means that we don't have changes missing to be applied
 	}
 }
 
@@ -342,14 +337,8 @@ func (s *backendServer) ApplyChanges(backendName templaterouter.ServiceAliasConf
 		commands = append(commands, cmd)
 	}
 
-	state := string(s.updatedState)
-	if s.updatedState == BackendServerStateDown {
-		// BackendServerStateDown for a server can't be set!
-		state = ""
-	}
-
-	if len(state) > 0 && s.updatedState != s.State {
-		cmd := fmt.Sprintf("%s state %s", cmdPrefix, state)
+	if s.updatedState != "" {
+		cmd := fmt.Sprintf("%s state %s", cmdPrefix, s.updatedState)
 		commands = append(commands, cmd)
 	}
 
@@ -406,34 +395,4 @@ func stripVersionNumber(data []byte) ([]byte, error) {
 	}
 
 	return data, nil
-}
-
-// getManagedServerState returns the "managed" state for a backend server.
-func getManagedServerState(s *serverStateInfo) BackendServerState {
-	if (s.AdministrativeState & 0x01) == 0x01 {
-		return BackendServerStateMaint
-	}
-	if (s.AdministrativeState & 0x08) == 0x08 {
-		return BackendServerStateDrain
-	}
-
-	if s.OperationalState == 0 {
-		maintainenceMasks := []int32{0x01, 0x02, 0x04, 0x20}
-		for _, m := range maintainenceMasks {
-			if (s.AdministrativeState & m) == m {
-				return BackendServerStateMaint
-			}
-		}
-
-		drainingMasks := []int32{0x08, 0x10}
-		for _, m := range drainingMasks {
-			if (s.AdministrativeState & m) == m {
-				return BackendServerStateDrain
-			}
-		}
-
-		return BackendServerStateDown
-	}
-
-	return BackendServerStateReady
 }
