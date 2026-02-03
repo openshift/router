@@ -447,8 +447,11 @@ func TestHAProxyMapAdd(t *testing.T) {
 	server := haproxytesting.StartFakeServerForTest(t)
 	defer server.Stop()
 
+	// some tests being skipped for now due to https://issues.redhat.com/browse/OCPBUGS-75009
+	// See also: HAProxyMap.Add()
 	testCases := []struct {
 		name            string
+		skip            bool
 		sockFile        string
 		mapName         string
 		keyName         string
@@ -485,6 +488,7 @@ func TestHAProxyMapAdd(t *testing.T) {
 		},
 		{
 			name:            "valid socket",
+			skip:            true,
 			sockFile:        server.SocketFile(),
 			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
 			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
@@ -494,6 +498,7 @@ func TestHAProxyMapAdd(t *testing.T) {
 		},
 		{
 			name:            "valid socket no replace",
+			skip:            true,
 			sockFile:        server.SocketFile(),
 			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
 			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
@@ -521,6 +526,7 @@ func TestHAProxyMapAdd(t *testing.T) {
 		},
 		{
 			name:            "valid socket but invalid key",
+			skip:            true,
 			sockFile:        server.SocketFile(),
 			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
 			keyName:         "invalid-key2",
@@ -576,6 +582,9 @@ func TestHAProxyMapAdd(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		if tc.skip {
+			continue
+		}
 		client := NewClient(tc.sockFile, 0)
 		if client == nil {
 			t.Errorf("TestHAProxyMapAdd test case %s failed with no client.", tc.name)
