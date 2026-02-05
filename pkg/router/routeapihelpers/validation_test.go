@@ -2587,12 +2587,12 @@ func TestExtendedValidateRoute(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
 						Termination: routev1.TLSTerminationEdge,
-						Certificate: strings.Replace(leafCertExtractedFromP12+caChainExtractedFromP12, "BEGIN CERTIFICATE", "BEGIN XYZ", 2),
+						Certificate: strings.Replace(leafCertExtractedFromP12+caChainExtractedFromP12, "BEGIN CERTIFICATE", "BEGIN XYZ", 3),
 						Key:         leafKeyExtractedFromP12,
 					},
 				},
 			},
-			expectedErrors: 1,
+			expectedErrors: 3,
 		},
 		{
 			name: "When both Certificate and Key are empty, should not report an error",

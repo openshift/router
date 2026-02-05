@@ -2,6 +2,7 @@ package factory_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/features"
 	fakekubeclient "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/openshift/router/pkg/router"
@@ -79,6 +81,11 @@ func newEndpointSliceTestSetup(plugin router.Plugin, initialObjects ...runtime.O
 	stopCh := make(chan struct{})
 	client := fakekubeclient.NewSimpleClientset(initialObjects...)
 	fakeProject := &fakeproject.FakeProjectV1{}
+
+	// WatchListClient featuregate is enabled by default since v0.35. Fake client does not support
+	// initializing its cache from Watch, so falling back to use List instead. The envvar below
+	// configures the featuregate state.
+	os.Setenv("KUBE_FEATURE_"+string(features.WatchListClient), "False")
 
 	factory.NewDefaultRouterControllerFactory(
 		fakerouterclient.NewSimpleClientset(),

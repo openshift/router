@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/features"
 	testclient "k8s.io/client-go/kubernetes/fake"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
@@ -50,6 +52,11 @@ func (t *testSecretGetter) Secrets(_ string) corev1client.SecretInterface {
 
 // fakeSecretInformer will list/watch only one secret inside a namespace
 func fakeSecretInformer(fakeKubeClient *testclient.Clientset, namespace, name string) cache.SharedInformer {
+	// WatchListClient featuregate is enabled by default since v0.35. Fake client does not support
+	// initializing its cache from Watch, so falling back to use List instead. The envvar below
+	// configures the featuregate state.
+	os.Setenv("KUBE_FEATURE_"+string(features.WatchListClient), "False")
+
 	fieldSelector := fields.OneTermEqualSelector("metadata.name", name).String()
 	return cache.NewSharedInformer(
 		&cache.ListWatch{
