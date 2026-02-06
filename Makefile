@@ -43,3 +43,40 @@ check:
 verify:
 	hack/verify-gofmt.sh
 	hack/verify-deps.sh
+
+# OTE test extension binary configuration (single-module strategy)
+TESTS_EXT_DIR := ./tests-extension
+TESTS_EXT_BINARY := tests-extension/bin/router-tests-ext
+
+# Build OTE extension binary
+.PHONY: tests-ext-build
+tests-ext-build:
+	@echo "Building OTE test extension binary..."
+	@cd $(TESTS_EXT_DIR) && $(MAKE) build
+	@echo "✅ OTE binary built successfully at $(TESTS_EXT_BINARY)"
+
+# Compress OTE extension binary (for CI/CD and container builds)
+.PHONY: tests-ext-compress
+tests-ext-compress: tests-ext-build
+	@echo "Compressing OTE extension binary..."
+	@cd tests-extension/bin && tar -czvf router-tests-ext.tar.gz router-tests-ext && rm -f router-tests-ext
+	@echo "Compressed binary created at tests-extension/bin/router-tests-ext.tar.gz"
+
+# Copy compressed binary to _output directory (for CI/CD)
+.PHONY: tests-ext-copy
+tests-ext-copy: tests-ext-compress
+	@echo "Copying compressed binary to _output..."
+	@mkdir -p _output
+	@cp tests-extension/bin/router-tests-ext.tar.gz _output/
+	@echo "Binary copied to _output/router-tests-ext.tar.gz"
+
+# Alias for backward compatibility
+.PHONY: extension
+extension: tests-ext-build
+
+# Clean extension binary
+.PHONY: clean-extension
+clean-extension:
+	@echo "Cleaning extension binary..."
+	@rm -f $(TESTS_EXT_BINARY) tests-extension/bin/router-tests-ext.tar.gz _output/router-tests-ext.tar.gz
+	@cd $(TESTS_EXT_DIR) && $(MAKE) clean
