@@ -480,6 +480,8 @@ func (r *templateRouter) watchMutualTLSCert() error {
 			log.V(0).Error(err, "failed to establish watch on mTLS certificate directory")
 			return nil
 		}
+	} else {
+		crl.SetCRLsUpdated(true)
 	}
 	return nil
 }
