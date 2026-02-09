@@ -644,7 +644,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-request add-header X-Forwarded-Proto http if !{ ssl_fc }
   http-request add-header X-Forwarded-Proto https if { ssl_fc }
   http-request add-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 }
-  option forwarded for proto host-expr req.hdr(host)
+  # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
+  acl ipv6_addr src -m sub :
+  http-request add-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if ipv6_addr
+  http-request add-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !ipv6_addr
           {{- else if eq $setHeaders "replace" }}
   http-request set-header X-Forwarded-For %[src]
   http-request set-header X-Forwarded-Host %[req.hdr(host)]
@@ -652,8 +655,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-request set-header X-Forwarded-Proto http if !{ ssl_fc }
   http-request set-header X-Forwarded-Proto https if { ssl_fc }
   http-request set-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 }
-  http-request del-header Forwarded
-  option forwarded for proto host-expr req.hdr(host)
+  # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
+  acl ipv6_addr src -m sub :
+  http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if ipv6_addr
+  http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !ipv6_addr
           {{- else if eq $setHeaders "if-none" }}
             {{- /* X-Forwarded-For: is handled by "option forwardfor if-none" above.  */}}
   http-request set-header X-Forwarded-Host %[req.hdr(host)] if !{ req.hdr(X-Forwarded-Host) -m found }
