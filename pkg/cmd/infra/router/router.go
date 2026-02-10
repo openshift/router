@@ -79,10 +79,6 @@ type RouterSelection struct {
 	// WatchEndpoints when true will watch Endpoints instead of
 	// EndpointSlices.
 	WatchEndpoints bool
-
-	// AllowExternalCertificates when true enables RouteSecretManager plugin and the external certificate validation.
-	// The cluster-ingress-operator sets it if RouteExternalCertificate feature-gate is enabled.
-	AllowExternalCertificates bool
 }
 
 // Bind sets the appropriate labels
@@ -112,7 +108,6 @@ func (o *RouterSelection) Bind(flag *pflag.FlagSet) {
 	flag.MarkDeprecated("enable-ingress", "Ingress resources are now synchronized to routes automatically.")
 	flag.StringVar(&o.ListenAddr, "listen-addr", env("ROUTER_LISTEN_ADDR", ""), "The name of an interface to listen on to expose metrics and health checking. If not specified, will not listen. Overrides stats port.")
 	flag.BoolVar(&o.WatchEndpoints, "watch-endpoints", isTrue(env("ROUTER_WATCH_ENDPOINTS", "")), "Watch Endpoints instead of the EndpointSlice resource.")
-	flag.BoolVar(&o.AllowExternalCertificates, "allow-external-certificates", isTrue(env("ROUTER_ENABLE_EXTERNAL_CERTIFICATE", "")), "Enable RouteSecretManager plugin and validation of external certificates.")
 }
 
 // RouteUpdate updates the route before it is seen by the cache.
