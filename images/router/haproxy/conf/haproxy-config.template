@@ -644,16 +644,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-request add-header X-Forwarded-Proto http if !{ ssl_fc }
   http-request add-header X-Forwarded-Proto https if { ssl_fc }
   http-request add-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 }
-            {{- if eq "v4v6" $router_ip_v4_v6_mode }}
   # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
   acl ipv6_addr src -m sub :
   http-request add-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if ipv6_addr
   http-request add-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !ipv6_addr
-            {{- else if eq "v6" $router_ip_v4_v6_mode }}
-  http-request add-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
-            {{- else }}
-  http-request add-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
-            {{- end }}
           {{- else if eq $setHeaders "replace" }}
   http-request set-header X-Forwarded-For %[src]
   http-request set-header X-Forwarded-Host %[req.hdr(host)]
@@ -661,16 +655,10 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-request set-header X-Forwarded-Proto http if !{ ssl_fc }
   http-request set-header X-Forwarded-Proto https if { ssl_fc }
   http-request set-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 }
-            {{- if eq "v4v6" $router_ip_v4_v6_mode }}
   # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
   acl ipv6_addr src -m sub :
   http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if ipv6_addr
   http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !ipv6_addr
-            {{- else if eq "v6" $router_ip_v4_v6_mode }}
-  http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
-            {{- else }}
-  http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)]
-            {{- end }}
           {{- else if eq $setHeaders "if-none" }}
             {{- /* X-Forwarded-For: is handled by "option forwardfor if-none" above.  */}}
   http-request set-header X-Forwarded-Host %[req.hdr(host)] if !{ req.hdr(X-Forwarded-Host) -m found }
@@ -678,16 +666,14 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
   http-request set-header X-Forwarded-Proto http if !{ ssl_fc } !{ req.hdr(X-Forwarded-Proto) -m found }
   http-request set-header X-Forwarded-Proto https if { ssl_fc } !{ req.hdr(X-Forwarded-Proto) -m found }
   http-request set-header X-Forwarded-Proto-Version h2 if { ssl_fc_alpn -i h2 } !{ req.hdr(X-Forwarded-Proto-Version) -m found }
-            {{- if eq "v4v6" $router_ip_v4_v6_mode }}
   # See the quoting rules in https://tools.ietf.org/html/rfc7239 for IPv6 addresses (v4 addresses get translated to v6 when in hybrid mode)
+            {{- /*
+              - Adding header manually: option forwarded does not support adding header conditionally
+              - Checking for IPv6 address despite of the router IP family config: an IPv6 could be in place on IPv4 stack if using PROXY protocol and behind a LB with IPv6 stack
+            */}}
   acl ipv6_addr src -m sub :
   http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if ipv6_addr !{ req.hdr(Forwarded) -m found }
   http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !ipv6_addr !{ req.hdr(Forwarded) -m found }
-            {{- else if eq "v6" $router_ip_v4_v6_mode }}
-  http-request set-header Forwarded for=\"[%[src]]\";host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !{ req.hdr(Forwarded) -m found }
-            {{- else }}
-  http-request set-header Forwarded for=%[src];host=%[req.hdr(host)];proto=%[req.hdr(X-Forwarded-Proto)] if !{ req.hdr(Forwarded) -m found }
-            {{- end }}
           {{- else if eq $setHeaders "never" }}
             {{- /* No Forward headers set.  */}}
           {{- end }}
