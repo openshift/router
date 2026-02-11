@@ -28,6 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"k8s.io/client-go/features"
 	kclientset "k8s.io/client-go/kubernetes"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
@@ -83,6 +84,11 @@ func TestMain(m *testing.M) {
 		routeClient: routeClient,
 		namespace:   namespace,
 	}
+
+	// WatchListClient featuregate is enabled by default since v0.35. Fake client does not support
+	// initializing its cache from Watch, so falling back to use List instead. The envvar below
+	// configures the featuregate state.
+	os.Setenv("KUBE_FEATURE_"+string(features.WatchListClient), "False")
 
 	// Other shared junk
 	routerSelection := &routercmd.RouterSelection{}
