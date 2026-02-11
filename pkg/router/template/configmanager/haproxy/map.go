@@ -136,13 +136,12 @@ func (m *HAProxyMap) Find(k string) ([]HAProxyMapEntry, error) {
 // Add adds a new key and value to the haproxy map and allows all previous
 // entries in the map to be deleted (replaced).
 func (m *HAProxyMap) Add(k string, v templaterouter.ServiceAliasConfigKey, replace bool) error {
-	if replace {
-		if err := m.Delete(k); err != nil {
-			return err
-		}
-	}
-
-	return m.addEntry(k, v)
+	// Partially skipping the following tests due to the changes in the behavior.
+	// * map_test.go/TestHAProxyMapAdd
+	// * client_test.go/TestClientCommit
+	// Jira: https://issues.redhat.com/browse/OCPBUGS-75009
+	// They need to be revisited as soon as changing the approach.
+	return fmt.Errorf("adding to a map is not supported yet")
 }
 
 // Delete removes all the matching keys from the haproxy map.
