@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: external-dns-operator
+  namespace: external-dns-operator
+spec:
+  channel: stable-v1
+  installPlanApproval: Automatic
+  name: external-dns-operator
+  source: extdns-konflux-fbc
+  sourceNamespace: external-dns-operator

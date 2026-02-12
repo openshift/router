@@ -1,3 +1,22 @@
+# Builder stage for main router binary (if needed)
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24 AS builder
+RUN mkdir -p /go/src/github.com/openshift/router
+WORKDIR /go/src/github.com/openshift/router
+COPY . .
+# Add any build steps here if needed for the main router binary
+
+# Test extension builder stage (added by ote-migration)
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24 AS test-extension-builder
+RUN mkdir -p /go/src/github.com/openshift/router
+WORKDIR /go/src/github.com/openshift/router
+COPY . .
+RUN cd tests-extension && \
+    make build && \
+    cd bin && \
+    tar -czvf router-test-extension.tar.gz router-tests-ext && \
+    rm -f router-tests-ext
+
+# Final runtime image
 FROM registry.ci.openshift.org/ocp/4.22:haproxy-router-base
 RUN INSTALL_PKGS="socat haproxy28 rsyslog procps-ng util-linux" && \
     yum install -y $INSTALL_PKGS && \
@@ -11,6 +30,10 @@ RUN INSTALL_PKGS="socat haproxy28 rsyslog procps-ng util-linux" && \
     chmod -R g+w /var/lib/haproxy && \
     sed -i 's/SECLEVEL=2/SECLEVEL=1/g' /etc/crypto-policies/back-ends/opensslcnf.config
 COPY images/router/haproxy/ /var/lib/haproxy/
+
+# Copy test extension binary (added by ote-migration)
+COPY --from=test-extension-builder /go/src/github.com/openshift/router/tests-extension/bin/router-test-extension.tar.gz /usr/bin/
+
 LABEL io.k8s.display-name="OpenShift HAProxy Router" \
       io.k8s.description="This component offers ingress to an OpenShift cluster via Ingress and Route rules." \
       io.openshift.tags="openshift,router,haproxy"
