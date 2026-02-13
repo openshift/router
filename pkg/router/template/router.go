@@ -2,6 +2,7 @@ package templaterouter
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/pem"
 	"fmt"
@@ -16,10 +17,12 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/bcicen/go-haproxy"
 	"github.com/fsnotify/fsnotify"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	routev1 "github.com/openshift/api/route/v1"
 
@@ -649,8 +652,23 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 	return nil
 }
 
-// reloadRouter executes the router's reload script.
+// reloadRouter reloads HAProxy.
 func (r *templateRouter) reloadRouter(shutdown bool) error {
+	masterSocket := os.Getenv("ROUTER_HAPROXY_MASTER_UNIX_SOCKET")
+	if masterSocket != "" {
+		// We are in master/worker mode, and this can be either embedded or remote.
+		// Currently we only implement master/worker as a sidecar, so there is no local process to handle.
+		if shutdown {
+			// no action for now, master/worker is always a sidecar and haproxy already received SIGUSR1.
+			return nil
+		}
+		return r.reloadRouterExternal(masterSocket)
+	}
+	return r.reloadRouterEmbedded(shutdown)
+}
+
+// reloadRouterEmbedded executes the router's reload script.
+func (r *templateRouter) reloadRouterEmbedded(shutdown bool) error {
 	if r.reloadFn != nil {
 		return r.reloadFn(shutdown)
 	}
@@ -662,7 +680,34 @@ func (r *templateRouter) reloadRouter(shutdown bool) error {
 	if err != nil {
 		return fmt.Errorf("error reloading router: %v\n%s", err, string(out))
 	}
-	log.V(0).Info("router reloaded", "output", string(out))
+	log.V(0).Info("router reloaded", "mode", "embedded", "output", string(out))
+	return nil
+}
+
+// reloadRouterExternal sends a reload command to the external HAProxy.
+func (r *templateRouter) reloadRouterExternal(masterSocket string) error {
+	// TODO missing application's context
+	_ = wait.PollUntilContextCancel(context.Background(), 2*time.Second, true, func(ctx context.Context) (done bool, err error) {
+		_, errstat := os.Lstat(masterSocket)
+		if errstat != nil {
+			log.Info("waiting for haproxy socket", "message", errstat.Error())
+			return false, nil
+		}
+		return true, nil
+	})
+	client := haproxy.HAProxyClient{Addr: "unix://" + masterSocket, Timeout: 10 /*seconds*/}
+	outputBuffer, err := client.RunCommand("reload")
+	if err != nil {
+		return fmt.Errorf("error connecting haproxy: %w", err)
+	}
+	output := outputBuffer.String()
+
+	// `reload` command is synchronous since haproxy 2.7, so it is safe to continue as soon as it returns.
+	// It should return Success=1 in the first line in case everything went well, anything else is considered a failure.
+	if !strings.HasPrefix(output, "Success=1") {
+		return fmt.Errorf("error reloading router: %s", output)
+	}
+	log.Info("router reloaded", "mode", "sidecar")
 	return nil
 }
 

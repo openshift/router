@@ -73,12 +73,17 @@ if [ -n "${ROUTER_SHUTDOWN-}" ]; then
   exit 1
 fi
 
+haproxy_bin=/usr/sbin/haproxy
+if [ -n "${ROUTER_HAPROXY_VERSION-}" ]; then
+  haproxy_bin+="-$ROUTER_HAPROXY_VERSION"
+fi
+
 reload_status=0
 if [ -n "$old_pids" ]; then
-  /usr/sbin/haproxy -f $config_file -p $pid_file -x /var/lib/haproxy/run/haproxy.sock -sf $old_pids
+  $haproxy_bin -f $config_file -p $pid_file -x /var/lib/haproxy/run/haproxy.sock -sf $old_pids
   reload_status=$?
 else
-  /usr/sbin/haproxy -f $config_file -p $pid_file
+  $haproxy_bin -f $config_file -p $pid_file
   reload_status=$?
 fi
 

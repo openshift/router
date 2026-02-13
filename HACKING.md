@@ -19,7 +19,7 @@ $ make
 * An admin-scoped `KUBECONFIG` for the cluster.
 * Install [imagebuilder](https://github.com/openshift/imagebuilder)
 
-#### Building a Modified Router Image Locally & Deploying to the Cluster
+### Building a Modified Router Image Locally & Deploying to the Cluster
 
 To test Router changes on an available cluster, utilize `Dockerfile.debug` and
 `Makefile.debug` in `hack/`.
@@ -44,6 +44,25 @@ Alternatively, after setting `IMAGE`, you can run `make dwim` (do what I mean) t
 In case OpenShift is deployed as single node, `push` can be changed to `scp` by running `make dwim-single` instead. Node needs sshkey configured. No need to set `IMAGE` envvar.
 
 When done testing, use `make -f hack/Makefile.debug reset` to re-enable the CVO and Ingress Operator.
+
+### Building router image with two or more haproxy versions
+
+WIP, missing some makefile work.
+
+```bash
+make build && \
+  podman build -t localhost/router -f hack/Dockerfile.multi . && \
+  podman save localhost/router | gzip | ssh core@<node> sudo podman load
+```
+
+Defaults to create router with 2.8.18 and 3.2.11, override default using `haproxy_versions` arg, e.g. `--build-arg haproxy_versions=2.8.10,2.8.18,...`
+
+Optionally add the following envvar on router deployment, defaults to use the first one from the `haproxy_versions` arg.
+
+```yaml
+        - name: ROUTER_HAPROXY_VERSION
+          value: 2.8.18 # or any other pre-installed version
+```
 
 ## Tests
 
