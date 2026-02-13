@@ -4,7 +4,7 @@ GO_BINDATA := $(GOPATH)/bin/go-bindata
 
 $(GO_BINDATA):
 	@echo "Installing go-bindata..."
-	@go install github.com/go-bindata/go-bindata/v3/go-bindata@latest
+	@GOFLAGS= go install github.com/go-bindata/go-bindata/v3/go-bindata@latest
 
 .PHONY: bindata
 bindata: clean-bindata $(GO_BINDATA)

@@ -1,12 +1,13 @@
 # Builder stage for main router binary (if needed)
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24 AS builder
+FROM registry.ci.openshift.org/ocp/4.22:haproxy-router-base AS builder
 RUN mkdir -p /go/src/github.com/openshift/router
 WORKDIR /go/src/github.com/openshift/router
 COPY . .
 # Add any build steps here if needed for the main router binary
 
 # Test extension builder stage (added by ote-migration)
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24 AS test-extension-builder
+# Note: Using Go 1.24 image, but GOTOOLCHAIN=auto will download Go 1.25 if needed
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.23 AS test-extension-builder
 RUN mkdir -p /go/src/github.com/openshift/router
 WORKDIR /go/src/github.com/openshift/router
 COPY . .
