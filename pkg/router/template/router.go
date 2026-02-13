@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -312,7 +311,7 @@ func secretToPem(secPath, outName string) error {
 
 	var fileCrtName = filepath.Join(secPath, "tls.crt")
 	var fileKeyName = filepath.Join(secPath, "tls.key")
-	pemBlock, err := ioutil.ReadFile(fileCrtName)
+	pemBlock, err := os.ReadFile(fileCrtName)
 	if err != nil {
 		return err
 	}
@@ -325,7 +324,7 @@ func secretToPem(secPath, outName string) error {
 	}
 	if len(keys) == 0 {
 		// Try to get the key from the tls.key file
-		keyBlock, err := ioutil.ReadFile(fileKeyName)
+		keyBlock, err := os.ReadFile(fileKeyName)
 		if err != nil {
 			return err
 		}
@@ -334,7 +333,7 @@ func secretToPem(secPath, outName string) error {
 		}
 		pemBlock = append(pemBlock, keyBlock...)
 	}
-	return ioutil.WriteFile(outName, pemBlock, 0444)
+	return os.WriteFile(outName, pemBlock, 0444)
 }
 
 // watchVolumeMountDir adds a watcher on path, which should be a secret or

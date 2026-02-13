@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -1636,10 +1636,10 @@ func TestSecretToPem(t *testing.T) {
 	)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if err := ioutil.WriteFile(crtPath, tc.cert, 0644); err != nil {
+			if err := os.WriteFile(crtPath, tc.cert, 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := ioutil.WriteFile(keyPath, tc.key, 0644); err != nil {
+			if err := os.WriteFile(keyPath, tc.key, 0644); err != nil {
 				t.Fatal(err)
 			}
 			// secretToPem uses file mode 0444, and non-root users
@@ -1648,7 +1648,7 @@ func TestSecretToPem(t *testing.T) {
 			// the file with mode 0644 before calling secretToPem so
 			// that it doesn't create a file that it cannot then
 			// write to.
-			if err := ioutil.WriteFile(outPath, nil, 0644); err != nil {
+			if err := os.WriteFile(outPath, nil, 0644); err != nil {
 				t.Fatal(err)
 			}
 			switch err := secretToPem(secPath, outPath); {
@@ -1657,7 +1657,7 @@ func TestSecretToPem(t *testing.T) {
 			case tc.expectError && err == nil:
 				t.Fatalf("%q: expected error, got nil", tc.name)
 			}
-			if actualPEM, err := ioutil.ReadFile(outPath); err != nil {
+			if actualPEM, err := os.ReadFile(outPath); err != nil {
 				t.Fatalf("%q: %v", tc.name, err)
 			} else if !bytes.Equal(actualPEM, tc.expectedPEM) {
 				t.Fatalf("%q: unexpected PEM; expected:\n%s\ngot:\n%s\n", tc.name, tc.expectedPEM, actualPEM)

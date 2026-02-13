@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -889,11 +888,11 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 	keyFile := env("ROUTER_METRICS_TLS_KEY_FILE", "")
 
 	// Load the initial certificate contents.
-	certBytes, err := ioutil.ReadFile(certFile)
+	certBytes, err := os.ReadFile(certFile)
 	if err != nil {
 		return nil, err
 	}
-	keyBytes, err := ioutil.ReadFile(keyFile)
+	keyBytes, err := os.ReadFile(keyFile)
 	if err != nil {
 		return nil, err
 	}
@@ -909,12 +908,12 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		for {
 			select {
 			case <-ticker.C:
-				latestCertBytes, err := ioutil.ReadFile(certFile)
+				latestCertBytes, err := os.ReadFile(certFile)
 				if err != nil {
 					log.Error(err, "failed to read certificate file", "cert", certFile, "key", keyFile)
 					break
 				}
-				latestKeyBytes, err := ioutil.ReadFile(keyFile)
+				latestKeyBytes, err := os.ReadFile(keyFile)
 				if err != nil {
 					log.Error(err, "failed to read key file", "cert", certFile, "key", keyFile)
 					break
@@ -959,11 +958,11 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 // Returns the available stats username and password as strings, as well an error when appropriate.
 func getStatsAuth(statsUsernameFile, statsPasswordFile, statsUsername, statsPassword string) (string, string, error) {
 	if len(statsUsernameFile) > 0 && len(statsPasswordFile) > 0 {
-		usernameBytes, err := ioutil.ReadFile(statsUsernameFile)
+		usernameBytes, err := os.ReadFile(statsUsernameFile)
 		if err != nil {
 			return "", "", err
 		}
-		passwordBytes, err := ioutil.ReadFile(statsPasswordFile)
+		passwordBytes, err := os.ReadFile(statsPasswordFile)
 		if err != nil {
 			return "", "", err
 		}

@@ -3,7 +3,6 @@ package templaterouter
 import (
 	"crypto/md5"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
@@ -385,7 +384,7 @@ func TestMatchPattern(t *testing.T) {
 
 func createTempMapFile(prefix string, data []string) (string, error) {
 	name := ""
-	tempFile, err := ioutil.TempFile("", prefix)
+	tempFile, err := os.CreateTemp("", prefix)
 	if err != nil {
 		return "", fmt.Errorf("unexpected error creating temp file: %v", err)
 	}
@@ -395,7 +394,7 @@ func createTempMapFile(prefix string, data []string) (string, error) {
 		return name, fmt.Errorf("unexpected error creating temp file: %v", err)
 	}
 
-	if err := ioutil.WriteFile(name, []byte(strings.Join(data, "\n")), 0664); err != nil {
+	if err := os.WriteFile(name, []byte(strings.Join(data, "\n")), 0664); err != nil {
 		return name, fmt.Errorf("unexpected error writing temp file %s: %v", name, err)
 	}
 
@@ -967,7 +966,7 @@ func Test_generateHAProxyAllowlistFile(t *testing.T) {
 				}
 			}
 
-			contents, err := ioutil.ReadFile(file)
+			contents, err := os.ReadFile(file)
 			if err != nil {
 				t.Fatalf("Unable to read from the generated file: %v", err)
 			}

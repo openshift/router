@@ -21,7 +21,7 @@ package probehttp
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -98,7 +98,7 @@ func DoHTTPProbe(url *url.URL, headers http.Header, client HTTPGetInterface) (Re
 		return Failure, err.Error(), nil
 	}
 	defer res.Body.Close()
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return Failure, "", err
 	}

@@ -2,7 +2,6 @@ package templaterouter
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net"
 	"os"
@@ -242,7 +241,7 @@ func generateHAProxyAllowlistFile(workingDir string, id ServiceAliasConfigKey, v
 	name := path.Join(workingDir, allowlistDir, fmt.Sprintf("%s.txt", id))
 	cidrs, _ := haproxyutil.ValidateAllowlist(value)
 	data := []byte(strings.Join(cidrs, "\n") + "\n")
-	if err := ioutil.WriteFile(name, data, 0644); err != nil {
+	if err := os.WriteFile(name, data, 0644); err != nil {
 		log.Error(err, "error writing haproxy allowlist contents")
 		return ""
 	}
