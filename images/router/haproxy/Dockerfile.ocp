@@ -1,4 +1,18 @@
+# Test extension builder stage (added by ote-migration)
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.23 AS test-extension-builder
+RUN mkdir -p /go/src/github.com/openshift/router
+WORKDIR /go/src/github.com/openshift/router
+COPY . .
+RUN make tests-ext-build && \
+    cd bin && \
+    tar -czvf router-test-extension.tar.gz router-tests-ext && \
+    rm -f router-tests-ext
+
 FROM registry.ci.openshift.org/ocp/4.22:haproxy-router-base
+
+# Copy test extension binary (added by ote-migration)
+COPY --from=test-extension-builder /go/src/github.com/openshift/router/bin/router-test-extension.tar.gz /usr/bin/
+
 RUN INSTALL_PKGS="socat haproxy28 rsyslog procps-ng util-linux" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \

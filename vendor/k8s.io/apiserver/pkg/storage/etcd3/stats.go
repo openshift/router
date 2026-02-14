@@ -18,6 +18,7 @@ package etcd3
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 
@@ -33,11 +34,11 @@ import (
 
 const sizerRefreshInterval = time.Minute
 
-func newResourceSizeEstimator(prefix string, getKeys storage.KeysFunc) *resourceSizeEstimator {
+func newStatsCache(prefix string, getKeys storage.KeysFunc) *statsCache {
 	if prefix[len(prefix)-1] != '/' {
 		prefix += "/"
 	}
-	sc := &resourceSizeEstimator{
+	sc := &statsCache{
 		prefix:  prefix,
 		getKeys: getKeys,
 		stop:    make(chan struct{}),
@@ -51,21 +52,23 @@ func newResourceSizeEstimator(prefix string, getKeys storage.KeysFunc) *resource
 	return sc
 }
 
-// resourceSizeEstimator efficiently estimates the average object size
+// statsCache efficiently estimates the average object size
 // based on the last observed state of individual keys.
-// By plugging resourceSizeEstimator into GetList and Watch functions,
+// By plugging statsCache into GetList and Watch functions,
 // a fairly accurate estimate of object sizes can be maintained
 // without additional requests to the underlying storage.
 // To handle potential out-of-order or incomplete data,
 // it uses a per-key revision to identify the newer state.
 // This approach may leak keys if delete events are not observed,
 // thus we run a background goroutine to periodically cleanup keys if needed.
-type resourceSizeEstimator struct {
+type statsCache struct {
 	prefix         string
 	stop           chan struct{}
 	wg             sync.WaitGroup
 	lastKeyCleanup atomic.Pointer[time.Time]
-	getKeys        storage.KeysFunc
+
+	getKeysLock sync.Mutex
+	getKeys     storage.KeysFunc
 
 	keysLock sync.Mutex
 	keys     map[string]sizeRevision
@@ -76,8 +79,10 @@ type sizeRevision struct {
 	revision  int64
 }
 
-func (sc *resourceSizeEstimator) Stats(ctx context.Context) (storage.Stats, error) {
-	keys, err := sc.getKeys(ctx)
+var errStatsDisabled = errors.New("key size stats disabled")
+
+func (sc *statsCache) Stats(ctx context.Context) (storage.Stats, error) {
+	keys, err := sc.GetKeys(ctx)
 	if err != nil {
 		return storage.Stats{}, err
 	}
@@ -93,12 +98,30 @@ func (sc *resourceSizeEstimator) Stats(ctx context.Context) (storage.Stats, erro
 	return stats, nil
 }
 
-func (sc *resourceSizeEstimator) Close() {
+func (sc *statsCache) GetKeys(ctx context.Context) ([]string, error) {
+	sc.getKeysLock.Lock()
+	getKeys := sc.getKeys
+	sc.getKeysLock.Unlock()
+
+	if getKeys == nil {
+		return nil, errStatsDisabled
+	}
+	// Don't execute getKeys under lock.
+	return getKeys(ctx)
+}
+
+func (sc *statsCache) SetKeysFunc(keys storage.KeysFunc) {
+	sc.getKeysLock.Lock()
+	defer sc.getKeysLock.Unlock()
+	sc.getKeys = keys
+}
+
+func (sc *statsCache) Close() {
 	close(sc.stop)
 	sc.wg.Wait()
 }
 
-func (sc *resourceSizeEstimator) run() {
+func (sc *statsCache) run() {
 	jitter := 0.5 // Period between [interval, interval * (1.0 + jitter)]
 	sliding := true
 	// wait.JitterUntilWithContext starts work immediately, so wait first.
@@ -109,14 +132,16 @@ func (sc *resourceSizeEstimator) run() {
 	wait.JitterUntilWithContext(wait.ContextForChannel(sc.stop), sc.cleanKeysIfNeeded, sizerRefreshInterval, jitter, sliding)
 }
 
-func (sc *resourceSizeEstimator) cleanKeysIfNeeded(ctx context.Context) {
+func (sc *statsCache) cleanKeysIfNeeded(ctx context.Context) {
 	lastKeyCleanup := sc.lastKeyCleanup.Load()
 	if lastKeyCleanup != nil && time.Since(*lastKeyCleanup) < sizerRefreshInterval {
 		return
 	}
-	keys, err := sc.getKeys(ctx)
+	keys, err := sc.GetKeys(ctx)
 	if err != nil {
-		klog.InfoS("Error getting keys", "err", err)
+		if !errors.Is(err, errStatsDisabled) {
+			klog.InfoS("Error getting keys", "err", err)
+		}
 		return
 	}
 	sc.keysLock.Lock()
@@ -124,7 +149,7 @@ func (sc *resourceSizeEstimator) cleanKeysIfNeeded(ctx context.Context) {
 	sc.cleanKeys(keys)
 }
 
-func (sc *resourceSizeEstimator) cleanKeys(keepKeys []string) {
+func (sc *statsCache) cleanKeys(keepKeys []string) {
 	newKeys := make(map[string]sizeRevision, len(keepKeys))
 	for _, key := range keepKeys {
 		// Handle cacher keys not having prefix.
@@ -146,14 +171,14 @@ func (sc *resourceSizeEstimator) cleanKeys(keepKeys []string) {
 	sc.lastKeyCleanup.Store(&now)
 }
 
-func (sc *resourceSizeEstimator) keySizes() (totalSize int64) {
+func (sc *statsCache) keySizes() (totalSize int64) {
 	for _, sizeRevision := range sc.keys {
 		totalSize += sizeRevision.sizeBytes
 	}
 	return totalSize
 }
 
-func (sc *resourceSizeEstimator) Update(kvs []*mvccpb.KeyValue) {
+func (sc *statsCache) Update(kvs []*mvccpb.KeyValue) {
 	sc.keysLock.Lock()
 	defer sc.keysLock.Unlock()
 	for _, kv := range kvs {
@@ -161,14 +186,14 @@ func (sc *resourceSizeEstimator) Update(kvs []*mvccpb.KeyValue) {
 	}
 }
 
-func (sc *resourceSizeEstimator) UpdateKey(kv *mvccpb.KeyValue) {
+func (sc *statsCache) UpdateKey(kv *mvccpb.KeyValue) {
 	sc.keysLock.Lock()
 	defer sc.keysLock.Unlock()
 
 	sc.updateKey(kv)
 }
 
-func (sc *resourceSizeEstimator) updateKey(kv *mvccpb.KeyValue) {
+func (sc *statsCache) updateKey(kv *mvccpb.KeyValue) {
 	key := string(kv.Key)
 	keySizeRevision := sc.keys[key]
 	if keySizeRevision.revision >= kv.ModRevision {
@@ -181,7 +206,7 @@ func (sc *resourceSizeEstimator) updateKey(kv *mvccpb.KeyValue) {
 	}
 }
 
-func (sc *resourceSizeEstimator) DeleteKey(kv *mvccpb.KeyValue) {
+func (sc *statsCache) DeleteKey(kv *mvccpb.KeyValue) {
 	sc.keysLock.Lock()
 	defer sc.keysLock.Unlock()
 

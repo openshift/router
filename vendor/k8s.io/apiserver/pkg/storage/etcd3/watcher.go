@@ -69,30 +69,30 @@ func TestOnlySetFatalOnDecodeError(b bool) {
 }
 
 type watcher struct {
-	client                   *clientv3.Client
-	codec                    runtime.Codec
-	newFunc                  func() runtime.Object
-	objectType               string
-	groupResource            schema.GroupResource
-	versioner                storage.Versioner
-	transformer              value.Transformer
-	getCurrentStorageRV      func(context.Context) (uint64, error)
-	getResourceSizeEstimator func() *resourceSizeEstimator
+	client              *clientv3.Client
+	codec               runtime.Codec
+	newFunc             func() runtime.Object
+	objectType          string
+	groupResource       schema.GroupResource
+	versioner           storage.Versioner
+	transformer         value.Transformer
+	getCurrentStorageRV func(context.Context) (uint64, error)
+	stats               *statsCache
 }
 
 // watchChan implements watch.Interface.
 type watchChan struct {
-	watcher                  *watcher
-	key                      string
-	initialRev               int64
-	recursive                bool
-	progressNotify           bool
-	internalPred             storage.SelectionPredicate
-	ctx                      context.Context
-	cancel                   context.CancelFunc
-	incomingEventChan        chan *event
-	resultChan               chan watch.Event
-	getResourceSizeEstimator func() *resourceSizeEstimator
+	watcher           *watcher
+	key               string
+	initialRev        int64
+	recursive         bool
+	progressNotify    bool
+	internalPred      storage.SelectionPredicate
+	ctx               context.Context
+	cancel            context.CancelFunc
+	incomingEventChan chan *event
+	resultChan        chan watch.Event
+	stats             *statsCache
 }
 
 // Watch watches on a key and returns a watch.Interface that transfers relevant notifications.
@@ -104,7 +104,7 @@ type watchChan struct {
 // pred must be non-nil. Only if opts.Predicate matches the change, it will be returned.
 func (w *watcher) Watch(ctx context.Context, key string, rev int64, opts storage.ListOptions) (watch.Interface, error) {
 	if opts.Recursive && !strings.HasSuffix(key, "/") {
-		return nil, fmt.Errorf(`recursive key needs to end with "/"`)
+		key += "/"
 	}
 	if opts.ProgressNotify && w.newFunc == nil {
 		return nil, apierrors.NewInternalError(errors.New("progressNotify for watch is unsupported by the etcd storage because no newFunc was provided"))
@@ -128,15 +128,15 @@ func (w *watcher) Watch(ctx context.Context, key string, rev int64, opts storage
 
 func (w *watcher) createWatchChan(ctx context.Context, key string, rev int64, recursive, progressNotify bool, pred storage.SelectionPredicate) *watchChan {
 	wc := &watchChan{
-		watcher:                  w,
-		key:                      key,
-		initialRev:               rev,
-		recursive:                recursive,
-		progressNotify:           progressNotify,
-		internalPred:             pred,
-		incomingEventChan:        make(chan *event, incomingBufSize),
-		resultChan:               make(chan watch.Event, outgoingBufSize),
-		getResourceSizeEstimator: w.getResourceSizeEstimator,
+		watcher:           w,
+		key:               key,
+		initialRev:        rev,
+		recursive:         recursive,
+		progressNotify:    progressNotify,
+		internalPred:      pred,
+		incomingEventChan: make(chan *event, incomingBufSize),
+		resultChan:        make(chan watch.Event, outgoingBufSize),
+		stats:             w.stats,
 	}
 	if pred.Empty() {
 		// The filter doesn't filter out any object.
@@ -385,7 +385,6 @@ func (wc *watchChan) startWatching(watchClosedCh chan struct{}, initialEventsEnd
 		opts = append(opts, clientv3.WithProgressNotify())
 	}
 	wch := wc.watcher.client.Watch(wc.ctx, wc.key, opts...)
-	estimator := wc.getResourceSizeEstimator()
 	for wres := range wch {
 		if wres.Err() != nil {
 			err := wres.Err()
@@ -406,12 +405,12 @@ func (wc *watchChan) startWatching(watchClosedCh chan struct{}, initialEventsEnd
 		}
 
 		for _, e := range wres.Events {
-			if estimator != nil {
+			if wc.stats != nil {
 				switch e.Type {
 				case clientv3.EventTypePut:
-					estimator.UpdateKey(e.Kv)
+					wc.stats.UpdateKey(e.Kv)
 				case clientv3.EventTypeDelete:
-					estimator.DeleteKey(e.Kv)
+					wc.stats.DeleteKey(e.Kv)
 				}
 			}
 			metrics.RecordEtcdEvent(wc.watcher.groupResource)

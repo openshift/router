@@ -44,7 +44,6 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/component-base/compatibility"
 	"k8s.io/component-base/featuregate"
 )
 
@@ -131,7 +130,6 @@ func (a *AdmissionOptions) ApplyTo(
 	kubeClient kubernetes.Interface,
 	dynamicClient dynamic.Interface,
 	features featuregate.FeatureGate,
-	effectiveVersion compatibility.EffectiveVersion,
 	pluginInitializers ...admission.PluginInitializer,
 ) error {
 	if a == nil {
@@ -156,7 +154,7 @@ func (a *AdmissionOptions) ApplyTo(
 	discoveryClient := cacheddiscovery.NewMemCacheClient(kubeClient.Discovery())
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
 	genericInitializer := initializer.New(kubeClient, dynamicClient, informers, c.Authorization.Authorizer, features,
-		effectiveVersion, c.DrainedNotify(), discoveryRESTMapper)
+		c.DrainedNotify(), NewAdmissionRESTMapper(discoveryRESTMapper))
 	initializersChain := admission.PluginInitializers{genericInitializer}
 	initializersChain = append(initializersChain, pluginInitializers...)
 

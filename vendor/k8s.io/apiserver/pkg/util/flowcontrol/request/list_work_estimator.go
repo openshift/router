@@ -86,12 +86,10 @@ func (e *listWorkEstimator) estimate(r *http.Request, flowSchemaName, priorityLe
 		return WorkEstimate{InitialSeats: maxSeats}
 	}
 
-	// For watch requests we want to set the cost low if they aren't requesting for init events,
-	// either via the explicit SendInitialEvents param or via legacy watches that have RV=0 or unset.
+	// For watch requests, we want to adjust the cost only if they explicitly request
+	// sending initial events.
 	if requestInfo.Verb == "watch" {
-		sendInitEvents := listOptions.SendInitialEvents != nil && *listOptions.SendInitialEvents
-		legacyWatch := listOptions.ResourceVersion == "" || listOptions.ResourceVersion == "0"
-		if !sendInitEvents && !legacyWatch {
+		if listOptions.SendInitialEvents == nil || !*listOptions.SendInitialEvents {
 			return WorkEstimate{InitialSeats: e.config.MinimumSeats}
 		}
 	}
