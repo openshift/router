@@ -17,7 +17,6 @@ limitations under the License.
 package generic
 
 import (
-	"context"
 	"fmt"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -42,11 +41,9 @@ type PolicyMatcher interface {
 	BindingMatches(a admission.Attributes, o admission.ObjectInterfaces, binding BindingAccessor) (bool, error)
 
 	// GetNamespace retrieves the Namespace resource by the given name. The name may be empty, in which case
-	// GetNamespace must return nil, NotFound
-	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
+	// GetNamespace must return nil, nil
+	GetNamespace(name string) (*corev1.Namespace, error)
 }
-
-var errNilSelector = "a nil %s selector was passed, please ensure selectors are initialized properly"
 
 type matcher struct {
 	Matcher *matching.Matcher
@@ -69,13 +66,6 @@ func (c *matcher) DefinitionMatches(a admission.Attributes, o admission.ObjectIn
 	if constraints == nil {
 		return false, schema.GroupVersionResource{}, schema.GroupVersionKind{}, fmt.Errorf("policy contained no match constraints, a required field")
 	}
-	if constraints.NamespaceSelector == nil {
-		return false, schema.GroupVersionResource{}, schema.GroupVersionKind{}, fmt.Errorf(errNilSelector, "namespace")
-	}
-	if constraints.ObjectSelector == nil {
-		return false, schema.GroupVersionResource{}, schema.GroupVersionKind{}, fmt.Errorf(errNilSelector, "object")
-	}
-
 	criteria := matchCriteria{constraints: constraints}
 	return c.Matcher.Matches(a, o, &criteria)
 }
@@ -86,20 +76,14 @@ func (c *matcher) BindingMatches(a admission.Attributes, o admission.ObjectInter
 	if matchResources == nil {
 		return true, nil
 	}
-	if matchResources.NamespaceSelector == nil {
-		return false, fmt.Errorf(errNilSelector, "namespace")
-	}
-	if matchResources.ObjectSelector == nil {
-		return false, fmt.Errorf(errNilSelector, "object")
-	}
 
 	criteria := matchCriteria{constraints: matchResources}
 	isMatch, _, _, err := c.Matcher.Matches(a, o, &criteria)
 	return isMatch, err
 }
 
-func (c *matcher) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
-	return c.Matcher.GetNamespace(ctx, name)
+func (c *matcher) GetNamespace(name string) (*corev1.Namespace, error) {
+	return c.Matcher.GetNamespace(name)
 }
 
 var _ matching.MatchCriteria = &matchCriteria{}

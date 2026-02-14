@@ -2,7 +2,6 @@ package gocsv
 
 import (
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -10,11 +9,12 @@ import (
 // Unmarshaller is a CSV to struct unmarshaller.
 type Unmarshaller struct {
 	reader                 *csv.Reader
-	headerMap              map[int]string
-	fieldInfoMap           map[int]*fieldInfo
+	Headers                []string
+	fieldInfoMap           []*fieldInfo
 	MismatchedHeaders      []string
 	MismatchedStructFields []string
 	outType                reflect.Type
+	out                    interface{}
 }
 
 // NewUnmarshaller creates an unmarshaller from a csv.Reader and a struct.
@@ -66,13 +66,11 @@ func validate(um *Unmarshaller, s interface{}, headers []string) error {
 	}
 	structInfo := getStructInfo(concreteType) // Get struct info to get CSV annotations.
 	if len(structInfo.Fields) == 0 {
-		return errors.New("no csv struct tags found")
+		return ErrNoStructTags
 	}
-	csvHeaders := make(map[int]string)                                   // Map of columm index to header name
-	csvHeadersLabels := make(map[int]*fieldInfo, len(structInfo.Fields)) // Used to store the corresponding header <-> position in CSV
+	csvHeadersLabels := make([]*fieldInfo, len(headers)) // Used to store the corresponding header <-> position in CSV
 	headerCount := map[string]int{}
 	for i, csvColumnHeader := range headers {
-		csvHeaders[i] = csvColumnHeader
 		curHeaderCount := headerCount[csvColumnHeader]
 		if fieldInfo := getCSVFieldPosition(csvColumnHeader, structInfo, curHeaderCount); fieldInfo != nil {
 			csvHeadersLabels[i] = fieldInfo
@@ -89,10 +87,11 @@ func validate(um *Unmarshaller, s interface{}, headers []string) error {
 		}
 	}
 
-	um.headerMap = csvHeaders
+	um.Headers = headers
 	um.fieldInfoMap = csvHeadersLabels
 	um.MismatchedHeaders = mismatchHeaderFields(structInfo.Fields, headers)
 	um.MismatchedStructFields = mismatchStructFields(structInfo.Fields, headers)
+	um.out = s
 	return nil
 }
 
@@ -107,13 +106,29 @@ func (um *Unmarshaller) unmarshalRow(row []string, unmatched map[string]string) 
 	}
 	outValue := createNewOutInner(isPointer, concreteOutType)
 	for j, csvColumnContent := range row {
-		if fieldInfo, ok := um.fieldInfoMap[j]; ok {
+		if j < len(um.fieldInfoMap) && um.fieldInfoMap[j] != nil {
+			fieldInfo := um.fieldInfoMap[j]
 			if err := setInnerField(&outValue, isPointer, fieldInfo.IndexChain, csvColumnContent, fieldInfo.omitEmpty); err != nil { // Set field of struct
 				return nil, fmt.Errorf("cannot assign field at %v to %s through index chain %v: %v", j, outValue.Type(), fieldInfo.IndexChain, err)
 			}
 		} else if unmatched != nil {
-			unmatched[um.headerMap[j]] = csvColumnContent
+			unmatched[um.Headers[j]] = csvColumnContent
 		}
 	}
 	return outValue.Interface(), nil
+}
+
+// RenormalizeHeaders will remap the header names based on the headerNormalizer.
+// This can be used to map a CSV to a struct where the CSV header names do not match in the file but a mapping is known
+func (um *Unmarshaller) RenormalizeHeaders(headerNormalizer func([]string) []string) error {
+	headers := um.Headers
+	if headerNormalizer != nil {
+		headers = headerNormalizer(headers)
+	}
+	err := validate(um, um.out, headers)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

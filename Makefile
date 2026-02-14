@@ -43,3 +43,23 @@ check:
 verify:
 	hack/verify-gofmt.sh
 	hack/verify-deps.sh
+
+# OTE test extension binary configuration
+TESTS_EXT_BINARY := bin/router-tests-ext
+
+.PHONY: tests-ext-build
+tests-ext-build:
+	@echo "Building OTE test extension binary..."
+	@$(MAKE) -f bindata.mk update-bindata
+	@mkdir -p bin
+	GOSUMDB=sum.golang.org GOTOOLCHAIN=go1.25.0 go build -mod=mod -o $(TESTS_EXT_BINARY) ./cmd/extension
+	@echo "✅ Extension binary built: $(TESTS_EXT_BINARY)"
+
+.PHONY: extension
+extension: tests-ext-build
+
+.PHONY: clean-extension
+clean-extension:
+	@echo "Cleaning extension binary..."
+	@rm -f $(TESTS_EXT_BINARY)
+	@$(MAKE) -f bindata.mk clean-bindata 2>/dev/null || true

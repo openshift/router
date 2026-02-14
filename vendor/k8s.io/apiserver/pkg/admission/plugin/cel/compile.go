@@ -229,19 +229,18 @@ func mustBuildEnvs(baseEnv *environment.EnvSet) variableDeclEnvs {
 	for _, hasParams := range []bool{false, true} {
 		for _, hasAuthorizer := range []bool{false, true} {
 			var err error
-			{
-				decl := OptionalVariableDeclarations{HasParams: hasParams, HasAuthorizer: hasAuthorizer}
+			for _, strictCost := range []bool{false, true} {
+				decl := OptionalVariableDeclarations{HasParams: hasParams, HasAuthorizer: hasAuthorizer, StrictCost: strictCost}
 				envs[decl], err = createEnvForOpts(baseEnv, namespaceType, requestType, decl)
 				if err != nil {
 					panic(err)
 				}
 			}
-			{
-				decl := OptionalVariableDeclarations{HasParams: hasParams, HasAuthorizer: hasAuthorizer, HasPatchTypes: true}
-				envs[decl], err = createEnvForOpts(baseEnv, namespaceType, requestType, decl)
-				if err != nil {
-					panic(err)
-				}
+			// We only need this ObjectTypes where strict cost is true
+			decl := OptionalVariableDeclarations{HasParams: hasParams, HasAuthorizer: hasAuthorizer, StrictCost: true, HasPatchTypes: true}
+			envs[decl], err = createEnvForOpts(baseEnv, namespaceType, requestType, decl)
+			if err != nil {
+				panic(err)
 			}
 		}
 	}
@@ -275,10 +274,15 @@ func createEnvForOpts(baseEnv *environment.EnvSet, namespaceType *apiservercel.D
 				requestType,
 			},
 		},
-		environment.StrictCostOpt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("environment misconfigured: %w", err)
+	}
+	if opts.StrictCost {
+		extended, err = extended.Extend(environment.StrictCostOpt)
+		if err != nil {
+			return nil, fmt.Errorf("environment misconfigured: %w", err)
+		}
 	}
 
 	if opts.HasPatchTypes {

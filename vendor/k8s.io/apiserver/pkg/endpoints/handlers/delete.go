@@ -103,13 +103,11 @@ func DeleteResource(r rest.GracefulDeleter, allowsOptions bool, scope *RequestSc
 				defaultGVK := scope.MetaGroupVersion.WithKind("DeleteOptions")
 				obj, gvk, err := apihelpers.GetMetaInternalVersionCodecs().DecoderToVersion(s.Serializer, defaultGVK.GroupVersion()).Decode(body, &defaultGVK, options)
 				if err != nil {
-					err = errors.NewBadRequest(err.Error())
 					scope.err(err, w, req)
 					return
 				}
 				if obj != options {
-					err = errors.NewBadRequest("decoded object cannot be converted to DeleteOptions")
-					scope.err(err, w, req)
+					scope.err(fmt.Errorf("decoded object cannot be converted to DeleteOptions"), w, req)
 					return
 				}
 				span.AddEvent("Decoded delete options")
@@ -280,13 +278,11 @@ func DeleteCollection(r rest.CollectionDeleter, checkBody bool, scope *RequestSc
 				defaultGVK := scope.MetaGroupVersion.WithKind("DeleteOptions")
 				obj, gvk, err := apihelpers.GetMetaInternalVersionCodecs().DecoderToVersion(s.Serializer, defaultGVK.GroupVersion()).Decode(body, &defaultGVK, options)
 				if err != nil {
-					err = errors.NewBadRequest(err.Error())
 					scope.err(err, w, req)
 					return
 				}
 				if obj != options {
-					err = errors.NewBadRequest("decoded object cannot be converted to DeleteOptions")
-					scope.err(err, w, req)
+					scope.err(fmt.Errorf("decoded object cannot be converted to DeleteOptions"), w, req)
 					return
 				}
 

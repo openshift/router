@@ -40,7 +40,9 @@ type DefinitionsSchemaResolver struct {
 func NewDefinitionsSchemaResolver(getDefinitions common.GetOpenAPIDefinitions, schemes ...*runtime.Scheme) *DefinitionsSchemaResolver {
 	gvkToRef := make(map[schema.GroupVersionKind]string)
 	namer := openapi.NewDefinitionNamer(schemes...)
-	defs := getDefinitions(spec.MustCreateRef)
+	defs := getDefinitions(func(path string) spec.Ref {
+		return spec.MustCreateRef(path)
+	})
 	for name := range defs {
 		_, e := namer.GetDefinitionName(name)
 		gvks := extensionsToGVKs(e)

@@ -28,8 +28,6 @@ import (
 	restful "github.com/emicklei/go-restful/v3"
 	"sigs.k8s.io/structured-merge-diff/v6/fieldpath"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	apidiscoveryv2 "k8s.io/api/apidiscovery/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/conversion"
@@ -820,7 +818,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.GET(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("read"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("read"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
 				Returns(http.StatusOK, "OK", producedObject).
 				Writes(producedObject)
@@ -841,7 +839,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.GET(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("list"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("list"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), allMediaTypes...)...).
 				Returns(http.StatusOK, "OK", versionedList).
 				Writes(versionedList)
@@ -874,7 +872,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.PUT(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("replace"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("replace"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
 				Returns(http.StatusOK, "OK", producedObject).
 				// TODO: in some cases, the API may return a v1.Status instead of the versioned object
@@ -907,7 +905,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
 				Consumes(supportedTypes...).
-				Operation("patch"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("patch"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
 				Returns(http.StatusOK, "OK", producedObject).
 				// Patch can return 201 when a server side apply is requested
@@ -936,7 +934,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.POST(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("create"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("create"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
 				Returns(http.StatusOK, "OK", producedObject).
 				// TODO: in some cases, the API may return a v1.Status instead of the versioned object
@@ -965,7 +963,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.DELETE(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("delete"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("delete"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
 				Writes(deleteReturnType).
 				Returns(http.StatusOK, "OK", deleteReturnType).
@@ -989,7 +987,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.DELETE(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("deletecollection"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("deletecollection"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
 				Writes(versionedStatus).
 				Returns(http.StatusOK, "OK", versionedStatus)
@@ -1017,7 +1015,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.GET(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("watch"+namespaced+kind+cases.Title(language.English).String(subresource)+operationSuffix).
+				Operation("watch"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(allMediaTypes...).
 				Returns(http.StatusOK, "OK", versionedWatchEvent).
 				Writes(versionedWatchEvent)
@@ -1038,7 +1036,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			route := ws.GET(action.Path).To(handler).
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).")).
-				Operation("watch"+namespaced+kind+cases.Title(language.English).String(subresource)+"List"+operationSuffix).
+				Operation("watch"+namespaced+kind+strings.Title(subresource)+"List"+operationSuffix).
 				Produces(allMediaTypes...).
 				Returns(http.StatusOK, "OK", versionedWatchEvent).
 				Writes(versionedWatchEvent)
@@ -1062,7 +1060,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				route := ws.Method(method).Path(action.Path).
 					To(handler).
 					Doc(doc).
-					Operation("connect" + cases.Title(language.English).String(strings.ToLower(method)) + namespaced + kind + cases.Title(language.English).String(subresource) + operationSuffix).
+					Operation("connect" + strings.Title(strings.ToLower(method)) + namespaced + kind + strings.Title(subresource) + operationSuffix).
 					Produces("*/*").
 					Consumes("*/*").
 					Writes(connectProducedObject)

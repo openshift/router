@@ -1,1 +1,3 @@
 /openshift-router
+/bin
+test/e2e/testdata/bindata.go

@@ -45,7 +45,6 @@ import (
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/admission/initializer"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
-	"k8s.io/apiserver/pkg/util/compatibility"
 )
 
 // Logger allows t.Testing and b.Testing to be passed to PolicyTestContext
@@ -159,27 +158,27 @@ func NewPolicyTestContext[P, B runtime.Object, E Evaluator](
 	// Make an informer for our policies and bindings
 
 	policyInformer := cache.NewSharedIndexInformer(
-		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
+		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				return policiesAndBindingsTracker.List(fakePolicyGVR, fakePolicyGVK, "")
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				return policiesAndBindingsTracker.Watch(fakePolicyGVR, "")
 			},
-		}, policiesAndBindingsTracker),
+		},
 		Pexample,
 		30*time.Second,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	bindingInformer := cache.NewSharedIndexInformer(
-		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
+		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				return policiesAndBindingsTracker.List(fakeBindingGVR, fakeBindingGVK, "")
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				return policiesAndBindingsTracker.Watch(fakeBindingGVR, "")
 			},
-		}, policiesAndBindingsTracker),
+		},
 		Bexample,
 		30*time.Second,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
@@ -204,7 +203,6 @@ func NewPolicyTestContext[P, B runtime.Object, E Evaluator](
 	plugin.SetEnabled(true)
 
 	featureGate := featuregate.NewFeatureGate()
-	effectiveVersion := compatibility.DefaultBuildEffectiveVersion()
 	testContext, testCancel := context.WithCancel(context.Background())
 	genericInitializer := initializer.New(
 		nativeClient,
@@ -212,7 +210,6 @@ func NewPolicyTestContext[P, B runtime.Object, E Evaluator](
 		fakeInformerFactory,
 		fakeAuthorizer{},
 		featureGate,
-		effectiveVersion,
 		testContext.Done(),
 		fakeRestMapper,
 	)
