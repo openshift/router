@@ -606,6 +606,9 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
   tcp-request content reject if !allowlist
         {{- end }}
+        {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout-http-keep-alive")) }}
+  timeout http-keep-alive  {{ $value }}
+        {{- end }}
         {{- with $value := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "haproxy.router.openshift.io/timeout")) }}
   timeout server  {{ $value }}
         {{- end }}
