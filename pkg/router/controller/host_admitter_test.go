@@ -16,6 +16,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/client-go/route/clientset/versioned/fake"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -155,10 +156,11 @@ func TestHostAdmit(t *testing.T) {
 
 func TestWildcardHostDeny(t *testing.T) {
 	p := &fakePlugin{}
-	admitter := NewHostAdmitter(p, wildcardRejecter, false, false, LogRejections)
+	admitter := NewHostAdmitter(p, wildcardAdmitter, true, false, LogRejections)
 	tests := []struct {
 		name   string
 		host   string
+		path   string
 		policy routev1.WildcardPolicyType
 		errors bool
 	}{
@@ -174,6 +176,7 @@ func TestWildcardHostDeny(t *testing.T) {
 		{
 			name:   "allowed2",
 			host:   "www.host.admission.test",
+			path:   "/api",
 			policy: routev1.WildcardPolicyNone,
 			errors: false,
 		},
@@ -241,8 +244,9 @@ func TestWildcardHostDeny(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      tc.name,
 				Namespace: "deny",
+				UID:       types.UID(tc.name),
 			},
-			Spec: routev1.RouteSpec{Host: tc.host},
+			Spec: routev1.RouteSpec{Host: tc.host, Path: tc.path, WildcardPolicy: tc.policy},
 		}
 
 		err := admitter.HandleRoute(watch.Added, route)
@@ -255,6 +259,118 @@ func TestWildcardHostDeny(t *testing.T) {
 				t.Fatalf("Test case %s expected no errors, got %v", tc.name, err)
 			}
 		}
+	}
+}
+
+func TestWildcardHostUpdate(t *testing.T) {
+	// This test explores the failure reported in
+	// https://redhat.atlassian.net/browse/OCPBUGS-49738
+	tests := []struct {
+		namePrefix    string
+		oldHostRoute1 string
+		oldHostRoute2 string
+		newHostRoute1 string
+		newHostRoute2 string
+		policy        routev1.WildcardPolicyType
+		expectedErr1  string
+		expectedErr2  string
+	}{
+		{
+			namePrefix:    "wildcard-none",
+			oldHostRoute1: "host1.local",
+			oldHostRoute2: "host2.local",
+			newHostRoute1: "host3.local",
+			newHostRoute2: "host1.local",
+			policy:        routev1.WildcardPolicyNone,
+		},
+		{
+			namePrefix:    "wildcard-subdomain",
+			oldHostRoute1: "host1.local1",
+			oldHostRoute2: "host2.local2",
+			newHostRoute1: "host3.local3",
+			newHostRoute2: "host1.local1",
+			policy:        routev1.WildcardPolicySubdomain,
+		},
+		{
+			namePrefix:    "wildcard-none-conflict",
+			oldHostRoute1: "host1.local",
+			oldHostRoute2: "host2.local",
+			newHostRoute1: "host1.local",
+			newHostRoute2: "host1.local",
+			policy:        routev1.WildcardPolicyNone,
+			expectedErr2:  `route host-update/wildcard-none-conflict-route1 has host host1.local`,
+		},
+		{
+			namePrefix:    "wildcard-subdomain-conflict",
+			oldHostRoute1: "host1.local1",
+			oldHostRoute2: "host2.local2",
+			newHostRoute1: "host1.local1",
+			newHostRoute2: "host1.local1",
+			policy:        routev1.WildcardPolicySubdomain,
+			expectedErr2:  `wildcard route host-update/wildcard-subdomain-conflict-route1 has host *.local1, blocking host1.local1`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.namePrefix, func(t *testing.T) {
+			p := &fakePlugin{}
+			admitter := NewHostAdmitter(p, wildcardAdmitter, true, false, LogRejections)
+
+			// do not change route instances, instead, create new ones with new values
+			createRoute := func(nameSuffix, host string) *routev1.Route {
+				name := tc.namePrefix + "-" + nameSuffix
+				return &routev1.Route{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: "host-update",
+						UID:       types.UID(name),
+					},
+					Spec: routev1.RouteSpec{Host: host, WildcardPolicy: tc.policy},
+				}
+			}
+
+			var err error
+
+			// add routes
+			oldRoute1 := createRoute("route1", tc.oldHostRoute1)
+			oldRoute2 := createRoute("route2", tc.oldHostRoute2)
+			err = admitter.HandleRoute(watch.Added, oldRoute1)
+			require.NoError(t, err)
+			err = admitter.HandleRoute(watch.Added, oldRoute2)
+			require.NoError(t, err)
+
+			newRoute1 := createRoute("route1", tc.newHostRoute1)
+			newRoute2 := createRoute("route2", tc.newHostRoute2)
+			// modify both routes to the new hostname
+			err = admitter.HandleRoute(watch.Modified, newRoute1)
+			if tc.expectedErr1 == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tc.expectedErr1)
+			}
+			err = admitter.HandleRoute(watch.Modified, newRoute2)
+			if tc.expectedErr2 == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tc.expectedErr2)
+			}
+
+			// Delete both routes
+			err = admitter.HandleRoute(watch.Deleted, newRoute1)
+			require.NoError(t, err)
+			err = admitter.HandleRoute(watch.Deleted, newRoute2)
+			require.NoError(t, err)
+
+			// all the claimed and blocked host hashmaps should be empty
+			require.Len(t, admitter.claimedHosts, 0)
+			require.Len(t, admitter.blockedWildcards, 0)
+			require.Len(t, admitter.claimedWildcards, 0)
+			require.Len(t, admitter.routeHosts, 0)
+
+			// New route should be able to claim route1's original host
+			err = admitter.HandleRoute(watch.Added, oldRoute1)
+			require.NoError(t, err)
+		})
 	}
 }
 
