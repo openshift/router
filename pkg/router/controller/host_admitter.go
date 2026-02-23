@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"slices"
 
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -20,29 +21,25 @@ type RouteMap map[string][]*routev1.Route
 
 // RemoveRoute removes any existing routes that match the given route's namespace and name for a key
 func (srm RouteMap) RemoveRoute(key string, route *routev1.Route) bool {
-	k := 0
-	removed := false
+	source := srm[key]
+	removed := slices.DeleteFunc(source, func(r *routev1.Route) bool {
+		return r.Namespace == route.Namespace && r.Name == route.Name
+	})
 
-	m := srm[key]
-	for i, v := range m {
-		if m[i].Namespace == route.Namespace && m[i].Name == route.Name {
-			removed = true
-		} else {
-			m[k] = v
-			k++
-		}
-	}
-
-	// set the slice length to the final size.
-	m = m[:k]
-
-	if len(m) > 0 {
-		srm[key] = m
+	if len(removed) > 0 {
+		srm[key] = removed
 	} else {
 		delete(srm, key)
 	}
 
-	return removed
+	return len(source) > len(removed)
+}
+
+// RemoveRouteFromAllKeys removes a route from all keys in the map based on namespace and name
+func (srm RouteMap) RemoveRouteFromAllKeys(route *routev1.Route) {
+	for key := range srm {
+		srm.RemoveRoute(key, route)
+	}
 }
 
 func (srm RouteMap) InsertRoute(key string, route *routev1.Route) {
@@ -207,6 +204,11 @@ func (p *HostAdmitter) addRoute(route *routev1.Route) error {
 		p.plugin.HandleRoute(watch.Deleted, displacedRoute)
 	}
 
+	// Remove old entries for this route from all hosts, this handles the change of the host value
+	p.claimedHosts.RemoveRouteFromAllKeys(route)
+	p.blockedWildcards.RemoveRouteFromAllKeys(route)
+	p.claimedWildcards.RemoveRouteFromAllKeys(route)
+
 	if len(route.Spec.WildcardPolicy) == 0 {
 		route.Spec.WildcardPolicy = routev1.WildcardPolicyNone
 	}
@@ -219,19 +221,10 @@ func (p *HostAdmitter) addRoute(route *routev1.Route) error {
 		// claim the host, block wildcards that would conflict with this host
 		p.claimedHosts.InsertRoute(route.Spec.Host, route)
 		p.blockedWildcards.InsertRoute(wildcardKey, route)
-		// ensure the route doesn't exist as a claimed wildcard (in case it previously was)
-		p.claimedWildcards.RemoveRoute(wildcardKey, route)
-
 	case routev1.WildcardPolicySubdomain:
 		// claim the wildcard
 		p.claimedWildcards.InsertRoute(wildcardKey, route)
-		// ensure the route doesn't exist as a claimed host or blocked wildcard
-		p.claimedHosts.RemoveRoute(route.Spec.Host, route)
-		p.blockedWildcards.RemoveRoute(wildcardKey, route)
 	default:
-		p.claimedHosts.RemoveRoute(route.Spec.Host, route)
-		p.claimedWildcards.RemoveRoute(wildcardKey, route)
-		p.blockedWildcards.RemoveRoute(wildcardKey, route)
 		err := fmt.Errorf("unsupported wildcard policy %s", route.Spec.WildcardPolicy)
 		p.recorder.RecordRouteRejection(route, "RouteNotAdmitted", err.Error())
 		return err
