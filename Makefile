@@ -39,6 +39,12 @@ images/router/*/Dockerfile.ocp: images/router/base/Dockerfile.ocp
 check:
 	CGO_ENABLED=1 $(GO) test -race ./...
 
+local-prepare:
+	hack/local-router.sh prepare
+
+local-run:
+	hack/local-router.sh run
+
 .PHONY: verify
 verify:
 	hack/verify-gofmt.sh
