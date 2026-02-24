@@ -115,3 +115,34 @@ func ProxyProtocolHTTPBackendAvailable(u *url.URL) healthz.HealthChecker {
 		return nil
 	})
 }
+
+// AdminSocketAvailable returns a healthz check that verifies the
+// HAProxy process is alive by sending "show info" to its admin socket and
+// expecting a non-empty response.
+func AdminSocketAvailable(u *url.URL) healthz.HealthChecker {
+	return healthz.NamedCheck("admin-socket", func(_ *http.Request) error {
+		conn, err := net.DialTimeout("unix", u.Path, 2*time.Second)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		conn.SetDeadline(time.Now().Add(2 * time.Second))
+
+		if _, err := conn.Write([]byte("show info\n")); err != nil {
+			return err
+		}
+
+		buf := make([]byte, 10)
+		n, err := conn.Read(buf)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return fmt.Errorf("empty response from admin socket")
+		}
+
+		log.V(4).Info("probe succeeded", "url", u.String())
+		return nil
+	})
+}

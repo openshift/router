@@ -636,9 +636,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			return err
 		}
 		checkController := metrics.ControllerLive()
+		adminSocketURL := &url.URL{Scheme: "unix", Path: "/var/lib/haproxy/run/haproxy.sock"}
+		checkSocket := metrics.AdminSocketAvailable(adminSocketURL)
 		liveChecks := []healthz.HealthChecker{checkController}
 		if !(isTrue(env("ROUTER_BIND_PORTS_BEFORE_SYNC", ""))) {
-			liveChecks = append(liveChecks, checkBackend)
+			liveChecks = append(liveChecks, checkSocket)
 		}
 
 		kubeconfig, _, err := o.Config.KubeConfig()
