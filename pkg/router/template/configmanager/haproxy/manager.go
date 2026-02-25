@@ -754,7 +754,7 @@ func (cm *haproxyConfigManager) processMapAssociations(associations haproxyMapAs
 		name := path.Base(ham.Name())
 		if entries, ok := associations[name]; ok {
 			log.V(4).Info("applying to map", "name", name, "entries", entries)
-			if err := applyMapAssociations(ham, entries, add); err != nil {
+			if err := ham.SyncEntries(entries, add); err != nil {
 				return err
 			}
 		}

@@ -3,6 +3,8 @@ package haproxy
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	templaterouter "github.com/openshift/router/pkg/router/template"
 	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
@@ -840,5 +842,91 @@ func TestHAProxyMapDeleteEntry(t *testing.T) {
 		if err != nil {
 			t.Errorf("TestHAProxyMapDeleteEntry test case %s expected no error but got: %v", tc.name, err)
 		}
+	}
+}
+
+// TestHAProxyMapSyncEntries tests adding/replacing/removing entries in a haproxy map.
+func TestHAProxyMapSyncEntries(t *testing.T) {
+	server := haproxytesting.StartFakeServerForTest(t)
+	defer server.Stop()
+
+	testCases := []struct {
+		name            string
+		currentEntries  []string
+		newEntries      configEntryMap
+		add             bool
+		expectedEntries []string
+	}{
+		{
+			name:            "add simple pattern",
+			currentEntries:  []string{},
+			newEntries:      configEntryMap{"k": "v"},
+			add:             true,
+			expectedEntries: []string{"1 k v"},
+		},
+		{
+			name:            "remove simple pattern",
+			currentEntries:  []string{"1 k v"},
+			newEntries:      configEntryMap{"k": "v"},
+			add:             true,
+			expectedEntries: []string{"1 k v"},
+		},
+		{
+			name:            "replace value",
+			currentEntries:  []string{"1 k v1"},
+			newEntries:      configEntryMap{"k": "v2"},
+			add:             true,
+			expectedEntries: []string{"1 k v2"},
+		},
+		{
+			name:            "remove non-existing key",
+			currentEntries:  []string{"1 k1 v"},
+			newEntries:      configEntryMap{"k2": "v"},
+			add:             false,
+			expectedEntries: []string{"1 k1 v"},
+		},
+		{
+			name:            "remove non-matching value",
+			currentEntries:  []string{"1 k v1"},
+			newEntries:      configEntryMap{"k": "v2"},
+			add:             false,
+			expectedEntries: nil,
+		},
+		{
+			name: "add and reorder",
+			currentEntries: []string{
+				`1 ^sub\.route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http1`,
+				`2 ^route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http2`,
+			},
+			newEntries: configEntryMap{
+				`^something-else\.test(:[0-9]+)?(/.*)?$`: `be_edge_http:default:test-http3`,
+			},
+			add: true,
+			expectedEntries: []string{
+				`1 ^sub\.route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http1`,
+				`2 ^something-else\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http3`,
+				`3 ^route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http2`,
+			},
+		},
+	}
+
+	const customMapName = "custom.map"
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client := NewClient(server.SocketFile(), 0)
+			if client == nil {
+				t.Errorf("TestHAProxyMapAdd test case %s failed with no client.", tc.name)
+			}
+
+			// Ensure server is in clean state for test.
+			server.Reset()
+			server.SetCustomMap(customMapName, tc.currentEntries)
+
+			m := newHAProxyMap(customMapName, client)
+			err := m.SyncEntries(tc.newEntries, tc.add)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedEntries, server.ReadMapContent(customMapName))
+		})
 	}
 }
