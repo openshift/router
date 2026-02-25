@@ -393,7 +393,7 @@ func TestClientCommit(t *testing.T) {
 
 	server.Reset()
 	for _, m := range maps {
-		if err := m.Add("key", "value", true); err != nil {
+		if err := m.SyncEntries(configEntryMap{"key": "value"}, true); err != nil {
 			t.Errorf("TestClientCommit error syncing map %s: %v", m.Name(), err)
 		}
 	}
