@@ -1049,28 +1049,6 @@ func isDynamicBackendServer(server BackendServerInfo) bool {
 	return strings.HasPrefix(server.Name, dynamicServerPrefix)
 }
 
-// applyMapAssociations applies the backend associations to a haproxy map.
-func applyMapAssociations(m *HAProxyMap, associations configEntryMap, add bool) error {
-	for k, v := range associations {
-		log.V(4).Info("applying to map", "name", m.Name(), "key", k, "value", v, "add", add)
-		if add {
-			if err := m.Add(k, v, true); err != nil {
-				return err
-			}
-		} else {
-			if err := m.Delete(k); err != nil {
-				return err
-			}
-		}
-
-		if err := m.Commit(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // backendModAnnotations return the annotations in a route that will
 // require custom (or modified) backend configuration in haproxy.
 func backendModAnnotations(route *routev1.Route) map[string]string {

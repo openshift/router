@@ -8,7 +8,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	templaterouter "github.com/openshift/router/pkg/router/template"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
 )
 
@@ -229,74 +228,6 @@ func (m *HAProxyMap) SyncEntries(newEntries configEntryMap, add bool) error {
 	}
 
 	return nil
-}
-
-// Add adds a new key and value to the haproxy map and allows all previous
-// entries in the map to be deleted (replaced).
-func (m *HAProxyMap) Add(k string, v templaterouter.ServiceAliasConfigKey, replace bool) error {
-	if replace {
-		if err := m.Delete(k); err != nil {
-			return err
-		}
-	}
-
-	return m.addEntry(k, v)
-}
-
-// Delete removes all the matching keys from the haproxy map.
-func (m *HAProxyMap) Delete(k string) error {
-	entries, err := m.Find(k)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		if err := m.deleteEntry(entry.ID); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// DeleteEntry removes a specific haproxy map entry.
-func (m *HAProxyMap) DeleteEntry(id string) error {
-	return m.deleteEntry(id)
-}
-
-// addEntry adds a new haproxy map entry.
-func (m *HAProxyMap) addEntry(k string, v templaterouter.ServiceAliasConfigKey) error {
-	keyExpr := escapeKeyExpr(string(k))
-	cmd := fmt.Sprintf("add map %s %s %s", m.name, keyExpr, v)
-	responseBytes, err := m.client.Execute(cmd)
-	if err != nil {
-		return err
-	}
-
-	response := strings.TrimSpace(string(responseBytes))
-	if len(response) > 0 {
-		return fmt.Errorf("adding map %s entry %s: %v", m.name, keyExpr, string(response))
-	}
-
-	m.dirty = true
-	return nil
-}
-
-// deleteEntry removes a specific haproxy map entry.
-func (m *HAProxyMap) deleteEntry(id string) error {
-	cmd := fmt.Sprintf("del map %s #%s", m.name, id)
-	if _, err := m.client.Execute(cmd); err != nil {
-		return err
-	}
-
-	m.dirty = true
-	return nil
-}
-
-// escapeKeyExpr escapes meta characters in the haproxy map entry key name.
-func escapeKeyExpr(k string) string {
-	v := strings.Replace(k, `\`, `\\`, -1)
-	return strings.Replace(v, `.`, `\.`, -1)
 }
 
 // Regular expression to fixup haproxy map list funky output.

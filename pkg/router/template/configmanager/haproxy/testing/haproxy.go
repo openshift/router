@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -338,42 +337,6 @@ func (p *fakeHAProxy) commitMap(name string) string {
 	return "\n"
 }
 
-func (p *fakeHAProxy) addMap(name, k, v string) string {
-	lines := []string{}
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if m, ok := p.maps[name]; !ok {
-		lines = append(lines, "Unknown map identifier. Please use #<id> or <file>.")
-		lines = append(lines, "")
-	} else {
-		idx := slices.IndexFunc(m, func(e haproxyMapEntry) bool {
-			return e.key == k
-		})
-		newEntry := haproxyMapEntry{key: k, value: v}
-		if idx >= 0 {
-			m[idx] = newEntry
-		} else {
-			m = append(m, newEntry)
-		}
-		lines = append(lines, "")
-	}
-
-	return strings.Join(lines, "\n")
-}
-
-func (p *fakeHAProxy) delMap(name, id string) string {
-	id = strings.Trim(id, "#")
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if m, ok := p.maps[name]; ok {
-		p.maps[name] = slices.DeleteFunc(m, func(e haproxyMapEntry) bool {
-			return strings.HasPrefix(e.value, id)
-		})
-	}
-
-	return fmt.Sprintf("del map %s\n", name)
-}
-
 func (p *fakeHAProxy) listBackends() string {
 	return `# name
 be_sni
@@ -508,22 +471,6 @@ func (p *fakeHAProxy) process(conn net.Conn) error {
 			response = "Missing map identifier."
 		} else {
 			response = p.commitMap(params[1])
-		}
-	} else if strings.HasPrefix(cmd, "add map") {
-		params := strings.Trim(cmd[len("add map"):], " ")
-		vals := strings.Split(params, " ")
-		if len(vals) < 3 {
-			response = fmt.Sprintf("'add map' expects three parameters: map identifier, key and value.\n")
-		} else {
-			response = p.addMap(vals[0], vals[1], vals[2])
-		}
-	} else if strings.HasPrefix(cmd, "del map") {
-		params := strings.Trim(cmd[len("del map"):], " ")
-		vals := strings.Split(params, " ")
-		if len(vals) < 2 {
-			response = fmt.Sprintf("This command expects two parameters: map identifier and key.\n")
-		} else {
-			response = p.delMap(vals[0], vals[1])
 		}
 	} else if strings.HasPrefix(cmd, "show servers state") {
 		name := strings.Trim(cmd[len("show servers state"):], " ")
