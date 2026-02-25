@@ -24,7 +24,7 @@ $ make
 To test Router changes on an available cluster, utilize `Dockerfile.debug` and
 `Makefile.debug` in `hack/`.
 
-`Dockerfile.debug` is a multi-stage dockerifle for building the Router binary,
+`Dockerfile.debug` is a multi-stage Dockerfile for building the Router binary,
 as well as the Router image itself. The outputted image uses `centos:8` as it's base
 since installing packages on an OpenShift RHEL base image requires RHEL entitlements.
 
