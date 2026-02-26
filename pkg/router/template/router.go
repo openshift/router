@@ -788,6 +788,13 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 	log.V(4).Info("dynamically adding route backend", "backendKey", backendKey)
 	r.dynamicConfigManager.Register(backendKey, route)
 
+	// Fully skipping DCM for now when adding or changing routes,
+	// should be reincluded along with the fix for https://issues.redhat.com/browse/OCPBUGS-77344
+	// Returning from within an always true condition makes linter happy.
+	if true {
+		return false
+	}
+
 	// If no initial sync was done, don't try to dynamically add the
 	// route as we will need a reload anyway.
 	if !r.synced {
@@ -830,6 +837,13 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 // Note: The config should have been synced at least once initially and
 // the caller needs to acquire a lock [and release it].
 func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey, route *routev1.Route) bool {
+	// Fully skipping DCM for now when adding or changing routes,
+	// should be reincluded along with the fix for https://issues.redhat.com/browse/OCPBUGS-77344
+	// Returning from within an always true condition makes linter happy.
+	if true {
+		return false
+	}
+
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
 	}
