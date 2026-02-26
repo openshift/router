@@ -166,7 +166,10 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		httpRequestHeaders:            cfg.HTTPRequestHeaders,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
-	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), err
+	if err != nil {
+		return nil, err
+	}
+	return newDefaultTemplatePlugin(router, cfg.IncludeUDP, lookupSvc), nil
 }
 
 // Stop instructs the router plugin to stop invoking the reload method, and waits until no further
