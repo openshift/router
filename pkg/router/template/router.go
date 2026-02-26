@@ -333,7 +333,7 @@ func secretToPem(secPath, outName string) error {
 		}
 		pemBlock = append(pemBlock, keyBlock...)
 	}
-	return os.WriteFile(outName, pemBlock, 0444)
+	return os.WriteFile(outName, pemBlock, 0600)
 }
 
 // watchVolumeMountDir adds a watcher on path, which should be a secret or
@@ -415,18 +415,36 @@ func (r *templateRouter) writeDefaultCert() error {
 			// Just use the provided path
 			return nil
 		}
-		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
-			log.Error(err, "failed to write default cert")
-			// no pem file, no default cert, use cert from container
-			log.V(0).Info("using default cert from router container image")
-		} else {
-			r.defaultCertificatePath = outPath
+
+		// Use the custom file name, to be created below, either with a
+		// self signed certificate or one read from the certificate dir.
+		r.defaultCertificatePath = outPath
+
+		// There is no default cert path as well. If cert dir is also missing ...
+		if len(r.defaultCertificateDir) == 0 {
+			// ... use the self signed certificate. Finish here since it won't be updated during the router lifecycle.
+			return generateSelfSignedCert(outPath)
 		}
+
+		// Use certificate from the provided dir, and return (finishes the process) in case of a failure.
+		// This differs from previous versions: previously we were defaulting to the self signed one,
+		// now we enforce that provided certificates should be valid.
+		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+			return fmt.Errorf("failed to write default cert: %w", err)
+		}
+
+		// watching for changes
 		reloadFn := func() {
 			log.V(0).Info("updating default certificate", "path", outPath)
-			os.Remove(outPath)
-			if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+			tmpPath := outPath + ".tmp"
+			if err := secretToPem(r.defaultCertificateDir, tmpPath); err != nil {
+				_ = os.Remove(tmpPath)
 				log.Error(err, "failed to update default certificate", "path", outPath)
+				return
+			}
+			if err := os.Rename(tmpPath, outPath); err != nil {
+				_ = os.Remove(tmpPath)
+				log.Error(err, "failed to replace default certificate", "path", outPath)
 				return
 			}
 			log.V(0).Info("reloading to get updated default certificate")
