@@ -416,14 +416,21 @@ func (r *templateRouter) writeDefaultCert() error {
 			// Just use the provided path
 			return nil
 		}
-		if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
-			log.Error(err, "failed to copy default cert, creating a self-signed one")
+
+		// There is no default cert path as well, maybe there is a dir ...
+		if len(r.defaultCertificateDir) != 0 {
+			// use certificate from the provided dir, and return (finishes the process) in case of a failure
+			if err := secretToPem(r.defaultCertificateDir, outPath); err != nil {
+				return fmt.Errorf("failed to write default cert: %w", err)
+			}
+		} else {
+			// generate one on the fly only in case we don't have neither a path nor a directory configured
 			if err := generateSelfSignCert(outPath); err != nil {
-				// Last option, we give up. This should only happen on misconfigured envs,
-				// like missing directory or permission.
 				return err
 			}
 		}
+
+		// certificate created in one way or the other, we can configure it and watch for changes
 		r.defaultCertificatePath = outPath
 		reloadFn := func() {
 			log.V(0).Info("updating default certificate", "path", outPath)
