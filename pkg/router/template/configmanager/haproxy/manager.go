@@ -754,7 +754,7 @@ func (cm *haproxyConfigManager) processMapAssociations(associations haproxyMapAs
 		name := path.Base(ham.Name())
 		if entries, ok := associations[name]; ok {
 			log.V(4).Info("applying to map", "name", name, "entries", entries)
-			if err := applyMapAssociations(ham, entries, add); err != nil {
+			if err := ham.SyncEntries(entries, add); err != nil {
 				return err
 			}
 		}
@@ -1047,28 +1047,6 @@ func isDynamicBackendServer(server BackendServerInfo) bool {
 	}
 
 	return strings.HasPrefix(server.Name, dynamicServerPrefix)
-}
-
-// applyMapAssociations applies the backend associations to a haproxy map.
-func applyMapAssociations(m *HAProxyMap, associations configEntryMap, add bool) error {
-	for k, v := range associations {
-		log.V(4).Info("applying to map", "name", m.Name(), "key", k, "value", v, "add", add)
-		if add {
-			if err := m.Add(k, v, true); err != nil {
-				return err
-			}
-		} else {
-			if err := m.Delete(k); err != nil {
-				return err
-			}
-		}
-
-		if err := m.Commit(); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // backendModAnnotations return the annotations in a route that will

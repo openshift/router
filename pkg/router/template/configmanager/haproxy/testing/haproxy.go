@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -25,12 +26,20 @@ const (
 `
 )
 
-type fakeHAProxyMap map[string]string
+type haproxyMapEntry struct {
+	id, key, value string
+}
+
+type CustomHAProxyMap struct {
+	Name    string
+	Entries []haproxyMapEntry
+}
 
 type fakeHAProxy struct {
 	socketFile  string
 	backendName string
-	maps        map[string]fakeHAProxyMap
+	maps        map[string][]haproxyMapEntry
+	pendingMaps map[string][]haproxyMapEntry
 	backends    map[string]string
 	lock        sync.Mutex
 	shutdown    bool
@@ -66,7 +75,8 @@ func newFakeHAProxy(sockFile, backendName string) *fakeHAProxy {
 	p := &fakeHAProxy{
 		socketFile:  sockFile,
 		backendName: backendName,
-		maps:        make(map[string]fakeHAProxyMap, 0),
+		maps:        make(map[string][]haproxyMapEntry, 0),
+		pendingMaps: make(map[string][]haproxyMapEntry, 0),
 		backends:    make(map[string]string, 0),
 		shutdown:    false,
 		commands:    make([]string, 0),
@@ -136,36 +146,57 @@ func (p *fakeHAProxy) Stop() {
 	}()
 }
 
+func (p *fakeHAProxy) SetCustomMap(filename string, lines []string) {
+	var entries []haproxyMapEntry
+	for _, line := range lines {
+		params := strings.SplitN(line, " ", 3)
+		entries = append(entries, haproxyMapEntry{
+			id:    params[0],
+			key:   params[1],
+			value: params[2],
+		})
+	}
+	p.maps[filename] = entries
+}
+
+func (p *fakeHAProxy) ReadMapContent(filename string) []string {
+	var response []string
+	for _, entry := range p.maps[filename] {
+		response = append(response, entry.id+" "+entry.key+" "+entry.value)
+	}
+	return response
+}
+
 func (p *fakeHAProxy) initialize() {
-	redirectMap := map[string]string{
-		`^route\.edge\.test(:[0-9]+)?(/.*)?$`:          `0x559a137bb720 ^route\.edge\.test(:[0-9]+)?(/.*)?$ be_edge_http:ns1:edge-redirect-to-https`,
-		`^redirect\.blueprints\.test(:[0-9]+)?(/.*)?$`: `0x559a137bb7e0 ^redirect\.blueprints\.test(:[0-9]+)?(/.*)?$ be_edge_http:blueprints:blueprint-redirect-to-https`,
+	redirectMap := []haproxyMapEntry{
+		{id: "0x559a137bb720", key: `^route\.edge\.test(:[0-9]+)?(/.*)?$`, value: `be_edge_http:ns1:edge-redirect-to-https`},
+		{id: "0x559a137bb7e0", key: `^redirect\.blueprints\.test(:[0-9]+)?(/.*)?$`, value: `be_edge_http:blueprints:blueprint-redirect-to-https`},
 	}
 
-	passthruMap := map[string]string{
-		`^route\.passthrough\.test(:[0-9]+)?(/.*)?$`: `0x559a137bf730 ^route\.passthrough\.test(:[0-9]+)?(/.*)?$ 1`,
+	passthruMap := []haproxyMapEntry{
+		{id: "0x559a137bf730", key: `^route\.passthrough\.test(:[0-9]+)?(/.*)?$`, value: `1`},
 	}
 
-	httpMap := map[string]string{
-		`^route\.allow-http\.test(:[0-9]+)?(/.*)?$`: `0x559a137b4c10 ^route\.allow-http\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http-allow`,
+	httpMap := []haproxyMapEntry{
+		{id: "0x559a137b4c10", key: `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`, value: `be_edge_http:default:test-http-allow`},
 	}
 
-	tcpMap := map[string]string{
-		`^route\.reencrypt\.test(:[0-9]+)?(/.*)?$`:     `0x559a137b4700 ^route\.reencrypt\.test(:[0-9]+)?(/.*)?$ be_secure:default:test-reencrypt`,
-		`^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`: `0x559a1400f8a0 ^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$ be_secure:blueprints:blueprint-reencrypt`,
-		`^route\.passthrough\.test(:[0-9]+)?(/.*)?$`:   `0x559a1400f960 ^route\.passthrough\.test(:[0-9]+)?(/.*)?$ be_tcp:default:test-passthrough`,
+	tcpMap := []haproxyMapEntry{
+		{id: "0x559a137b4700", key: `^route\.reencrypt\.test(:[0-9]+)?(/.*)?$`, value: ` be_secure:default:test-reencrypt`},
+		{id: "0x559a1400f8a0", key: `^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`, value: `be_secure:blueprints:blueprint-reencrypt`},
+		{id: "0x559a1400f960", key: `^route\.passthrough\.test(:[0-9]+)?(/.*)?$`, value: `be_tcp:default:test-passthrough`},
 	}
 
-	edgeReencryptMap := map[string]string{
-		`^www\.example2\.com(:[0-9]+)?(/.*)?$`:         `0x559a140103e0 ^www\.example2\.com(:[0-9]+)?(/.*)?$ be_edge_http:default:example-route`,
-		`^something\.edge\.test(:[0-9]+)?(/.*)?$`:      `0x559a14010450 ^something\.edge\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:wildcard-redirect-to-https`,
-		`^route\.reencrypt\.test(:[0-9]+)?(/.*)?$`:     `0x559a14010510 ^route\.reencrypt\.test(:[0-9]+)?(/.*)?$ be_secure:default:test-reencrypt`,
-		`^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`: `0x559a140105c0 ^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$ be_secure:blueprints:blueprint-reencrypt`,
-		`^redirect\.blueprints\.org(:[0-9]+)?(/.*)?$`:  `0x559a140109a0 ^route\.edge\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-https`,
-		`^route\.edge\.test(:[0-9]+)?(/.*)?$`:          `0x559a140109a0 ^route\.edge\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-https`,
+	edgeReencryptMap := []haproxyMapEntry{
+		{id: "0x559a140103e0", key: `^www\.example2\.com(:[0-9]+)?(/.*)?$`, value: `be_edge_http:default:example-route`},
+		{id: "0x559a14010450", key: `^something\.edge\.test(:[0-9]+)?(/.*)?$`, value: `be_edge_http:default:wildcard-redirect-to-https`},
+		{id: "0x559a14010510", key: `^route\.reencrypt\.test(:[0-9]+)?(/.*)?$`, value: ` be_secure:default:test-reencrypt`},
+		{id: "0x559a140105c0", key: `^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`, value: `be_secure:blueprints:blueprint-reencrypt`},
+		{id: "0x559a140109a0", key: `^redirect\.blueprints\.org(:[0-9]+)?(/.*)?$`, value: `be_edge_http:default:test-https`},
+		{id: "0x559a140109a0", key: `^route\.edge\.test(:[0-9]+)?(/.*)?$`, value: `be_edge_http:default:test-https`},
 	}
 
-	mapNames := map[string]fakeHAProxyMap{
+	mapNames := map[string][]haproxyMapEntry{
 		"os_route_http_redirect.map": redirectMap,
 		"os_sni_passthrough.map":     passthruMap,
 		"os_http_be.map":             httpMap,
@@ -252,7 +283,7 @@ func (p *fakeHAProxy) showMap(name string) string {
 	defer p.lock.Unlock()
 	if m, ok := p.maps[name]; ok {
 		for _, v := range m {
-			lines = append(lines, v)
+			lines = append(lines, v.id+" "+v.key+" "+v.value)
 		}
 	} else {
 		lines = append(lines, "Unknown map identifier. Please use #<id> or <file>.")
@@ -262,39 +293,48 @@ func (p *fakeHAProxy) showMap(name string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (p *fakeHAProxy) addMap(name, k, v string) string {
-	lines := []string{}
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	if m, ok := p.maps[name]; !ok {
-		lines = append(lines, "Unknown map identifier. Please use #<id> or <file>.")
-		lines = append(lines, "")
-	} else {
-		m[k] = v
-		lines = append(lines, "")
-	}
-
-	return strings.Join(lines, "\n")
+func (p *fakeHAProxy) prepareMap() string {
+	return "New version created: 1\n"
 }
 
-func (p *fakeHAProxy) delMap(name, id string) string {
-	id = strings.Trim(id, "#")
+func (p *fakeHAProxy) addMapPayload(name string, newlines []string) string {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if m, ok := p.maps[name]; ok {
-		matchingKeys := []string{}
-		for k, v := range m {
-			if strings.HasPrefix(v, id) {
-				matchingKeys = append(matchingKeys, k)
-			}
-		}
 
-		for _, v := range matchingKeys {
-			delete(m, v)
+	var response []string
+	if _, ok := p.maps[name]; !ok {
+		response = append(response, "Unknown map identifier. Please use #<id> or <file>.")
+		response = append(response, "")
+	} else {
+		m := p.pendingMaps[name]
+		for _, line := range newlines {
+			key, value, _ := strings.Cut(line, " ")
+			id := strconv.Itoa(len(m) + 1)
+			m = append(m, haproxyMapEntry{id: id, key: key, value: value})
 		}
+		p.pendingMaps[name] = m
+		response = append(response, "")
 	}
 
-	return fmt.Sprintf("del map %s\n", name)
+	return strings.Join(response, "\n")
+}
+
+func (p *fakeHAProxy) commitMap(name string) string {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	var response []string
+	entries, found := p.pendingMaps[name]
+	if !found {
+		response = append(response, "Unknown map identifier. Please use #<id> or <file>.")
+		response = append(response, "")
+	} else {
+		p.maps[name] = entries
+		delete(p.pendingMaps, name)
+		response = append(response, "")
+	}
+
+	return "\n"
 }
 
 func (p *fakeHAProxy) listBackends() string {
@@ -415,21 +455,22 @@ func (p *fakeHAProxy) process(conn net.Conn) error {
 		}
 	} else if strings.HasPrefix(cmd, "show backend") {
 		response = p.listBackends()
-	} else if strings.HasPrefix(cmd, "add map") {
-		params := strings.Trim(cmd[len("add map"):], " ")
-		vals := strings.Split(params, " ")
-		if len(vals) < 3 {
-			response = fmt.Sprintf("'add map' expects three parameters: map identifier, key and value.\n")
+	} else if strings.HasPrefix(cmd, "prepare map") {
+		response = p.prepareMap()
+	} else if strings.HasPrefix(cmd, "add map @") {
+		lines := strings.Split(cmd, "\n")
+		params := strings.Split(strings.TrimPrefix(lines[0], "add map @"), " ")
+		if len(params) != 3 {
+			response = "'add map' expects three parameters (map identifier, key and value) or one parameter (map identifier) and a payload"
 		} else {
-			response = p.addMap(vals[0], vals[1], vals[2])
+			p.addMapPayload(params[1], lines[1:])
 		}
-	} else if strings.HasPrefix(cmd, "del map") {
-		params := strings.Trim(cmd[len("del map"):], " ")
-		vals := strings.Split(params, " ")
-		if len(vals) < 2 {
-			response = fmt.Sprintf("This command expects two parameters: map identifier and key.\n")
+	} else if strings.HasPrefix(cmd, "commit map @") {
+		params := strings.Split(strings.TrimPrefix(cmd, "commit map @"), " ")
+		if len(params) != 2 {
+			response = "Missing map identifier."
 		} else {
-			response = p.delMap(vals[0], vals[1])
+			response = p.commitMap(params[1])
 		}
 	} else if strings.HasPrefix(cmd, "show servers state") {
 		name := strings.Trim(cmd[len("show servers state"):], " ")
