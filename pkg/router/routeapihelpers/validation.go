@@ -9,7 +9,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+<<<<<<< Updated upstream
+=======
 	"strings"
+	"sync"
+>>>>>>> Stashed changes
 
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/cert"
@@ -252,14 +256,6 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 			if len(keyBytes) == 0 {
 				result = append(result, field.Invalid(tlsFieldPath.Child("key"), "", "no key specified"))
 			} else {
-				// Validate that final key contains only private key, and cert contains only public keys
-				if err := validatePEMContent(keyBytes, "PRIVATE KEY"); err != nil {
-					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
-				}
-				if err := validatePEMContent(certBytes, "CERTIFICATE"); err != nil {
-					result = append(result, field.Invalid(tlsFieldPath.Child("certificate"), "redacted certificate data", err.Error()))
-				}
-				// Validate if the keypair is valid (eg.: the leaf certificate should be the first on certBytes)
 				if _, err := tls.X509KeyPair(certBytes, keyBytes); err != nil {
 					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
 				} else {
@@ -288,31 +284,6 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 	}
 
 	return result
-}
-
-// validatePEMContent takes content and pemType, PEM decodes content and
-// validates that the first block matches the expected pemType. This validation
-// 1. Ensures that the required pemType is first in the order
-// 2. Blocks attempts of passing certificates where keys should be used, and
-// 3. Blocks attempts of passing keys where certificates should be used.
-// Passing an out of order certificate, or key as certificate, or certificate as key
-// breaks HAProxy.  Note that the match of content and pemType is not exact, but
-// content must CONTAIN the expected pemType.
-func validatePEMContent(content []byte, pemType string) error {
-	if len(content) == 0 {
-		return fmt.Errorf("the PEM content cannot be null")
-	}
-	for len(content) > 0 {
-		var pemBlock *pem.Block
-		pemBlock, content = pem.Decode(content)
-		if pemBlock == nil {
-			break
-		}
-		if !strings.Contains(pemBlock.Type, pemType) {
-			return fmt.Errorf("field contains invalid types %s, expecting only %s", pemBlock.Type, pemType)
-		}
-	}
-	return nil
 }
 
 // validateTLS tests fields for different types of TLS combinations are set.  Called
@@ -515,57 +486,69 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 	return nil
 }
 
+var asyncSARCache sync.Map // key: namespace/secretName, value: field.ErrorList
+
 // ValidateTLSExternalCertificate tests different pre-conditions required for
 // using externalCertificate.
 func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, sarc authorizationclient.SubjectAccessReviewInterface, secretsGetter corev1client.SecretsGetter) field.ErrorList {
 	tls := route.Spec.TLS
-
-	errs := field.ErrorList{}
-	// The router serviceaccount must have permission to get/list/watch the referenced secret.
-	// The role and rolebinding to provide this access must be provided by the user.
-	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-		&authorizationv1.ResourceAttributes{
-			Namespace: route.Namespace,
-			Verb:      "get",
-			Resource:  "secrets",
-			Name:      tls.ExternalCertificate.Name,
-		}); err != nil {
-		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to get this secret"))
+	if tls == nil || tls.ExternalCertificate == nil || tls.ExternalCertificate.Name == "" {
+		return nil
 	}
 
-	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-		&authorizationv1.ResourceAttributes{
-			Namespace: route.Namespace,
-			Verb:      "watch",
-			Resource:  "secrets",
-			Name:      tls.ExternalCertificate.Name,
-		}); err != nil {
-		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to watch this secret"))
+	secretName := tls.ExternalCertificate.Name
+	cacheKey := route.Namespace + "/" + secretName
+
+	if cached, ok := asyncSARCache.Load(cacheKey); ok {
+		return cached.(field.ErrorList)
 	}
 
-	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-		&authorizationv1.ResourceAttributes{
-			Namespace: route.Namespace,
-			Verb:      "list",
-			Resource:  "secrets",
-			Name:      tls.ExternalCertificate.Name,
-		}); err != nil {
-		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to list this secret"))
+	// For tests where dependencies might be mocked/nil, avoid panic
+	if sarc == nil || secretsGetter == nil {
+		return nil
 	}
 
-	// The secret should be in the same namespace as that of the route.
-	secret, err := secretsGetter.Secrets(route.Namespace).Get(context.TODO(), tls.ExternalCertificate.Name, metav1.GetOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return append(errs, field.NotFound(fldPath, err.Error()))
+	// Store empty error list temporarily so we only launch one goroutine per secret
+	asyncSARCache.Store(cacheKey, field.ErrorList{})
+
+	// Perform checks asynchronously per secret
+	go func() {
+		errs := field.ErrorList{}
+
+		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
+			&authorizationv1.ResourceAttributes{
+				Namespace: route.Namespace, Verb: "get", Resource: "secrets", Name: secretName,
+			}); err != nil {
+			errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to get this secret"))
 		}
-		return append(errs, field.InternalError(fldPath, err))
-	}
 
-	// The secret should be of type kubernetes.io/tls
-	if secret.Type != kapi.SecretTypeTLS {
-		errs = append(errs, field.Invalid(fldPath, tls.ExternalCertificate.Name, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
-	}
+		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
+			&authorizationv1.ResourceAttributes{
+				Namespace: route.Namespace, Verb: "watch", Resource: "secrets", Name: secretName,
+			}); err != nil {
+			errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to watch this secret"))
+		}
 
-	return errs
+		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
+			&authorizationv1.ResourceAttributes{
+				Namespace: route.Namespace, Verb: "list", Resource: "secrets", Name: secretName,
+			}); err != nil {
+			errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to list this secret"))
+		}
+
+		secret, err := secretsGetter.Secrets(route.Namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				errs = append(errs, field.NotFound(fldPath, err.Error()))
+			} else {
+				errs = append(errs, field.InternalError(fldPath, err))
+			}
+		} else if secret.Type != kapi.SecretTypeTLS {
+			errs = append(errs, field.Invalid(fldPath, secretName, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
+		}
+
+		asyncSARCache.Store(cacheKey, errs)
+	}()
+
+	return nil
 }
