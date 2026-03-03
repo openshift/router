@@ -732,9 +732,6 @@ func NewPrometheusCollector(opts PrometheusOptions) (*Exporter, error) {
 }
 
 func defaultOptions(opts PrometheusOptions) PrometheusOptions {
-	if len(opts.ScrapeURI) == 0 {
-		opts.ScrapeURI = "unix:///var/lib/haproxy/run/haproxy.sock"
-	}
 	if len(opts.PidFile) == 0 {
 		opts.PidFile = "/var/lib/haproxy/run/haproxy.pid"
 	}
