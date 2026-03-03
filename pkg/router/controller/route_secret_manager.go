@@ -281,7 +281,20 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
 				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
 				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretRecreated, msg)
+				return
 			}
+
+			// Async secret load scenario
+			// When the secret completes its initial cache sync, we need to trigger the router
+			// controller to evaluate this route again. We use RecordRouteRejection to keep the route
+			// pending until the full plugin chain evaluates and admits it.
+			route, err := p.routelister.Routes(namespace).Get(routeName)
+			if err != nil {
+				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
+				return
+			}
+			msg := fmt.Sprintf("secret %q loaded for route %q", secret.Name, key)
+			p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretLoaded", msg)
 		},
 
 		UpdateFunc: func(old interface{}, new interface{}) {
