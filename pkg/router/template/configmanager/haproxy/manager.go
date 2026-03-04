@@ -490,6 +490,42 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		return err
 	}
 
+	// Backends having only one server have their server's health check turned off; health check
+	// is only enabled when there are two or more endpoints in the backend.
+	//
+	// Currently we don't support enabling or disabling health checks, so we are:
+	//
+	// * Checking whether we are adding endpoints; and
+	// * Checking if the current state of the backend is just one static endpoint.
+	//
+	// If both of the above matches, we cannot dynamically update and return from here.
+	// This should improve via https://issues.redhat.com/browse/NE-2496
+	//
+	// This is the expected lay out from the running HAProxy in case there is only one static
+	// backend server:
+	//
+	// # be_id be_name srv_id srv_name srv_addr ... srv_port ...
+	// 20 be_http:default:route 1 pod:app-848554c7d4-mbhsf:app::10.128.0.78:8000 10.128.0.78 ... 8000 ...
+	// 20 be_http:default:route 2 _dynamic-pod-1 172.4.0.4 ... 8765 ...
+	// 20 be_http:default:route 3 _dynamic-pod-2 172.4.0.4 ... 8765 ...
+	// ... other "_dynamic-pod-NN"
+
+	// check for empty oldEndpoints, if so we are adding new ones
+	if len(newEndpoints) > len(oldEndpoints) {
+		var staticCount int
+		// we cannot infer the first ones are the static, since this list is built from a hashmap,
+		// so lets iterate over all of them.
+		for _, s := range servers {
+			// if not a dynamic backend server, count as static
+			if !isDynamicBackendServer(s) {
+				staticCount++
+			}
+		}
+		if staticCount == 1 {
+			return fmt.Errorf("single endpoint on backend %s, need to reload", backendName)
+		}
+	}
+
 	log.V(4).Info("processing endpoint changes", "deleted", deletedEndpoints, "modified", modifiedEndpoints)
 
 	// First process the deleted endpoints and update the servers we
