@@ -136,6 +136,7 @@ type Exporter struct {
 	up, nextScrapeInterval                         prometheus.Gauge
 	totalScrapes, csvParseFailures                 prometheus.Counter
 	serverThresholdCurrent, serverThresholdLimit   prometheus.Gauge
+	maxConnections                                 prometheus.Gauge
 	frontendMetrics, backendMetrics, serverMetrics map[int]*prometheus.GaugeVec
 
 	// counterValues is added to the value specific haproxy frontend, backend, or server counter
@@ -217,6 +218,11 @@ func NewExporter(opts PrometheusOptions) (*Exporter, error) {
 			Namespace: namespace,
 			Name:      "exporter_csv_parse_failures",
 			Help:      "Number of errors while parsing CSV.",
+		}),
+		maxConnections: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "max_connections",
+			Help:      "Maximum number of concurrent connections configured for the HAProxy process.",
 		}),
 		frontendMetrics: filterMetrics(opts.ExportedMetrics, metrics{
 			4:  newFrontendMetric("current_sessions", "Current number of active sessions.", nil),
@@ -321,6 +327,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.serverThresholdCurrent.Desc()
 	ch <- e.serverThresholdLimit.Desc()
 	ch <- e.csvParseFailures.Desc()
+	ch <- e.maxConnections.Desc()
 }
 
 // Collect fetches the stats from configured HAProxy location and delivers them
@@ -347,6 +354,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- e.serverThresholdCurrent
 	ch <- e.serverThresholdLimit
 	ch <- e.csvParseFailures
+	ch <- e.maxConnections
 	e.collectMetrics(ch)
 }
 
@@ -516,6 +524,19 @@ func (e *Exporter) parseRow(csvRow []string, updatedValues counterValuesByMetric
 
 	switch typ {
 	case frontendType:
+		// Extract maxconn from public frontend for the process-wide metric.
+		// Field 6 corresponds to "slim" (session limit) column from HAProxy's "show stat" CSV output.
+		// The router configures both global and defaults sections with the same ROUTER_MAX_CONNECTIONS value,
+		// so the public frontend's limit (field 6/slim) reflects the process-wide maxconn setting.
+		// NOTE: If the defaults maxconn is ever configured differently from global maxconn,
+		// this approach will no longer accurately represent the process-wide limit.
+		if pxname == "public" && len(csvRow) > 6 {
+			if maxConnStr := csvRow[6]; maxConnStr != "" {
+				if maxConn, err := strconv.ParseInt(maxConnStr, 10, 64); err == nil {
+					e.maxConnections.Set(float64(maxConn))
+				}
+			}
+		}
 		e.exportAndRecordRow(e.frontendMetrics, metricID{proxyType: serverType, proxyName: pxname}, updatedValues, csvRow, pxname)
 	case backendType:
 		if mode, value, ok := knownBackendSegment(pxname); ok {
