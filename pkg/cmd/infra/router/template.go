@@ -942,14 +942,22 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		}
 	}()
 
-	return crypto.SecureTLSConfig(&tls.Config{
+	secureTLSConfig := crypto.SecureTLSConfig(&tls.Config{
 		GetCertificate: func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			lock.Lock()
 			defer lock.Unlock()
 			return &certificate, nil
 		},
 		ClientAuth: tls.RequestClientCert,
-	}), nil
+	})
+	if cipherNames := env("ROUTER_METRICS_TLS_CIPHERS", ""); len(cipherNames) > 0 {
+		secureTLSConfig.CipherSuites = crypto.CipherSuitesOrDie(strings.Split(cipherNames, ":"))
+	}
+	if versionName := env("ROUTER_METRICS_TLS_MIN_VERSION", ""); len(versionName) > 0 {
+		secureTLSConfig.MinVersion = crypto.TLSVersionOrDie(versionName)
+	}
+
+	return secureTLSConfig, nil
 }
 
 // getStatsAuth returns the available stats username and password.
