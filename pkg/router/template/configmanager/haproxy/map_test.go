@@ -3,7 +3,8 @@ package haproxy
 import (
 	"testing"
 
-	templaterouter "github.com/openshift/router/pkg/router/template"
+	"github.com/stretchr/testify/require"
+
 	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
 
@@ -442,403 +443,88 @@ func TestHAProxyMapFind(t *testing.T) {
 	}
 }
 
-// TestHAProxyMapAdd tests adding an entry in a haproxy map.
-func TestHAProxyMapAdd(t *testing.T) {
+// TestHAProxyMapSyncEntries tests adding/replacing/removing entries in a haproxy map.
+func TestHAProxyMapSyncEntries(t *testing.T) {
 	server := haproxytesting.StartFakeServerForTest(t)
 	defer server.Stop()
 
 	testCases := []struct {
 		name            string
-		sockFile        string
-		mapName         string
-		keyName         string
-		value           templaterouter.ServiceAliasConfigKey
-		replace         bool
-		failureExpected bool
+		currentEntries  []string
+		newEntries      configEntryMap
+		add             bool
+		expectedEntries []string
 	}{
 		{
-			name:            "empty socket and map",
-			sockFile:        "",
-			mapName:         "empty.map",
-			keyName:         "k1",
-			value:           "v1",
-			replace:         true,
-			failureExpected: true,
+			name:            "add simple pattern",
+			currentEntries:  []string{},
+			newEntries:      configEntryMap{"k": "v"},
+			add:             true,
+			expectedEntries: []string{"1 k v"},
 		},
 		{
-			name:            "empty socket valid map and key",
-			sockFile:        "",
-			mapName:         "/var/lib/haproxy/conf/os_sni_passthrough.map",
-			keyName:         `^route\.passthrough\.test(:[0-9]+)?(/.*)?$`,
-			value:           "1",
-			replace:         true,
-			failureExpected: true,
+			name:            "remove simple pattern",
+			currentEntries:  []string{"1 k v"},
+			newEntries:      configEntryMap{"k": "v"},
+			add:             true,
+			expectedEntries: []string{"1 k v"},
 		},
 		{
-			name:            "empty socket valid map and invalid key",
-			sockFile:        "",
-			mapName:         "/var/lib/haproxy/conf/os_sni_passthrough.map",
-			keyName:         "non-existent-key",
-			value:           "something",
-			replace:         false,
-			failureExpected: true,
+			name:            "replace value",
+			currentEntries:  []string{"1 k v1"},
+			newEntries:      configEntryMap{"k": "v2"},
+			add:             true,
+			expectedEntries: []string{"1 k v2"},
 		},
 		{
-			name:            "valid socket",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			value:           "be_edge_http:default:test-http-allow",
-			replace:         true,
-			failureExpected: false,
+			name:            "remove non-existing key",
+			currentEntries:  []string{"1 k1 v"},
+			newEntries:      configEntryMap{"k2": "v"},
+			add:             false,
+			expectedEntries: []string{"1 k1 v"},
 		},
 		{
-			name:            "valid socket no replace",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			value:           "be_edge_http:default:test-http-allow",
-			replace:         false,
-			failureExpected: false,
+			name:            "remove non-matching value",
+			currentEntries:  []string{"1 k v1"},
+			newEntries:      configEntryMap{"k": "v2"},
+			add:             false,
+			expectedEntries: nil,
 		},
 		{
-			name:            "valid socket but invalid map",
-			sockFile:        server.SocketFile(),
-			mapName:         "missing.map",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			value:           "be_edge_http:default:test-http-allow",
-			replace:         true,
-			failureExpected: true,
-		},
-		{
-			name:            "valid socket but invalid map and key",
-			sockFile:        server.SocketFile(),
-			mapName:         "missing.map",
-			keyName:         "invalid-key1",
-			value:           "something",
-			replace:         false,
-			failureExpected: true,
-		},
-		{
-			name:            "valid socket but invalid key",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			keyName:         "invalid-key2",
-			value:           "something",
-			replace:         true,
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but typo map",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map-1234",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			value:           "be_edge_http:default:test-http-allow",
-			replace:         true,
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "non-existent.map",
-			keyName:         "invalid-key3",
-			value:           "some-value",
-			replace:         false,
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket valid map",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "/var/lib/haproxy/conf/os_tcp_be.map",
-			keyName:         "invalid-key4",
-			value:           "some-value",
-			replace:         true,
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket invalid map",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "404.map",
-			keyName:         `^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`,
-			value:           "be_secure:blueprints:blueprint-reencrypt",
-			replace:         true,
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket valid map and key",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "/var/lib/haproxy/conf/os_tcp_be.map",
-			keyName:         `^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`,
-			value:           "1234",
-			replace:         false,
-			failureExpected: true,
+			name: "add and reorder",
+			currentEntries: []string{
+				`1 ^sub\.route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http1`,
+				`2 ^route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http2`,
+			},
+			newEntries: configEntryMap{
+				`^something-else\.test(:[0-9]+)?(/.*)?$`: `be_edge_http:default:test-http3`,
+			},
+			add: true,
+			expectedEntries: []string{
+				`1 ^sub\.route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http1`,
+				`2 ^something-else\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http3`,
+				`3 ^route\.test(:[0-9]+)?(/.*)?$ be_edge_http:default:test-http2`,
+			},
 		},
 	}
+
+	const customMapName = "custom.map"
 
 	for _, tc := range testCases {
-		client := NewClient(tc.sockFile, 0)
-		if client == nil {
-			t.Errorf("TestHAProxyMapAdd test case %s failed with no client.", tc.name)
-		}
-
-		// Ensure server is in clean state for test.
-		server.Reset()
-
-		m := newHAProxyMap(tc.mapName, client)
-		err := m.Add(tc.keyName, tc.value, tc.replace)
-		if tc.failureExpected {
-			if err == nil {
-				t.Errorf("TestHAProxyMapAdd test case %s expected an error but got none.", tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			client := NewClient(server.SocketFile(), 0)
+			if client == nil {
+				t.Errorf("TestHAProxyMapAdd test case %s failed with no client.", tc.name)
 			}
-			continue
-		}
 
-		if err != nil {
-			t.Errorf("TestHAProxyMapAdd test case %s expected no error but got: %v", tc.name, err)
-		}
-	}
-}
+			// Ensure server is in clean state for test.
+			server.Reset()
+			server.SetCustomMap(customMapName, tc.currentEntries)
 
-// TestHAProxyMapDelete tests deleting entries in a haproxy map.
-func TestHAProxyMapDelete(t *testing.T) {
-	server := haproxytesting.StartFakeServerForTest(t)
-	defer server.Stop()
-
-	testCases := []struct {
-		name            string
-		sockFile        string
-		mapName         string
-		keyName         string
-		failureExpected bool
-	}{
-		{
-			name:            "empty socket and map",
-			sockFile:        "",
-			mapName:         "empty.map",
-			keyName:         "k1",
-			failureExpected: true,
-		},
-		{
-			name:            "empty socket valid map and key",
-			sockFile:        "",
-			mapName:         "/var/lib/haproxy/conf/os_sni_passthrough.map",
-			keyName:         `^route\.passthrough\.test(:[0-9]+)?(/.*)?$`,
-			failureExpected: true,
-		},
-		{
-			name:            "empty socket valid map and invalid key",
-			sockFile:        "",
-			mapName:         "/var/lib/haproxy/conf/os_sni_passthrough.map",
-			keyName:         "non-existent-key",
-			failureExpected: true,
-		},
-		{
-			name:            "valid socket",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but invalid map",
-			sockFile:        server.SocketFile(),
-			mapName:         "missing.map",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			failureExpected: true,
-		},
-		{
-			name:            "valid socket but invalid map and key",
-			sockFile:        server.SocketFile(),
-			mapName:         "missing.map",
-			keyName:         "invalid-key1",
-			failureExpected: true,
-		},
-		{
-			name:            "valid socket but invalid key",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			keyName:         "invalid-key2",
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but typo map",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map-1234",
-			keyName:         `^route\.allow-http\.test(:[0-9]+)?(/.*)?$`,
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "non-existent.map",
-			keyName:         "invalid-key3",
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket valid map",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "/var/lib/haproxy/conf/os_tcp_be.map",
-			keyName:         "invalid-key4",
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket invalid map",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "404.map",
-			keyName:         `^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`,
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket valid map and key",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "/var/lib/haproxy/conf/os_tcp_be.map",
-			keyName:         `^reencrypt\.blueprints\.org(:[0-9]+)?(/.*)?$`,
-			failureExpected: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		client := NewClient(tc.sockFile, 0)
-		if client == nil {
-			t.Errorf("TestHAProxyMapDelete test case %s failed with no client.", tc.name)
-		}
-
-		// Ensure server is in clean state for test.
-		server.Reset()
-
-		m := newHAProxyMap(tc.mapName, client)
-		err := m.Delete(tc.keyName)
-		if tc.failureExpected {
-			if err == nil {
-				t.Errorf("TestHAProxyMapDelete test case %s expected an error but got none.", tc.name)
-			}
-			continue
-		}
-
-		if err != nil {
-			t.Errorf("TestHAProxyMapDelete test case %s expected no error but got: %v", tc.name, err)
-		}
-	}
-}
-
-// TestHAProxyMapDeleteEntry tests deleting an entry in a haproxy map.
-func TestHAProxyMapDeleteEntry(t *testing.T) {
-	server := haproxytesting.StartFakeServerForTest(t)
-	defer server.Stop()
-
-	testCases := []struct {
-		name            string
-		sockFile        string
-		mapName         string
-		entryID         string
-		failureExpected bool
-	}{
-		{
-			name:            "empty socket and map",
-			sockFile:        "",
-			mapName:         "empty.map",
-			entryID:         "id1",
-			failureExpected: true,
-		},
-		{
-			name:            "empty socket valid map and key",
-			sockFile:        "",
-			mapName:         "/var/lib/haproxy/conf/os_sni_passthrough.map",
-			entryID:         "0x559a137bf730",
-			failureExpected: true,
-		},
-		{
-			name:            "empty socket valid map and invalid key",
-			sockFile:        "",
-			mapName:         "/var/lib/haproxy/conf/os_sni_passthrough.map",
-			entryID:         "non-existent-id",
-			failureExpected: true,
-		},
-		{
-			name:            "valid socket",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			entryID:         "0x559a137b4c10",
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but invalid map",
-			sockFile:        server.SocketFile(),
-			mapName:         "missing.map",
-			entryID:         "0x559a137b4c10",
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but invalid map and key",
-			sockFile:        server.SocketFile(),
-			mapName:         "missing.map",
-			entryID:         "invalid-id",
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but invalid key",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map",
-			entryID:         "invalid-id",
-			failureExpected: false,
-		},
-		{
-			name:            "valid socket but typo map",
-			sockFile:        server.SocketFile(),
-			mapName:         "/var/lib/haproxy/conf/os_http_be.map-1234",
-			entryID:         "0x559a137b4c10",
-			failureExpected: false,
-		},
-		{
-			name:            "non-existent socket",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "non-existent.map",
-			entryID:         "invalid-id3",
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket valid map",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "/var/lib/haproxy/conf/os_tcp_be.map",
-			entryID:         "invalid-id",
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket invalid map",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "404.map",
-			entryID:         "0x559a1400f8a0",
-			failureExpected: true,
-		},
-		{
-			name:            "non-existent socket valid map and key",
-			sockFile:        "/non-existent/fake-haproxy.sock",
-			mapName:         "/var/lib/haproxy/conf/os_tcp_be.map",
-			entryID:         "0x559a1400f8a0",
-			failureExpected: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		client := NewClient(tc.sockFile, 0)
-		if client == nil {
-			t.Errorf("TestHAProxyMapDeleteEntry test case %s failed with no client.", tc.name)
-		}
-
-		// Ensure server is in clean state for test.
-		server.Reset()
-
-		m := newHAProxyMap(tc.mapName, client)
-		err := m.DeleteEntry(tc.entryID)
-		if tc.failureExpected {
-			if err == nil {
-				t.Errorf("TestHAProxyMapDeleteEntry test case %s expected an error but got none.", tc.name)
-			}
-			continue
-		}
-
-		if err != nil {
-			t.Errorf("TestHAProxyMapDeleteEntry test case %s expected no error but got: %v", tc.name, err)
-		}
+			m := newHAProxyMap(customMapName, client)
+			err := m.SyncEntries(tc.newEntries, tc.add)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedEntries, server.ReadMapContent(customMapName))
+		})
 	}
 }
