@@ -47,6 +47,7 @@ var (
 		ExtCrtStatusReasonSecretUpdated,
 		ExtCrtStatusReasonSecretDeleted,
 		ExtCrtStatusReasonSARCompleted,
+		ExtCrtStatusReasonSecretLoaded,
 	)
 )
 

@@ -1371,7 +1371,7 @@ func TestSecretUpdate(t *testing.T) {
 			// wait until route's status is updated
 			<-recorder.doneCh
 
-			expectedStatus := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			expectedStatus := []string{"sandbox-route-test:ExternalCertificateSecretLoaded", "sandbox-route-test:ExternalCertificateSecretUpdated"}
 			expectedRejectionsOnUpdate := []string{"sandbox-route-test:ExternalCertificateSecretLoaded", "sandbox-route-test:ExternalCertificateSecretUpdated"}
 
 			if s.isRouteAdmittedTrue {
