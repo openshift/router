@@ -482,7 +482,19 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 	return nil
 }
 
-var asyncSARCache sync.Map // key: namespace/secretName, value: field.ErrorList
+var asyncSARCache sync.Map // key: namespace/secretName, value: *asyncSARResult
+
+type asyncSARResult struct {
+	errs      field.ErrorList
+	callbacks []func(string, string)
+	mu        sync.Mutex
+	done      bool
+}
+
+// InvalidateAsyncSARCache removes the cached result for a specific secret to force revalidation.
+func InvalidateAsyncSARCache(namespace, secretName string) {
+	asyncSARCache.Delete(namespace + "/" + secretName)
+}
 
 // ClearAsyncSARCacheForTest clears the global async SAR cache for testing purposes.
 func ClearAsyncSARCacheForTest() {
@@ -500,8 +512,17 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	secretName := tls.ExternalCertificate.Name
 	cacheKey := route.Namespace + "/" + secretName
 
-	if cached, ok := asyncSARCache.Load(cacheKey); ok {
-		return cached.(field.ErrorList)
+	if cachedRaw, ok := asyncSARCache.Load(cacheKey); ok {
+		cached := cachedRaw.(*asyncSARResult)
+		cached.mu.Lock()
+		defer cached.mu.Unlock()
+		if cached.done {
+			return cached.errs
+		}
+		if onComplete != nil {
+			cached.callbacks = append(cached.callbacks, onComplete)
+		}
+		return cached.errs // this returns the pending error list
 	}
 
 	// For tests where dependencies might be mocked/nil, avoid panic
@@ -511,7 +532,27 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 	// Store pending error list temporarily so we only launch one goroutine per secret
 	pendingErr := field.ErrorList{field.InternalError(fldPath, fmt.Errorf("authorization check pending for secret %q", secretName))}
-	asyncSARCache.Store(cacheKey, pendingErr)
+
+	result := &asyncSARResult{
+		errs: pendingErr,
+	}
+	if onComplete != nil {
+		result.callbacks = append(result.callbacks, onComplete)
+	}
+
+	if loadedRaw, loaded := asyncSARCache.LoadOrStore(cacheKey, result); loaded {
+		// Another goroutine raced to start the check, append to its callbacks
+		cached := loadedRaw.(*asyncSARResult)
+		cached.mu.Lock()
+		defer cached.mu.Unlock()
+		if cached.done {
+			return cached.errs
+		}
+		if onComplete != nil {
+			cached.callbacks = append(cached.callbacks, onComplete)
+		}
+		return cached.errs
+	}
 
 	// Perform checks asynchronously per secret
 	go func() {
@@ -549,9 +590,15 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 			errs = append(errs, field.Invalid(fldPath, secretName, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
 		}
 
-		asyncSARCache.Store(cacheKey, errs)
-		if onComplete != nil {
-			onComplete(route.Namespace, secretName)
+		result.mu.Lock()
+		result.errs = errs
+		result.done = true
+		callbacks := result.callbacks
+		result.callbacks = nil
+		result.mu.Unlock()
+
+		for _, cb := range callbacks {
+			cb(route.Namespace, secretName)
 		}
 	}()
 
