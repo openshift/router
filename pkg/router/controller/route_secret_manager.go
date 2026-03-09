@@ -26,6 +26,7 @@ const (
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
 	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
+	ExtCrtStatusReasonSecretLoaded     = "ExternalCertificateSecretLoaded"
 )
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -261,6 +262,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
 			log.V(4).Info("Secret added for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
 			// Secret re-creation scenario
 			// Check if the route key exists in the deletedSecrets map, indicating that the secret was previously deleted for this route.
@@ -295,7 +297,11 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 				return
 			}
 			msg := fmt.Sprintf("secret %q loaded for route %q", secret.Name, key)
-			p.recorder.RecordRouteRejection(route, "ExternalCertificateSecretLoaded", msg)
+			if isRouteAdmittedTrue(route.DeepCopy(), p.routerName) {
+				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretLoaded, msg)
+			} else {
+				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretLoaded, msg)
+			}
 		},
 
 		UpdateFunc: func(old interface{}, new interface{}) {
@@ -303,6 +309,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			secretNew := new.(*kapi.Secret)
 			key := generateKey(namespace, routeName)
 			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
 
 			// Ensure fetching the updated route
 			route, err := p.routelister.Routes(namespace).Get(routeName)
@@ -327,6 +334,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			key := generateKey(namespace, routeName)
 			msg := fmt.Sprintf("secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
 			// keep the secret monitor active and mark the secret as deleted for this route.
 			p.deletedSecrets.Store(key, true)
