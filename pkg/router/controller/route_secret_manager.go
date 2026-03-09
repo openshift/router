@@ -25,6 +25,7 @@ const (
 	ExtCrtStatusReasonSecretUpdated    = "ExternalCertificateSecretUpdated"
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
+	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
 )
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -351,8 +352,28 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 // by reading the "tls.crt" and "tls.key" added by populateRouteTLSFromSecret.
 func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
-	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
-		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
+
+	onComplete := func(namespace, secretName string) {
+		// Ensure fetching the updated route
+		latestRoute, err := p.routelister.Routes(namespace).Get(route.Name)
+		if err != nil {
+			log.Error(err, "failed to get route for SAR completion callback", "namespace", namespace, "route", route.Name)
+			return
+		}
+
+		msg := fmt.Sprintf("SAR check completed for secret %q", secretName)
+		log.V(4).Info(msg, "namespace", namespace, "route", route.Name)
+
+		// Update the route status to notify plugins, including this plugin, for re-evaluation.
+		if isRouteAdmittedTrue(latestRoute.DeepCopy(), p.routerName) {
+			p.recorder.RecordRouteUpdate(latestRoute, ExtCrtStatusReasonSARCompleted, msg)
+		} else {
+			p.recorder.RecordRouteRejection(latestRoute, ExtCrtStatusReasonSARCompleted, msg)
+		}
+	}
+
+	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter, onComplete).ToAggregate(); err != nil {
+		log.Error(err, "skipping route due to invalid externalCertificate configuration (or pending SAR check)", "namespace", route.Namespace, "route", route.Name)
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
