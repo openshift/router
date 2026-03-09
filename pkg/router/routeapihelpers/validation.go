@@ -9,11 +9,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-<<<<<<< Updated upstream
-=======
-	"strings"
 	"sync"
->>>>>>> Stashed changes
 
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/cert"
@@ -488,9 +484,14 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 
 var asyncSARCache sync.Map // key: namespace/secretName, value: field.ErrorList
 
+// ClearAsyncSARCacheForTest clears the global async SAR cache for testing purposes.
+func ClearAsyncSARCacheForTest() {
+	asyncSARCache = sync.Map{}
+}
+
 // ValidateTLSExternalCertificate tests different pre-conditions required for
 // using externalCertificate.
-func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, sarc authorizationclient.SubjectAccessReviewInterface, secretsGetter corev1client.SecretsGetter) field.ErrorList {
+func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, sarc authorizationclient.SubjectAccessReviewInterface, secretsGetter corev1client.SecretsGetter, onComplete func(string, string)) field.ErrorList {
 	tls := route.Spec.TLS
 	if tls == nil || tls.ExternalCertificate == nil || tls.ExternalCertificate.Name == "" {
 		return nil
@@ -508,8 +509,9 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		return nil
 	}
 
-	// Store empty error list temporarily so we only launch one goroutine per secret
-	asyncSARCache.Store(cacheKey, field.ErrorList{})
+	// Store pending error list temporarily so we only launch one goroutine per secret
+	pendingErr := field.ErrorList{field.InternalError(fldPath, fmt.Errorf("authorization check pending for secret %q", secretName))}
+	asyncSARCache.Store(cacheKey, pendingErr)
 
 	// Perform checks asynchronously per secret
 	go func() {
@@ -548,7 +550,10 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		}
 
 		asyncSARCache.Store(cacheKey, errs)
+		if onComplete != nil {
+			onComplete(route.Namespace, secretName)
+		}
 	}()
 
-	return nil
+	return pendingErr
 }
