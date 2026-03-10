@@ -562,6 +562,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	var reloadCallbacks []func()
 
+	adminSocketURL := &url.URL{Scheme: "unix", Path: "/var/lib/haproxy/run/haproxy.sock"}
 	statsPort := o.StatsPort
 	switch {
 	case o.MetricsType == "haproxy" && statsPort != 0:
@@ -606,7 +607,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 		collector, err := haproxy.NewPrometheusCollector(haproxy.PrometheusOptions{
 			// Only template router customizers who alter the image should need this
-			ScrapeURI: env("ROUTER_METRICS_HAPROXY_SCRAPE_URI", ""),
+			ScrapeURI: env("ROUTER_METRICS_HAPROXY_SCRAPE_URI", adminSocketURL.String()),
 			// Only template router customizers who alter the image should need this
 			PidFile:            env("ROUTER_METRICS_HAPROXY_PID_FILE", ""),
 			Timeout:            timeout,
@@ -635,9 +636,10 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			return err
 		}
 		checkController := metrics.ControllerLive()
+		checkSocket := metrics.AdminSocketAvailable(adminSocketURL)
 		liveChecks := []healthz.HealthChecker{checkController}
 		if !(isTrue(env("ROUTER_BIND_PORTS_BEFORE_SYNC", ""))) {
-			liveChecks = append(liveChecks, checkBackend)
+			liveChecks = append(liveChecks, checkSocket)
 		}
 
 		kubeconfig, _, err := o.Config.KubeConfig()
@@ -734,7 +736,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			return err
 		}
 		cmopts := templateplugin.ConfigManagerOptions{
-			ConnectionInfo:         "unix:///var/lib/haproxy/run/haproxy.sock",
+			ConnectionInfo:         adminSocketURL.String(),
 			CommitInterval:         o.CommitInterval,
 			BlueprintRoutes:        blueprintRoutes,
 			BlueprintRoutePoolSize: o.BlueprintRoutePoolSize,
