@@ -393,7 +393,9 @@ func TestClientCommit(t *testing.T) {
 
 	server.Reset()
 	for _, m := range maps {
-		m.Add("key", "value", true)
+		if err := m.SyncEntries(configEntryMap{"key": "value"}, true); err != nil {
+			t.Errorf("TestClientCommit error syncing map %s: %v", m.Name(), err)
+		}
 	}
 	if len(server.Commands()) == 0 {
 		t.Errorf("TestClientCommit no commands found after reset and adding to maps")

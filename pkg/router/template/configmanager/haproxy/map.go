@@ -3,9 +3,12 @@ package haproxy
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
-	templaterouter "github.com/openshift/router/pkg/router/template"
+	"k8s.io/apimachinery/pkg/util/sets"
+
+	templateutil "github.com/openshift/router/pkg/router/template/util"
 )
 
 const (
@@ -48,8 +51,6 @@ type HAProxyMap struct {
 	client *Client
 
 	// entries are the haproxy map entries.
-	// Note: This is _not_ a hashtable/map/dict as it can have
-	// duplicate entries with the same key.
 	entries []*HAProxyMapEntry
 
 	// dirty indicates the state of the map.
@@ -88,11 +89,15 @@ func newHAProxyMap(name string, client *Client) *HAProxyMap {
 // Refresh refreshes the data in this haproxy map.
 func (m *HAProxyMap) Refresh() error {
 	cmd := fmt.Sprintf("show map %s", m.name)
-	converter := NewCSVConverter(showMapHeader, &m.entries, nil)
+	// using an empty slice instead of m.entries, this avoids
+	// leftover items in the end in case the list shrinks.
+	entries := []*HAProxyMapEntry{}
+	converter := NewCSVConverter(showMapHeader, &entries, nil)
 	if _, err := m.client.RunCommand(cmd, converter); err != nil {
 		return err
 	}
 
+	m.entries = entries
 	m.dirty = false
 	return nil
 }
@@ -133,72 +138,96 @@ func (m *HAProxyMap) Find(k string) ([]HAProxyMapEntry, error) {
 	return found, nil
 }
 
-// Add adds a new key and value to the haproxy map and allows all previous
-// entries in the map to be deleted (replaced).
-func (m *HAProxyMap) Add(k string, v templaterouter.ServiceAliasConfigKey, replace bool) error {
-	if replace {
-		if err := m.Delete(k); err != nil {
+// SyncEntries merges current content from a HAProxy map, and changes applied in a route resource (newEntries).
+// The new content is applied atomically, and in the correct order to avoid wrong match in case of path overlap.
+func (m *HAProxyMap) SyncEntries(newEntries configEntryMap, add bool) error {
+	if m.dirty {
+		if err := m.Refresh(); err != nil {
 			return err
 		}
 	}
 
-	return m.addEntry(k, v)
-}
+	// m.entries[].(id;name(key);value) is a slice with the current state,
+	// newEntries[k]v is a hashmap with the entries to be added/replaced or removed.
+	// merge them together, based on `add` flag, and store the result on `lines[]`.
 
-// Delete removes all the matching keys from the haproxy map.
-func (m *HAProxyMap) Delete(k string) error {
-	entries, err := m.Find(k)
-	if err != nil {
-		return err
+	var lines []string
+	added := sets.NewString()
+	for _, entry := range m.entries {
+		currentValue := entry.Value
+		if value, found := newEntries[entry.Name]; found {
+			if add {
+				// if adding, use the new content from the newEntries and mark as already added
+				currentValue = string(value)
+				// flag instead of delete() so we preserve the hashmap content
+				added.Insert(entry.Name)
+			} else {
+				// if removing, remove from the final output
+				currentValue = ""
+			}
+		}
+		if currentValue != "" {
+			lines = append(lines, entry.Name+" "+currentValue)
+		}
 	}
-
-	for _, entry := range entries {
-		if err := m.deleteEntry(entry.ID); err != nil {
-			return err
+	if add {
+		for k, v := range newEntries {
+			if !added.Has(k) {
+				lines = append(lines, k+" "+string(v))
+			}
 		}
 	}
 
-	return nil
-}
+	// Sort entries to avoid wrong match, see https://issues.redhat.com/browse/OCPBUGS-75009
+	lines = templateutil.SortMapPaths(lines, `^[^\.]*\.`)
 
-// DeleteEntry removes a specific haproxy map entry.
-func (m *HAProxyMap) DeleteEntry(id string) error {
-	return m.deleteEntry(id)
-}
+	// atomically replacing a map is a three steps workflow:
+	// - prepare map <name>: creates a new and empty version
+	// - add map @<version> <name> <<: receives a payload with new content
+	// - commit map @<version>: atomically replaces the new content
 
-// addEntry adds a new haproxy map entry.
-func (m *HAProxyMap) addEntry(k string, v templaterouter.ServiceAliasConfigKey) error {
-	keyExpr := escapeKeyExpr(string(k))
-	cmd := fmt.Sprintf("add map %s %s %s", m.name, keyExpr, v)
-	responseBytes, err := m.client.Execute(cmd)
+	// preparing and acquiring the transaction version
+	prepareResponseRaw, err := m.client.Execute("prepare map " + m.name)
 	if err != nil {
 		return err
 	}
-
-	response := strings.TrimSpace(string(responseBytes))
-	if len(response) > 0 {
-		return fmt.Errorf("adding map %s entry %s: %v", m.name, keyExpr, string(response))
+	prepareResponse := strings.TrimSpace(string(prepareResponseRaw))
+	versionStr := strings.TrimPrefix(prepareResponse, "New version created: ")
+	version, _ := strconv.Atoi(versionStr)
+	if version == 0 {
+		return fmt.Errorf("unrecognized response preparing a new map: %q", prepareResponse)
 	}
 
-	m.dirty = true
-	return nil
-}
-
-// deleteEntry removes a specific haproxy map entry.
-func (m *HAProxyMap) deleteEntry(id string) error {
-	cmd := fmt.Sprintf("del map %s #%s", m.name, id)
-	if _, err := m.client.Execute(cmd); err != nil {
+	// adding the new payload
+	cmdAddMap := &strings.Builder{}
+	_, _ = fmt.Fprintf(cmdAddMap, "add map @%d %s <<\n", version, m.name)
+	for _, line := range lines {
+		_, _ = fmt.Fprintln(cmdAddMap, line)
+	}
+	addMapResponseRaw, err := m.client.Execute(cmdAddMap.String())
+	if err != nil {
 		return err
 	}
+	addMapResponse := strings.TrimSpace(string(addMapResponseRaw))
+	if addMapResponse != "" {
+		return fmt.Errorf("unrecognized response adding new map content: %s", addMapResponse)
+	}
 
+	// We're going to commit, better to make cache dirty right here, instead of waiting for a false negative
+	// from `commit` call. If commit response fails but HAProxy's commit succeed, we'd become inconsistent.
 	m.dirty = true
-	return nil
-}
 
-// escapeKeyExpr escapes meta characters in the haproxy map entry key name.
-func escapeKeyExpr(k string) string {
-	v := strings.Replace(k, `\`, `\\`, -1)
-	return strings.Replace(v, `.`, `\.`, -1)
+	// commiting the new content
+	commitMapResponseRaw, err := m.client.Execute(fmt.Sprintf("commit map @%d %s", version, m.name))
+	if err != nil {
+		return err
+	}
+	commitMapResponse := strings.TrimSpace(string(commitMapResponseRaw))
+	if commitMapResponse != "" {
+		return fmt.Errorf("unrecognized response commiting new map content: %s", commitMapResponse)
+	}
+
+	return nil
 }
 
 // Regular expression to fixup haproxy map list funky output.
