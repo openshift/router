@@ -531,7 +531,9 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 	// For tests where dependencies might be mocked/nil, avoid panic
 	if sarc == nil || secretsGetter == nil {
-		return nil
+		return field.ErrorList{
+			field.InternalError(fldPath, fmt.Errorf("external certificate validation dependencies are not configured")),
+		}
 	}
 
 	// Store pending error list temporarily so we only launch one goroutine per secret
@@ -558,11 +560,10 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		return cached.errs
 	}
 
-	// Acquire token (blocks if 50 are already running)
-	asyncSARSemaphore <- struct{}{}
-
 	// Perform checks asynchronously per secret
 	go func() {
+		// Acquire token (blocks if 50 are already running)
+		asyncSARSemaphore <- struct{}{}
 		// Guarantee token release
 		defer func() { <-asyncSARSemaphore }()
 
