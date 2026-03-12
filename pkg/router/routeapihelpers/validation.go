@@ -482,6 +482,10 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 	return nil
 }
 
+const MaxConcurrentSecretSyncs = 50
+
+var asyncSARSemaphore = make(chan struct{}, MaxConcurrentSecretSyncs)
+
 var asyncSARCache sync.Map // key: namespace/secretName, value: *asyncSARResult
 
 type asyncSARResult struct {
@@ -554,8 +558,14 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		return cached.errs
 	}
 
+	// Acquire token (blocks if 50 are already running)
+	asyncSARSemaphore <- struct{}{}
+
 	// Perform checks asynchronously per secret
 	go func() {
+		// Guarantee token release
+		defer func() { <-asyncSARSemaphore }()
+
 		errs := field.ErrorList{}
 
 		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
