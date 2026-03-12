@@ -10,12 +10,11 @@ import (
 	"encoding/pem"
 	"fmt"
 	"sync"
+	"time"
 
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/cert"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/library-go/pkg/authorization/authorizationutil"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
 	kapi "k8s.io/api/core/v1"
@@ -560,8 +559,8 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		return cached.errs
 	}
 
-	// Perform checks asynchronously per secret
-	go func() {
+	// Perform checks
+	validateFunc := func() {
 		// Acquire token (blocks if 50 are already running)
 		asyncSARSemaphore <- struct{}{}
 		// Guarantee token release
@@ -569,28 +568,55 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 		errs := field.ErrorList{}
 
-		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-			&authorizationv1.ResourceAttributes{
-				Namespace: route.Namespace, Verb: "get", Resource: "secrets", Name: secretName,
-			}); err != nil {
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		sarGet := &authorizationv1.SubjectAccessReview{
+			Spec: authorizationv1.SubjectAccessReviewSpec{
+				User: routerServiceAccount,
+				ResourceAttributes: &authorizationv1.ResourceAttributes{
+					Namespace: route.Namespace, Verb: "get", Resource: "secrets", Name: secretName,
+				},
+			},
+		}
+		resp, err := sarc.Create(timeoutCtx, sarGet, metav1.CreateOptions{})
+		if err != nil {
+			errs = append(errs, field.InternalError(fldPath, fmt.Errorf("failed to check 'get' permission for secret %q: %v", secretName, err)))
+		} else if !resp.Status.Allowed {
 			errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to get this secret"))
 		}
 
-		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-			&authorizationv1.ResourceAttributes{
-				Namespace: route.Namespace, Verb: "watch", Resource: "secrets", Name: secretName,
-			}); err != nil {
+		sarWatch := &authorizationv1.SubjectAccessReview{
+			Spec: authorizationv1.SubjectAccessReviewSpec{
+				User: routerServiceAccount,
+				ResourceAttributes: &authorizationv1.ResourceAttributes{
+					Namespace: route.Namespace, Verb: "watch", Resource: "secrets", Name: secretName,
+				},
+			},
+		}
+		resp, err = sarc.Create(timeoutCtx, sarWatch, metav1.CreateOptions{})
+		if err != nil {
+			errs = append(errs, field.InternalError(fldPath, fmt.Errorf("failed to check 'watch' permission for secret %q: %v", secretName, err)))
+		} else if !resp.Status.Allowed {
 			errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to watch this secret"))
 		}
 
-		if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-			&authorizationv1.ResourceAttributes{
-				Namespace: route.Namespace, Verb: "list", Resource: "secrets", Name: secretName,
-			}); err != nil {
+		sarList := &authorizationv1.SubjectAccessReview{
+			Spec: authorizationv1.SubjectAccessReviewSpec{
+				User: routerServiceAccount,
+				ResourceAttributes: &authorizationv1.ResourceAttributes{
+					Namespace: route.Namespace, Verb: "list", Resource: "secrets", Name: secretName,
+				},
+			},
+		}
+		resp, err = sarc.Create(timeoutCtx, sarList, metav1.CreateOptions{})
+		if err != nil {
+			errs = append(errs, field.InternalError(fldPath, fmt.Errorf("failed to check 'list' permission for secret %q: %v", secretName, err)))
+		} else if !resp.Status.Allowed {
 			errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to list this secret"))
 		}
 
-		secret, err := secretsGetter.Secrets(route.Namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+		secret, err := secretsGetter.Secrets(route.Namespace).Get(timeoutCtx, secretName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				errs = append(errs, field.NotFound(fldPath, err.Error()))
@@ -611,7 +637,14 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		for _, cb := range callbacks {
 			cb(route.Namespace, secretName)
 		}
-	}()
+	}
+
+	if onComplete == nil {
+		validateFunc()
+		return result.errs
+	}
+
+	go validateFunc()
 
 	return pendingErr
 }
