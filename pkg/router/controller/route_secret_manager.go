@@ -25,6 +25,8 @@ const (
 	ExtCrtStatusReasonSecretUpdated    = "ExternalCertificateSecretUpdated"
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
+	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
+	ExtCrtStatusReasonSecretLoaded     = "ExternalCertificateSecretLoaded"
 )
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -260,6 +262,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
 			log.V(4).Info("Secret added for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
 			// Secret re-creation scenario
 			// Check if the route key exists in the deletedSecrets map, indicating that the secret was previously deleted for this route.
@@ -281,6 +284,23 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
 				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
 				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretRecreated, msg)
+				return
+			}
+
+			// Async secret load scenario
+			// When the secret completes its initial cache sync, we need to trigger the router
+			// controller to evaluate this route again. We use RecordRouteRejection to keep the route
+			// pending until the full plugin chain evaluates and admits it.
+			route, err := p.routelister.Routes(namespace).Get(routeName)
+			if err != nil {
+				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
+				return
+			}
+			msg := fmt.Sprintf("secret %q loaded for route %q", secret.Name, key)
+			if isRouteAdmittedTrue(route.DeepCopy(), p.routerName) {
+				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretLoaded, msg)
+			} else {
+				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretLoaded, msg)
 			}
 		},
 
@@ -289,6 +309,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			secretNew := new.(*kapi.Secret)
 			key := generateKey(namespace, routeName)
 			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
 
 			// Ensure fetching the updated route
 			route, err := p.routelister.Routes(namespace).Get(routeName)
@@ -313,6 +334,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			key := generateKey(namespace, routeName)
 			msg := fmt.Sprintf("secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
 			// keep the secret monitor active and mark the secret as deleted for this route.
 			p.deletedSecrets.Store(key, true)
@@ -338,8 +360,28 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 // by reading the "tls.crt" and "tls.key" added by populateRouteTLSFromSecret.
 func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
-	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
-		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
+
+	onComplete := func(namespace, secretName string) {
+		// Ensure fetching the updated route
+		latestRoute, err := p.routelister.Routes(namespace).Get(route.Name)
+		if err != nil {
+			log.Error(err, "failed to get route for SAR completion callback", "namespace", namespace, "route", route.Name)
+			return
+		}
+
+		msg := fmt.Sprintf("SAR check completed for secret %q", secretName)
+		log.V(4).Info(msg, "namespace", namespace, "route", route.Name)
+
+		// Update the route status to notify plugins, including this plugin, for re-evaluation.
+		if isRouteAdmittedTrue(latestRoute.DeepCopy(), p.routerName) {
+			p.recorder.RecordRouteUpdate(latestRoute, ExtCrtStatusReasonSARCompleted, msg)
+		} else {
+			p.recorder.RecordRouteRejection(latestRoute, ExtCrtStatusReasonSARCompleted, msg)
+		}
+	}
+
+	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter, onComplete).ToAggregate(); err != nil {
+		log.Error(err, "skipping route due to invalid externalCertificate configuration (or pending SAR check)", "namespace", route.Namespace, "route", route.Name)
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
