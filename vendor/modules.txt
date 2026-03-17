@@ -196,12 +196,13 @@ github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/openshift/api v0.0.0-20251120145848-32e27fc232a9
+# github.com/openshift/api v0.0.0-20260212193555-c06ab675261f
 ## explicit; go 1.24.0
+github.com/openshift/api/config/v1
 github.com/openshift/api/project/v1
 github.com/openshift/api/route
 github.com/openshift/api/route/v1
-# github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
+# github.com/openshift/client-go v0.0.0-20260108185524-48f4ccfc4e13
 ## explicit; go 1.24.0
 github.com/openshift/client-go/project/applyconfigurations
 github.com/openshift/client-go/project/applyconfigurations/internal
@@ -220,9 +221,8 @@ github.com/openshift/client-go/route/clientset/versioned/scheme
 github.com/openshift/client-go/route/clientset/versioned/typed/route/v1
 github.com/openshift/client-go/route/clientset/versioned/typed/route/v1/fake
 github.com/openshift/client-go/route/listers/route/v1
-# github.com/openshift/library-go v0.0.0-20251021141706-f489e811f030
+# github.com/openshift/library-go v0.0.0-20251021141706-f489e811f030 => github.com/bentito/library-go v0.0.0-20260316154701-200e1ee46963
 ## explicit; go 1.24.0
-github.com/openshift/library-go/pkg/authorization/authorizationutil
 github.com/openshift/library-go/pkg/crypto
 github.com/openshift/library-go/pkg/proc
 github.com/openshift/library-go/pkg/route/secretmanager
@@ -1324,3 +1324,4 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
+# github.com/openshift/library-go => github.com/bentito/library-go v0.0.0-20260316154701-200e1ee46963
