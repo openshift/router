@@ -1,0 +1,40 @@
+ARG haproxy_versions=2.8.18,3.2.11 ## choose one of them to populate ROUTER_HAPROXY_VERSION
+
+FROM registry.access.redhat.com/ubi9/ubi as builder
+ARG haproxy_versions
+RUN yum install -y make pcre2-devel gcc openssl-devel util-linux && yum clean all
+RUN mkdir -p /tmp/haproxy && \
+    cd /tmp/haproxy && \
+    for v in ${haproxy_versions//,/ }; do \
+        curl -LO https://www.haproxy.org/download/${v%.*}/src/haproxy-${v}.tar.gz; \
+        tar xzf haproxy-${v}.tar.gz; \
+    done
+RUN cd /tmp/haproxy && \
+    for v in ${haproxy_versions//,/ }; do \
+        cd haproxy-${v}; \
+        make TARGET=linux-glibc USE_OPENSSL=1 USE_PROMEX=1 USE_PCRE2=1 USE_PCRE2_JIT=1; \
+        ./haproxy -v; \
+        cp haproxy /usr/sbin/haproxy-${v}; \
+        setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy-${v}; \
+        cd ..; \
+    done
+
+FROM registry.access.redhat.com/ubi9/ubi
+ARG haproxy_versions
+COPY --from=builder /usr/sbin/haproxy-* /usr/sbin/
+RUN yum install -y rsyslog procps-ng socat && yum clean all
+RUN mkdir -p /var/lib/haproxy/router/{certs,cacerts,allowlists} && \
+    mkdir -p /var/lib/haproxy/{conf/.tmp,run,bin,log} && \
+    touch /var/lib/haproxy/conf/{{os_http_be,os_edge_reencrypt_be,os_tcp_be,os_sni_passthrough,os_route_http_redirect,cert_config,os_wildcard_domain}.map,haproxy.config} && \
+    chown -R :0 /var/lib/haproxy && \
+    chmod -R g+w /var/lib/haproxy
+COPY images/router/haproxy/ /var/lib/haproxy/
+COPY openshift-router /usr/bin/openshift-router
+USER 1001
+EXPOSE 80 443 1936
+WORKDIR /var/lib/haproxy/conf
+ENV XDG_CONFIG_HOME=/tmp \
+    TEMPLATE_FILE=/var/lib/haproxy/conf/haproxy-config.template \
+    RELOAD_SCRIPT=/var/lib/haproxy/reload-haproxy \
+    ROUTER_HAPROXY_VERSION=${haproxy_versions%%,*}
+ENTRYPOINT ["/usr/bin/openshift-router", "--v=2"]
