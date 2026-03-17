@@ -330,7 +330,19 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 		},
 
 		DeleteFunc: func(obj interface{}) {
-			secret := obj.(*kapi.Secret)
+			secret, ok := obj.(*kapi.Secret)
+			if !ok {
+				tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+				if !ok {
+					log.Error(nil, "Couldn't get object from tombstone", "obj", obj)
+					return
+				}
+				secret, ok = tombstone.Obj.(*kapi.Secret)
+				if !ok {
+					log.Error(nil, "Tombstone contained object that is not a secret", "obj", tombstone.Obj)
+					return
+				}
+			}
 			key := generateKey(namespace, routeName)
 			msg := fmt.Sprintf("secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
