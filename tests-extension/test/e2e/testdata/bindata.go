@@ -204,7 +204,7 @@ func fixturesGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "fixtures.go", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "fixtures.go", size: 2321, mode: os.FileMode(420), modTime: time.Unix(1772178404, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -252,7 +252,7 @@ func router49802RouteYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/49802-route.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/49802-route.yaml", size: 621, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -278,7 +278,7 @@ func routerAwslbAwslbcontrollerYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/awslbcontroller.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/awslbcontroller.yaml", size: 175, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -315,7 +315,7 @@ func routerAwslbIngressTestYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/ingress-test.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/ingress-test.yaml", size: 433, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -336,7 +336,7 @@ func routerAwslbNamespaceYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/namespace.yaml", size: 76, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -360,7 +360,7 @@ func routerAwslbOperatorgroupYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/operatorgroup.yaml", size: 168, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -406,7 +406,7 @@ func routerAwslbPodsvcYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/podsvc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/podsvc.yaml", size: 544, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -664,7 +664,7 @@ func routerAwslbStsAlbcPermsPolicyJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/sts-albc-perms-policy.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/sts-albc-perms-policy.json", size: 8386, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -708,7 +708,7 @@ func routerAwslbStsAlboPermsPolicyJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/sts-albo-perms-policy.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/sts-albo-perms-policy.json", size: 443, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -740,7 +740,7 @@ func routerAwslbSubscriptionSrcQeStsYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/subscription-src-qe-sts.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/subscription-src-qe-sts.yaml", size: 377, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -768,7 +768,7 @@ func routerAwslbSubscriptionSrcQeYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/awslb/subscription-src-qe.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/awslb/subscription-src-qe.yaml", size: 308, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -822,7 +822,7 @@ func routerBug1826225Proh2DeployYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/bug1826225-proh2-deploy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/bug1826225-proh2-deploy.yaml", size: 780, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -870,7 +870,7 @@ func routerBug2013004LbServicesYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/bug2013004-lb-services.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/bug2013004-lb-services.yaml", size: 588, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -917,7 +917,7 @@ func routerCaBundlePem() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ca-bundle.pem", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ca-bundle.pem", size: 1814, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1008,7 +1008,7 @@ func routerCorednsPodYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/coreDNS-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/coreDNS-pod.yaml", size: 1413, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1046,7 +1046,7 @@ func routerEgressfirewallMultidomainYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/egressfirewall-multiDomain.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/egressfirewall-multiDomain.yaml", size: 357, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1078,7 +1078,7 @@ func routerEgressfirewallWildcardYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/egressfirewall-wildcard.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/egressfirewall-wildcard.yaml", size: 245, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1105,7 +1105,7 @@ func routerErrorPage404Http() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/error-page-404.http", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/error-page-404.http", size: 204, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1132,7 +1132,7 @@ func routerErrorPage503Http() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/error-page-503.http", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/error-page-503.http", size: 234, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1159,7 +1159,7 @@ func routerErrorPage2404Http() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/error-page2-404.http", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/error-page2-404.http", size: 208, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1186,7 +1186,7 @@ func routerErrorPage2503Http() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/error-page2-503.http", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/error-page2-503.http", size: 238, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1214,7 +1214,7 @@ func routerExtdnsAwsStsCredsSecretYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/aws-sts-creds-secret.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/aws-sts-creds-secret.yaml", size: 292, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1235,7 +1235,7 @@ func routerExtdnsNsExternalDnsOperatorYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/ns-external-dns-operator.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/ns-external-dns-operator.yaml", size: 71, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1260,7 +1260,7 @@ func routerExtdnsOperatorgroupYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/operatorgroup.yaml", size: 180, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1295,7 +1295,7 @@ func routerExtdnsSampleAwsRtYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/sample-aws-rt.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/sample-aws-rt.yaml", size: 381, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1333,7 +1333,7 @@ func routerExtdnsSampleAwsSharedvpcRtYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/sample-aws-sharedvpc-rt.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/sample-aws-sharedvpc-rt.yaml", size: 450, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1373,7 +1373,7 @@ func routerExtdnsSampleAwsStsRtYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/sample-aws-sts-rt.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/sample-aws-sts-rt.yaml", size: 468, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1406,7 +1406,7 @@ func routerExtdnsSampleAzureRtYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/sample-azure-rt.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/sample-azure-rt.yaml", size: 336, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1443,7 +1443,7 @@ func routerExtdnsSampleGcpSvcYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/sample-gcp-svc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/sample-gcp-svc.yaml", size: 397, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1485,7 +1485,7 @@ func routerExtdnsStsExdnsPermsPolicyJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/sts-exdns-perms-policy.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/sts-exdns-perms-policy.json", size: 448, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1513,7 +1513,7 @@ func routerExtdnsSubscriptionYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/extdns/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/extdns/subscription.yaml", size: 293, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1557,7 +1557,7 @@ func routerGatewayYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/gateway.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/gateway.yaml", size: 596, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1580,7 +1580,7 @@ func routerGatewayclassYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/gatewayclass.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/gatewayclass.yaml", size: 155, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1653,7 +1653,7 @@ func routerHttpbinDeployYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/httpbin-deploy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/httpbin-deploy.yaml", size: 1238, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1706,7 +1706,7 @@ func routerHttpbinPodWithprivilegeJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/httpbin-pod-withprivilege.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/httpbin-pod-withprivilege.json", size: 876, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1743,7 +1743,7 @@ func routerHttpbinService_secureJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/httpbin-service_secure.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/httpbin-service_secure.json", size: 391, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1782,7 +1782,7 @@ func routerHttprouteYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/httproute.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/httproute.yaml", size: 448, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1824,7 +1824,7 @@ func routerIngresscontrollerIbmproxyYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-IBMproxy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-IBMproxy.yaml", size: 560, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -5858,7 +5858,7 @@ func routerIngresscontrollerAzureCidrYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-azure-cidr.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-azure-cidr.yaml", size: 93539, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -5899,7 +5899,7 @@ func routerIngresscontrollerClbYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-clb.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-clb.yaml", size: 521, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -5936,7 +5936,7 @@ func routerIngresscontrollerExternalYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-external.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-external.yaml", size: 432, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -5978,7 +5978,7 @@ func routerIngresscontrollerHnProxyYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-hn-PROXY.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-hn-PROXY.yaml", size: 562, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -6025,7 +6025,7 @@ func routerIngresscontrollerHostnetworkOnlyYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-hostnetwork-only.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-hostnetwork-only.yaml", size: 692, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -6062,7 +6062,7 @@ func routerIngresscontrollerNpProxyYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-np-PROXY.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-np-PROXY.yaml", size: 424, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -6100,7 +6100,7 @@ func routerIngresscontrollerNpYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-np.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-np.yaml", size: 479, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -6135,7 +6135,7 @@ func routerIngresscontrollerPrivateYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-private.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-private.yaml", size: 376, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -6174,7 +6174,7 @@ func routerIngresscontrollerShardYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "router/ingresscontroller-shard.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "router/ingresscontroller-shard.yaml", size: 460, mode: os.FileMode(420), modTime: time.Unix(1772177689, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

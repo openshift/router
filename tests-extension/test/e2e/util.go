@@ -105,7 +105,17 @@ func (ingctrl *ingressControllerDescription) create(oc *exutil.CLI) {
 	if availableWorkerNode < 1 {
 		g.Skip("Skipping as there is no enough worker nodes")
 	}
-	err := createResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", ingctrl.template, "-p", "NAME="+ingctrl.name, "NAMESPACE="+ingctrl.namespace, "DOMAIN="+ingctrl.domain, "SHARD="+ingctrl.shard)
+
+	params := []string{"--ignore-unknown-parameters=true", "-f", ingctrl.template, "-p",
+		"NAME=" + ingctrl.name,
+		"NAMESPACE=" + ingctrl.namespace,
+		"DOMAIN=" + ingctrl.domain}
+
+	if ingctrl.shard != "" {
+		params = append(params, "SHARD="+ingctrl.shard)
+	}
+
+	err := createResourceFromTemplate(oc, params...)
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
