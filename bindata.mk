@@ -1,4 +1,4 @@
-TESTDATA_PATH := test/e2e/extension/testdata
+TESTDATA_PATH := test/e2e/testdata
 GOPATH ?= $(shell go env GOPATH)
 GO_BINDATA := $(GOPATH)/bin/go-bindata
 
@@ -12,11 +12,11 @@ update-bindata: $(GO_BINDATA)
 	$(GO_BINDATA) \
 		-nocompress \
 		-nometadata \
-		-prefix "test/e2e/extension/testdata" \
+		-prefix "test/e2e/testdata" \
 		-pkg testdata \
-		-o test/e2e/extension/testdata/bindata.go \
-		test/e2e/extension/testdata/...
-	@gofmt -s -w test/e2e/extension/testdata/bindata.go
+		-o test/e2e/testdata/bindata.go \
+		test/e2e/testdata/...
+	@gofmt -s -w test/e2e/testdata/bindata.go
 	@echo "✅ Bindata generated successfully"
 
 .PHONY: verify-bindata

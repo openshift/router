@@ -18,10 +18,10 @@ import (
 	framework "k8s.io/kubernetes/test/e2e/framework"
 
 	// Import testdata package from same module
-	_ "github.com/openshift/router/test/e2e/extension/testdata"
+	_ "github.com/openshift/router/test/e2e/testdata"
 
 	// Import test packages from same module
-	_ "github.com/openshift/router/test/e2e/extension"
+	_ "github.com/openshift/router/test/e2e"
 )
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 	componentSpecs := allSpecs.Select(func(spec *et.ExtensionTestSpec) bool {
 		for _, loc := range spec.CodeLocations {
 			// Include tests from local test directory (not from module cache or vendor)
-			if strings.Contains(loc, "/test/e2e/extension/") && !strings.Contains(loc, "/go/pkg/mod/") && !strings.Contains(loc, "/vendor/") {
+			if strings.Contains(loc, "/test/e2e/") && !strings.Contains(loc, "/go/pkg/mod/") && !strings.Contains(loc, "/vendor/") {
 				return true
 			}
 		}
