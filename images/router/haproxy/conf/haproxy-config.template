@@ -570,6 +570,10 @@ backend openshift_default
           passed through to the backend pod by just looking at the TCP headers.
 */}}
     {{- range $cfgIdx, $cfg := .State }}
+
+      {{- /* Common configurations for any backend or server */}}
+      {{- $health_check_interval := clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
+
       {{- if matchValues (print $cfg.TLSTermination) "" "edge" "reencrypt" }}
 
 # Plain http backend or backend with TLS terminated at the edge or a
@@ -755,7 +759,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
                   {{- end }}
                 {{- end }}{{/* end type specific options*/}}
 
-                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
+                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ $health_check_interval }}
                 {{- end }}{{/* end else no health check */}}
                 {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
                 {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
@@ -770,7 +774,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- if (eq $cfg.TLSTermination "reencrypt") }}
   dynamic-cookie-key {{ $cfg.RoutingKeyName }}
             {{- range $idx, $serverName := $dynamicConfigManager.GenerateDynamicServerNames $cfgIdx }}
-  server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
+  server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ $health_check_interval }}
               {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx }}.pem
               {{- else }}
                 {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
@@ -797,7 +801,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
             {{- with $name := $dynamicConfigManager.ServerTemplateName $cfgIdx }}
               {{- with $size := $dynamicConfigManager.ServerTemplateSize $cfgIdx }}
   dynamic-cookie-key {{ $cfg.RoutingKeyName }}
-  server-template {{ $name }}- 1-{{ $size }} 172.4.0.4:8765 check disabled
+  server-template {{ $name }}- 1-{{ $size }} 172.4.0.4:8765 check inter {{ $health_check_interval }} disabled
               {{- end }}
             {{- end }}
           {{- end }}
@@ -851,7 +855,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
             {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
               {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
   server {{ $endpoint.ID }} {{ $endpoint.IP }}:{{ $endpoint.Port }} weight {{ $weight }}
-                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ clipHAProxyTimeoutValue (firstMatch $timeSpecPattern (index $cfg.Annotations "router.openshift.io/haproxy.health.check.interval") (env "ROUTER_BACKEND_CHECK_INTERVAL") "5000ms") }}
+                {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ $health_check_interval }}
                 {{- end }}{{/* end else no health check */}}
                 {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
                 {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
@@ -866,7 +870,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- with $name := $dynamicConfigManager.ServerTemplateName $cfgIdx }}
             {{- with $size := $dynamicConfigManager.ServerTemplateSize $cfgIdx }}
   dynamic-cookie-key {{ $cfg.RoutingKeyName }}
-  server-template {{ $name }}- 1-{{ $size }} 172.4.0.4:8765 check disabled
+  server-template {{ $name }}- 1-{{ $size }} 172.4.0.4:8765 check inter {{ $health_check_interval }} disabled
             {{- end }}
           {{- end }}
         {{- end }}
