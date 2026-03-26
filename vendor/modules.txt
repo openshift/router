@@ -221,7 +221,7 @@ github.com/openshift/client-go/route/clientset/versioned/scheme
 github.com/openshift/client-go/route/clientset/versioned/typed/route/v1
 github.com/openshift/client-go/route/clientset/versioned/typed/route/v1/fake
 github.com/openshift/client-go/route/listers/route/v1
-# github.com/openshift/library-go v0.0.0-20260223145824-7b234b47a906 => github.com/bentito/library-go v0.0.0-20260316154701-200e1ee46963
+# github.com/openshift/library-go v0.0.0-20260223145824-7b234b47a906 => github.com/bentito/library-go v0.0.0-20260326175450-bff69eeafeb1
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/crypto
 github.com/openshift/library-go/pkg/proc
@@ -1324,4 +1324,4 @@ sigs.k8s.io/structured-merge-diff/v6/value
 # sigs.k8s.io/yaml v1.6.0
 ## explicit; go 1.22
 sigs.k8s.io/yaml
-# github.com/openshift/library-go => github.com/bentito/library-go v0.0.0-20260316154701-200e1ee46963
+# github.com/openshift/library-go => github.com/bentito/library-go v0.0.0-20260326175450-bff69eeafeb1

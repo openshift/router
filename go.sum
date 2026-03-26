@@ -13,8 +13,8 @@ github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/bcicen/go-haproxy v0.0.0-20180203142132-ff5824fe38be h1:7b8/p7wJ3N/OjXbZmwJdyR9eOoCla5SbUIe18WHio5s=
 github.com/bcicen/go-haproxy v0.0.0-20180203142132-ff5824fe38be/go.mod h1:MxVpaKTkNjZu5awzzr6mk6CIKaZYUFGxbmNwMvyVfeM=
-github.com/bentito/library-go v0.0.0-20260316154701-200e1ee46963 h1:jhARqaZphAvzRd1htPKPSLHAMEg01p9/CgmrNvqLLxM=
-github.com/bentito/library-go v0.0.0-20260316154701-200e1ee46963/go.mod h1:K3FoNLgNBFYbFuG+Kr8usAnQxj1w84XogyUp2M8rK8k=
+github.com/bentito/library-go v0.0.0-20260326175450-bff69eeafeb1 h1:e6dH3705E2ENxtCUOOMP9/xGm8pQkcLe/AVRRfsCXqk=
+github.com/bentito/library-go v0.0.0-20260326175450-bff69eeafeb1/go.mod h1:K3FoNLgNBFYbFuG+Kr8usAnQxj1w84XogyUp2M8rK8k=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
