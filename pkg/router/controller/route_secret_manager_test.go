@@ -1221,7 +1221,6 @@ func TestRouteSecretManager(t *testing.T) {
 				s.route = freshRoute
 			}
 
-
 			if (gotErr != nil) != s.expectedError {
 				t.Fatalf("expected error to be %t, but got %t", s.expectedError, gotErr != nil)
 			}
