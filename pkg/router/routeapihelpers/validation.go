@@ -504,6 +504,20 @@ func ClearAsyncSARCacheForTest() {
 	asyncSARCache = sync.Map{}
 }
 
+// IsAsyncSARPending returns true if a SAR check has been started but not yet
+// completed for the given namespace/secretName.  When true, callers should defer
+// any work that requires confirmed SAR approval (e.g. populating TLS data).
+func IsAsyncSARPending(namespace, secretName string) bool {
+	cacheKey := namespace + "/" + secretName
+	if cachedRaw, ok := asyncSARCache.Load(cacheKey); ok {
+		cached := cachedRaw.(*asyncSARResult)
+		cached.mu.Lock()
+		defer cached.mu.Unlock()
+		return !cached.done
+	}
+	return false
+}
+
 // ValidateTLSExternalCertificate tests different pre-conditions required for
 // using externalCertificate.
 func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, sarc authorizationclient.SubjectAccessReviewInterface, secretsGetter corev1client.SecretsGetter, onComplete func(string, string)) field.ErrorList {
@@ -525,7 +539,9 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		if onComplete != nil {
 			cached.callbacks = append(cached.callbacks, onComplete)
 		}
-		return cached.errs // this returns the pending error list
+		// SAR is still in-flight; return error so the route stays rejected
+		// until the SAR completes and triggers re-evaluation.
+		return cached.errs
 	}
 
 	// For tests where dependencies might be mocked/nil, avoid panic
@@ -556,6 +572,7 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		if onComplete != nil {
 			cached.callbacks = append(cached.callbacks, onComplete)
 		}
+		// SAR is still in-flight; return error so the route stays rejected.
 		return cached.errs
 	}
 
@@ -646,5 +663,8 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 	go validateFunc()
 
+	// Return the pending error: the SAR is running asynchronously.
+	// The route should stay rejected until the SAR completes and triggers
+	// re-evaluation via the onComplete callback.
 	return pendingErr
 }

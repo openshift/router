@@ -1182,8 +1182,11 @@ func TestRouteSecretManager(t *testing.T) {
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
 
-			// If the SAR check is pending, wait for it to complete and call HandleRoute again
-			// to simulate the router's sync loop re-evaluating the route.
+			// When a route with externalCertificate is processed, the SAR check
+			// runs asynchronously.  HandleRoute returns a pending error, and the
+			// onComplete callback fires later to trigger re-evaluation.  Wait for
+			// that callback before asserting the final state, then retry with a
+			// fresh copy of the route (the first pass may mutate it in-place).
 			if gotErr != nil && strings.Contains(gotErr.Error(), "authorization check pending") {
 				err := wait.PollImmediate(10*time.Millisecond, 2*time.Second, func() (bool, error) {
 					for _, r := range recorder.GetRejections() {
@@ -1202,7 +1205,9 @@ func TestRouteSecretManager(t *testing.T) {
 					t.Fatalf("timeout waiting for async SAR completion: %v", err)
 				}
 
-				// Reset the plugin and recorder state to assert only the final pass
+				// Reset the plugin and recorder state to assert only the final pass.
+				// Use a deep copy so mutations from the first pass don't affect assertions.
+				freshRoute := s.route.DeepCopy()
 				p.t = ""
 				p.route = nil
 				recorder.Lock()
@@ -1211,8 +1216,11 @@ func TestRouteSecretManager(t *testing.T) {
 				recorder.doneCh = make(chan struct{})
 				recorder.Unlock()
 
-				gotErr = rsm.HandleRoute(s.eventType, s.route)
+				gotErr = rsm.HandleRoute(s.eventType, freshRoute)
+				// Replace s.route with freshRoute so the equality checks below use it.
+				s.route = freshRoute
 			}
+
 
 			if (gotErr != nil) != s.expectedError {
 				t.Fatalf("expected error to be %t, but got %t", s.expectedError, gotErr != nil)

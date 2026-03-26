@@ -163,10 +163,16 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				if err := p.validate(route); err != nil {
 					return err
 				}
+				// Skip populating TLS if the SAR is still in-flight; the onComplete
+				// callback will trigger re-evaluation once the SAR resolves.
+				if routeapihelpers.IsAsyncSARPending(route.Namespace, route.Spec.TLS.ExternalCertificate.Name) {
+					break
+				}
 				// read referenced secret and update TLS certificate and key
 				if err := p.populateRouteTLSFromSecret(route); err != nil {
 					return err
 				}
+
 			}
 
 		case newHasExt && !oldHadExt:
@@ -215,6 +221,15 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
 		return fmt.Errorf("failed to register router: %w", err)
 	}
+
+	// If the SAR check is still in-flight (async), skip populating TLS data now.
+	// The onComplete callback in validate() will trigger route re-evaluation once
+	// the SAR resolves, at which point the cache will be done and TLS will be
+	// populated on the next pass.
+	if routeapihelpers.IsAsyncSARPending(route.Namespace, route.Spec.TLS.ExternalCertificate.Name) {
+		return nil
+	}
+
 	// read referenced secret and update TLS certificate and key
 	if err := p.populateRouteTLSFromSecret(route); err != nil {
 		return err
@@ -393,7 +408,13 @@ func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	}
 
 	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter, onComplete).ToAggregate(); err != nil {
-		log.Error(err, "skipping route due to invalid externalCertificate configuration (or pending SAR check)", "namespace", route.Namespace, "route", route.Name)
+		// If the SAR check is still pending, return the error to prevent TLS population
+		// but don't delete the route — the onComplete callback will trigger re-evaluation.
+		if routeapihelpers.IsAsyncSARPending(route.Namespace, route.Spec.TLS.ExternalCertificate.Name) {
+			log.V(4).Info("SAR check pending for route, deferring admission", "namespace", route.Namespace, "route", route.Name)
+			return err
+		}
+		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
