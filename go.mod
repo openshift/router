@@ -118,4 +118,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/openshift/library-go => github.com/bentito/library-go v0.0.0-20260326175450-bff69eeafeb1
+replace github.com/openshift/library-go => github.com/bentito/library-go ef7716e77
