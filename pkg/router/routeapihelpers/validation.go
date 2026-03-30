@@ -481,7 +481,7 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 	return nil
 }
 
-const MaxConcurrentSecretSyncs = 50
+const MaxConcurrentSecretSyncs = 5
 
 var asyncSARSemaphore = make(chan struct{}, MaxConcurrentSecretSyncs)
 
@@ -492,6 +492,7 @@ type asyncSARResult struct {
 	callbacks []func(string, string)
 	mu        sync.Mutex
 	done      bool
+	createdAt time.Time
 }
 
 // InvalidateAsyncSARCache removes the cached result for a specific secret to force revalidation.
@@ -504,15 +505,20 @@ func ClearAsyncSARCacheForTest() {
 	asyncSARCache = sync.Map{}
 }
 
-// IsAsyncSARPending returns true if a SAR check has been started but not yet
-// completed for the given namespace/secretName.  When true, callers should defer
-// any work that requires confirmed SAR approval (e.g. populating TLS data).
 func IsAsyncSARPending(namespace, secretName string) bool {
 	cacheKey := namespace + "/" + secretName
 	if cachedRaw, ok := asyncSARCache.Load(cacheKey); ok {
 		cached := cachedRaw.(*asyncSARResult)
 		cached.mu.Lock()
 		defer cached.mu.Unlock()
+		// Apply a 2-minute TTL to cached SAR results. This ensures that if the
+		// router's RBAC permissions are updated (e.g. granted) after initial
+		// failure, we naturally retry and recover without waiting for the secret
+		// to be mutated.
+		if time.Since(cached.createdAt) > 2*time.Minute {
+			asyncSARCache.Delete(cacheKey)
+			return false
+		}
 		return !cached.done
 	}
 	return false
@@ -532,16 +538,25 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	if cachedRaw, ok := asyncSARCache.Load(cacheKey); ok {
 		cached := cachedRaw.(*asyncSARResult)
 		cached.mu.Lock()
-		defer cached.mu.Unlock()
-		if cached.done {
+		// Apply a 2-minute TTL to cached SAR results. This ensures that if the
+		// router's RBAC permissions are updated (e.g. granted) after initial
+		// failure, we naturally retry and recover without waiting for the secret
+		// to be mutated.
+		if time.Since(cached.createdAt) > 2*time.Minute {
+			cached.mu.Unlock()
+			asyncSARCache.Delete(cacheKey)
+		} else {
+			defer cached.mu.Unlock()
+			if cached.done {
+				return cached.errs
+			}
+			// SAR is still in-flight; return error so the route stays rejected
+			// until the SAR completes and triggers re-evaluation.
+			if onComplete != nil {
+				cached.callbacks = append(cached.callbacks, onComplete)
+			}
 			return cached.errs
 		}
-		if onComplete != nil {
-			cached.callbacks = append(cached.callbacks, onComplete)
-		}
-		// SAR is still in-flight; return error so the route stays rejected
-		// until the SAR completes and triggers re-evaluation.
-		return cached.errs
 	}
 
 	// For tests where dependencies might be mocked/nil, avoid panic
@@ -555,10 +570,8 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	pendingErr := field.ErrorList{field.InternalError(fldPath, fmt.Errorf("authorization check pending for secret %q", secretName))}
 
 	result := &asyncSARResult{
-		errs: pendingErr,
-	}
-	if onComplete != nil {
-		result.callbacks = append(result.callbacks, onComplete)
+		errs:      pendingErr,
+		createdAt: time.Now(),
 	}
 
 	if loadedRaw, loaded := asyncSARCache.LoadOrStore(cacheKey, result); loaded {
@@ -585,7 +598,7 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 		errs := field.ErrorList{}
 
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		sarGet := &authorizationv1.SubjectAccessReview{
@@ -644,9 +657,23 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 			errs = append(errs, field.Invalid(fldPath, secretName, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
 		}
 
+		hasTransientErr := false
+		for _, e := range errs {
+			if e.Type == field.ErrorTypeInternal {
+				hasTransientErr = true
+				break
+			}
+		}
+
 		result.mu.Lock()
 		result.errs = errs
-		result.done = true
+		if hasTransientErr {
+			// On transient failures (e.g. rate-limiter timeouts, network blips),
+			// do not permanently cache the failure.
+			asyncSARCache.Delete(cacheKey)
+		} else {
+			result.done = true
+		}
 		callbacks := result.callbacks
 		result.callbacks = nil
 		result.mu.Unlock()
@@ -661,10 +688,28 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 		return result.errs
 	}
 
-	go validateFunc()
+	fastComplete := make(chan struct{})
 
-	// Return the pending error: the SAR is running asynchronously.
-	// The route should stay rejected until the SAR completes and triggers
-	// re-evaluation via the onComplete callback.
-	return pendingErr
+	go func() {
+		validateFunc()
+		close(fastComplete)
+	}()
+
+	// Wait up to 250ms synchronously to see if the SAR check completes.
+	// This avoids "pending" state transitions for healthy routes under normal load.
+	select {
+	case <-fastComplete:
+		result.mu.Lock()
+		defer result.mu.Unlock()
+		return result.errs
+	case <-time.After(250 * time.Millisecond):
+		result.mu.Lock()
+		defer result.mu.Unlock()
+		// Double check if it finished while we were timing out
+		if result.done {
+			return result.errs
+		}
+		result.callbacks = append(result.callbacks, onComplete)
+		return pendingErr
+	}
 }
