@@ -1,0 +1,21 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+objects:
+- apiVersion: operators.coreos.com/v1alpha1
+  kind: CatalogSource
+  metadata:
+    name: "${CATALOG_NAME}"
+    namespace: "${NAMESPACE}"
+  spec:
+    displayName: Konflux ALBO
+    image: "${IMAGE}"
+    sourceType: grpc
+    grpcPodConfig:
+      securityContextConfig: legacy
+parameters:
+- name: CATALOG_NAME
+  value: "albo-konflux-fbc"
+- name: IMAGE
+  value: "quay.io/redhat-user-workloads/aws-load-balancer-operator-tenant/aws-lb-optr-fbc-v4-21/aws-lb-fbc-container-aws-lb-optr-fbc-v4-21:candidate"
+- name: NAMESPACE
+  value: aws-load-balancer-operator
