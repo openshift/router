@@ -591,11 +591,6 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 	// Perform checks
 	validateFunc := func() {
-		// Acquire token (blocks if 50 are already running)
-		asyncSARSemaphore <- struct{}{}
-		// Guarantee token release
-		defer func() { <-asyncSARSemaphore }()
-
 		errs := field.ErrorList{}
 
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -684,32 +679,51 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	}
 
 	if onComplete == nil {
+		asyncSARSemaphore <- struct{}{}
+		defer func() { <-asyncSARSemaphore }()
 		validateFunc()
 		return result.errs
 	}
 
-	fastComplete := make(chan struct{})
-
-	go func() {
-		validateFunc()
-		close(fastComplete)
-	}()
-
-	// Wait up to 250ms synchronously to see if the SAR check completes.
-	// This avoids "pending" state transitions for healthy routes under normal load.
 	select {
-	case <-fastComplete:
-		result.mu.Lock()
-		defer result.mu.Unlock()
-		return result.errs
-	case <-time.After(250 * time.Millisecond):
-		result.mu.Lock()
-		defer result.mu.Unlock()
-		// Double check if it finished while we were timing out
-		if result.done {
+	case asyncSARSemaphore <- struct{}{}:
+		fastComplete := make(chan struct{})
+
+		go func() {
+			defer func() { <-asyncSARSemaphore }()
+			validateFunc()
+			close(fastComplete)
+		}()
+
+		// Wait up to 250ms synchronously to see if the SAR check completes.
+		// This avoids "pending" state transitions for healthy routes under normal load.
+		select {
+		case <-fastComplete:
+			result.mu.Lock()
+			defer result.mu.Unlock()
 			return result.errs
+		case <-time.After(250 * time.Millisecond):
+			result.mu.Lock()
+			defer result.mu.Unlock()
+			// Double check if it finished while we were timing out
+			if result.done {
+				return result.errs
+			}
+			result.callbacks = append(result.callbacks, onComplete)
+			return pendingErr
 		}
+	default:
+		// Capacity maxed out; queue for execution but return immediately.
+		result.mu.Lock()
 		result.callbacks = append(result.callbacks, onComplete)
+		result.mu.Unlock()
+
+		go func() {
+			asyncSARSemaphore <- struct{}{}
+			defer func() { <-asyncSARSemaphore }()
+			validateFunc()
+		}()
+
 		return pendingErr
 	}
 }
