@@ -652,19 +652,15 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 			errs = append(errs, field.Invalid(fldPath, secretName, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
 		}
 
-		hasTransientErr := false
-		for _, e := range errs {
-			if e.Type == field.ErrorTypeInternal {
-				hasTransientErr = true
-				break
-			}
-		}
+		// On any error (Forbidden, NotFound, Internal, etc.), do not permanently
+		// cache the failure. This ensures that the router immediately retries
+		// and recovers when RBAC or secrets are updated, matching the behavior
+		// of the non-async validation path.
+		shouldCache := len(errs) == 0
 
 		result.mu.Lock()
 		result.errs = errs
-		if hasTransientErr {
-			// On transient failures (e.g. rate-limiter timeouts, network blips),
-			// do not permanently cache the failure.
+		if !shouldCache {
 			asyncSARCache.Delete(cacheKey)
 		} else {
 			result.done = true
