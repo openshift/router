@@ -3,7 +3,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
@@ -428,7 +430,17 @@ func (p *RouteSecretManager) validate(route *routev1.Route) error {
 // Note: This function performs an in-place update of the route. The caller should be aware that the route's TLS configuration will be modified directly.
 func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) error {
 	// read referenced secret
-	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
+	var secret *kapi.Secret
+	var err error
+	for i := 0; i < 20; i++ {
+		secret, err = p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
+		if err != nil && strings.Contains(err.Error(), "registration currently in progress") {
+			time.Sleep(50 * time.Millisecond)
+			continue
+		}
+		break
+	}
+
 	if err != nil {
 		log.Error(err, "failed to get referenced secret")
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonGetFailed, err.Error())

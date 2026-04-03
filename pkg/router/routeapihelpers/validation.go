@@ -660,10 +660,9 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 
 		result.mu.Lock()
 		result.errs = errs
+		result.done = true
 		if !shouldCache {
 			asyncSARCache.Delete(cacheKey)
-		} else {
-			result.done = true
 		}
 		callbacks := result.callbacks
 		result.callbacks = nil
