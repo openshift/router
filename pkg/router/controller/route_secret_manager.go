@@ -3,9 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
-	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
@@ -27,8 +25,6 @@ const (
 	ExtCrtStatusReasonSecretUpdated    = "ExternalCertificateSecretUpdated"
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
-	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
-	ExtCrtStatusReasonSecretLoaded     = "ExternalCertificateSecretLoaded"
 )
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -161,14 +157,9 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
 				log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
-				// re-validate
+				// re-validate (synchronous, throttled by semaphore)
 				if err := p.validate(route); err != nil {
 					return err
-				}
-				// Skip populating TLS if the SAR is still in-flight; the onComplete
-				// callback will trigger re-evaluation once the SAR resolves.
-				if routeapihelpers.IsAsyncSARPending(route.Namespace, route.Spec.TLS.ExternalCertificate.Name) {
-					break
 				}
 				// read referenced secret and update TLS certificate and key
 				if err := p.populateRouteTLSFromSecret(route); err != nil {
@@ -214,7 +205,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 // validateAndRegister validates the route's externalCertificate configuration and registers it with the secret manager.
 // It also updates the in-memory TLS certificate and key after reading from secret informer's cache.
 func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
-	// validate
+	// validate (synchronous, throttled by semaphore)
 	if err := p.validate(route); err != nil {
 		return err
 	}
@@ -222,14 +213,6 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 	handler := p.generateSecretHandler(route.Namespace, route.Name)
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
 		return fmt.Errorf("failed to register router: %w", err)
-	}
-
-	// If the SAR check is still in-flight (async), skip populating TLS data now.
-	// The onComplete callback in validate() will trigger route re-evaluation once
-	// the SAR resolves, at which point the cache will be done and TLS will be
-	// populated on the next pass.
-	if routeapihelpers.IsAsyncSARPending(route.Namespace, route.Spec.TLS.ExternalCertificate.Name) {
-		return nil
 	}
 
 	// read referenced secret and update TLS certificate and key
@@ -301,23 +284,6 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
 				msg := fmt.Sprintf("secret %q recreated for route %q", secret.Name, key)
 				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretRecreated, msg)
-				return
-			}
-
-			// Async secret load scenario
-			// When the secret completes its initial cache sync, we need to trigger the router
-			// controller to evaluate this route again. We use RecordRouteRejection to keep the route
-			// pending until the full plugin chain evaluates and admits it.
-			route, err := p.routelister.Routes(namespace).Get(routeName)
-			if err != nil {
-				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
-				return
-			}
-			msg := fmt.Sprintf("secret %q loaded for route %q", secret.Name, key)
-			if isRouteAdmittedTrue(route.DeepCopy(), p.routerName) {
-				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretLoaded, msg)
-			} else {
-				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretLoaded, msg)
 			}
 		},
 
@@ -385,37 +351,15 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 // If the validation fails, it records the route rejection and triggers
 // the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
 //
+// This function is synchronous: it blocks until the SAR check completes.
+// Concurrency is throttled by the semaphore in ValidateTLSExternalCertificate.
+//
 // NOTE: TLS data validation and sanitization are handled by the next plugin `ExtendedValidator`,
 // by reading the "tls.crt" and "tls.key" added by populateRouteTLSFromSecret.
 func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
 
-	onComplete := func(namespace, secretName string) {
-		// Ensure fetching the updated route
-		latestRoute, err := p.routelister.Routes(namespace).Get(route.Name)
-		if err != nil {
-			log.Error(err, "failed to get route for SAR completion callback", "namespace", namespace, "route", route.Name)
-			return
-		}
-
-		msg := fmt.Sprintf("SAR check completed for secret %q", secretName)
-		log.V(4).Info(msg, "namespace", namespace, "route", route.Name)
-
-		// Update the route status to notify plugins, including this plugin, for re-evaluation.
-		if isRouteAdmittedTrue(latestRoute.DeepCopy(), p.routerName) {
-			p.recorder.RecordRouteUpdate(latestRoute, ExtCrtStatusReasonSARCompleted, msg)
-		} else {
-			p.recorder.RecordRouteRejection(latestRoute, ExtCrtStatusReasonSARCompleted, msg)
-		}
-	}
-
-	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter, onComplete).ToAggregate(); err != nil {
-		// If the SAR check is still pending, return the error to prevent TLS population
-		// but don't delete the route — the onComplete callback will trigger re-evaluation.
-		if routeapihelpers.IsAsyncSARPending(route.Namespace, route.Spec.TLS.ExternalCertificate.Name) {
-			log.V(4).Info("SAR check pending for route, deferring admission", "namespace", route.Namespace, "route", route.Name)
-			return err
-		}
+	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
 		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, err.Error())
 		p.plugin.HandleRoute(watch.Deleted, route)
@@ -429,18 +373,10 @@ func (p *RouteSecretManager) validate(route *routev1.Route) error {
 // the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
 // Note: This function performs an in-place update of the route. The caller should be aware that the route's TLS configuration will be modified directly.
 func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) error {
-	// read referenced secret
-	var secret *kapi.Secret
-	var err error
-	for i := 0; i < 20; i++ {
-		secret, err = p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
-		if err != nil && strings.Contains(err.Error(), "registration currently in progress") {
-			time.Sleep(50 * time.Millisecond)
-			continue
-		}
-		break
-	}
-
+	// read referenced secret from the informer cache.
+	// RegisterRoute blocks until cache sync completes, so the secret should be
+	// available immediately after registration.
+	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
 	if err != nil {
 		log.Error(err, "failed to get referenced secret")
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonGetFailed, err.Error())
