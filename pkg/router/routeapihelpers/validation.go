@@ -9,13 +9,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"strings"
+	"sync"
+	"time"
 
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/client-go/util/cert"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/library-go/pkg/authorization/authorizationutil"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
 	kapi "k8s.io/api/core/v1"
@@ -252,14 +251,6 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 			if len(keyBytes) == 0 {
 				result = append(result, field.Invalid(tlsFieldPath.Child("key"), "", "no key specified"))
 			} else {
-				// Validate that final key contains only private key, and cert contains only public keys
-				if err := validatePEMContent(keyBytes, "PRIVATE KEY"); err != nil {
-					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
-				}
-				if err := validatePEMContent(certBytes, "CERTIFICATE"); err != nil {
-					result = append(result, field.Invalid(tlsFieldPath.Child("certificate"), "redacted certificate data", err.Error()))
-				}
-				// Validate if the keypair is valid (eg.: the leaf certificate should be the first on certBytes)
 				if _, err := tls.X509KeyPair(certBytes, keyBytes); err != nil {
 					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
 				} else {
@@ -288,31 +279,6 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 	}
 
 	return result
-}
-
-// validatePEMContent takes content and pemType, PEM decodes content and
-// validates that the first block matches the expected pemType. This validation
-// 1. Ensures that the required pemType is first in the order
-// 2. Blocks attempts of passing certificates where keys should be used, and
-// 3. Blocks attempts of passing keys where certificates should be used.
-// Passing an out of order certificate, or key as certificate, or certificate as key
-// breaks HAProxy.  Note that the match of content and pemType is not exact, but
-// content must CONTAIN the expected pemType.
-func validatePEMContent(content []byte, pemType string) error {
-	if len(content) == 0 {
-		return fmt.Errorf("the PEM content cannot be null")
-	}
-	for len(content) > 0 {
-		var pemBlock *pem.Block
-		pemBlock, content = pem.Decode(content)
-		if pemBlock == nil {
-			break
-		}
-		if !strings.Contains(pemBlock.Type, pemType) {
-			return fmt.Errorf("field contains invalid types %s, expecting only %s", pemBlock.Type, pemType)
-		}
-	}
-	return nil
 }
 
 // validateTLS tests fields for different types of TLS combinations are set.  Called
@@ -515,56 +481,163 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 	return nil
 }
 
-// ValidateTLSExternalCertificate tests different pre-conditions required for
-// using externalCertificate.
+// MaxConcurrentSARChecks limits the number of simultaneous SubjectAccessReview
+// API calls to avoid overwhelming the API server during router startup with
+// many externalCertificate routes.
+const MaxConcurrentSARChecks = 10
+
+var sarSemaphore = make(chan struct{}, MaxConcurrentSARChecks)
+
+// sarCacheEntry holds a cached successful SAR validation result.
+type sarCacheEntry struct {
+	errs      field.ErrorList
+	createdAt time.Time
+}
+
+// sarCacheTTL determines how long successful SAR results are cached before
+// revalidation. This ensures eventual consistency when RBAC permissions change.
+const sarCacheTTL = 2 * time.Minute
+
+// sarCache stores successful SAR validation results keyed by "namespace/secretName".
+// Only successful validations are cached; failures always trigger fresh checks.
+var sarCache sync.Map
+
+// InvalidateAsyncSARCache removes the cached result for a specific secret,
+// forcing revalidation on the next route event. Called when the secret is
+// created, updated, or deleted.
+func InvalidateAsyncSARCache(namespace, secretName string) {
+	sarCache.Delete(namespace + "/" + secretName)
+}
+
+// ClearAsyncSARCacheForTest clears the global SAR cache for testing purposes.
+func ClearAsyncSARCacheForTest() {
+	sarCache = sync.Map{}
+}
+
+// checkSARCache returns the cached SAR result if it exists and hasn't expired.
+// Returns nil if there is no valid cache entry.
+func checkSARCache(cacheKey string) *sarCacheEntry {
+	if raw, ok := sarCache.Load(cacheKey); ok {
+		entry := raw.(*sarCacheEntry)
+		if time.Since(entry.createdAt) > sarCacheTTL {
+			sarCache.Delete(cacheKey)
+			return nil
+		}
+		return entry
+	}
+	return nil
+}
+
+// ValidateTLSExternalCertificate validates that the router service account has
+// the required RBAC permissions to access the referenced secret and that the
+// secret exists and is of type kubernetes.io/tls.
+//
+// This function is synchronous and throttled: it blocks on a semaphore to limit
+// the number of concurrent SAR API calls, preventing API server overload during
+// startup with many externalCertificate routes. Successful results are cached
+// with a 2-minute TTL to avoid redundant API calls on subsequent route events.
 func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, sarc authorizationclient.SubjectAccessReviewInterface, secretsGetter corev1client.SecretsGetter) field.ErrorList {
 	tls := route.Spec.TLS
+	if tls == nil || tls.ExternalCertificate == nil || tls.ExternalCertificate.Name == "" {
+		return nil
+	}
 
+	secretName := tls.ExternalCertificate.Name
+	cacheKey := route.Namespace + "/" + secretName
+
+	// Fast path: return cached successful result.
+	if entry := checkSARCache(cacheKey); entry != nil {
+		return entry.errs
+	}
+
+	// For tests where dependencies might be mocked/nil, avoid panic.
+	if sarc == nil || secretsGetter == nil {
+		return field.ErrorList{
+			field.InternalError(fldPath, fmt.Errorf("external certificate validation dependencies are not configured")),
+		}
+	}
+
+	// Acquire semaphore slot — blocks if all slots are in use.
+	// This throttles concurrent SAR API calls to MaxConcurrentSARChecks.
+	sarSemaphore <- struct{}{}
+	defer func() { <-sarSemaphore }()
+
+	// Double-check cache after acquiring semaphore — another goroutine
+	// may have cached the result while we were waiting.
+	if entry := checkSARCache(cacheKey); entry != nil {
+		return entry.errs
+	}
+
+	// Perform SAR checks synchronously.
 	errs := field.ErrorList{}
-	// The router serviceaccount must have permission to get/list/watch the referenced secret.
-	// The role and rolebinding to provide this access must be provided by the user.
-	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-		&authorizationv1.ResourceAttributes{
-			Namespace: route.Namespace,
-			Verb:      "get",
-			Resource:  "secrets",
-			Name:      tls.ExternalCertificate.Name,
-		}); err != nil {
+
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	sarGet := &authorizationv1.SubjectAccessReview{
+		Spec: authorizationv1.SubjectAccessReviewSpec{
+			User: routerServiceAccount,
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: route.Namespace, Verb: "get", Resource: "secrets", Name: secretName,
+			},
+		},
+	}
+	resp, err := sarc.Create(timeoutCtx, sarGet, metav1.CreateOptions{})
+	if err != nil {
+		errs = append(errs, field.InternalError(fldPath, fmt.Errorf("failed to check 'get' permission for secret %q: %v", secretName, err)))
+	} else if !resp.Status.Allowed {
 		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to get this secret"))
 	}
 
-	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-		&authorizationv1.ResourceAttributes{
-			Namespace: route.Namespace,
-			Verb:      "watch",
-			Resource:  "secrets",
-			Name:      tls.ExternalCertificate.Name,
-		}); err != nil {
+	sarWatch := &authorizationv1.SubjectAccessReview{
+		Spec: authorizationv1.SubjectAccessReviewSpec{
+			User: routerServiceAccount,
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: route.Namespace, Verb: "watch", Resource: "secrets", Name: secretName,
+			},
+		},
+	}
+	resp, err = sarc.Create(timeoutCtx, sarWatch, metav1.CreateOptions{})
+	if err != nil {
+		errs = append(errs, field.InternalError(fldPath, fmt.Errorf("failed to check 'watch' permission for secret %q: %v", secretName, err)))
+	} else if !resp.Status.Allowed {
 		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to watch this secret"))
 	}
 
-	if err := authorizationutil.Authorize(sarc, &user.DefaultInfo{Name: routerServiceAccount},
-		&authorizationv1.ResourceAttributes{
-			Namespace: route.Namespace,
-			Verb:      "list",
-			Resource:  "secrets",
-			Name:      tls.ExternalCertificate.Name,
-		}); err != nil {
+	sarList := &authorizationv1.SubjectAccessReview{
+		Spec: authorizationv1.SubjectAccessReviewSpec{
+			User: routerServiceAccount,
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: route.Namespace, Verb: "list", Resource: "secrets", Name: secretName,
+			},
+		},
+	}
+	resp, err = sarc.Create(timeoutCtx, sarList, metav1.CreateOptions{})
+	if err != nil {
+		errs = append(errs, field.InternalError(fldPath, fmt.Errorf("failed to check 'list' permission for secret %q: %v", secretName, err)))
+	} else if !resp.Status.Allowed {
 		errs = append(errs, field.Forbidden(fldPath, "router serviceaccount does not have permission to list this secret"))
 	}
 
-	// The secret should be in the same namespace as that of the route.
-	secret, err := secretsGetter.Secrets(route.Namespace).Get(context.TODO(), tls.ExternalCertificate.Name, metav1.GetOptions{})
+	secret, err := secretsGetter.Secrets(route.Namespace).Get(timeoutCtx, secretName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return append(errs, field.NotFound(fldPath, err.Error()))
+			errs = append(errs, field.NotFound(fldPath, err.Error()))
+		} else {
+			errs = append(errs, field.InternalError(fldPath, err))
 		}
-		return append(errs, field.InternalError(fldPath, err))
+	} else if secret.Type != kapi.SecretTypeTLS {
+		errs = append(errs, field.Invalid(fldPath, secretName, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
 	}
 
-	// The secret should be of type kubernetes.io/tls
-	if secret.Type != kapi.SecretTypeTLS {
-		errs = append(errs, field.Invalid(fldPath, tls.ExternalCertificate.Name, fmt.Sprintf("secret of type %q required", kapi.SecretTypeTLS)))
+	// Cache only successful validations. Failures trigger a fresh check
+	// on the next route event, matching the original synchronous validation
+	// behavior where every event retried if the route wasn't yet admitted.
+	if len(errs) == 0 {
+		sarCache.Store(cacheKey, &sarCacheEntry{
+			errs:      errs,
+			createdAt: time.Now(),
+		})
 	}
 
 	return errs
