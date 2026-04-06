@@ -1179,7 +1179,6 @@ func TestRouteSecretManager(t *testing.T) {
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
 
-
 			if (gotErr != nil) != s.expectedError {
 				t.Fatalf("expected error to be %t, but got %t", s.expectedError, gotErr != nil)
 			}
