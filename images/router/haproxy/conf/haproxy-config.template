@@ -745,11 +745,16 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
             {{- end }}
           {{- end }}
 
+        {{- if $dynamicConfigManager }} 
+  dynamic-cookie-key {{ $cfg.RoutingKeyName }}
+        {{- end }}
         {{- range $serviceUnitName, $weight := $cfg.ServiceUnitNames }}
           {{- if ge $weight 0 }}{{/* weight=0 is reasonable to keep existing connections to backends with cookies as we can see the HTTP headers */}}
             {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
               {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
-  server {{ $endpoint.ID }} {{ $endpoint.IP }}:{{ $endpoint.Port }} cookie {{ $endpoint.IdHash }} weight {{ $weight }}
+  {{- /* This should always follow backend.go/innerAddServer() method, changes here should be reflected there. */}}
+  {{- /* TODO: either move this configuration to the Go counterpart, or read it from here instead */}}
+  server {{ $endpoint.ID }} {{ $endpoint.IP }}:{{ $endpoint.Port }}{{ if not $dynamicConfigManager }} cookie {{ $endpoint.IdHash }}{{ end }} weight {{ $weight }}
                 {{- if (eq $cfg.TLSTermination "reencrypt") }} ssl
                   {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
                   {{- end }}
@@ -776,43 +781,6 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
             {{- end }}{{/* end range processEndpointsForAlias */}}
           {{- end }}{{/* end get serviceUnit from its name */}}
         {{- end }}{{/* end range over serviceUnitNames */}}
-
-        {{- with $dynamicConfigManager }}
-          {{- if (eq $cfg.TLSTermination "reencrypt") }}
-  dynamic-cookie-key {{ $cfg.RoutingKeyName }}
-            {{- range $idx, $serverName := $dynamicConfigManager.GenerateDynamicServerNames $cfgIdx }}
-  server {{ $serverName }} 172.4.0.4:8765 weight 0 ssl disabled check inter {{ $health_check_interval }}
-              {{- if gt (len (index $cfg.Certificates (printf "%s_pod" $cfg.Host)).Contents) 0 }} verify required ca-file {{ $workingDir }}/router/cacerts/{{$cfgIdx }}.pem
-              {{- else }}
-                {{- if not (isTrue $router_disable_http2) }} alpn h2,http/1.1
-                {{- end }}
-                {{- /*
-                    Add "verifyhost" for the primary service only. This server is not intended
-                    to be used for alternate backend endpoints. A reload will be triggered if
-                    an alternate backend endpoint is added dynamically.
-                */ -}}
-                {{- with $serviceUnit := index $.ServiceUnits $cfg.PrimaryServiceUnitKey -}}
-                    {{- if $cfg.VerifyServiceHostname }} verifyhost {{ $serviceUnit.Hostname }}
-                    {{- end }}
-                {{- end }}
-                {{- if gt (len $defaultDestinationCA) 0 }} verify required ca-file {{ $defaultDestinationCA }}
-                {{- else }} verify none
-                {{- end }}
-              {{- end }}
-              {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
-              {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
-              {{- end }}{{/* end pod-concurrent-connections annotation */}}
-            {{- end }}{{/* end range over dynamic server names */}}
-
-          {{- else }}
-            {{- with $name := $dynamicConfigManager.ServerTemplateName $cfgIdx }}
-              {{- with $size := $dynamicConfigManager.ServerTemplateSize $cfgIdx }}
-  dynamic-cookie-key {{ $cfg.RoutingKeyName }}
-  server-template {{ $name }}- 1-{{ $size }} 172.4.0.4:8765 check inter {{ $health_check_interval }} disabled
-              {{- end }}
-            {{- end }}
-          {{- end }}
-        {{- end }}
 
       {{- end }}{{/* end if tls==edge/none/reencrypt */}}
 
@@ -857,10 +825,16 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
 
   hash-type consistent
   timeout check 5000ms
+
+        {{- if $dynamicConfigManager }} 
+  dynamic-cookie-key {{ $cfg.RoutingKeyName }}
+        {{- end }}
         {{- range $serviceUnitName, $weight := $cfg.ServiceUnitNames }}
           {{- if ne $weight 0 }}{{/* drop connections where weight=0 as we can't use cookies, leaving only r-r and src-ip as dispatch methods and weight make no sense there */}}
             {{- with $serviceUnit := index $.ServiceUnits $serviceUnitName }}
               {{- range $idx, $endpoint := processEndpointsForAlias $cfg $serviceUnit (env "ROUTER_BACKEND_PROCESS_ENDPOINTS" "") }}
+  {{- /* This should always follow backend.go/innerAddServer() method, changes here should be reflected there. */}}
+  {{- /* TODO: either move this configuration to the Go counterpart, or read it from here instead */}}
   server {{ $endpoint.ID }} {{ $endpoint.IP }}:{{ $endpoint.Port }} weight {{ $weight }}
                 {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ $health_check_interval }}
                 {{- end }}{{/* end else no health check */}}
@@ -872,15 +846,6 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
             {{- end }}{{/* end get ServiceUnit from serviceUnitName */}}
           {{- end }}{{/* end if weight != 0 */}}
         {{- end }}{{/* end iterate over services*/}}
-
-        {{- with $dynamicConfigManager }}
-          {{- with $name := $dynamicConfigManager.ServerTemplateName $cfgIdx }}
-            {{- with $size := $dynamicConfigManager.ServerTemplateSize $cfgIdx }}
-  dynamic-cookie-key {{ $cfg.RoutingKeyName }}
-  server-template {{ $name }}- 1-{{ $size }} 172.4.0.4:8765 check inter {{ $health_check_interval }} disabled
-            {{- end }}
-          {{- end }}
-        {{- end }}
 
       {{- end }}{{/*end tls==passthrough*/}}
 
