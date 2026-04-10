@@ -67,6 +67,10 @@ func matchString(pattern string, s string) (bool, error) {
 	return re.MatchString(s), nil
 }
 
+func FirstMatch(pattern string, values ...string) string {
+	return firstMatch(pattern, values...)
+}
+
 func firstMatch(pattern string, values ...string) string {
 	log.V(7).Info("firstMatch called", "pattern", pattern, "values", values)
 	if re, err := cachedRegexpCompile(`\A(?:` + pattern + `)\z`); err == nil {
