@@ -52,7 +52,7 @@ func (cm *fakeConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfigKey
 	return nil
 }
 
-func (cm *fakeConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, svc *templaterouter.ServiceUnit, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
+func (cm *fakeConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, svc *templaterouter.ServiceUnit, oldEndpoints, newEndpoints []templaterouter.Endpoint, activeEndpoints int) error {
 	return nil
 }
 
