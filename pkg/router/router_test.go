@@ -802,6 +802,63 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"Rewrite target with root path": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rewrite-root",
+					host: "rewrite-root.example.com",
+					path: "/app",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rewrite-target": "/",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "rewrite-root"),
+					attribute:   "http-request",
+					value:       `replace-path '^/app/?(.*)$' '/\1'`,
+				},
+			},
+		},
+		"Rewrite target with non-root path": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rewrite-nonroot",
+					host: "rewrite-nonroot.example.com",
+					path: "/api/v1",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rewrite-target": "/v2",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "rewrite-nonroot"),
+					attribute:   "http-request",
+					value:       `replace-path '^/api/v1(.*)$' '/v2\1'`,
+				},
+			},
+		},
+		"Rewrite target with single quote in path": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rewrite-single-quote",
+					host: "rewrite-single-quote.example.com",
+					path: "/foo'",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rewrite-target": "/",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "rewrite-single-quote"),
+					attribute:   "http-request",
+					value:       `replace-path '^/foo'\''/?(.*)$' '/\1'`,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
