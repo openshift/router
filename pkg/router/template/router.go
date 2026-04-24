@@ -799,7 +799,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 
 	err := r.dynamicConfigManager.AddRoute(backendKey, backend.RoutingKeyName, route)
 	if err != nil {
-		log.V(4).Info("router will reload as the ConfigManager could not dynamically add route for backend", "backendKey", backendKey, "error", err)
+		log.V(0).Info("router will reload as the ConfigManager could not dynamically add route for backend", "backendKey", backendKey, "error", err)
 		return false
 	}
 
@@ -818,7 +818,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 				weight = 0
 			}
 			if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, oldEndpoints, newEndpoints, weight); err != nil {
-				log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for route backend",
+				log.V(0).Info("router will reload as the ConfigManager could not dynamically replace endpoints for route backend",
 					"backendKey", backendKey, "serviceKey", key, "error", err)
 				return false
 			}
@@ -844,7 +844,7 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey
 	log.V(4).Info("dynamically removing route backend", "backendKey", backendKey)
 
 	if err := r.dynamicConfigManager.RemoveRoute(backendKey, route); err != nil {
-		log.V(4).Info("router will reload as the ConfigManager could not dynamically remove route backend", "backendKey", backendKey, "error", err)
+		log.V(0).Info("router will reload as the ConfigManager could not dynamically remove route backend", "backendKey", backendKey, "error", err)
 		return false
 	}
 
@@ -923,7 +923,7 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 		log.V(4).Info("dynamically replacing endpoints for associated backend", "backendKey", backendKey, "newEndpoints", newEndpoints)
 		if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, oldEndpoints, newEndpoints, weight); err != nil {
 			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for service", "service", id, "backendKey", backendKey, "weight", weight, "error", err)
+			log.V(0).Info("router will reload as the ConfigManager could not dynamically replace endpoints for service", "service", id, "backendKey", backendKey, "weight", weight, "error", err)
 			return false
 		}
 	}
@@ -950,7 +950,7 @@ func (r *templateRouter) dynamicallyRemoveEndpoints(service ServiceUnit, endpoin
 		log.V(4).Info("dynamically removing endpoints for associated backend", "backendKey", backendKey)
 		if err := r.dynamicConfigManager.RemoveRouteEndpoints(backendKey, endpoints); err != nil {
 			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			log.V(4).Info("router will reload as the ConfigManager could not dynamically remove endpoints for backend", "backendKey", backendKey, "error", err)
+			log.V(0).Info("router will reload as the ConfigManager could not dynamically remove endpoints for backend", "backendKey", backendKey, "error", err)
 			return false
 		}
 	}
