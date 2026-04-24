@@ -92,3 +92,76 @@ func Test_SanitizeInput(t *testing.T) {
 		})
 	}
 }
+
+func Test_EscapeSingleQuotes(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{
+			name:   "valid string",
+			input:  `/foo`,
+			output: `/foo`,
+		},
+		{
+			name:   "valid string with bar",
+			input:  `/foo/bar`,
+			output: `/foo/bar`,
+		},
+		{
+			name:   "escape haproxy single quote string",
+			input:  `/it's`,
+			output: `/it'\''s`,
+		},
+		{
+			name:   "escape haproxy single quote",
+			input:  `'`,
+			output: `'\''`,
+		},
+		{
+			name:   "escape haproxy double quotes",
+			input:  `''`,
+			output: `'\'''\''`,
+		},
+		{
+			name:   "delete haproxy newline",
+			input:  "/foo\nbar",
+			output: `/foobar`,
+		},
+		{
+			name:   "escape haproxy carriage return",
+			input:  "/foo\rbar",
+			output: `/foobar`,
+		},
+		{
+			name:   "escape haproxy carriage return and line feed",
+			input:  "/foo\r\nbar",
+			output: `/foobar`,
+		},
+		{
+			name:   "escape haproxy carriage return and line feed with single quote",
+			input:  "/it's\r\n",
+			output: `/it'\''s`,
+		},
+		{
+			name:   "escape haproxy with multiple newlines",
+			input:  "/foo\n\n\nbar",
+			output: `/foobar`,
+		},
+		{
+			name:   "escape haproxy with carriage return and line feed only",
+			input:  "\r\n",
+			output: ``,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := rewritetarget.EscapeSingleQuotes(tc.input)
+			if got != tc.output {
+				t.Errorf("Failure: expected %s, got %s", tc.output, got)
+			}
+		})
+	}
+}
