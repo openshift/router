@@ -5,6 +5,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	templaterouter "github.com/openshift/router/pkg/router/template"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 )
@@ -35,10 +36,10 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		certificates    map[string]templaterouter.Certificate
 		annotations     map[string]string
 		envvars         []string
-		noHealthCheck   bool
 		defaultCA       string
 		cmdCustomResp   []string // 1:1 to `cmdExpected`, trailing empty items can be omited.
 		errExpected     string
+		removedExpected bool
 		cmdExpected     []string
 	}{
 		//
@@ -47,14 +48,6 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd: cmdAdd,
 			cmdExpected: []string{
 				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
-				"set server route1/server1 state ready",
-			},
-		},
-		"should add insecure server without health check": {
-			cmd:           cmdAdd,
-			noHealthCheck: true,
-			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -166,22 +159,20 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		},
 		"should retry adding insecure server": {
 			cmd:           cmdAdd,
-			noHealthCheck: true,
 			cmdCustomResp: []string{"Already exists a server ..."},
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 				"del server route1/server1",
-				"add server route1/server1 10.0.1.11:9000 weight 1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
 		"should fail if failing to add insecure server": {
 			cmd:           cmdAdd,
-			noHealthCheck: true,
 			cmdCustomResp: []string{"Some unknown adding error."},
 			errExpected:   "unexpected response from haproxy: Some unknown adding error.",
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 			},
 		},
 
@@ -252,11 +243,13 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				"set server route1/server1 state maint",
 				"del server route1/server1",
 			},
+			removedExpected: true,
 		},
 		"should fail to delete if failing to disable server": {
-			cmd:           cmdDel,
-			cmdCustomResp: []string{"Some unknown set server error."},
-			errExpected:   "unexpected response from haproxy: Some unknown set server error.",
+			cmd:             cmdDel,
+			cmdCustomResp:   []string{"Some unknown set server error."},
+			errExpected:     "unexpected response from haproxy: Some unknown set server error.",
+			removedExpected: false,
 			cmdExpected: []string{
 				"set server route1/server1 state maint",
 			},
@@ -267,6 +260,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				"",                               // first cmd
 				"Some unknown del server error.", // second cmd
 			},
+			removedExpected: false,
 			cmdExpected: []string{
 				"set server route1/server1 state maint",
 				"del server route1/server1",
@@ -294,23 +288,23 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				Hostname: test.serviceHostname,
 			}
 			ep := templaterouter.Endpoint{
-				ID:            endpointID,
-				IP:            ip,
-				Port:          port,
-				AppProtocol:   test.appProtocol,
-				NoHealthCheck: test.noHealthCheck,
+				ID:          endpointID,
+				IP:          ip,
+				Port:        port,
+				AppProtocol: test.appProtocol,
 			}
 			isPassthrough := test.tlsTermination == routev1.TLSTerminationPassthrough
 			client := &fakeClient{cmdCustomResp: test.cmdCustomResp}
 
 			b := newBackend(backendName, client)
 
+			var removed bool
 			var err error
 			switch test.cmd {
 			case cmdAdd:
 				err = b.AddServer(cfg, svc, ep, weight, workingDir, test.defaultCA)
 			case cmdDel:
-				err = b.DeleteServer(ep)
+				removed, err = b.DeleteServer(ep)
 			case cmdUpdate:
 				err = b.UpdateServer(ep, weight, isPassthrough)
 			case cmdEnableHealth:
@@ -326,7 +320,8 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			require.Equal(t, test.cmdExpected, client.executedCmds)
+			assert.Equal(t, test.removedExpected, removed)
+			assert.Equal(t, test.cmdExpected, client.executedCmds)
 		})
 	}
 

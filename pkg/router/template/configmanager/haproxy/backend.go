@@ -303,6 +303,9 @@ func (b *Backend) FindServer(id string) (*backendServer, error) {
 	return nil, fmt.Errorf("no server found for id: %s", id)
 }
 
+// AddServer dynamically adds a new backend server. It detects if the server already exists, and if so tries to remove it.
+// It returns a failure in case HAProxy refuses to dynamically add the server for any reason, or if the existing server
+// cannot be removed, e.g., it still have active or steady and established connection(s) to its backend server endpoint.
 func (b *Backend) AddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, weight int32, workingDir, defaultDestinationCA string) error {
 	if err := b.innerAddServer(cfg, svc, ep, weight, workingDir, defaultDestinationCA); err != nil {
 		if !strings.Contains(err.Error(), "Already exists a server ") {
@@ -327,31 +330,41 @@ func (b *Backend) AddServer(cfg *templaterouter.ServiceAliasConfig, svc *templat
 	return nil
 }
 
+// UpdateServer dynamically updates the backend server with new address and weight.
 func (b *Backend) UpdateServer(ep templaterouter.Endpoint, weight int32, isPassthrough bool) error {
 	// missing to properly populate the current servers when created, should be done in the next phase.
 	// After that we can update only changed attributes.
+	// https://redhat.atlassian.net/browse/NE-2646
 	if err := b.innerUpdateServerAddr(ep); err != nil {
 		return err
 	}
 	return b.innerUpdateServerWeight(ep, weight, isPassthrough)
 }
 
+// EnableHealthCheck dynamically enables health check on a backend server that already declares the health check interval.
 func (b *Backend) EnableHealthCheck(ep templaterouter.Endpoint) error {
 	return b.innerSetHealthCheck(ep, true)
 }
 
+// DisableHealthCheck dynamically disables health check on a backend server.
 func (b *Backend) DisableHealthCheck(ep templaterouter.Endpoint) error {
 	return b.innerSetHealthCheck(ep, false)
 }
 
-func (b *Backend) DeleteServer(ep templaterouter.Endpoint) error {
+// DeleteServer dynamically removes the backend server from the load balance. The backend server is put in maintenance mode
+// and returns `removed` as false in case it has active or steady and established connections, so these connections continue
+// to be handled and new ones are directed to other servers. An error only happens if the server cannot be put in maintenance
+// mode, any failure trying to remove the server is logged and just return removed as false.
+func (b *Backend) DeleteServer(ep templaterouter.Endpoint) (removed bool, err error) {
+	// put in maintenance mode first, this is a pre-requisite to remove a backend server.
 	if err := b.innerSetServerState(ep, false, 0); err != nil {
-		return err
+		return false, err
 	}
 	if err := b.innerDeleteServer(ep); err != nil {
 		log.Info("disabling backend server instead of deleting due to a delete failure", "server", ep.ID, "error", err.Error())
+		return false, nil
 	}
-	return nil
+	return true, nil
 }
 
 func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, weight int32, workingDir, defaultDestinationCA string) error {
@@ -360,6 +373,8 @@ func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *te
 	// TODO: either read this configuration from the template, or instead make the template read from here.
 	// For the former, note that creating a new template definition should conflict with the for-loop in templateRouter.writeConfig()
 	// that assumes that all the definitions should be written to disk.
+	//
+	// https://redhat.atlassian.net/browse/NE-2646
 
 	cmd := fmt.Sprintf("add server %s/%s %s:%s weight %d", b.name, ep.ID, ep.IP, ep.Port, weight)
 
@@ -387,14 +402,13 @@ func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *te
 		// passthrough is a TCP listener and does not use ssl or proto related config
 	}
 
-	if !ep.NoHealthCheck {
-		// health check is always configured, being enabled depending on `cfg.ActiveEndpoints > 1 `
-		inter := templaterouter.FirstMatch(`[1-9][0-9]*(us|ms|s|m|h|d)?`,
-			cfg.Annotations["router.openshift.io/haproxy.health.check.interval"],
-			os.Getenv("ROUTER_BACKEND_CHECK_INTERVAL"),
-			"5000ms")
-		cmd += " check inter " + inter
-	}
+	// health check is always configured and defaults as disabled, being enabled later
+	// on DCM's manager depending on `cfg.ActiveEndpoints > 1` and `!ep.NoHealthCheck`.
+	inter := templaterouter.FirstMatch(`[1-9][0-9]*(us|ms|s|m|h|d)?`,
+		cfg.Annotations["router.openshift.io/haproxy.health.check.interval"],
+		os.Getenv("ROUTER_BACKEND_CHECK_INTERVAL"),
+		"5000ms")
+	cmd += " check inter " + inter
 
 	podMaxConn := cfg.Annotations["haproxy.router.openshift.io/pod-concurrent-connections"]
 	if _, err := strconv.Atoi(podMaxConn); err == nil {
@@ -568,7 +582,7 @@ func execCommand(client HAProxyClient, api apiType, cmd string) error {
 	case apiSetServerAddr:
 		valid = response == "nothing changed" || strings.HasPrefix(response, "IP changed from ") || strings.HasPrefix(response, "port changed from ") || strings.HasPrefix(response, "no need to change ")
 	case apiSetHealth, apiSetServerWeight, apiSetServerState:
-		valid = response == ""
+		valid = false // any response from these api calls mean there is a failure
 	default:
 		// fail fast in case of a dev error
 		panic(fmt.Errorf("invalid cmd ID: %d", api))

@@ -408,7 +408,7 @@ func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfig
 		return err
 	}
 	for _, server := range servers {
-		if err := backend.DeleteServer(templaterouter.Endpoint{ID: server.Name}); err != nil {
+		if _, err := backend.DeleteServer(templaterouter.Endpoint{ID: server.Name}); err != nil {
 			return err
 		}
 	}
@@ -488,7 +488,7 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 	var errs []error
 
 	for name, ep := range deletedEndpoints {
-		if err := backend.DeleteServer(ep); err != nil {
+		if _, err := backend.DeleteServer(ep); err != nil {
 			errs = append(errs, fmt.Errorf("error deleting backend server %s: %w", name, err))
 		}
 	}
@@ -565,7 +565,7 @@ func (cm *haproxyConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAl
 	var errs []error
 	for _, ep := range endpoints {
 		log.V(4).Info("deleting server for endpoint", "endpoint", ep.ID)
-		if err := backend.DeleteServer(ep); err != nil {
+		if _, err := backend.DeleteServer(ep); err != nil {
 			errs = append(errs, fmt.Errorf("error deleting server %s: %w", ep.ID, err))
 		}
 	}
