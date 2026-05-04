@@ -42,6 +42,7 @@ import (
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
 	"github.com/openshift/router/pkg/router/shutdown"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
@@ -800,7 +801,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	informer := factory.CreateRoutesSharedInformer()
 	routeLister := routelisters.NewRouteLister(informer.GetIndexer())
 	if o.UpdateStatus {
-		lease := writerlease.New(time.Minute, 3*time.Second)
+		lease := writerlease.New(time.Minute, 3*time.Second, routeapihelpers.MaxConcurrentSARChecks)
 		go lease.Run(stopCh)
 		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))

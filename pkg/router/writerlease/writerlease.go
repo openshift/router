@@ -98,16 +98,22 @@ type WriterLease struct {
 	state   State
 	expires time.Time
 	tick    int
+
+	workers int
 }
 
 // New creates a new Lease. Specify the duration to hold leases for and the retry
 // interval on requests that fail.
-func New(leaseDuration, retryInterval time.Duration) *WriterLease {
+func New(leaseDuration, retryInterval time.Duration, workers int) *WriterLease {
 	backoff := wait.Backoff{
 		Duration: 20 * time.Millisecond,
 		Factor:   4,
 		Steps:    5,
 		Jitter:   0.5,
+	}
+
+	if workers < 1 {
+		workers = 1
 	}
 
 	return &WriterLease{
@@ -120,12 +126,18 @@ func New(leaseDuration, retryInterval time.Duration) *WriterLease {
 		queued: make(map[WorkKey]*work),
 		queue:  workqueue.NewDelayingQueue(),
 		once:   make(chan struct{}),
+
+		workers: workers,
 	}
 }
 
 // NewWithBackoff creates a new Lease. Specify the duration to hold leases for and the retry
 // interval on requests that fail.
-func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, backoff wait.Backoff) *WriterLease {
+func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, backoff wait.Backoff, workers int) *WriterLease {
+	if workers < 1 {
+		workers = 1
+	}
+
 	return &WriterLease{
 		name:          name,
 		backoff:       backoff,
@@ -136,6 +148,8 @@ func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, bac
 		queued: make(map[WorkKey]*work),
 		queue:  workqueue.NewNamedDelayingQueue(name),
 		once:   make(chan struct{}),
+
+		workers: workers,
 	}
 }
 
@@ -143,14 +157,20 @@ func (l *WriterLease) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer l.queue.ShutDown()
 
-	go func() {
-		defer utilruntime.HandleCrash()
-		for l.work() {
-		}
-		log.V(4).Info("worker stopped", "worker", l.name)
-	}()
+	var wg sync.WaitGroup
+	for i := 0; i < l.workers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer utilruntime.HandleCrash()
+			defer wg.Done()
+			for l.work() {
+			}
+			log.V(4).Info("worker stopped", "worker", l.name, "workerID", workerID)
+		}(i)
+	}
 
 	<-stopCh
+	wg.Wait()
 }
 
 func (l *WriterLease) Expire() {

@@ -484,7 +484,7 @@ func UpgradeRouteValidation(route *routev1.Route) field.ErrorList {
 // MaxConcurrentSARChecks limits the number of simultaneous SubjectAccessReview
 // API calls to avoid overwhelming the API server during router startup with
 // many externalCertificate routes.
-const MaxConcurrentSARChecks = 10
+const MaxConcurrentSARChecks = 50
 
 var sarSemaphore = make(chan struct{}, MaxConcurrentSARChecks)
 
