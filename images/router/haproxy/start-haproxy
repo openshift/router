@@ -1,0 +1,57 @@
+#!/bin/bash
+set -euo pipefail
+
+##
+## This script expects HAProxy running in foreground, do not initialize it in daemon mode!
+
+timeoutStr=${ROUTER_GRACEFUL_SHUTDOWN_DELAY:-45s}
+if ! [[ "$timeoutStr" =~ ^[0-9]+s$ ]]; then
+    echo "Invalid timeout: $timeoutStr"
+    exit 1
+fi
+
+timeout="${timeoutStr%s}"
+signaled=0
+
+stopHAProxy() {
+    signaled=1
+
+    # HAProxy handles SIGUSR1 by finishing its process as soon as all the current connections,
+    # active or not, are closed by either the client or the backend server.
+    echo "Sending SIGUSR1 to HAProxy process $haproxyPID"
+    kill -s USR1 $haproxyPID
+
+    # Poll the process, retuning as soon as it is not alive anymore.
+    for i in $(seq 1 $timeout); do
+        sleep 1
+        if ! kill -0 $haproxyPID 2>/dev/null; then
+            echo "All connections are closed"
+            return
+        fi
+    done
+
+    # HAProxy handles SIGTERM by closing all the TCP connections and waiting for the full TCP handshake
+    # (FIN / ACK / FIN-ACK) from both sides, and only after that it finishes. `kill` runs asynchronous,
+    # and `wait` maintains this script alive until haproxy finishes.
+    echo "SIGUSR1 timed out, sending SIGTERM to HAProxy process $haproxyPID"
+    kill -s TERM $haproxyPID
+}
+
+echo "Starting HAProxy. SIGUSR1 timeout is ${timeout}s"
+/usr/sbin/haproxy "$@" &
+haproxyPID=$!
+
+trap stopHAProxy SIGTERM SIGUSR1 SIGINT
+trap "kill -s HUP $haproxyPID" SIGHUP
+
+exit_code=0
+while kill -0 $haproxyPID 2>/dev/null; do
+    # Start `wait` again in case it returned due to a non terminate signal, e.g. SIGHUP
+    wait $haproxyPID || exit_code=$?
+done
+
+# Received signal (usually SIGTERM) takes precedence during `wait`, overriding with a clean exit
+[ "$signaled" = 1 ] && exit 0
+
+echo "haproxy exited with status code $exit_code"
+exit $exit_code
