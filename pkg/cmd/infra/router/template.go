@@ -39,6 +39,7 @@ import (
 	"github.com/openshift/library-go/pkg/route/secretmanager"
 
 	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/client"
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
@@ -563,6 +564,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	var reloadCallbacks []func()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	adminSocketURL := &url.URL{Scheme: "unix", Path: "/var/lib/haproxy/run/haproxy.sock"}
 	statsPort := o.StatsPort
 	switch {
@@ -606,11 +610,17 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			}
 		}
 
+		adminUnixSocket := os.Getenv("ROUTER_HAPROXY_ADMIN_UNIX_SOCKET")
+		hasHAProxySidecar := len(adminUnixSocket) > 0
+
+		pidFn := haproxyPidEmbedded
+		if hasHAProxySidecar {
+			pidFn = haproxyPidSidecar(ctx, adminUnixSocket)
+		}
 		collector, err := haproxy.NewPrometheusCollector(haproxy.PrometheusOptions{
 			// Only template router customizers who alter the image should need this
-			ScrapeURI: env("ROUTER_METRICS_HAPROXY_SCRAPE_URI", adminSocketURL.String()),
-			// Only template router customizers who alter the image should need this
-			PidFile:            env("ROUTER_METRICS_HAPROXY_PID_FILE", ""),
+			ScrapeURI:          env("ROUTER_METRICS_HAPROXY_SCRAPE_URI", adminSocketURL.String()),
+			PidFn:              pidFn,
 			Timeout:            timeout,
 			ServerThreshold:    serverThreshold,
 			BaseScrapeInterval: baseScrapeInterval,
@@ -639,7 +649,9 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		checkController := metrics.ControllerLive()
 		checkSocket := metrics.AdminSocketAvailable(adminSocketURL)
 		liveChecks := []healthz.HealthChecker{checkController}
-		if !(isTrue(env("ROUTER_BIND_PORTS_BEFORE_SYNC", ""))) {
+		if !hasHAProxySidecar && !(isTrue(env("ROUTER_BIND_PORTS_BEFORE_SYNC", ""))) {
+			// Do not configure checkSocket if HAProxy is running on a sidecar,
+			// since its container already has liveness probe.
 			liveChecks = append(liveChecks, checkSocket)
 		}
 
@@ -760,6 +772,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	secretManager := secretmanager.NewManager(kc, nil)
 
 	pluginCfg := templateplugin.TemplatePluginConfig{
+		AppCtx:                        ctx,
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
 		ReloadScriptPath:              o.ReloadScript,
@@ -841,6 +854,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	select {
 	case <-stopCh:
+		cancel()
 		// 45s is the default interval that almost all cloud load balancers require to take an unhealthy
 		// endpoint out of rotation.
 		delay := getIntervalFromEnv("ROUTER_GRACEFUL_SHUTDOWN_DELAY", 45)
@@ -983,4 +997,51 @@ func getStatsAuth(statsUsernameFile, statsPasswordFile, statsUsername, statsPass
 	}
 
 	return statsUsername, statsPassword, nil
+}
+
+func haproxyPidEmbedded() (int, error) {
+	pidFile := env("ROUTER_METRICS_HAPROXY_PID_FILE", "/var/lib/haproxy/run/haproxy.pid")
+	content, err := os.ReadFile(pidFile)
+	if err != nil {
+		return 0, fmt.Errorf("can't read haproxy pid file: %s", err)
+	}
+	value, err := strconv.Atoi(strings.TrimSpace(string(content)))
+	if err != nil {
+		return 0, fmt.Errorf("can't parse haproxy pid file: %s", err)
+	}
+	return value, nil
+}
+
+func haproxyPidSidecar(ctx context.Context, unixSocket string) func() (int, error) {
+
+	// TODO: the `show proc` parsing should be part of the new HAProxy client instead.
+	// https://redhat.atlassian.net/browse/NE-2746
+
+	return func() (int, error) {
+		// `show proc` layout on 2.8+:
+		//
+		// #<PID>          <type>          <reloads>       <uptime>        <version>
+		// 420054          master          0 [failed: 0]   0d00h07m14s     2.8.18-ae90be6
+		// # workers
+		// 420056          worker          0               0d00h07m14s     2.8.18-ae90be6
+		// # programs
+		//
+		output, err := client.RunCommand(ctx, "unix://"+unixSocket, "show proc", client.ClientOpts{})
+		if err != nil {
+			return 0, fmt.Errorf("error reading the current haproxy PID: %w", err)
+		}
+		lines := strings.Split(output, "\n")
+		if len(lines) < 4 {
+			return 0, fmt.Errorf("show proc command returned an unexpected response: %s", output)
+		}
+		workerFields := strings.Fields(lines[3])
+		if len(workerFields) == 0 || strings.HasPrefix(workerFields[0], "#") {
+			return 0, fmt.Errorf("show proc command returned no worker instance: %s", output)
+		}
+		pid, err := strconv.Atoi(workerFields[0])
+		if err != nil {
+			return 0, fmt.Errorf("show proc command returned an invalid PID number: %q: %w", workerFields[0], err)
+		}
+		return pid, nil
+	}
 }
