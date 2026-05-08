@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 
+	v1 "github.com/openshift/api/route/v1"
 	templaterouter "github.com/openshift/router/pkg/router/template"
 )
 
@@ -75,11 +78,9 @@ type serverStateInfo struct {
 // BackendServerInfo represents a server [endpoint] for a haproxy backend.
 type BackendServerInfo struct {
 	Name          string
-	FQDN          string
 	IPAddress     string
 	Port          int
 	CurrentWeight int32
-	InitialWeight int32
 }
 
 // Backend represents a specific haproxy backend.
@@ -87,7 +88,7 @@ type Backend struct {
 	name    templaterouter.ServiceAliasConfigKey
 	servers map[string]*backendServer
 
-	client *Client
+	client HAProxyClient
 }
 
 // backendServer is internally used for managing a haproxy backend server.
@@ -118,7 +119,7 @@ func buildHAProxyBackends(c *Client) ([]*Backend, error) {
 }
 
 // newBackend returns a new Backend representing a haproxy backend.
-func newBackend(name templaterouter.ServiceAliasConfigKey, c *Client) *Backend {
+func newBackend(name templaterouter.ServiceAliasConfigKey, c HAProxyClient) *Backend {
 	return &Backend{
 		name:    name,
 		servers: make(map[string]*backendServer),
@@ -152,9 +153,7 @@ func (b *Backend) Refresh() error {
 			Name:          v.Name,
 			IPAddress:     v.IPAddress,
 			Port:          v.Port,
-			FQDN:          v.FQDN,
 			CurrentWeight: v.UserVisibleWeight,
-			InitialWeight: v.InitialWeight,
 		}
 
 		b.servers[v.Name] = newBackendServer(info)
@@ -304,6 +303,162 @@ func (b *Backend) FindServer(id string) (*backendServer, error) {
 	return nil, fmt.Errorf("no server found for id: %s", id)
 }
 
+// AddServer dynamically adds a new backend server. It detects if the server already exists, and if so tries to remove it.
+// It returns a failure in case HAProxy refuses to dynamically add the server for any reason, or if the existing server
+// cannot be removed, e.g., it still have active or steady and established connection(s) to its backend server endpoint.
+func (b *Backend) AddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, weight int32, workingDir, defaultDestinationCA string) error {
+	if err := b.innerAddServer(cfg, svc, ep, weight, workingDir, defaultDestinationCA); err != nil {
+		if !strings.Contains(err.Error(), "Already exists a server ") {
+			return err
+		}
+		// Failed due to already existing server left behind, in maintenance mode, due to in-flight connections.
+		// Let's just give it another chance to be deleted.
+		if err := b.innerDeleteServer(ep); err != nil {
+			// No way, need to fail which will ask for a fork-and-reload. This will leave the existing connections in the old process.
+			return err
+		}
+		if err := b.innerAddServer(cfg, svc, ep, weight, workingDir, defaultDestinationCA); err != nil {
+			return err
+		}
+	}
+	if err := b.innerSetServerState(ep, true, weight); err != nil {
+		return err
+	}
+
+	// health check is disabled by default on new backend servers, its enablement is handled via cm.ReplaceRouteEndpoints(),
+	// since that method has a better view of former and current active backend servers.
+	return nil
+}
+
+// UpdateServer dynamically updates the backend server with new address and weight.
+func (b *Backend) UpdateServer(ep templaterouter.Endpoint, weight int32, isPassthrough bool) error {
+	// missing to properly populate the current servers when created, should be done in the next phase.
+	// After that we can update only changed attributes.
+	// https://redhat.atlassian.net/browse/NE-2646
+	if err := b.innerUpdateServerAddr(ep); err != nil {
+		return err
+	}
+	return b.innerUpdateServerWeight(ep, weight, isPassthrough)
+}
+
+// EnableHealthCheck dynamically enables health check on a backend server that already declares the health check interval.
+func (b *Backend) EnableHealthCheck(ep templaterouter.Endpoint) error {
+	return b.innerSetHealthCheck(ep, true)
+}
+
+// DisableHealthCheck dynamically disables health check on a backend server.
+func (b *Backend) DisableHealthCheck(ep templaterouter.Endpoint) error {
+	return b.innerSetHealthCheck(ep, false)
+}
+
+// DeleteServer dynamically removes the backend server from the load balance. The backend server is put in maintenance mode
+// and returns `removed` as false in case it has active or steady and established connections, so these connections continue
+// to be handled and new ones are directed to other servers. An error only happens if the server cannot be put in maintenance
+// mode, any failure trying to remove the server is logged and just return removed as false.
+func (b *Backend) DeleteServer(ep templaterouter.Endpoint) (removed bool, err error) {
+	// put in maintenance mode first, this is a pre-requisite to remove a backend server.
+	if err := b.innerSetServerState(ep, false, 0); err != nil {
+		return false, err
+	}
+	if err := b.innerDeleteServer(ep); err != nil {
+		log.Info("disabling backend server instead of deleting due to a delete failure", "server", ep.ID, "error", err.Error())
+		return false, nil
+	}
+	return true, nil
+}
+
+func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, weight int32, workingDir, defaultDestinationCA string) error {
+	// This should always follow the template, changes here should be reflected there, both regular and passthrough backends
+	//
+	// TODO: either read this configuration from the template, or instead make the template read from here.
+	// For the former, note that creating a new template definition should conflict with the for-loop in templateRouter.writeConfig()
+	// that assumes that all the definitions should be written to disk.
+	//
+	// https://redhat.atlassian.net/browse/NE-2646
+
+	cmd := fmt.Sprintf("add server %s/%s %s:%s weight %d", b.name, ep.ID, ep.IP, ep.Port, weight)
+
+	switch cfg.TLSTermination {
+	case v1.TLSTerminationReencrypt:
+		cmd += " ssl"
+		if disableHTTP2, _ := strconv.ParseBool(os.Getenv("ROUTER_DISABLE_HTTP2")); !disableHTTP2 {
+			cmd += " alpn h2,http/1.1"
+		}
+		if cfg.VerifyServiceHostname {
+			cmd += " verifyhost " + svc.Hostname
+		}
+		if cert := cfg.Certificates[cfg.Host+"_pod"]; len(cert.Contents) > 0 {
+			cmd += " verify required ca-file " + path.Join(workingDir, "router/cacerts", cert.ID+".pem")
+		} else if len(defaultDestinationCA) > 0 {
+			cmd += " verify required ca-file " + defaultDestinationCA
+		} else {
+			cmd += " verify none"
+		}
+	case "", v1.TLSTerminationEdge:
+		if ep.AppProtocol == "h2c" || ep.AppProtocol == "kubernetes.io/h2c" {
+			cmd += " proto h2"
+		}
+	case v1.TLSTerminationPassthrough:
+		// passthrough is a TCP listener and does not use ssl or proto related config
+	}
+
+	// health check is always configured and defaults as disabled, being enabled later
+	// on DCM's manager depending on `cfg.ActiveEndpoints > 1` and `!ep.NoHealthCheck`.
+	inter := templaterouter.FirstMatch(`[1-9][0-9]*(us|ms|s|m|h|d)?`,
+		cfg.Annotations["router.openshift.io/haproxy.health.check.interval"],
+		os.Getenv("ROUTER_BACKEND_CHECK_INTERVAL"),
+		"5000ms")
+	cmd += " check inter " + inter
+
+	podMaxConn := cfg.Annotations["haproxy.router.openshift.io/pod-concurrent-connections"]
+	if _, err := strconv.Atoi(podMaxConn); err == nil {
+		cmd += " maxconn " + podMaxConn
+	}
+
+	return execCommand(b.client, apiAddServer, cmd)
+}
+
+func (b *Backend) innerUpdateServerAddr(ep templaterouter.Endpoint) error {
+	cmd := fmt.Sprintf("set server %s/%s addr %s port %s", b.name, ep.ID, ep.IP, ep.Port)
+	return execCommand(b.client, apiSetServerAddr, cmd)
+}
+
+func (b *Backend) innerUpdateServerWeight(ep templaterouter.Endpoint, weight int32, isPassthrough bool) error {
+	cmd := fmt.Sprintf("set server %s/%s", b.name, ep.ID)
+	if isPassthrough {
+		// https://github.com/openshift/router/blob/896390778ebe15f57f87e6ca78f11c96e64c2652/pkg/router/template/configmanager/haproxy/manager.go#L446-L454
+		cmd += " weight 100%"
+	} else {
+		cmd = fmt.Sprintf("%s weight %d", cmd, weight)
+	}
+	return execCommand(b.client, apiSetServerWeight, cmd)
+}
+
+func (b *Backend) innerSetHealthCheck(ep templaterouter.Endpoint, enable bool) error {
+	enableStr := "enable"
+	if !enable {
+		enableStr = "disable"
+	}
+	cmd := fmt.Sprintf("%s health %s/%s", enableStr, b.name, ep.ID)
+	return execCommand(b.client, apiSetHealth, cmd)
+}
+
+func (b *Backend) innerSetServerState(ep templaterouter.Endpoint, ready bool, weight int32) error {
+	state := "ready"
+	if !ready {
+		state = "maint"
+	} else if weight <= 0 {
+		state = "drain"
+	}
+	cmd := fmt.Sprintf("set server %s/%s state %s", b.name, ep.ID, state)
+	return execCommand(b.client, apiSetServerState, cmd)
+}
+
+func (b *Backend) innerDeleteServer(ep templaterouter.Endpoint) error {
+	cmd := fmt.Sprintf("del server %s/%s", b.name, ep.ID)
+	return execCommand(b.client, apiDelServer, cmd)
+}
+
 // newBackendServer returns a BackendServer representing a haproxy backend server.
 func newBackendServer(info BackendServerInfo) *backendServer {
 	return &backendServer{
@@ -317,7 +472,7 @@ func newBackendServer(info BackendServerInfo) *backendServer {
 }
 
 // ApplyChanges applies all the local backend server changes.
-func (s *backendServer) ApplyChanges(backendName templaterouter.ServiceAliasConfigKey, client *Client) error {
+func (s *backendServer) ApplyChanges(backendName templaterouter.ServiceAliasConfigKey, client HAProxyClient) error {
 	// Build the haproxy dynamic config API commands.
 	commands := []string{}
 
@@ -353,7 +508,7 @@ func (s *backendServer) ApplyChanges(backendName templaterouter.ServiceAliasConf
 }
 
 // executeCommand runs a server change command and handles the response.
-func (s *backendServer) executeCommand(cmd string, client *Client) error {
+func (s *backendServer) executeCommand(cmd string, client HAProxyClient) error {
 	responseBytes, err := client.Execute(cmd)
 	if err != nil {
 		return err
@@ -395,4 +550,46 @@ func stripVersionNumber(data []byte) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+type apiType int
+
+const (
+	apiAddServer apiType = iota
+	apiDelServer
+	apiSetHealth
+	apiSetServerAddr
+	apiSetServerWeight
+	apiSetServerState
+)
+
+func execCommand(client HAProxyClient, api apiType, cmd string) error {
+	responseRaw, err := client.Execute(cmd)
+	if err != nil {
+		return err
+	}
+	response := strings.TrimSpace(string(responseRaw))
+	if len(response) == 0 {
+		return nil
+	}
+
+	var valid bool
+	switch api {
+	case apiAddServer:
+		valid = response == "New server registered."
+	case apiDelServer:
+		valid = response == "Server deleted."
+	case apiSetServerAddr:
+		valid = response == "nothing changed" || strings.HasPrefix(response, "IP changed from ") || strings.HasPrefix(response, "port changed from ") || strings.HasPrefix(response, "no need to change ")
+	case apiSetHealth, apiSetServerWeight, apiSetServerState:
+		valid = false // any response from these api calls mean there is a failure
+	default:
+		// fail fast in case of a dev error
+		panic(fmt.Errorf("invalid cmd ID: %d", api))
+	}
+
+	if !valid {
+		return fmt.Errorf("unexpected response from haproxy: %s", response)
+	}
+	return nil
 }
