@@ -270,9 +270,8 @@ func (l *WriterLease) work() bool {
 	if leaseState == Follower {
 		// if we are following, continue to defer work until the lease expires
 		if remaining := leaseExpires.Sub(l.nowFn()); remaining > 0 {
-			log.V(4).Info("follower awaiting lease expiration", "worker", l.name, "key", key, "leaseTimeRemaining", remaining)
-			time.Sleep(remaining)
-			l.queue.Add(key)
+			log.V(4).Info("follower awaiting lease expiration, requeueing", "worker", l.name, "key", key, "leaseTimeRemaining", remaining)
+			l.queue.AddAfter(key, remaining)
 			l.queue.Done(key)
 			return true
 		}

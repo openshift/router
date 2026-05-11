@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/openshift/library-go/pkg/route/secretmanager/fake"
 	"github.com/openshift/router/pkg/router"
@@ -336,6 +337,9 @@ func TestRouteSecretManager(t *testing.T) {
 			eventType:     watch.Added,
 			allow:         true,
 			expectedError: true,
+			expectedRejections: []string{
+				"sandbox-route-test:ExternalCertificateGetFailed",
+			},
 		},
 		{
 			name: "route added with externalCertificate allowed and correct secret",
@@ -553,6 +557,9 @@ func TestRouteSecretManager(t *testing.T) {
 			allow:         true,
 			eventType:     watch.Modified,
 			expectedError: true,
+			expectedRejections: []string{
+				"sandbox-route-test:ExternalCertificateGetFailed",
+			},
 		},
 		{
 			name: "route updated: old route without externalCertificate, new route with externalCertificate allowed and correct secret",
@@ -1171,7 +1178,9 @@ func TestRouteSecretManager(t *testing.T) {
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
 			routeapihelpers.ClearAsyncSARCacheForTest()
-			p := &fakePlugin{}
+			p := &fakePlugin{
+				doneCh: make(chan struct{}),
+			}
 			recorder := &statusRecorder{
 				doneCh: make(chan struct{}),
 			}
@@ -1179,7 +1188,35 @@ func TestRouteSecretManager(t *testing.T) {
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
 
-			if (gotErr != nil) != s.expectedError {
+			// For routes with external certificates (except deletion), the processing is asynchronous.
+			// We need to wait for the background goroutine to complete (either by calling the next plugin
+			// or by recording a rejection), UNLESS an error occurred synchronously.
+			isAsync := s.eventType != watch.Deleted && hasExternalCertificate(s.route)
+			if isAsync && gotErr == nil {
+				select {
+				case <-p.doneCh:
+				case <-recorder.doneCh:
+				case <-time.After(5 * time.Second):
+					t.Fatal("timed out waiting for async route processing")
+				}
+				// The synchronous HandleRoute call always returns nil for async routes if it successfully launched the goroutine.
+				// If we expected an error, check if a rejection was recorded instead.
+				if s.expectedError {
+					if len(recorder.rejections) == 0 {
+						t.Fatalf("expected a rejection to be recorded for async route, but got none")
+					}
+					// On failure, the plugin is called with watch.Deleted.
+					// We update the local expected state to match this behavior for the deep equal check below.
+					if s.expectedRoute == nil {
+						p.route = nil
+					}
+					if s.expectedEventType == "" {
+						p.t = ""
+					}
+				}
+			}
+
+			if !isAsync && (gotErr != nil) != s.expectedError {
 				t.Fatalf("expected error to be %t, but got %t", s.expectedError, gotErr != nil)
 			}
 			if !reflect.DeepEqual(s.expectedRoute, p.route) {

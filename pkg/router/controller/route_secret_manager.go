@@ -111,10 +111,15 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	case watch.Added:
 		// register with secret monitor
 		if hasExternalCertificate(route) {
-			log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
-			if err := p.validateAndRegister(route); err != nil {
-				return err
-			}
+			go func(route *routev1.Route) {
+				log.V(4).Info("Validating and registering external certificate (async)", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				if err := p.validateAndRegister(route); err != nil {
+					log.Error(err, "failed to validate and register external certificate", "namespace", route.Namespace, "route", route.Name)
+					return
+				}
+				p.plugin.HandleRoute(watch.Added, route)
+			}(route.DeepCopy())
+			return nil
 		}
 
 	case watch.Modified:
@@ -127,14 +132,21 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 			// Both new and old routes have externalCertificate
 			if oldSecret != route.Spec.TLS.ExternalCertificate.Name {
 				// ExternalCertificate is updated
-				log.V(4).Info("Validating and registering updated external certificate", "namespace", route.Namespace, "oldSecret", oldSecret, "newSecret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				log.V(4).Info("Unregistering old external certificate", "namespace", route.Namespace, "oldSecret", oldSecret, "route", route.Name)
 				// Unregister the old and register the new external certificate
 				if err := p.unregister(route); err != nil {
 					return err
 				}
-				if err := p.validateAndRegister(route); err != nil {
-					return err
-				}
+
+				go func(route *routev1.Route) {
+					log.V(4).Info("Validating and registering updated external certificate (async)", "namespace", route.Namespace, "newSecret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+					if err := p.validateAndRegister(route); err != nil {
+						log.Error(err, "failed to validate and register updated external certificate", "namespace", route.Namespace, "route", route.Name)
+						return
+					}
+					p.plugin.HandleRoute(watch.Modified, route)
+				}(route.DeepCopy())
+				return nil
 			} else {
 				// ExternalCertificate is not updated
 				// Re-validate and update the in-memory TLS certificate and key (even if ExternalCertificate remains unchanged)
@@ -156,25 +168,35 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				//
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
-				log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
-				// re-validate (synchronous, throttled by semaphore)
-				if err := p.validate(route); err != nil {
-					return err
-				}
-				// read referenced secret and update TLS certificate and key
-				if err := p.populateRouteTLSFromSecret(route); err != nil {
-					return err
-				}
-
+				go func(route *routev1.Route) {
+					log.V(4).Info("Re-validating existing external certificate (async)", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
+					// re-validate (synchronous, throttled by semaphore)
+					if err := p.validate(route); err != nil {
+						log.Error(err, "failed to re-validate external certificate", "namespace", route.Namespace, "route", route.Name)
+						return
+					}
+					// read referenced secret and update TLS certificate and key
+					if err := p.populateRouteTLSFromSecret(route); err != nil {
+						log.Error(err, "failed to populate TLS from secret", "namespace", route.Namespace, "route", route.Name)
+						return
+					}
+					p.plugin.HandleRoute(watch.Modified, route)
+				}(route.DeepCopy())
+				return nil
 			}
 
 		case newHasExt && !oldHadExt:
 			// New route has externalCertificate, old route did not
-			log.V(4).Info("Validating and registering new external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
-			// register with secret monitor
-			if err := p.validateAndRegister(route); err != nil {
-				return err
-			}
+			go func(route *routev1.Route) {
+				log.V(4).Info("Validating and registering new external certificate (async)", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				// register with secret monitor
+				if err := p.validateAndRegister(route); err != nil {
+					log.Error(err, "failed to validate and register new external certificate", "namespace", route.Namespace, "route", route.Name)
+					return
+				}
+				p.plugin.HandleRoute(watch.Modified, route)
+			}(route.DeepCopy())
+			return nil
 
 		case !newHasExt && oldHadExt:
 			// Old route had externalCertificate, new route does not
@@ -212,6 +234,8 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 	// register route with secretManager
 	handler := p.generateSecretHandler(route.Namespace, route.Name)
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
+		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonGetFailed, err.Error())
+		p.plugin.HandleRoute(watch.Deleted, route)
 		return fmt.Errorf("failed to register router: %w", err)
 	}
 
@@ -290,6 +314,10 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 		UpdateFunc: func(old interface{}, new interface{}) {
 			secretOld := old.(*kapi.Secret)
 			secretNew := new.(*kapi.Secret)
+			if secretOld.ResourceVersion == secretNew.ResourceVersion {
+				return
+			}
+
 			key := generateKey(namespace, routeName)
 			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
 			routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)

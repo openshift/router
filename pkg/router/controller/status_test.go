@@ -50,13 +50,21 @@ func (_ noopLease) Remove(key writerlease.WorkKey) {
 }
 
 type fakePlugin struct {
-	t     watch.EventType
-	route *routev1.Route
-	err   error
+	t      watch.EventType
+	route  *routev1.Route
+	err    error
+	doneCh chan struct{}
 }
 
 func (p *fakePlugin) HandleRoute(t watch.EventType, route *routev1.Route) error {
 	p.t, p.route = t, route
+	if p.doneCh != nil {
+		select {
+		case <-p.doneCh:
+		default:
+			close(p.doneCh)
+		}
+	}
 	return p.err
 }
 
