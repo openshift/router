@@ -1195,7 +1195,6 @@ func TestRouteSecretManager(t *testing.T) {
 			if isAsync && gotErr == nil {
 				select {
 				case <-p.doneCh:
-				case <-recorder.doneCh:
 				case <-time.After(5 * time.Second):
 					t.Fatal("timed out waiting for async route processing")
 				}
@@ -1356,6 +1355,7 @@ func TestSecretUpdate(t *testing.T) {
 
 			// update the secret
 			updatedSecret := secret.DeepCopy()
+			updatedSecret.ResourceVersion = "2" // Increment so UpdateFunc processes it
 			updatedSecret.Data = map[string][]byte{
 				"tls.crt": []byte("my-crt"),
 				"tls.key": []byte("my-key"),

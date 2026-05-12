@@ -317,7 +317,6 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			if secretOld.ResourceVersion == secretNew.ResourceVersion {
 				return
 			}
-
 			key := generateKey(namespace, routeName)
 			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
 			routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
