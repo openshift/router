@@ -380,6 +380,8 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Added,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
+
 		},
 		{
 			name: "route added without externalCertificate",
@@ -601,6 +603,8 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Modified,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
+
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route with same externalCertificate)
@@ -822,6 +826,8 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Modified,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
+
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route with different externalCertificate)
@@ -1026,6 +1032,8 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Modified,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
+
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route without externalCertificate)

@@ -25,6 +25,7 @@ const (
 	ExtCrtStatusReasonSecretUpdated    = "ExternalCertificateSecretUpdated"
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
+	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
 )
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -117,11 +118,17 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 					log.Error(err, "failed to validate and register external certificate", "namespace", route.Namespace, "route", route.Name)
 					return
 				}
+				// Record an update to trigger a status write and transition the route back through the main event loop
+				msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+				if isRouteAdmittedTrue(route, p.routerName) {
+					p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+				} else {
+					p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSARCompleted, msg)
+				}
 				p.plugin.HandleRoute(watch.Added, route)
 			}(route.DeepCopy())
 			return nil
 		}
-
 	case watch.Modified:
 		// Determine if the route's external certificate configuration has changed
 		newHasExt := hasExternalCertificate(route)
@@ -143,6 +150,13 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 					if err := p.validateAndRegister(route); err != nil {
 						log.Error(err, "failed to validate and register updated external certificate", "namespace", route.Namespace, "route", route.Name)
 						return
+					}
+					// Record an update to trigger a status write and transition the route back through the main event loop
+					msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+					if isRouteAdmittedTrue(route, p.routerName) {
+						p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+					} else {
+						p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSARCompleted, msg)
 					}
 					p.plugin.HandleRoute(watch.Modified, route)
 				}(route.DeepCopy())
@@ -180,6 +194,13 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 						log.Error(err, "failed to populate TLS from secret", "namespace", route.Namespace, "route", route.Name)
 						return
 					}
+					// Record an update to trigger a status write and transition the route back through the main event loop
+					msg := fmt.Sprintf("SAR check and secret load completed for secret %q", oldSecret)
+					if isRouteAdmittedTrue(route, p.routerName) {
+						p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+					} else {
+						p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSARCompleted, msg)
+					}
 					p.plugin.HandleRoute(watch.Modified, route)
 				}(route.DeepCopy())
 				return nil
@@ -193,6 +214,13 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				if err := p.validateAndRegister(route); err != nil {
 					log.Error(err, "failed to validate and register new external certificate", "namespace", route.Namespace, "route", route.Name)
 					return
+				}
+				// Record an update to trigger a status write and transition the route back through the main event loop
+				msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+				if isRouteAdmittedTrue(route, p.routerName) {
+					p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+				} else {
+					p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSARCompleted, msg)
 				}
 				p.plugin.HandleRoute(watch.Modified, route)
 			}(route.DeepCopy())
