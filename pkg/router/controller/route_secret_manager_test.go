@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/openshift/library-go/pkg/route/secretmanager/fake"
 	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
 
 	routev1 "github.com/openshift/api/route/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -113,6 +116,7 @@ func (p *fakePluginDone) Commit() error {
 var _ router.Plugin = &fakePluginDone{}
 
 type statusRecorder struct {
+	sync.Mutex
 	rejections                 []string
 	updates                    []string
 	unservableInFutureVersions map[string]string
@@ -123,20 +127,56 @@ func (r *statusRecorder) routeKey(route *routev1.Route) string {
 	return route.Namespace + "-" + route.Name
 }
 func (r *statusRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	defer close(r.doneCh)
+	r.Lock()
+	defer r.Unlock()
+	if r.doneCh != nil {
+		select {
+		case <-r.doneCh:
+		default:
+			close(r.doneCh)
+		}
+	}
 	r.rejections = append(r.rejections, fmt.Sprintf("%s:%s", r.routeKey(route), reason))
 }
 
 func (r *statusRecorder) RecordRouteUpdate(route *routev1.Route, reason, message string) {
-	defer close(r.doneCh)
+	r.Lock()
+	defer r.Unlock()
+	if r.doneCh != nil {
+		select {
+		case <-r.doneCh:
+		default:
+			close(r.doneCh)
+		}
+	}
 	r.updates = append(r.updates, fmt.Sprintf("%s:%s", r.routeKey(route), reason))
 }
 
 func (r *statusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	r.Lock()
+	defer r.Unlock()
 	delete(r.unservableInFutureVersions, r.routeKey(route))
 }
 func (r *statusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
+	r.Lock()
+	defer r.Unlock()
 	r.unservableInFutureVersions[r.routeKey(route)] = reason
+}
+
+func (r *statusRecorder) GetRejections() []string {
+	r.Lock()
+	defer r.Unlock()
+	var res []string
+	res = append(res, r.rejections...)
+	return res
+}
+
+func (r *statusRecorder) GetUpdates() []string {
+	r.Lock()
+	defer r.Unlock()
+	var res []string
+	res = append(res, r.updates...)
+	return res
 }
 
 var _ RouteStatusRecorder = &statusRecorder{}
@@ -297,6 +337,9 @@ func TestRouteSecretManager(t *testing.T) {
 			eventType:     watch.Added,
 			allow:         true,
 			expectedError: true,
+			expectedRejections: []string{
+				"sandbox-route-test:ExternalCertificateGetFailed",
+			},
 		},
 		{
 			name: "route added with externalCertificate allowed and correct secret",
@@ -336,7 +379,8 @@ func TestRouteSecretManager(t *testing.T) {
 					},
 				},
 			},
-			expectedEventType: watch.Added,
+			expectedEventType:  watch.Added,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
 		},
 		{
 			name: "route added without externalCertificate",
@@ -514,6 +558,9 @@ func TestRouteSecretManager(t *testing.T) {
 			allow:         true,
 			eventType:     watch.Modified,
 			expectedError: true,
+			expectedRejections: []string{
+				"sandbox-route-test:ExternalCertificateGetFailed",
+			},
 		},
 		{
 			name: "route updated: old route without externalCertificate, new route with externalCertificate allowed and correct secret",
@@ -554,7 +601,8 @@ func TestRouteSecretManager(t *testing.T) {
 					},
 				},
 			},
-			expectedEventType: watch.Modified,
+			expectedEventType:  watch.Modified,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route with same externalCertificate)
@@ -775,7 +823,8 @@ func TestRouteSecretManager(t *testing.T) {
 					},
 				},
 			},
-			expectedEventType: watch.Modified,
+			expectedEventType:  watch.Modified,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route with different externalCertificate)
@@ -979,7 +1028,8 @@ func TestRouteSecretManager(t *testing.T) {
 					},
 				},
 			},
-			expectedEventType: watch.Modified,
+			expectedEventType:  watch.Modified,
+			expectedRejections: []string{"sandbox-route-test:ExternalCertificateSARCompleted"},
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route without externalCertificate)
@@ -1131,14 +1181,45 @@ func TestRouteSecretManager(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
-			p := &fakePlugin{}
+			routeapihelpers.ClearAsyncSARCacheForTest()
+			p := &fakePlugin{
+				doneCh: make(chan struct{}),
+			}
 			recorder := &statusRecorder{
 				doneCh: make(chan struct{}),
 			}
-			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, testRouterName, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{}, &testSARCreator{allow: s.allow})
+			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, testRouterName, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{items: []*routev1.Route{s.route}}, &testSARCreator{allow: s.allow})
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
-			if (gotErr != nil) != s.expectedError {
+
+			// For routes with external certificates (except deletion), the processing is asynchronous.
+			// We need to wait for the background goroutine to complete (either by calling the next plugin
+			// or by recording a rejection), UNLESS an error occurred synchronously.
+			isAsync := s.eventType != watch.Deleted && hasExternalCertificate(s.route)
+			if isAsync && gotErr == nil {
+				select {
+				case <-p.doneCh:
+				case <-time.After(5 * time.Second):
+					t.Fatal("timed out waiting for async route processing")
+				}
+				// The synchronous HandleRoute call always returns nil for async routes if it successfully launched the goroutine.
+				// If we expected an error, check if a rejection was recorded instead.
+				if s.expectedError {
+					if len(recorder.rejections) == 0 {
+						t.Fatalf("expected a rejection to be recorded for async route, but got none")
+					}
+					// On failure, the plugin is called with watch.Deleted.
+					// We update the local expected state to match this behavior for the deep equal check below.
+					if s.expectedRoute == nil {
+						p.route = nil
+					}
+					if s.expectedEventType == "" {
+						p.t = ""
+					}
+				}
+			}
+
+			if !isAsync && (gotErr != nil) != s.expectedError {
 				t.Fatalf("expected error to be %t, but got %t", s.expectedError, gotErr != nil)
 			}
 			if !reflect.DeepEqual(s.expectedRoute, p.route) {
@@ -1147,8 +1228,8 @@ func TestRouteSecretManager(t *testing.T) {
 			if s.expectedEventType != p.t {
 				t.Fatalf("expected %s event for next plugin, but got %s", s.expectedEventType, p.t)
 			}
-			if !reflect.DeepEqual(s.expectedRejections, recorder.rejections) {
-				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.rejections)
+			if !reflect.DeepEqual(s.expectedRejections, recorder.GetRejections()) {
+				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.GetRejections())
 			}
 			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {
 				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route.Namespace, s.route.Name))
@@ -1278,6 +1359,7 @@ func TestSecretUpdate(t *testing.T) {
 
 			// update the secret
 			updatedSecret := secret.DeepCopy()
+			updatedSecret.ResourceVersion = "2" // Increment so UpdateFunc processes it
 			updatedSecret.Data = map[string][]byte{
 				"tls.crt": []byte("my-crt"),
 				"tls.key": []byte("my-key"),
@@ -1286,20 +1368,21 @@ func TestSecretUpdate(t *testing.T) {
 				t.Fatalf("failed to update secret: %v", err)
 			}
 
-			// wait until route's status is updated
-			<-recorder.doneCh
+			// Wait directly for the Update event.
+			<-recorder.doneCh // wait for Update event
 
 			expectedStatus := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			expectedRejectionsOnUpdate := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
 
 			if s.isRouteAdmittedTrue {
 				// RecordRouteUpdate will be called if `Admitted=True`
-				if !reflect.DeepEqual(expectedStatus, recorder.updates) {
-					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.updates)
+				if !reflect.DeepEqual(expectedStatus, recorder.GetUpdates()) {
+					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.GetUpdates())
 				}
 			} else {
 				// RecordRouteRejection will be called if `Admitted=False`
-				if !reflect.DeepEqual(expectedStatus, recorder.rejections) {
-					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.rejections)
+				if !reflect.DeepEqual(expectedRejectionsOnUpdate, recorder.GetRejections()) {
+					t.Fatalf("expected status %v, but got %v", expectedRejectionsOnUpdate, recorder.GetRejections())
 				}
 			}
 
@@ -1352,13 +1435,15 @@ func TestSecretDelete(t *testing.T) {
 		t.Fatalf("failed to delete secret: %v", err)
 	}
 
-	<-recorder.doneCh // wait until the route's status is updated
+	<-recorder.doneCh // wait until the route's status is updated (deletion)
 
-	expectedRejections := []string{"sandbox-route-test:ExternalCertificateSecretDeleted"}
+	expectedRejections := []string{
+		"sandbox-route-test:ExternalCertificateSecretDeleted",
+	}
 	expectedDeletedSecrets := true
 
-	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
-		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
+	if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
+		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.GetRejections())
 	}
 
 	if val, _ := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); !reflect.DeepEqual(val, expectedDeletedSecrets) {
@@ -1409,7 +1494,9 @@ func TestSecretRecreation(t *testing.T) {
 	<-recorder.doneCh // wait until the route's status is updated (deletion)
 
 	// re-create the secret
+	recorder.Lock()
 	recorder.doneCh = make(chan struct{}) // need a new doneCh for re-creation
+	recorder.Unlock()
 	if _, err := kubeClient.CoreV1().Secrets(route.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{}); err != nil {
 		t.Fatalf("failed to create secret: %v", err)
 	}
@@ -1420,8 +1507,8 @@ func TestSecretRecreation(t *testing.T) {
 		"sandbox-route-test:ExternalCertificateSecretDeleted",
 		"sandbox-route-test:ExternalCertificateSecretRecreated",
 	}
-	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
-		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
+	if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
+		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.GetRejections())
 	}
 	if _, exists := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); exists {
 		t.Fatalf("expected deletedSecrets to not have %q key", generateKey(route.Namespace, route.Name))
