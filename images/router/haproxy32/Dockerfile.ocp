@@ -1,0 +1,12 @@
+FROM registry.ci.openshift.org/ocp/4.23:base-rhel9
+RUN INSTALL_PKGS="socat haproxy32" && \
+    yum install -y --setopt=install_weak_deps=0 $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    yum clean all && \
+    setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy && \
+    sed -i 's/SECLEVEL=2/SECLEVEL=1/g' /etc/crypto-policies/back-ends/opensslcnf.config
+LABEL io.k8s.display-name="OpenShift HAProxy 3.2" \
+      io.k8s.description="This component exposes the Ingress and Route rules, running as a sidecar of the Router component." \
+      io.openshift.tags="openshift,haproxy"
+USER 1001
+EXPOSE 80 443
