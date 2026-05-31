@@ -107,8 +107,6 @@ var nowFn = getRfc3339Timestamp
 
 // HandleRoute attempts to admit the provided route on watch add / modifications.
 func (a *StatusAdmitter) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
-	a.lock.Lock()
-	defer a.lock.Unlock()
 	log.V(10).Info("HandleRoute: StatusAdmitter")
 	switch eventType {
 	case watch.Added, watch.Modified:
@@ -339,6 +337,14 @@ func recordIngressCondition(route *routev1.Route, name, hostName string, conditi
 		existingCondition := findCondition(existing, condition.Type)
 		if existingCondition != nil {
 			condition.LastTransitionTime = existingCondition.LastTransitionTime
+
+			// Protect meaningful 'ignored' reasons from being overwritten by empty reasons (e.g., from HandleRoute's standard reconciliation).
+			// This prevents status flapping while allowing legitimate transitions like SecretUpdated -> SARCompleted to be persisted.
+			if condition.Reason == "" && ignoreIngressConditionReason.Has(existingCondition.Reason) && existingCondition.Status == condition.Status {
+				condition.Reason = existingCondition.Reason
+				condition.Message = existingCondition.Message
+			}
+
 			if *existingCondition != condition {
 				changed = true
 			}

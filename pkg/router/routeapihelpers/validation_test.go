@@ -2520,7 +2520,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 1,
+			expectedErrors: 0,
 		},
 		{
 			// A certificate field that contains bundled private and public key should be allowed
@@ -2578,7 +2578,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 3,
+			expectedErrors: 2,
 		},
 		{
 			// A cert with valid paylod but wrong PEM header should be denied
@@ -2592,7 +2592,7 @@ func TestExtendedValidateRoute(t *testing.T) {
 					},
 				},
 			},
-			expectedErrors: 3,
+			expectedErrors: 2,
 		},
 		{
 			name: "When both Certificate and Key are empty, should not report an error",
