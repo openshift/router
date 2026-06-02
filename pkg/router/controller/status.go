@@ -303,10 +303,11 @@ func handleRouteStatusUpdate(ctx context.Context, action string, oc client.Route
 		log.V(4).Info("route was deleted before we could update status", "action", action, "namespace", route.Namespace, "name", route.Name)
 		return writerlease.Release, false
 	case errors.IsConflict(err):
-		// just follow the normal process, and retry when we receive the update notification due to
-		// the other entity updating the route.
-		log.V(4).Info("updating route status failed due to write conflict", "action", action, "namespace", route.Namespace, "name", route.Name)
-		return writerlease.Release, true
+		// A write conflict is expected under high concurrency.
+		// Return None instead of Release to prevent this router from dropping its leader lease,
+		// which would otherwise cause a 60-second delay for subsequent routes.
+		log.V(4).Info("updating route status failed due to write conflict, retrying", "action", action, "namespace", route.Namespace, "name", route.Name)
+		return writerlease.None, true
 	default:
 		utilruntime.HandleError(fmt.Errorf("Unable to write router status for %s/%s: %v", route.Namespace, route.Name, err))
 		return writerlease.Release, true
