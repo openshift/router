@@ -273,6 +273,17 @@ frontend public
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
+  # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities.
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_AUTH_FILTER" "true") }}
+  http-request del-header X-SSL-Client-DN
+  http-request del-header X-SSL-Client-DER
+  http-request del-header X-SSL-Client-NotAfter
+  http-request del-header X-SSL-Client-NotBefore
+  http-request del-header X-SSL-Client-SHA1
+  http-request del-header X-SSL-Client-Subject
+  {{- end }}
+
   # DNS labels are case insensitive (RFC 4343), we need to convert the hostname into lowercase
   # before matching, or any requests containing uppercase characters will never match.
   http-request set-header Host %[req.hdr(Host),lower]
@@ -390,6 +401,17 @@ frontend fe_sni
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
+  # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities.
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_AUTH_FILTER" "true") }}
+  http-request del-header X-SSL-Client-DN
+  http-request del-header X-SSL-Client-DER
+  http-request del-header X-SSL-Client-NotAfter
+  http-request del-header X-SSL-Client-NotBefore
+  http-request del-header X-SSL-Client-SHA1
+  http-request del-header X-SSL-Client-Subject
+  {{- end }}
+
   # DNS labels are case insensitive (RFC 4343), we need to convert the hostname into lowercase
   # before matching, or any requests containing uppercase characters will never match.
   http-request set-header Host %[req.hdr(Host),lower]
@@ -504,6 +526,17 @@ frontend fe_no_sni
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
+
+  # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities.
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_AUTH_FILTER" "true") }}
+  http-request del-header X-SSL-Client-DN
+  http-request del-header X-SSL-Client-DER
+  http-request del-header X-SSL-Client-NotAfter
+  http-request del-header X-SSL-Client-NotBefore
+  http-request del-header X-SSL-Client-SHA1
+  http-request del-header X-SSL-Client-Subject
+  {{- end }}
 
   # DNS labels are case insensitive (RFC 4343), we need to convert the hostname into lowercase
   # before matching, or any requests containing uppercase characters will never match.
