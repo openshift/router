@@ -78,6 +78,7 @@ func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, 
 	rc := &routercontroller.RouterController{
 		Plugin:     plugin,
 		WatchNodes: watchNodes,
+		Resolver:   routercontroller.NewDNSEndpointResolver(),
 
 		NamespaceLabels:        f.NamespaceLabels,
 		FilteredNamespaceNames: make(sets.String),
