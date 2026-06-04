@@ -275,7 +275,7 @@ frontend public
 
   # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
   # This prevents unauthenticated spoofing of mutual TLS client identities.
-  {{- if isTrue (env "ROUTER_MUTUAL_TLS_AUTH_FILTER" "true") }}
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
   http-request del-header X-SSL-Client-DN
   http-request del-header X-SSL-Client-DER
   http-request del-header X-SSL-Client-NotAfter
@@ -403,7 +403,7 @@ frontend fe_sni
 
   # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
   # This prevents unauthenticated spoofing of mutual TLS client identities.
-  {{- if isTrue (env "ROUTER_MUTUAL_TLS_AUTH_FILTER" "true") }}
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
   http-request del-header X-SSL-Client-DN
   http-request del-header X-SSL-Client-DER
   http-request del-header X-SSL-Client-NotAfter
@@ -529,7 +529,7 @@ frontend fe_no_sni
 
   # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
   # This prevents unauthenticated spoofing of mutual TLS client identities.
-  {{- if isTrue (env "ROUTER_MUTUAL_TLS_AUTH_FILTER" "true") }}
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
   http-request del-header X-SSL-Client-DN
   http-request del-header X-SSL-Client-DER
   http-request del-header X-SSL-Client-NotAfter
