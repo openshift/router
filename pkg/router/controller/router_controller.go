@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -47,6 +48,7 @@ type RouterController struct {
 	ProjectRetries      int
 
 	WatchNodes bool
+	Resolver   EndpointResolver
 }
 
 // Run begins watching and syncing.
@@ -242,6 +244,11 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
 	}
 
+	nsName := fmt.Sprintf("%s/%s", objMeta.Namespace, objMeta.Name)
+	if c.Resolver != nil {
+		c.resolveEndpointAddresses(endpoints, nsName)
+	}
+
 	// RecordNamespaceEndpoints and all HandleEndpoints
 	// implementations treat watch.Modified and watch.Added the
 	// same, so we can conflate watch.Modified and watch.Added
@@ -253,6 +260,44 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 	}
 
 	c.HandleEndpoints(eventType, endpoints)
+}
+
+// resolveEndpointAddresses resolves FQDN addresses in endpoint
+// subsets to IPs and expands them into individual addresses.
+func (c *RouterController) resolveEndpointAddresses(endpoints *kapi.Endpoints, nsName string) {
+	ctx, cancel := context.WithTimeout(context.Background(), endpointResolutionTimeout)
+	defer cancel()
+
+	for i := range endpoints.Subsets {
+		endpoints.Subsets[i].Addresses = c.resolveAddressList(ctx, endpoints.Subsets[i].Addresses, nsName)
+		endpoints.Subsets[i].NotReadyAddresses = c.resolveAddressList(ctx, endpoints.Subsets[i].NotReadyAddresses, nsName)
+
+		endpointsubset.SortAddresses(endpoints.Subsets[i].Addresses, endpointsubset.DefaultEndpointAddressOrderByFuncs())
+		endpointsubset.SortAddresses(endpoints.Subsets[i].NotReadyAddresses, endpointsubset.DefaultEndpointAddressOrderByFuncs())
+	}
+}
+
+func (c *RouterController) resolveAddressList(ctx context.Context, addrs []kapi.EndpointAddress, nsName string) []kapi.EndpointAddress {
+	var result []kapi.EndpointAddress
+	for _, addr := range addrs {
+		if net.ParseIP(addr.IP) != nil {
+			result = append(result, addr)
+			continue
+		}
+
+		resolved, err := c.Resolver.ResolveEndpointAddress(ctx, addr.IP)
+		if err != nil {
+			log.Error(err, "Failed to resolve FQDN endpoint address, skipping", "endpoints", nsName, "address", addr.IP)
+			continue
+		}
+
+		for _, ip := range resolved {
+			newAddr := addr
+			newAddr.IP = ip.String()
+			result = append(result, newAddr)
+		}
+	}
+	return result
 }
 
 // Commit notifies the plugin that it is safe to commit state.
