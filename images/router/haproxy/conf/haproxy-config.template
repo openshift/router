@@ -273,7 +273,7 @@ frontend public
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
-  # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
+  # Strip off X-SSL* headers for plain HTTP if not explicitly disabled.
   # This prevents unauthenticated spoofing of mutual TLS client identities.
   {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
   http-request del-header X-SSL
@@ -407,7 +407,7 @@ frontend fe_sni
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
-  # Strip off X-SSL-Client-* headers if not explicitly disabled.
+  # Strip off X-SSL* headers if not explicitly disabled.
   # This prevents unauthenticated spoofing of mutual TLS client identities
   # when mutual TLS is not enabled and so the headers are not set below.  
   {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
@@ -540,8 +540,9 @@ frontend fe_no_sni
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
-  # Strip off X-SSL-Client-* headers for plain HTTP if not explicitly disabled.
-  # This prevents unauthenticated spoofing of mutual TLS client identities.
+  # Strip off X-SSL* headers if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities
+  # when mutual TLS is not enabled and so the headers are not set below.
   {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
   http-request del-header X-SSL
   http-request del-header X-SSL-Client-CN
