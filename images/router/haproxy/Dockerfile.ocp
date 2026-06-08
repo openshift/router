@@ -1,7 +1,7 @@
 FROM registry.ci.openshift.org/ocp/4.22:haproxy-router-base
 
 RUN curl -fLo /tmp/haproxy32.rpm https://github.com/gcs278/openshift-hacks/raw/refs/heads/master/haproxy-builds/haproxy32-3.2.19-1.rhaos4.23.el9.x86_64.rpm && \
-    yum install -y /tmp/haproxy32.rpm && \
+    rpm -ivh /tmp/haproxy32.rpm && \
     rm -f /tmp/haproxy32.rpm
 RUN haproxy -vv
 
