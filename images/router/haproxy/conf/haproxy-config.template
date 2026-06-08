@@ -257,6 +257,23 @@ frontend public
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
+  # Strip off X-SSL* headers for plain HTTP if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities.
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
+  http-request del-header X-SSL
+  http-request del-header X-SSL-Client-CN
+  http-request del-header X-SSL-Client-DER
+  http-request del-header X-SSL-Client-DN
+  http-request del-header X-SSL-Client-NotAfter
+  http-request del-header X-SSL-Client-NotBefore
+  http-request del-header X-SSL-Client-SHA1
+  http-request del-header X-SSL-Client-Serial
+  http-request del-header X-SSL-Client-Subject
+  http-request del-header X-SSL-Client-Verify
+  http-request del-header X-SSL-Client-Version
+  http-request del-header X-SSL-Issuer
+  {{- end }}
+
   # DNS labels are case insensitive (RFC 4343), we need to convert the hostname into lowercase
   # before matching, or any requests containing uppercase characters will never match.
   http-request set-header Host %[req.hdr(Host),lower]
@@ -374,6 +391,24 @@ frontend fe_sni
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
 
+  # Strip off X-SSL* headers if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities
+  # when mutual TLS is not enabled and so the headers are not set below.  
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
+  http-request del-header X-SSL
+  http-request del-header X-SSL-Client-CN
+  http-request del-header X-SSL-Client-DER
+  http-request del-header X-SSL-Client-DN
+  http-request del-header X-SSL-Client-NotAfter
+  http-request del-header X-SSL-Client-NotBefore
+  http-request del-header X-SSL-Client-SHA1
+  http-request del-header X-SSL-Client-Serial
+  http-request del-header X-SSL-Client-Subject
+  http-request del-header X-SSL-Client-Verify
+  http-request del-header X-SSL-Client-Version
+  http-request del-header X-SSL-Issuer
+  {{- end }}
+
   # DNS labels are case insensitive (RFC 4343), we need to convert the hostname into lowercase
   # before matching, or any requests containing uppercase characters will never match.
   http-request set-header Host %[req.hdr(Host),lower]
@@ -488,6 +523,24 @@ frontend fe_no_sni
 
   # Strip off Proxy headers to prevent HTTpoxy (https://httpoxy.org/)
   http-request del-header Proxy
+
+  # Strip off X-SSL* headers if not explicitly disabled.
+  # This prevents unauthenticated spoofing of mutual TLS client identities
+  # when mutual TLS is not enabled and so the headers are not set below.
+  {{- if isTrue (env "ROUTER_MUTUAL_TLS_HEADER_FILTER" "true") }}
+  http-request del-header X-SSL
+  http-request del-header X-SSL-Client-CN
+  http-request del-header X-SSL-Client-DER
+  http-request del-header X-SSL-Client-DN
+  http-request del-header X-SSL-Client-NotAfter
+  http-request del-header X-SSL-Client-NotBefore
+  http-request del-header X-SSL-Client-SHA1
+  http-request del-header X-SSL-Client-Serial
+  http-request del-header X-SSL-Client-Subject
+  http-request del-header X-SSL-Client-Verify
+  http-request del-header X-SSL-Client-Version
+  http-request del-header X-SSL-Issuer
+  {{- end }}
 
   # DNS labels are case insensitive (RFC 4343), we need to convert the hostname into lowercase
   # before matching, or any requests containing uppercase characters will never match.
