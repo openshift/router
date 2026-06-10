@@ -408,7 +408,7 @@ func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfig
 		return err
 	}
 	for _, server := range servers {
-		if _, err := backend.DeleteServer(templaterouter.Endpoint{ID: server.Name}); err != nil {
+		if _, err := backend.DeleteServer(&templaterouter.Endpoint{ID: server.Name}); err != nil {
 			return err
 		}
 	}
@@ -419,8 +419,8 @@ func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfig
 
 // ReplaceRouteEndpoints dynamically replaces a subset of the endpoints for
 // a route - modifies a subset of the servers on an haproxy backend.
-func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, svc *templaterouter.ServiceUnit, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
-	log.V(4).Info("replacing route endpoints", "id", id, "weight", weight)
+func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, svc *templaterouter.ServiceUnit, oldEndpoints, newEndpoints []templaterouter.Endpoint, activeEndpoints int) error {
+	log.V(4).Info("replacing route endpoints", "id", id)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically add endpoints for %s", id)
 	}
@@ -447,75 +447,108 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		return err
 	}
 
-	addedEndpoints := make(map[string]templaterouter.Endpoint)
-	modifiedEndpoints := make(map[string]templaterouter.Endpoint)
-	for _, ep := range newEndpoints {
-		existing := slices.ContainsFunc(oldEndpoints, func(v2ep templaterouter.Endpoint) bool {
-			return v2ep.ID == ep.ID
+	type epPair struct{ oldEP, newEP *templaterouter.Endpoint }
+	addedEndpoints := make(map[string]*templaterouter.Endpoint)
+	modifiedEndpoints := make(map[string]epPair)
+	for i := range newEndpoints {
+		newEP := newEndpoints[i]
+		j := slices.IndexFunc(oldEndpoints, func(oldEP templaterouter.Endpoint) bool {
+			return oldEP.ID == newEP.ID
 		})
-		if existing {
-			modifiedEndpoints[ep.ID] = ep
+		if j >= 0 {
+			oldEP := oldEndpoints[j]
+			if !reflect.DeepEqual(oldEP, newEP) {
+				if oldEP.NoHealthCheck != newEP.NoHealthCheck {
+					// This is not a frequent update and it is currently challenging to implement.
+					// Taking the simple route for now, stopping here before any dynamic update and ask for a reload.
+					return fmt.Errorf("detected change in idled configuration in service %q, need to reload", svc.Name)
+				}
+				modifiedEndpoints[newEP.ID] = epPair{oldEP: &oldEP, newEP: &newEP}
+			}
 		} else {
-			addedEndpoints[ep.ID] = ep
+			addedEndpoints[newEP.ID] = &newEP
 		}
 	}
 
-	deletedEndpoints := make(map[string]templaterouter.Endpoint)
-	for _, ep := range oldEndpoints {
-		if v2ep, ok := modifiedEndpoints[ep.ID]; ok {
-			if reflect.DeepEqual(ep, v2ep) {
-				// endpoint was unchanged.
-				delete(modifiedEndpoints, v2ep.ID)
-				continue
-			}
-			epUsesH2C := ep.AppProtocol == "h2c" || ep.AppProtocol == "kubernetes.io/h2c"
-			v2epUsesH2c := v2ep.AppProtocol == "h2c" || v2ep.AppProtocol == "kubernetes.io/h2c"
-			if (epUsesH2C || v2epUsesH2c) && epUsesH2C != v2epUsesH2c {
-				return fmt.Errorf("endpoint %s changed appProtocol from %q to %q, dynamically updating proto is unsupported - route will be updated on next reload", ep.ID, ep.AppProtocol, v2ep.AppProtocol)
-			}
-		} else {
-			deletedEndpoints[ep.ID] = ep
+	deletedEndpoints := make(map[string]*templaterouter.Endpoint)
+	for i := range oldEndpoints {
+		oldEP := oldEndpoints[i]
+		found := slices.ContainsFunc(newEndpoints, func(newEP templaterouter.Endpoint) bool {
+			return oldEP.ID == newEP.ID
+		})
+		if !found {
+			deletedEndpoints[oldEP.ID] = &oldEP
 		}
 	}
 
 	// there is a configuration change if any of the tracking maps have endpoint(s)
-	configChanged = len(deletedEndpoints)+len(modifiedEndpoints)+len(addedEndpoints) > 0
+	configChanged = len(deletedEndpoints) > 0 || len(modifiedEndpoints) > 0 || len(addedEndpoints) > 0
 
 	log.V(4).Info("processing endpoint changes", "added", addedEndpoints, "deleted", deletedEndpoints, "modified", modifiedEndpoints)
 
 	// Aggregating errors instead of failing fast in the first API error. This ensures that the old
 	// process has a more accurate configuration in case it lives longer due to persistent connections.
 	var errs []error
-
+	for name, ep := range addedEndpoints {
+		if err := backend.AddServer(entry.backend, svc, ep, cm.workingDir, cm.defaultDestinationCA); err != nil {
+			errs = append(errs, fmt.Errorf("error adding backend server %s: %w", name, err))
+		}
+	}
+	var addedFromUpdate []*templaterouter.Endpoint
+	for name, epPair := range modifiedEndpoints {
+		oldEP := epPair.oldEP
+		newEP := epPair.newEP
+		if added, err := backend.UpdateServer(entry.backend, svc, oldEP, newEP, entry.termination == routev1.TLSTerminationPassthrough, cm.workingDir, cm.defaultDestinationCA); err != nil {
+			errs = append(errs, fmt.Errorf("error updating backend server %s: %w", name, err))
+		} else if added {
+			addedFromUpdate = append(addedFromUpdate, newEP)
+		}
+	}
 	for name, ep := range deletedEndpoints {
 		if _, err := backend.DeleteServer(ep); err != nil {
 			errs = append(errs, fmt.Errorf("error deleting backend server %s: %w", name, err))
 		}
 	}
-	for name, ep := range modifiedEndpoints {
-		if err := backend.UpdateServer(ep, weight, entry.termination == routev1.TLSTerminationPassthrough); err != nil {
-			errs = append(errs, fmt.Errorf("error updating backend server %s: %w", name, err))
-		}
-	}
-	for name, ep := range addedEndpoints {
-		if err := backend.AddServer(entry.backend, svc, ep, weight, cm.workingDir, cm.defaultDestinationCA); err != nil {
-			errs = append(errs, fmt.Errorf("error adding backend server %s: %w", name, err))
-		}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
 	}
 
 	// Checking health check. We need to:
 	// * enable new endpoints if `cfg.ActiveEndpoints > 1`
-	// * enable also the only former endpoint if scaling from 1 to 2 or more
-	// * disable the only current endpoint if scaling to 1
-	if len(newEndpoints) > 1 {
-		var newEPs []templaterouter.Endpoint
+	// * enable also the only former endpoint if scaling out from 1 to 2 or more
+	// * disable the only current endpoint if scaling in to 1
+	if activeEndpoints > 1 {
+		var newEPs []*templaterouter.Endpoint
 		for _, ep := range addedEndpoints {
 			// enabling for all the new added endpoints
 			newEPs = append(newEPs, ep)
 		}
+		for _, ep := range addedFromUpdate {
+			newEPs = append(newEPs, ep)
+		}
 		if len(oldEndpoints) == 1 {
-			// enabling also for the former single endpoint as well
-			newEPs = append(newEPs, oldEndpoints[0])
+			ep := &oldEndpoints[0]
+			_, deleted := deletedEndpoints[ep.ID]
+			if !ep.NoHealthCheck && !deleted {
+				// The backend was previously in the single server scenario, so health check should be enabled.
+				// Dynamically enabling health check only works if health check is configured, and we only
+				// configure health check upfront in dynamically added servers.
+				// So, we are trying to enable health check first, and if HAProxy responds that it is not
+				// configured, we'll need to remove and add it again.
+				err := backend.EnableHealthCheck(ep)
+				if backend.IsHealthCheckNotConfiguredError(err) {
+					// Health check not configured on this server. Replace it dynamically to reconfigure with health check.
+					err = backend.ReplaceServer(entry.backend, svc, ep, ep, cm.workingDir, cm.defaultDestinationCA)
+					if err == nil {
+						// Server replaced successfully, mark to enable health check later.
+						newEPs = append(newEPs, ep)
+					}
+				}
+				if err != nil {
+					// Failed either enabling health check or replacing backend server.
+					errs = append(errs, err)
+				}
+			}
 		}
 		for _, ep := range newEPs {
 			if !ep.NoHealthCheck {
@@ -524,12 +557,10 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 				}
 			}
 		}
-	} else if len(newEndpoints) == 1 && len(oldEndpoints) != 1 {
+	} else if len(newEndpoints) == 1 {
 		// the single backend server scenario, health check should be disabled
-		if ep := newEndpoints[0]; !ep.NoHealthCheck {
-			if err := backend.DisableHealthCheck(ep); err != nil {
-				errs = append(errs, err)
-			}
+		if err := backend.DisableHealthCheck(&newEndpoints[0]); err != nil {
+			errs = append(errs, err)
 		}
 	}
 
@@ -565,7 +596,7 @@ func (cm *haproxyConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAl
 	var errs []error
 	for _, ep := range endpoints {
 		log.V(4).Info("deleting server for endpoint", "endpoint", ep.ID)
-		if _, err := backend.DeleteServer(ep); err != nil {
+		if _, err := backend.DeleteServer(&ep); err != nil {
 			errs = append(errs, fmt.Errorf("error deleting server %s: %w", ep.ID, err))
 		}
 	}
@@ -737,6 +768,12 @@ func (cm *haproxyConfigManager) reset() {
 // findMatchingBlueprint finds a matching blueprint route that can be used
 // as a "surrogate" for the route.
 func (cm *haproxyConfigManager) findMatchingBlueprint(route *routev1.Route) *routev1.Route {
+
+	// HAProxy 2.8 is not working well adding backend servers on an empty backend, like blueprint servers.
+	// Blueprint servers are being removed via https://redhat.atlassian.net/browse/NE-2663, so we're
+	// just anticipating its deprecation by not using it in case it is being configured.
+	return nil
+
 	termination := routeTerminationType(route)
 	routeModifiers := backendModAnnotations(route)
 	for _, candidate := range cm.blueprintRoutes {
