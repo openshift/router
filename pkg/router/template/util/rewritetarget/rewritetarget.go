@@ -157,3 +157,16 @@ func SanitizeInput(val string) string {
 
 	return val
 }
+
+// EscapeSingleQuotes escapes its argument for use within single quotes
+// by escaping single-quote characters "'" as "'\”", following the semantics of
+// Bourne shell, and returns the result. Carriage return and line feed
+// characters are removed from the input. The caller is expected to enclose the
+// returned value in single quotes; this function does not itself add any
+// enclosing quote characters.
+func EscapeSingleQuotes(val string) string {
+	val = strings.ReplaceAll(val, `'`, `'\''`)
+	val = strings.ReplaceAll(val, "\n", "")
+	val = strings.ReplaceAll(val, "\r", "")
+	return val
+}
