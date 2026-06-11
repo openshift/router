@@ -306,8 +306,8 @@ func (b *Backend) FindServer(id string) (*backendServer, error) {
 // AddServer dynamically adds a new backend server. It detects if the server already exists, and if so tries to remove it.
 // It returns a failure in case HAProxy refuses to dynamically add the server for any reason, or if the existing server
 // cannot be removed, e.g., it still have active or steady and established connection(s) to its backend server endpoint.
-func (b *Backend) AddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, weight int32, workingDir, defaultDestinationCA string) error {
-	if err := b.innerAddServer(cfg, svc, ep, weight, workingDir, defaultDestinationCA); err != nil {
+func (b *Backend) AddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, backendServerID, weight int32, workingDir, defaultDestinationCA string) error {
+	if err := b.innerAddServer(cfg, svc, ep, backendServerID, weight, workingDir, defaultDestinationCA); err != nil {
 		if !strings.Contains(err.Error(), "Already exists a server ") {
 			return err
 		}
@@ -317,7 +317,7 @@ func (b *Backend) AddServer(cfg *templaterouter.ServiceAliasConfig, svc *templat
 			// No way, need to fail which will ask for a fork-and-reload. This will leave the existing connections in the old process.
 			return err
 		}
-		if err := b.innerAddServer(cfg, svc, ep, weight, workingDir, defaultDestinationCA); err != nil {
+		if err := b.innerAddServer(cfg, svc, ep, backendServerID, weight, workingDir, defaultDestinationCA); err != nil {
 			return err
 		}
 	}
@@ -367,7 +367,7 @@ func (b *Backend) DeleteServer(ep templaterouter.Endpoint) (removed bool, err er
 	return true, nil
 }
 
-func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, weight int32, workingDir, defaultDestinationCA string) error {
+func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *templaterouter.ServiceUnit, ep templaterouter.Endpoint, backendServerID, weight int32, workingDir, defaultDestinationCA string) error {
 	// This should always follow the template, changes here should be reflected there, both regular and passthrough backends
 	//
 	// TODO: either read this configuration from the template, or instead make the template read from here.
@@ -376,7 +376,7 @@ func (b *Backend) innerAddServer(cfg *templaterouter.ServiceAliasConfig, svc *te
 	//
 	// https://redhat.atlassian.net/browse/NE-2646
 
-	cmd := fmt.Sprintf("add server %s/%s %s:%s weight %d", b.name, ep.ID, ep.IP, ep.Port, weight)
+	cmd := fmt.Sprintf("add server %s/%s %s:%s weight %d id %d", b.name, ep.ID, ep.IP, ep.Port, weight, backendServerID)
 
 	switch cfg.TLSTermination {
 	case v1.TLSTerminationReencrypt:

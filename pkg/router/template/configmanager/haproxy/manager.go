@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,6 +143,14 @@ type haproxyConfigManager struct {
 
 	// commitTimer indicates if a router config commit is pending.
 	commitTimer *time.Timer
+
+	// currentServerID has the last backend server ID used on dynamically added server.
+	// Hardcoding a backend server ID fixes a misbehavior found in HAProxy 2.9 and older,
+	// fixed in HAProxy 3.0.
+	//
+	// https://github.com/haproxy/haproxy/issues/3413
+	// https://redhat.atlassian.net/browse/OCPBUGS-87082
+	currentServerID atomic.Int32
 }
 
 // NewHAProxyConfigManager returns a new haproxyConfigManager.
@@ -498,7 +507,8 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		}
 	}
 	for name, ep := range addedEndpoints {
-		if err := backend.AddServer(entry.backend, svc, ep, weight, cm.workingDir, cm.defaultDestinationCA); err != nil {
+		backendServerID := cm.currentServerID.Add(1)
+		if err := backend.AddServer(entry.backend, svc, ep, backendServerID, weight, cm.workingDir, cm.defaultDestinationCA); err != nil {
 			errs = append(errs, fmt.Errorf("error adding backend server %s: %w", name, err))
 		}
 	}
@@ -732,6 +742,14 @@ func (cm *haproxyConfigManager) reset() {
 
 	// Reset the client - clear its caches.
 	cm.client.Reset()
+
+	// Start/reset backend server ID as 2^24, giving the first 16.7mm to the
+	// automatically assigned ones via configuration file.
+	//
+	// It is loaded behind !r.synced and cm.isReloading(), so it is initialized
+	// before first use, not used during reload, and also it is only reset after
+	// the reload finished successfully.
+	cm.currentServerID.Store(1 << 24)
 }
 
 // findMatchingBlueprint finds a matching blueprint route that can be used
