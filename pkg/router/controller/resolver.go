@@ -85,7 +85,9 @@ func isRetryableDNSError(err error) bool {
 	if !errors.As(err, &dnsErr) {
 		return false
 	}
-	return dnsErr.IsTimeout && !dnsErr.IsNotFound
+	// Retry on timeouts, SERVFAIL, and transient network errors.
+	// Do not retry NXDOMAIN (IsNotFound) or other permanent failures.
+	return dnsErr.IsTimeout || dnsErr.IsTemporary
 }
 
 // toSortedIPs converts resolved addresses to net.IP and sorts them

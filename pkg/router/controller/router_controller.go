@@ -244,10 +244,12 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
 	}
 
-	nsName := fmt.Sprintf("%s/%s", objMeta.Namespace, objMeta.Name)
-	if c.Resolver != nil {
-		c.resolveEndpointAddresses(endpoints, nsName)
+	if c.Resolver == nil {
+		c.Resolver = NewDNSEndpointResolver()
 	}
+
+	nsName := fmt.Sprintf("%s/%s", objMeta.Namespace, objMeta.Name)
+	c.resolveEndpointAddresses(endpoints, nsName)
 
 	// RecordNamespaceEndpoints and all HandleEndpoints
 	// implementations treat watch.Modified and watch.Added the
@@ -271,9 +273,6 @@ func (c *RouterController) resolveEndpointAddresses(endpoints *kapi.Endpoints, n
 	for i := range endpoints.Subsets {
 		endpoints.Subsets[i].Addresses = c.resolveAddressList(ctx, endpoints.Subsets[i].Addresses, nsName)
 		endpoints.Subsets[i].NotReadyAddresses = c.resolveAddressList(ctx, endpoints.Subsets[i].NotReadyAddresses, nsName)
-
-		endpointsubset.SortAddresses(endpoints.Subsets[i].Addresses, endpointsubset.DefaultEndpointAddressOrderByFuncs())
-		endpointsubset.SortAddresses(endpoints.Subsets[i].NotReadyAddresses, endpointsubset.DefaultEndpointAddressOrderByFuncs())
 	}
 }
 
