@@ -1,6 +1,7 @@
 package templaterouter
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"net"
@@ -42,6 +43,7 @@ func newDefaultTemplatePlugin(router RouterInterface, includeUDP bool, lookupSvc
 }
 
 type TemplatePluginConfig struct {
+	AppCtx                        context.Context
 	WorkingDir                    string
 	TemplatePath                  string
 	ReloadScriptPath              string
@@ -141,7 +143,12 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		templates[template.Name()] = templateWithHelper
 	}
 
+	ctx := cfg.AppCtx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	templateRouterCfg := templateRouterCfg{
+		appCtx:                        ctx,
 		dir:                           cfg.WorkingDir,
 		templates:                     templates,
 		reloadScriptPath:              cfg.ReloadScriptPath,

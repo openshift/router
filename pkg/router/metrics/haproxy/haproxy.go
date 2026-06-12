@@ -11,7 +11,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -700,8 +699,8 @@ func filterMetrics(export []int, available metrics) metrics {
 type PrometheusOptions struct {
 	// ScrapeURI is the URI to access HAProxy under. Defaults to the unix domain socket.
 	ScrapeURI string
-	// PidFile is optional and will collect process metrics.
-	PidFile string
+	// PidFn is optional and will collect process metrics if declared.
+	PidFn func() (int, error)
 	// Timeout is the maximum interval to wait for stats.
 	Timeout time.Duration
 	// BaseScrapeInterval is the minimum time to wait between stat calls per 1000 servers.
@@ -729,20 +728,10 @@ func NewPrometheusCollector(opts PrometheusOptions) (*Exporter, error) {
 
 	// TODO: register a version collector?
 
-	if len(opts.PidFile) > 0 {
+	if opts.PidFn != nil {
 		procExporter := prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
 			Namespace: namespace,
-			PidFn: func() (int, error) {
-				content, err := os.ReadFile(opts.PidFile)
-				if err != nil {
-					return 0, fmt.Errorf("can't read haproxy pid file: %s", err)
-				}
-				value, err := strconv.Atoi(strings.TrimSpace(string(content)))
-				if err != nil {
-					return 0, fmt.Errorf("can't parse haproxy pid file: %s", err)
-				}
-				return value, nil
-			},
+			PidFn:     opts.PidFn,
 		})
 		if err := prometheus.Register(procExporter); err != nil {
 			return nil, err
@@ -753,9 +742,6 @@ func NewPrometheusCollector(opts PrometheusOptions) (*Exporter, error) {
 }
 
 func defaultOptions(opts PrometheusOptions) PrometheusOptions {
-	if len(opts.PidFile) == 0 {
-		opts.PidFile = "/var/lib/haproxy/run/haproxy.pid"
-	}
 	if opts.Timeout == 0 {
 		opts.Timeout = 5 * time.Second
 	}
