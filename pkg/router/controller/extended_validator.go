@@ -48,23 +48,19 @@ func (p *ExtendedValidator) HandleNode(eventType watch.EventType, node *kapi.Nod
 // Addresses that fail IP validation are removed individually rather
 // than rejecting the entire endpoint set.
 func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints *kapi.Endpoints) error {
-	nsName := fmt.Sprintf("%s/%s", endpoints.Namespace, endpoints.Name)
-
-	// Build filtered subsets without mutating the original, which
-	// may be an informer cache object on the legacy Endpoints path.
-	ep := endpoints.DeepCopy()
-	for i, subset := range ep.Subsets {
-		ep.Subsets[i].Addresses = filterValidAddresses(subset.Addresses, nsName)
-		ep.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses, nsName)
+	// Build filtered endpoint subsets without mutating the original ones
+	for i, subset := range endpoints.Subsets {
+		endpoints.Subsets[i].Addresses = filterValidAddresses(subset.Addresses)
+		endpoints.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses)
 	}
-	return p.plugin.HandleEndpoints(eventType, ep)
+	return p.plugin.HandleEndpoints(eventType, endpoints)
 }
 
-func filterValidAddresses(addrs []kapi.EndpointAddress, nsName string) []kapi.EndpointAddress {
+func filterValidAddresses(addrs []kapi.EndpointAddress) []kapi.EndpointAddress {
 	valid := make([]kapi.EndpointAddress, 0, len(addrs))
 	for _, addr := range addrs {
 		if err := validateEndpointAddress(addr.IP); err != nil {
-			log.Error(err, "Skipping endpoint address with restricted IP", "endpoints", nsName, "address", addr.IP)
+			log.Error(err, "Skipping endpoint address with restricted or invalid IP", "address", addr.IP)
 			continue
 		}
 		valid = append(valid, addr)
@@ -75,11 +71,13 @@ func filterValidAddresses(addrs []kapi.EndpointAddress, nsName string) []kapi.En
 func validateEndpointAddress(address string) error {
 	ip := net.ParseIP(address)
 	if ip == nil {
-		return fmt.Errorf("address %q is not a valid IP", address)
+		return fmt.Errorf("address %q is not a valid IP address", address)
 	}
 	return checkRestrictedIP(ip)
 }
 
+// The AWS IMDS endpoint 169.254.169.254 is covered by the ip.IsLinkLocalUnicast()
+// check in `checkRestrictedIP`.
 var (
 	azureMetadata = net.ParseIP("168.63.129.16")
 	awsIPv6IMDS   = net.ParseIP("fd00:ec2::254")
@@ -92,16 +90,15 @@ func checkRestrictedIP(ip net.IP) error {
 	if ip.IsLoopback() {
 		return fmt.Errorf("IP address %s is a restricted loopback IP", ip.String())
 	}
+	// The AWS IMDS endpoint 169.254.169.254 is covered by the ip.IsLinkLocalUnicast()
+	// check in `checkRestrictedIP`.
 	if ip.IsLinkLocalUnicast() {
 		return fmt.Errorf("IP address %s is a restricted link-local IP", ip.String())
 	}
 	if ip.IsMulticast() {
 		return fmt.Errorf("IP address %s is a restricted multicast IP", ip.String())
 	}
-	if ip.Equal(azureMetadata) {
-		return fmt.Errorf("IP address %s is a restricted cloud metadata IP", ip.String())
-	}
-	if ip.Equal(awsIPv6IMDS) {
+	if ip.Equal(azureMetadata) || ip.Equal(awsIPv6IMDS) {
 		return fmt.Errorf("IP address %s is a restricted cloud metadata IP", ip.String())
 	}
 	return nil

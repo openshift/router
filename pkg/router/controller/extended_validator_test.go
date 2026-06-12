@@ -5,11 +5,12 @@ import (
 	"net"
 	"testing"
 
+	routev1 "github.com/openshift/api/route/v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
-
-	routev1 "github.com/openshift/api/route/v1"
 )
 
 type fakeTestPlugin struct {
@@ -37,7 +38,7 @@ func (r *fakeTestRecorder) RecordRouteUnservableInFutureVersions(route *routev1.
 }
 func (r *fakeTestRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {}
 
-func TestCheckRestrictedIP(t *testing.T) {
+func Test_checkRestrictedIP(t *testing.T) {
 	tests := []struct {
 		name        string
 		ip          string
@@ -123,28 +124,26 @@ func TestCheckRestrictedIP(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
-			if ip == nil {
-				t.Fatalf("failed to parse IP %q", tc.ip)
-			}
+			require.NotNil(t, ip, "failed to parse IP")
 			err := checkRestrictedIP(ip)
 			if tc.expectError && err == nil {
-				t.Errorf("expected error for IP %s, got nil", tc.ip)
+				require.Error(t, err)
 			}
 			if !tc.expectError && err != nil {
-				t.Errorf("expected no error for IP %s, got %v", tc.ip, err)
+				require.NoError(t, err)
 			}
 		})
 	}
 }
 
-func TestValidateEndpointAddress(t *testing.T) {
+func Test_validateEndpointAddress(t *testing.T) {
 	tests := []struct {
 		name        string
 		address     string
 		expectError bool
 	}{
 		{
-			name:        "valid public IPv4",
+			name:        "valid private network IPv4 address",
 			address:     "10.0.0.1",
 			expectError: false,
 		},
@@ -159,6 +158,10 @@ func TestValidateEndpointAddress(t *testing.T) {
 			expectError: true,
 		},
 		{
+			name:        "restricted loopback IP from within the range",
+			address:     "127.0.127.1",
+			expectError: true,
+		}, {
 			name:        "restricted link-local IP",
 			address:     "169.254.169.254",
 			expectError: true,
@@ -189,10 +192,10 @@ func TestValidateEndpointAddress(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateEndpointAddress(tc.address)
 			if tc.expectError && err == nil {
-				t.Errorf("expected error for address %q, got nil", tc.address)
+				require.Error(t, err)
 			}
 			if !tc.expectError && err != nil {
-				t.Errorf("expected no error for address %q, got %v", tc.address, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -202,8 +205,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 	tests := []struct {
 		name              string
 		endpoints         *kapi.Endpoints
-		expectedAddrCount int
-		expectedNRCount   int
+		expectedEndpoints *kapi.Endpoints
 	}{
 		{
 			name: "valid IP passes through",
@@ -214,7 +216,14 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 1,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{{IP: "1.2.3.4"}},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 		{
 			name: "restricted link-local IP filtered out",
@@ -225,7 +234,14 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 0,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 		{
 			name: "restricted loopback IP filtered out",
@@ -236,7 +252,14 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 0,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 		{
 			name: "restricted IP in NotReadyAddresses filtered out",
@@ -247,8 +270,14 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 0,
-			expectedNRCount:   0,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 		{
 			name: "valid IP in NotReadyAddresses passes through",
@@ -259,8 +288,14 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 0,
-			expectedNRCount:   1,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{},
+						NotReadyAddresses: []kapi.EndpointAddress{{IP: "10.0.0.5"}},
+					},
+				},
+			},
 		},
 		{
 			name: "mixed valid and restricted keeps only valid",
@@ -274,7 +309,18 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 1,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{{IP: "10.0.0.1"}},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+					{
+						Addresses:         []kapi.EndpointAddress{},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 		{
 			name: "Azure metadata IP filtered out",
@@ -285,7 +331,14 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 0,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses:         []kapi.EndpointAddress{},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 		{
 			name: "mixed valid and restricted in same subset",
@@ -300,7 +353,17 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expectedAddrCount: 2,
+			expectedEndpoints: &kapi.Endpoints{
+				Subsets: []kapi.EndpointSubset{
+					{
+						Addresses: []kapi.EndpointAddress{
+							{IP: "10.0.0.1"},
+							{IP: "10.0.0.2"},
+						},
+						NotReadyAddresses: []kapi.EndpointAddress{},
+					},
+				},
+			},
 		},
 	}
 
@@ -311,26 +374,10 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			validator := NewExtendedValidator(inner, recorder, true)
 
 			err := validator.HandleEndpoints(watch.Added, tc.endpoints)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			require.NoError(t, err)
+			require.Len(t, inner.endpoints, 1)
 
-			if len(inner.endpoints) != 1 {
-				t.Fatalf("expected 1 endpoint event, got %d", len(inner.endpoints))
-			}
-
-			totalAddrs := 0
-			totalNR := 0
-			for _, subset := range inner.endpoints[0].Subsets {
-				totalAddrs += len(subset.Addresses)
-				totalNR += len(subset.NotReadyAddresses)
-			}
-			if totalAddrs != tc.expectedAddrCount {
-				t.Errorf("expected %d addresses, got %d", tc.expectedAddrCount, totalAddrs)
-			}
-			if tc.expectedNRCount > 0 && totalNR != tc.expectedNRCount {
-				t.Errorf("expected %d not-ready addresses, got %d", tc.expectedNRCount, totalNR)
-			}
+			assert.Equal(t, tc.expectedEndpoints, inner.endpoints[0], "expected endpoints should match inner endpoints")
 		})
 	}
 }
@@ -350,19 +397,14 @@ func TestExtendedValidator_EndpointValidationWithRouteValidationDisabled(t *test
 	}
 
 	err := validator.HandleEndpoints(watch.Added, endpoints)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
+	require.Len(t, inner.endpoints, 1)
 
-	if len(inner.endpoints) != 1 {
-		t.Fatalf("expected 1 endpoint event, got %d", len(inner.endpoints))
+	expected := &kapi.Endpoints{
+		Subsets: []kapi.EndpointSubset{{
+			Addresses:         []kapi.EndpointAddress{{IP: "10.0.0.1"}},
+			NotReadyAddresses: []kapi.EndpointAddress{},
+		}},
 	}
-
-	totalAddrs := 0
-	for _, subset := range inner.endpoints[0].Subsets {
-		totalAddrs += len(subset.Addresses)
-	}
-	if totalAddrs != 1 {
-		t.Errorf("expected 1 valid address (loopback filtered), got %d", totalAddrs)
-	}
+	assert.Equal(t, expected, inner.endpoints[0], "loopback should be filtered even with route validation disabled")
 }

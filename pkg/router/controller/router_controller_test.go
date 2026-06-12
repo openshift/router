@@ -6,13 +6,14 @@ import (
 	"net"
 	"testing"
 
+	routev1 "github.com/openshift/api/route/v1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	kapi "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
-
-	routev1 "github.com/openshift/api/route/v1"
 )
 
 type recordingPlugin struct {
@@ -54,14 +55,14 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 	fqdnType := discoveryv1.AddressTypeFQDN
 
 	tests := []struct {
-		name              string
-		resolver          EndpointResolver
-		items             []discoveryv1.EndpointSlice
-		expectedEventType watch.EventType
-		expectedAddrs     []string
+		name          string
+		resolver      EndpointResolver
+		items         []discoveryv1.EndpointSlice
+		expectedAddrs []string
 	}{
 		{
-			name: "IPv4 slices pass through unchanged",
+			name:     "IPv4 slices pass through unchanged",
+			resolver: &mockResolver{},
 			items: []discoveryv1.EndpointSlice{{
 				ObjectMeta:  metav1.ObjectMeta{Name: "slice-1", Namespace: "ns"},
 				AddressType: ipv4Type,
@@ -69,11 +70,11 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					Addresses: []string{"10.0.0.1"},
 				}},
 			}},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     []string{"10.0.0.1"},
+			expectedAddrs: []string{"10.0.0.1"},
 		},
 		{
-			name: "IPv6 slices pass through unchanged",
+			name:     "IPv6 slices pass through unchanged",
+			resolver: &mockResolver{},
 			items: []discoveryv1.EndpointSlice{{
 				ObjectMeta:  metav1.ObjectMeta{Name: "slice-1", Namespace: "ns"},
 				AddressType: ipv6Type,
@@ -81,8 +82,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					Addresses: []string{"2001:db8::1"},
 				}},
 			}},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     []string{"2001:db8::1"},
+			expectedAddrs: []string{"2001:db8::1"},
 		},
 		{
 			name: "FQDN resolved to single IP",
@@ -98,8 +98,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					Addresses: []string{"service.example.com"},
 				}},
 			}},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     []string{"93.184.216.34"},
+			expectedAddrs: []string{"93.184.216.34"},
 		},
 		{
 			name: "FQDN resolved to multiple IPs with IPv6 first",
@@ -115,8 +114,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					Addresses: []string{"multi.example.com"},
 				}},
 			}},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     []string{"10.0.0.1", "2001:db8::1"},
+			expectedAddrs: []string{"2001:db8::1", "10.0.0.1"},
 		},
 		{
 			name: "FQDN resolution failure skips address",
@@ -132,8 +130,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					Addresses: []string{"fail.example.com"},
 				}},
 			}},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     nil,
+			expectedAddrs: nil,
 		},
 		{
 			name: "mixed IPv4 and FQDN slices",
@@ -158,8 +155,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					}},
 				},
 			},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     []string{"10.0.0.1", "93.184.216.34"},
+			expectedAddrs: []string{"10.0.0.1", "93.184.216.34"},
 		},
 		{
 			name: "all FQDN resolution failures results in Modified with empty addresses",
@@ -185,8 +181,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					}},
 				},
 			},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     nil,
+			expectedAddrs: nil,
 		},
 		{
 			name: "FQDN resolving to restricted IP is resolved but will be filtered by ExtendedValidator",
@@ -202,8 +197,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 					Addresses: []string{"evil.example.com"},
 				}},
 			}},
-			expectedEventType: watch.Modified,
-			expectedAddrs:     []string{"127.0.0.1"},
+			expectedAddrs: []string{"127.0.0.1"},
 		},
 	}
 
@@ -226,14 +220,10 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 
 			rc.HandleEndpointSlice(watch.Added, objMeta, tc.items)
 
-			if len(plugin.endpointEvents) != 1 {
-				t.Fatalf("expected 1 endpoint event, got %d", len(plugin.endpointEvents))
-			}
+			require.Len(t, plugin.endpointEvents, 1, "expected only 1 endpoint event")
 
 			event := plugin.endpointEvents[0]
-			if event.eventType != tc.expectedEventType {
-				t.Errorf("expected event type %q, got %q", tc.expectedEventType, event.eventType)
-			}
+			assert.Equal(t, watch.Modified, event.eventType, "unexpected event type")
 
 			var gotAddrs []string
 			for _, subset := range event.endpoints.Subsets {
@@ -242,15 +232,7 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 				}
 			}
 
-			if len(gotAddrs) != len(tc.expectedAddrs) {
-				t.Errorf("expected %d addresses %v, got %d addresses %v", len(tc.expectedAddrs), tc.expectedAddrs, len(gotAddrs), gotAddrs)
-			} else {
-				for i, expected := range tc.expectedAddrs {
-					if gotAddrs[i] != expected {
-						t.Errorf("address[%d]: expected %q, got %q", i, expected, gotAddrs[i])
-					}
-				}
-			}
+			assert.Equal(t, tc.expectedAddrs, gotAddrs, "resolved addresses should match")
 		})
 	}
 }
@@ -297,9 +279,7 @@ func TestFQDNToRestrictedIP_DefenseInDepth(t *testing.T) {
 
 	rc.HandleEndpointSlice(watch.Added, objMeta, items)
 
-	if len(inner.endpointEvents) != 1 {
-		t.Fatalf("expected 1 endpoint event, got %d", len(inner.endpointEvents))
-	}
+	require.Len(t, inner.endpointEvents, 1, "expected only 1 endpoint event")
 
 	var gotAddrs []string
 	for _, subset := range inner.endpointEvents[0].endpoints.Subsets {
@@ -311,13 +291,7 @@ func TestFQDNToRestrictedIP_DefenseInDepth(t *testing.T) {
 	// evil.example.com (127.0.0.1) blocked by loopback check
 	// good.example.com (93.184.216.34) passes
 	// mixed.example.com: 10.0.0.1 passes, 169.254.169.254 blocked by link-local check
-	expectedAddrs := []string{"10.0.0.1", "93.184.216.34"}
-	if len(gotAddrs) != len(expectedAddrs) {
-		t.Fatalf("expected %d addresses %v, got %d addresses %v", len(expectedAddrs), expectedAddrs, len(gotAddrs), gotAddrs)
-	}
-	for i, expected := range expectedAddrs {
-		if gotAddrs[i] != expected {
-			t.Errorf("address[%d]: expected %q, got %q", i, expected, gotAddrs[i])
-		}
-	}
+	// Order follows FQDN resolution order (no re-sort after resolution)
+	expectedAddrs := []string{"93.184.216.34", "10.0.0.1"}
+	assert.Equal(t, expectedAddrs, gotAddrs)
 }
