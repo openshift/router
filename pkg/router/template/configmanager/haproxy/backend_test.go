@@ -26,6 +26,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		endpointID      *string                               // default: "server1"
 		ip              *string                               // default: "10.0.1.11"
 		port            *string                               // default: "9000"
+		backendServerID *int32                                // default: 1
 		weight          *int32                                // default: 1
 		workingDir      *string                               // default: "tmp"
 		publicHostname  string
@@ -47,7 +48,15 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		"should add insecure server": {
 			cmd: cmdAdd,
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
+				"set server route1/server1 state ready",
+			},
+		},
+		"should add insecure server with custom backend server ID": {
+			cmd:             cmdAdd,
+			backendServerID: ptr.To[int32](1023),
+			cmdExpected: []string{
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1023 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -55,7 +64,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd:    cmdAdd,
 			weight: ptr.To[int32](0),
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 0 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 0 id 1 check inter 5000ms",
 				"set server route1/server1 state drain",
 			},
 		},
@@ -65,7 +74,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				"router.openshift.io/haproxy.health.check.interval": "10s",
 			},
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 10s",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 10s",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -75,7 +84,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				"router.openshift.io/haproxy.health.check.interval": "1z",
 			},
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -85,7 +94,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				"haproxy.router.openshift.io/pod-concurrent-connections": "100",
 			},
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms maxconn 100",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms maxconn 100",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -93,7 +102,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd:            cmdAdd,
 			tlsTermination: routev1.TLSTerminationPassthrough,
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -101,7 +110,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd:            cmdAdd,
 			tlsTermination: routev1.TLSTerminationEdge,
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -110,7 +119,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			tlsTermination: routev1.TLSTerminationEdge,
 			appProtocol:    "h2c",
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 proto h2 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 proto h2 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -118,7 +127,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd:            cmdAdd,
 			tlsTermination: routev1.TLSTerminationReencrypt,
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 ssl alpn h2,http/1.1 verify none check-ssl check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 ssl alpn h2,http/1.1 verify none check-ssl check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -128,7 +137,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			verifyHostname:  true,
 			serviceHostname: "route1.default.svc",
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 ssl alpn h2,http/1.1 verifyhost route1.default.svc verify none check-ssl check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 ssl alpn h2,http/1.1 verifyhost route1.default.svc verify none check-ssl check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -137,7 +146,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			tlsTermination: routev1.TLSTerminationReencrypt,
 			defaultCA:      "/tmp/default-ca.pem",
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 ssl alpn h2,http/1.1 verify required ca-file /tmp/default-ca.pem check-ssl check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 ssl alpn h2,http/1.1 verify required ca-file /tmp/default-ca.pem check-ssl check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -153,7 +162,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				},
 			},
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 ssl alpn h2,http/1.1 verify required ca-file /tmp/router/cacerts/default:route1.pem check-ssl check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 ssl alpn h2,http/1.1 verify required ca-file /tmp/router/cacerts/default:route1.pem check-ssl check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -161,9 +170,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd:           cmdAdd,
 			cmdCustomResp: []string{"Already exists a server ..."},
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
 				"del server route1/server1",
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
 				"set server route1/server1 state ready",
 			},
 		},
@@ -172,7 +181,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmdCustomResp: []string{"Some unknown adding error."},
 			errExpected:   "unexpected response from haproxy: Some unknown adding error.",
 			cmdExpected: []string{
-				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"add server route1/server1 10.0.1.11:9000 weight 1 id 1 check inter 5000ms",
 			},
 		},
 
@@ -274,6 +283,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			endpointID := ptr.Deref(test.endpointID, "server1")
 			ip := ptr.Deref(test.ip, "10.0.1.11")
 			port := ptr.Deref(test.port, "9000")
+			backendServerID := ptr.Deref(test.backendServerID, 1)
 			weight := ptr.Deref(test.weight, 1)
 			workingDir := ptr.Deref(test.workingDir, "/tmp")
 
@@ -302,7 +312,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			var err error
 			switch test.cmd {
 			case cmdAdd:
-				err = b.AddServer(cfg, svc, ep, weight, workingDir, test.defaultCA)
+				err = b.AddServer(cfg, svc, ep, backendServerID, weight, workingDir, test.defaultCA)
 			case cmdDel:
 				removed, err = b.DeleteServer(ep)
 			case cmdUpdate:
