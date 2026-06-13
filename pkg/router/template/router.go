@@ -886,6 +886,32 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 		return false
 	}
 
+	// HAProxy 2.8 is dropping the second added server from the balance when the third one is added,
+	// and all of them were dynamically added into an empty backend. HAProxy 3.2 does not have this issue.
+	// This extra check ensures that the first dynamically added server happens by reloading HAProxy.
+	// This can be removed after dropping support for HAProxy 2.8.
+	//
+	// TODO: make this conditional to HAProxy 2.8 when adding support to HAProxy 3.2.
+	var oldServerCount, newServerCount int
+	for backendKey := range service.ServiceAliasAssociations {
+		if cfg, found := r.state[backendKey]; found {
+			oldEndpoints := cfg.EndpointTable[id]
+			newEndpoints := endpointsForAlias(cfg, service)
+			oldServerCount += len(oldEndpoints)
+			newServerCount += len(newEndpoints)
+		}
+	}
+	if oldServerCount == 0 && newServerCount > 0 {
+		log.V(4).Info("backend is empty, need to add endpoints via reload", "service", id)
+		for backendKey := range service.ServiceAliasAssociations {
+			if cfg, found := r.state[backendKey]; found {
+				// update internal state with the new endpoints
+				cfg.EndpointTable[id] = endpointsForAlias(cfg, service)
+			}
+		}
+		return false
+	}
+
 	log.V(4).Info("replacing endpoints dynamically for service", "service", id)
 
 	// Update each of the routes that reference this service unit.
