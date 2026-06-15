@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net"
+	"slices"
 
 	kapi "k8s.io/api/core/v1"
 
@@ -57,15 +58,13 @@ func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints
 }
 
 func filterValidAddresses(addrs []kapi.EndpointAddress) []kapi.EndpointAddress {
-	valid := make([]kapi.EndpointAddress, 0, len(addrs))
-	for _, addr := range addrs {
-		if err := validateEndpointAddress(addr.IP); err != nil {
+	return slices.DeleteFunc(addrs, func(addr kapi.EndpointAddress) bool {
+		err := validateEndpointAddress(addr.IP)
+		if err != nil {
 			log.Error(err, "Skipping endpoint address with restricted or invalid IP", "address", addr.IP)
-			continue
 		}
-		valid = append(valid, addr)
-	}
-	return valid
+		return err != nil
+	})
 }
 
 func validateEndpointAddress(address string) error {

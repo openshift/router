@@ -237,11 +237,11 @@ func TestHandleEndpointSlice_FQDNResolution(t *testing.T) {
 	}
 }
 
-// TestFQDNToRestrictedIP_DefenseInDepth verifies that when a FQDN
+// TestRouterController_EndpointsValidation verifies that when a FQDN
 // resolves to a restricted IP, the address is resolved by the
 // RouterController but then filtered by the ExtendedValidator before
 // reaching the inner plugin.
-func TestFQDNToRestrictedIP_DefenseInDepth(t *testing.T) {
+func TestRouterController_EndpointsValidation(t *testing.T) {
 	inner := &recordingPlugin{}
 	recorder := &fakeTestRecorder{}
 	validator := NewExtendedValidator(inner, recorder, true)

@@ -124,12 +124,12 @@ func Test_checkRestrictedIP(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ip := net.ParseIP(tc.ip)
-			require.NotNil(t, ip, "failed to parse IP")
+			require.NotNilf(t, ip, "failed to parse IP address %s", tc.ip)
 			err := checkRestrictedIP(ip)
-			if tc.expectError && err == nil {
+			if tc.expectError {
 				require.Error(t, err)
 			}
-			if !tc.expectError && err != nil {
+			if !tc.expectError {
 				require.NoError(t, err)
 			}
 		})
@@ -145,6 +145,11 @@ func Test_validateEndpointAddress(t *testing.T) {
 		{
 			name:        "valid private network IPv4 address",
 			address:     "10.0.0.1",
+			expectError: false,
+		},
+		{
+			name:        "valid private network IPv4 address",
+			address:     "23.206.60.92",
 			expectError: false,
 		},
 		{
@@ -191,10 +196,10 @@ func Test_validateEndpointAddress(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateEndpointAddress(tc.address)
-			if tc.expectError && err == nil {
+			if tc.expectError {
 				require.Error(t, err)
 			}
-			if !tc.expectError && err != nil {
+			if !tc.expectError {
 				require.NoError(t, err)
 			}
 		})
@@ -219,8 +224,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{{IP: "1.2.3.4"}},
-						NotReadyAddresses: []kapi.EndpointAddress{},
+						Addresses: []kapi.EndpointAddress{{IP: "1.2.3.4"}},
 					},
 				},
 			},
@@ -237,8 +241,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{},
-						NotReadyAddresses: []kapi.EndpointAddress{},
+						Addresses: []kapi.EndpointAddress{},
 					},
 				},
 			},
@@ -255,8 +258,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{},
-						NotReadyAddresses: []kapi.EndpointAddress{},
+						Addresses: []kapi.EndpointAddress{},
 					},
 				},
 			},
@@ -273,7 +275,6 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{},
 						NotReadyAddresses: []kapi.EndpointAddress{},
 					},
 				},
@@ -291,7 +292,6 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{},
 						NotReadyAddresses: []kapi.EndpointAddress{{IP: "10.0.0.5"}},
 					},
 				},
@@ -312,12 +312,10 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{{IP: "10.0.0.1"}},
-						NotReadyAddresses: []kapi.EndpointAddress{},
+						Addresses: []kapi.EndpointAddress{{IP: "10.0.0.1"}},
 					},
 					{
-						Addresses:         []kapi.EndpointAddress{},
-						NotReadyAddresses: []kapi.EndpointAddress{},
+						Addresses: []kapi.EndpointAddress{},
 					},
 				},
 			},
@@ -334,8 +332,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 			expectedEndpoints: &kapi.Endpoints{
 				Subsets: []kapi.EndpointSubset{
 					{
-						Addresses:         []kapi.EndpointAddress{},
-						NotReadyAddresses: []kapi.EndpointAddress{},
+						Addresses: []kapi.EndpointAddress{},
 					},
 				},
 			},
@@ -360,7 +357,6 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 							{IP: "10.0.0.1"},
 							{IP: "10.0.0.2"},
 						},
-						NotReadyAddresses: []kapi.EndpointAddress{},
 					},
 				},
 			},
@@ -402,8 +398,7 @@ func TestExtendedValidator_EndpointValidationWithRouteValidationDisabled(t *test
 
 	expected := &kapi.Endpoints{
 		Subsets: []kapi.EndpointSubset{{
-			Addresses:         []kapi.EndpointAddress{{IP: "10.0.0.1"}},
-			NotReadyAddresses: []kapi.EndpointAddress{},
+			Addresses: []kapi.EndpointAddress{{IP: "10.0.0.1"}},
 		}},
 	}
 	assert.Equal(t, expected, inner.endpoints[0], "loopback should be filtered even with route validation disabled")
