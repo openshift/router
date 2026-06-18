@@ -2,6 +2,7 @@ package templaterouter
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"fmt"
 	"os"
@@ -11,10 +12,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	routev1 "github.com/openshift/api/route/v1"
+	"github.com/stretchr/testify/require"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"github.com/openshift/router/pkg/router/client/client_testutils"
 )
 
 // TestCreateServiceUnit tests creating a service unit and finding it in router state
@@ -1664,4 +1668,23 @@ func TestSecretToPem(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReloadRouterSidecar(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("should succeed on succeeded reload", func(t *testing.T) {
+		serverSocket, stopServer := client_testutils.CreateServerMock(t, map[string]string{"reload": "Success=1"})
+		defer stopServer()
+		err := reloadRouterSidecar(ctx, "unix://"+serverSocket)
+		require.NoError(t, err)
+	})
+
+	t.Run("should fail on non succeeded reload", func(t *testing.T) {
+		serverSocket, stopServer := client_testutils.CreateServerMock(t, map[string]string{"reload": "Success=0"})
+		defer stopServer()
+		err := reloadRouterSidecar(ctx, "unix://"+serverSocket)
+		require.EqualError(t, err, `error reloading router: Success=0`)
+	})
+
 }

@@ -2,6 +2,7 @@ package templaterouter
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/pem"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	logf "github.com/openshift/router/log"
+	"github.com/openshift/router/pkg/router/client"
 	"github.com/openshift/router/pkg/router/crl"
 	"github.com/openshift/router/pkg/router/template/limiter"
 )
@@ -53,6 +55,7 @@ const (
 // that generates configuration files via a set of templates
 // and manages the backend process with a reload script.
 type templateRouter struct {
+	appCtx context.Context
 	// the directory to write router output to
 	dir              string
 	templates        map[string]*template.Template
@@ -131,6 +134,7 @@ type templateRouter struct {
 
 // templateRouterCfg holds all configuration items required to initialize the template router
 type templateRouterCfg struct {
+	appCtx                        context.Context
 	dir                           string
 	templates                     map[string]*template.Template
 	reloadScriptPath              string
@@ -243,6 +247,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 	prometheus.MustRegister(metricWriteConfig)
 
 	router := &templateRouter{
+		appCtx:                        cfg.appCtx,
 		dir:                           dir,
 		templates:                     cfg.templates,
 		reloadScriptPath:              cfg.reloadScriptPath,
@@ -666,8 +671,22 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 	return nil
 }
 
-// reloadRouter executes the router's reload script.
+// reloadRouter reloads haproxy.
 func (r *templateRouter) reloadRouter(shutdown bool) error {
+	adminSocket := os.Getenv("ROUTER_HAPROXY_ADMIN_UNIX_SOCKET")
+	if adminSocket != "" {
+		if shutdown {
+			// We are in HAProxy's master/worker mode, currently implemented as a sidecar,
+			// so there is no local process to handle and the sidecar one already received SIGTERM.
+			return nil
+		}
+		return reloadRouterSidecar(r.appCtx, "unix://"+adminSocket)
+	}
+	return r.reloadRouterEmbedded(shutdown)
+}
+
+// reloadRouterEmbedded executes the router's reload script.
+func (r *templateRouter) reloadRouterEmbedded(shutdown bool) error {
 	if r.reloadFn != nil {
 		return r.reloadFn(shutdown)
 	}
@@ -679,7 +698,25 @@ func (r *templateRouter) reloadRouter(shutdown bool) error {
 	if err != nil {
 		return fmt.Errorf("error reloading router: %v\n%s", err, string(out))
 	}
-	log.V(0).Info("router reloaded", "output", string(out))
+	log.V(0).Info("router reloaded", "mode", "embedded", "output", string(out))
+	return nil
+}
+
+// reloadRouterSidecar sends a reload command to the haproxy running as sidecar.
+func reloadRouterSidecar(ctx context.Context, adminUnixSocket string) error {
+	// HAProxy runs as a native sidecar, so it should always be up and running
+	// when router is running. A failure here means a legit one.
+	output, err := client.RunCommand(ctx, adminUnixSocket, "reload", client.ClientOpts{Timeout: time.Minute})
+	if err != nil {
+		return fmt.Errorf("error connecting haproxy: %w", err)
+	}
+
+	// `reload` command is synchronous since haproxy 2.7, so it is safe to continue as soon as it returns.
+	// It should return Success=1 in the first line in case everything went well, anything else is considered a failure.
+	if !strings.HasPrefix(output, "Success=1") {
+		return fmt.Errorf("error reloading router: %s", output)
+	}
+	log.Info("router reloaded", "mode", "sidecar")
 	return nil
 }
 
