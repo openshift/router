@@ -2509,8 +2509,8 @@ func TestExtendedValidateRoute(t *testing.T) {
 			expectedErrors: 1,
 		},
 		{
-			// Private key containing the CA chain should be rejected
-			name: "A key field containing Public Key/certificate attributes should be rejected",
+			// Private key containing the CA chain is allowed
+			name: "A key field containing Public Key/certificate attributes should be allowed",
 			route: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
