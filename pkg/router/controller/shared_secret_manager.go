@@ -10,6 +10,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -30,7 +31,7 @@ type SharedSecretManager struct {
 	queue      workqueue.RateLimitingInterface
 
 	lock      sync.RWMutex
-	informers map[string]*informerState // key is either "namespace" or "namespace/secret/secretName"
+	informers map[types.NamespacedName]*informerState // Namespace is always set, Name is empty for Fast Path, or secretName for Safe Path
 
 	// restrictedNamespaces tracks namespaces where we don't have permission to list all secrets.
 	// value is true if restricted, false if not restricted.
@@ -50,7 +51,7 @@ func NewSharedSecretManager(kubeClient kubernetes.Interface, queue workqueue.Rat
 	return &SharedSecretManager{
 		kubeClient:           kubeClient,
 		queue:                queue,
-		informers:            make(map[string]*informerState),
+		informers:            make(map[types.NamespacedName]*informerState),
 		restrictedNamespaces: make(map[string]bool),
 		registeredRoutes:     make(map[string]referencedSecret),
 	}
@@ -156,11 +157,11 @@ func (m *SharedSecretManager) RegisterRoute(ctx context.Context, namespace strin
 	return nil
 }
 
-func (m *SharedSecretManager) getInformerKey(namespace, secretName string, restricted bool) string {
+func (m *SharedSecretManager) getInformerKey(namespace, secretName string, restricted bool) types.NamespacedName {
 	if restricted {
-		return namespace + "/secret/" + secretName
+		return types.NamespacedName{Namespace: namespace, Name: secretName}
 	}
-	return namespace
+	return types.NamespacedName{Namespace: namespace}
 }
 
 func (m *SharedSecretManager) notify(namespace string, obj interface{}, eventType string, oldObj interface{}) {
