@@ -251,6 +251,7 @@ func ExtendedValidateRoute(route *routev1.Route) field.ErrorList {
 			if len(keyBytes) == 0 {
 				result = append(result, field.Invalid(tlsFieldPath.Child("key"), "", "no key specified"))
 			} else {
+				// Validate if the keypair is valid (eg.: the leaf certificate should be the first on certBytes)
 				if _, err := tls.X509KeyPair(certBytes, keyBytes); err != nil {
 					result = append(result, field.Invalid(tlsFieldPath.Child("key"), "redacted key data", err.Error()))
 				} else {
