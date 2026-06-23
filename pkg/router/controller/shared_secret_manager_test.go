@@ -8,6 +8,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 	testing2 "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
@@ -18,21 +19,21 @@ func TestSharedSecretManagerHybrid(t *testing.T) {
 		name               string
 		namespace          string
 		allowList          bool
-		expectedKey        string
+		expectedKey        types.NamespacedName
 		expectedRestricted bool
 	}{
 		{
 			name:               "unrestricted namespace uses namespace key",
 			namespace:          "unrestricted",
 			allowList:          true,
-			expectedKey:        "unrestricted",
+			expectedKey:        types.NamespacedName{Namespace: "unrestricted"},
 			expectedRestricted: false,
 		},
 		{
 			name:               "restricted namespace uses per-secret key",
 			namespace:          "restricted",
 			allowList:          false,
-			expectedKey:        "restricted/secret/my-secret",
+			expectedKey:        types.NamespacedName{Namespace: "restricted", Name: "my-secret"},
 			expectedRestricted: true,
 		},
 	}
