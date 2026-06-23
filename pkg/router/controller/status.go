@@ -83,7 +83,6 @@ type StatusAdmitter struct {
 // with differing configurations are writing updates at the same time.
 func NewStatusAdmitter(plugin router.Plugin, client client.RoutesGetter, lister routelisters.RouteLister, name, hostName string, lease writerlease.Lease, tracker ContentionTracker) *StatusAdmitter {
 	return &StatusAdmitter{
-		lock:   sync.Mutex{},
 		plugin: plugin,
 		client: client,
 		lister: lister,
