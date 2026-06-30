@@ -2,6 +2,8 @@ package controller
 
 import (
 	"fmt"
+	"net"
+	"slices"
 
 	kapi "k8s.io/api/core/v1"
 
@@ -21,15 +23,20 @@ type ExtendedValidator struct {
 
 	// recorder is an interface for indicating route status.
 	recorder RouteStatusRecorder
+
+	// extendedRouteValidation enables extended route validation checks.
+	extendedRouteValidation bool
 }
 
-// NewExtendedValidator creates a plugin wrapper that ensures only routes that
-// pass extended validation are relayed to the next plugin in the chain.
-// Recorder is an interface for indicating route status updates.
-func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder) *ExtendedValidator {
+// NewExtendedValidator creates a plugin wrapper that ensures only routes and
+// endpoints that pass validation are relayed to the next plugin in the chain.
+// Endpoint address validation is always enabled. Route validation is
+// controlled by extendedRouteValidation.
+func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder, extendedRouteValidation bool) *ExtendedValidator {
 	return &ExtendedValidator{
-		plugin:   plugin,
-		recorder: recorder,
+		plugin:                  plugin,
+		recorder:                recorder,
+		extendedRouteValidation: extendedRouteValidation,
 	}
 }
 
@@ -39,21 +46,76 @@ func (p *ExtendedValidator) HandleNode(eventType watch.EventType, node *kapi.Nod
 }
 
 // HandleEndpoints processes watch events on the Endpoints resource.
+// Addresses that fail IP validation are removed individually rather
+// than rejecting the entire endpoint set.
 func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints *kapi.Endpoints) error {
+	// Build filtered endpoint subsets without mutating the original ones
+	for i, subset := range endpoints.Subsets {
+		endpoints.Subsets[i].Addresses = filterValidAddresses(subset.Addresses)
+		endpoints.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses)
+	}
 	return p.plugin.HandleEndpoints(eventType, endpoints)
+}
+
+func filterValidAddresses(addrs []kapi.EndpointAddress) []kapi.EndpointAddress {
+	return slices.DeleteFunc(addrs, func(addr kapi.EndpointAddress) bool {
+		err := validateEndpointAddress(addr.IP)
+		if err != nil {
+			log.Error(err, "Skipping endpoint address with restricted or invalid IP", "address", addr.IP)
+		}
+		return err != nil
+	})
+}
+
+func validateEndpointAddress(address string) error {
+	ip := net.ParseIP(address)
+	if ip == nil {
+		return fmt.Errorf("address %q is not a valid IP address", address)
+	}
+	return checkRestrictedIP(ip)
+}
+
+// The AWS IMDS endpoint 169.254.169.254 is covered by the ip.IsLinkLocalUnicast()
+// check in `checkRestrictedIP`.
+var (
+	azureMetadata = net.ParseIP("168.63.129.16")
+	awsIPv6IMDS   = net.ParseIP("fd00:ec2::254")
+)
+
+func checkRestrictedIP(ip net.IP) error {
+	if ip.IsUnspecified() {
+		return fmt.Errorf("IP address %s is a restricted unspecified IP", ip.String())
+	}
+	if ip.IsLoopback() {
+		return fmt.Errorf("IP address %s is a restricted loopback IP", ip.String())
+	}
+	// The AWS IMDS endpoint 169.254.169.254 is covered by the ip.IsLinkLocalUnicast()
+	// check in `checkRestrictedIP`.
+	if ip.IsLinkLocalUnicast() {
+		return fmt.Errorf("IP address %s is a restricted link-local IP", ip.String())
+	}
+	if ip.IsMulticast() {
+		return fmt.Errorf("IP address %s is a restricted multicast IP", ip.String())
+	}
+	if ip.Equal(azureMetadata) || ip.Equal(awsIPv6IMDS) {
+		return fmt.Errorf("IP address %s is a restricted cloud metadata IP", ip.String())
+	}
+	return nil
 }
 
 // HandleRoute processes watch events on the Route resource.
 func (p *ExtendedValidator) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	log.V(10).Info("HandleRoute: ExtendedValidator")
-	// Check if previously seen route and its Spec is unchanged.
-	routeName := routeNameKey(route)
-	if err := routeapihelpers.ExtendedValidateRoute(route).ToAggregate(); err != nil {
-		log.Error(err, "skipping route due to invalid configuration", "route", routeName)
 
-		p.recorder.RecordRouteRejection(route, "ExtendedValidationFailed", err.Error())
-		p.plugin.HandleRoute(watch.Deleted, route)
-		return fmt.Errorf("invalid route configuration")
+	if p.extendedRouteValidation {
+		routeName := routeNameKey(route)
+		if err := routeapihelpers.ExtendedValidateRoute(route).ToAggregate(); err != nil {
+			log.Error(err, "skipping route due to invalid configuration", "route", routeName)
+
+			p.recorder.RecordRouteRejection(route, "ExtendedValidationFailed", err.Error())
+			p.plugin.HandleRoute(watch.Deleted, route)
+			return fmt.Errorf("invalid route configuration")
+		}
 	}
 
 	return p.plugin.HandleRoute(eventType, route)

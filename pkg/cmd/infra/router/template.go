@@ -827,9 +827,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	if o.UpgradeValidation {
 		plugin = controller.NewUpgradeValidation(plugin, recorder, o.UpgradeValidationForceAddCondition, o.UpgradeValidationForceRemoveCondition)
 	}
-	if o.ExtendedValidation {
-		plugin = controller.NewExtendedValidator(plugin, recorder)
-	}
+	plugin = controller.NewExtendedValidator(plugin, recorder, o.ExtendedValidation)
 	if o.AllowExternalCertificates {
 		plugin = controller.NewRouteSecretManager(plugin, recorder, secretManager, o.RouterName, kc.CoreV1(), routeLister, authorizationClient.SubjectAccessReviews())
 	}
