@@ -28,7 +28,7 @@
 {{- /* hsts header in response: */}}
 {{- /* Not fully compliant to RFC6797#6.1 yet: has to accept not conformant directives */}}
 {{- $hstsOptionalTokenPattern := `(?:includeSubDomains|preload)` }}
-{{- $hstsPattern := printf `(?i)(?:%[1]s\s*[;]\s*)*max-age\s*=\s*(?:\d+|"\d+")(?:\s*[;]\s*%[1]s)*`  $hstsOptionalTokenPattern -}}
+{{- $hstsPattern := printf `(?i)(?:%[1]s[ \t]*[;][ \t]*)*max-age[ \t]*=[ \t]*(?:\d+|"\d+")(?:[ \t]*[;][ \t]*%[1]s)*(?:[ \t]*;)?`  $hstsOptionalTokenPattern -}}
 
 {{- /* setForwardedHeadersPattern matches valid options for how and when Forwarded: and X-Forwarded-*: headers are set. */}}
 {{- $setForwardedHeadersPattern := `(?:append|replace|if-none|never)` -}}
