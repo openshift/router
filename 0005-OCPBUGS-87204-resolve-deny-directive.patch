@@ -1,0 +1,173 @@
+From 8ea6e8dfde731c652db53115a1f70a0d0a38d0ec Mon Sep 17 00:00:00 2001
+From: Grant Spence <gspence@redhat.com>
+Date: Thu, 2 Jul 2026 10:07:34 -0400
+Subject: [PATCH] OCPBUGS-87204: Add resolve-deny directive to block restricted
+ IPs from DNS resolution
+
+Add a resolve-deny directive to the resolvers section that prevents
+HAProxy from using DNS-resolved IP addresses that match configured
+CIDR ranges. When a DNS response contains an IP matching a deny rule,
+the address is rejected and the server enters resolver maintenance
+(RMAINT) state, same as a DNS failure.
+
+This prevents SSRF attacks where an attacker-controlled FQDN resolves
+to restricted addresses (cloud metadata endpoints, loopback, link-local)
+while preserving HAProxy's native DNS resolution lifecycle (TTL-based
+refresh, graceful failure handling, async resolution).
+
+Example configuration:
+
+  resolvers ingress_dns
+    parse-resolv-conf
+    resolve-deny 169.254.0.0/16
+    resolve-deny 127.0.0.0/8
+    resolve-deny 168.63.129.16/32
+---
+ include/haproxy/resolvers-t.h | 15 +++++++++
+ include/haproxy/resolvers.h   |  1 +
+ src/resolvers.c               | 57 +++++++++++++++++++++++++++++++++++
+ src/server.c                  |  8 +++++
+ 4 files changed, 81 insertions(+)
+
+diff --git a/include/haproxy/resolvers-t.h b/include/haproxy/resolvers-t.h
+index b727463..c4e477a 100644
+--- a/include/haproxy/resolvers-t.h
++++ b/include/haproxy/resolvers-t.h
+@@ -92,6 +92,9 @@ extern struct pool_head *resolv_requester_pool;
+  */
+ #define SRV_MAX_PREF_NET 5
+ 
++/* max number of deny network entries in a resolvers section */
++#define RSLV_MAX_DENY_NET 16
++
+ /* NOTE: big endian structure */
+ struct resolv_query_item {
+ 	char           name[DNS_MAX_NAME_SIZE+1]; /* query name */
+@@ -148,6 +151,18 @@ struct resolvers {
+ 		int other;                  /*     other dns response errors */
+ 		int obsolete;               /*     an answer hasn't been seen */
+ 	} hold;
++	struct {
++		int family;
++		union {
++			struct in_addr  in4;
++			struct in6_addr in6;
++		} addr;
++		union {
++			struct in_addr  in4;
++			struct in6_addr in6;
++		} mask;
++	} deny_net[RSLV_MAX_DENY_NET];
++	int deny_net_nb;                    /* number of deny network entries */
+ 	struct task *t;                     /* timeout management */
+ 	struct {
+ 		struct list wait;           /* resolutions managed to this resolvers section */
+diff --git a/include/haproxy/resolvers.h b/include/haproxy/resolvers.h
+index 5d4c744..78a9930 100644
+--- a/include/haproxy/resolvers.h
++++ b/include/haproxy/resolvers.h
+@@ -42,6 +42,7 @@ int resolv_str_to_dn_label(const char *str, int str_len, char *dn, int dn_len);
+ int resolv_dn_label_to_str(const char *dn, int dn_len, char *str, int str_len);
+ 
+ int resolv_hostname_validation(const char *string, char **err);
++int resolv_ip_denied(struct resolvers *resolvers, void *ip, short family);
+ int resolv_get_ip_from_response(struct resolv_response *r_res,
+                              struct resolv_options *resolv_opts, void *currentip,
+                              short currentip_sin_family,
+diff --git a/src/resolvers.c b/src/resolvers.c
+index c820d9c..646993f 100644
+--- a/src/resolvers.c
++++ b/src/resolvers.c
+@@ -1502,6 +1502,33 @@ static int resolv_validate_dns_response(unsigned char *resp, unsigned char *bufe
+  * For both cases above, resolv_validate_dns_response is required
+  * returns one of the RSLV_UPD_* code
+  */
++
++/* Check if a resolved IP matches any deny network configured on the resolver.
++ * Returns 1 if the IP is denied, 0 otherwise.
++ */
++int resolv_ip_denied(struct resolvers *resolvers, void *ip, short family)
++{
++	int j;
++
++	if (!resolvers)
++		return 0;
++
++	for (j = 0; j < resolvers->deny_net_nb; j++) {
++		if (resolvers->deny_net[j].family != family)
++			continue;
++		if ((family == AF_INET &&
++		     in_net_ipv4(ip,
++		                 &resolvers->deny_net[j].mask.in4,
++		                 &resolvers->deny_net[j].addr.in4)) ||
++		    (family == AF_INET6 &&
++		     in_net_ipv6(ip,
++		                 &resolvers->deny_net[j].mask.in6,
++		                 &resolvers->deny_net[j].addr.in6)))
++			return 1;
++	}
++	return 0;
++}
++
+ int resolv_get_ip_from_response(struct resolv_response *r_res,
+                              struct resolv_options *resolv_opts, void *currentip,
+                              short currentip_sin_family,
+@@ -3637,6 +3664,36 @@ int cfg_parse_resolvers(const char *file, int linenum, char **args, int kwm)
+ 		}
+ 
+ 	}
++	else if (strcmp(args[0], "resolve-deny") == 0) {
++		unsigned char mask;
++
++		if (!*args[1]) {
++			ha_alert("parsing [%s:%d] : '%s' expects <addr/mask> as argument.\n",
++				 file, linenum, args[0]);
++			err_code |= ERR_ALERT | ERR_FATAL;
++			goto out;
++		}
++		if (curr_resolvers->deny_net_nb >= RSLV_MAX_DENY_NET) {
++			ha_alert("parsing [%s:%d] : '%s' exceeds maximum of %d networks.\n",
++				 file, linenum, args[0], RSLV_MAX_DENY_NET);
++			err_code |= ERR_ALERT | ERR_FATAL;
++			goto out;
++		}
++		if (str2net(args[1], 0, &curr_resolvers->deny_net[curr_resolvers->deny_net_nb].addr.in4,
++		                        &curr_resolvers->deny_net[curr_resolvers->deny_net_nb].mask.in4)) {
++			curr_resolvers->deny_net[curr_resolvers->deny_net_nb].family = AF_INET;
++		} else if (str62net(args[1], &curr_resolvers->deny_net[curr_resolvers->deny_net_nb].addr.in6,
++		                     &mask)) {
++			len2mask6(mask, &curr_resolvers->deny_net[curr_resolvers->deny_net_nb].mask.in6);
++			curr_resolvers->deny_net[curr_resolvers->deny_net_nb].family = AF_INET6;
++		} else {
++			ha_alert("parsing [%s:%d] : '%s' invalid network '%s'.\n",
++				 file, linenum, args[0], args[1]);
++			err_code |= ERR_ALERT | ERR_FATAL;
++			goto out;
++		}
++		curr_resolvers->deny_net_nb++;
++	}
+ 	else if (strcmp(args[0], "accepted_payload_size") == 0) {
+ 		int i = 0;
+ 
+diff --git a/src/server.c b/src/server.c
+index a6e6b39..fb976d5 100644
+--- a/src/server.c
++++ b/src/server.c
+@@ -3733,6 +3733,14 @@ int snr_resolution_cb(struct resolv_requester *requester, struct dns_counters *c
+ 	                                  serverip, server_sin_family, &firstip,
+ 	                                  &firstip_sin_family, s);
+ 
++	if (ret == RSLV_UPD_SRVIP_NOT_FOUND && firstip &&
++	    resolv_ip_denied(resolution->resolvers, firstip, firstip_sin_family)) {
++		ha_warning("server %s/%s: IP address denied by resolve-deny directive\n",
++		           s->proxy->id, s->id);
++		has_no_ip = 1;
++		goto update_status;
++	}
++
+ 	switch (ret) {
+ 		case RSLV_UPD_NO:
+ 			goto update_status;
+-- 
+2.53.0
+

@@ -1004,6 +1004,7 @@ func TestConfigTemplate(t *testing.T) {
 
 	// check the generated config
 	config := filepath.Join(h.workdir, "conf", "haproxy.config")
+	stripUnsupportedDirectives(t, config)
 	parser, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
 	if err != nil {
 		t.Fatalf("Failed to parse the generated config: %v", err)
@@ -1453,4 +1454,25 @@ func reencryptBackendName(ns, route string) string {
 // passthroughBackendName contructs the HAProxy config's backend name for a passthrough route.
 func passthroughBackendName(ns, route string) string {
 	return "be_tcp:" + ns + ":" + route
+}
+
+// stripUnsupportedDirectives removes HAProxy directives from the
+// config file that the vendored haproxytech/config-parser does not
+// recognize. This prevents test failures when carry-patched HAProxy
+// directives (like resolve-deny) are added to the template.
+func stripUnsupportedDirectives(t *testing.T, path string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("Failed to read config file: %v", err)
+	}
+	var filtered []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if !strings.HasPrefix(strings.TrimSpace(line), "resolve-deny ") {
+			filtered = append(filtered, line)
+		}
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(filtered, "\n")), 0644); err != nil {
+		t.Fatalf("Failed to write filtered config file: %v", err)
+	}
 }
