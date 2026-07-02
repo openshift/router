@@ -208,7 +208,17 @@ resolvers ingress_dns
   resolve_retries 1
   timeout retry 5s
   timeout resolve 10s
-  
+  resolve-deny 0.0.0.0/32
+  resolve-deny ::/128
+  resolve-deny 127.0.0.0/8
+  resolve-deny ::1/128
+  resolve-deny 169.254.0.0/16
+  resolve-deny fe80::/10
+  resolve-deny 224.0.0.0/4
+  resolve-deny ff00::/8
+  resolve-deny 168.63.129.16/32
+  resolve-deny fd00:ec2::254/128
+
   {{ if (gt .StatsPort -1) }}
 listen stats
     {{ if eq "v4v6" $router_ip_v4_v6_mode }}
