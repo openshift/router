@@ -1001,5 +1001,6 @@ func modAnnotationsList(termination routev1.TLSTerminationType) []string {
 	annotations = append(annotations, "haproxy.router.openshift.io/hsts_header")
 	annotations = append(annotations, "haproxy.router.openshift.io/rewrite-target")
 	annotations = append(annotations, "router.openshift.io/cookie-same-site")
+	annotations = append(annotations, "haproxy.router.openshift.io/timeout-http-keep-alive")
 	return annotations
 }
