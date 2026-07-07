@@ -329,12 +329,12 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			if !ok {
 				tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 				if !ok {
-					log.Error(nil, "Couldn't get object from tombstone", "obj", obj)
+					log.Error(nil, "Couldn't get object from tombstone", "type", fmt.Sprintf("%T", obj))
 					return
 				}
 				secret, ok = tombstone.Obj.(*kapi.Secret)
 				if !ok {
-					log.Error(nil, "Tombstone contained object that is not a secret", "obj", tombstone.Obj)
+					log.Error(nil, "Tombstone contained object that is not a secret", "type", fmt.Sprintf("%T", tombstone.Obj))
 					return
 				}
 			}
@@ -386,8 +386,8 @@ func (p *RouteSecretManager) validate(route *routev1.Route) error {
 // Note: This function performs an in-place update of the route. The caller should be aware that the route's TLS configuration will be modified directly.
 func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) error {
 	// read referenced secret from the informer cache.
-	// RegisterRoute blocks until cache sync completes, so the secret should be
-	// available immediately after registration.
+	// GetSecret attempts to read from the cache and falls back to a direct API
+	// call if the cache is not synced or the secret is not found.
 	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
 	if err != nil {
 		log.Error(err, "failed to get referenced secret")
