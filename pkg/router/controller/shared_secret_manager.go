@@ -129,7 +129,7 @@ func (m *SharedSecretManager) RegisterRoute(ctx context.Context, namespace strin
 			cache.Indexers{},
 		)
 
-		inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		if _, err := inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				m.notify(namespace, obj, "Add", nil)
 			},
@@ -139,7 +139,11 @@ func (m *SharedSecretManager) RegisterRoute(ctx context.Context, namespace strin
 			DeleteFunc: func(obj interface{}) {
 				m.notify(namespace, obj, "Delete", nil)
 			},
-		})
+		}); err != nil {
+			delete(m.registeredRoutes, key)
+			m.lock.Unlock()
+			return fmt.Errorf("failed to add secret informer handler for key %s: %w", infKey, err)
+		}
 
 		ctx, cancel := context.WithCancel(context.Background())
 		infState = &informerState{
@@ -246,6 +250,11 @@ func (m *SharedSecretManager) UnregisterRoute(namespace string, routeName string
 	return nil
 }
 
+// GetSecret returns the secret from the informer cache or falls back to an API call.
+// WARNING: To maintain high throughput and reduce GC pressure during route syncs,
+// the returned Secret is a direct pointer to the shared informer cache object.
+// Callers MUST NOT mutate the returned Secret. If mutation is required, the caller
+// must explicitly call secret.DeepCopy() first.
 func (m *SharedSecretManager) GetSecret(ctx context.Context, namespace string, routeName string) (*corev1.Secret, error) {
 	m.lock.RLock()
 	key := namespace + "/" + routeName
