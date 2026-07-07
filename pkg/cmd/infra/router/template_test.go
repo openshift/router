@@ -1,9 +1,11 @@
 package router
 
 import (
+	"crypto/tls"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 )
@@ -129,6 +131,46 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 				t.Fatalf("got nil, expected %v", tc.expectErrorMessage)
 			case actualErrorMessage != nil && tc.expectErrorMessage != actualErrorMessage.Error():
 				t.Fatalf("unexpected error: %v, expected: %v", actualErrorMessage, tc.expectErrorMessage)
+			}
+		})
+	}
+}
+
+func TestTlsGroupsToCurveIDs(t *testing.T) {
+	testCases := []struct {
+		description       string
+		groups            []configv1.TLSGroup
+		expectedCurves    []tls.CurveID
+		expectedUnsupport []string
+	}{
+		{
+			description:       "empty input",
+			groups:            []configv1.TLSGroup{},
+			expectedCurves:    nil,
+			expectedUnsupport: nil,
+		},
+		{
+			description:       "valid standard curves",
+			groups:            []configv1.TLSGroup{configv1.TLSGroupX25519, configv1.TLSGroupSecP256r1, configv1.TLSGroupSecP384r1},
+			expectedCurves:    []tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384},
+			expectedUnsupport: nil,
+		},
+		{
+			description:       "mixed valid and invalid curves",
+			groups:            []configv1.TLSGroup{configv1.TLSGroupSecP521r1, "invalidCurve", configv1.TLSGroupX25519MLKEM768},
+			expectedCurves:    []tls.CurveID{tls.CurveP521, tls.X25519MLKEM768},
+			expectedUnsupport: []string{"invalidCurve"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			actualCurves, actualUnsupport := tlsGroupsToCurveIDs(tc.groups)
+			if !cmp.Equal(actualCurves, tc.expectedCurves) {
+				t.Errorf("expected curves %v, got %v", tc.expectedCurves, actualCurves)
+			}
+			if !cmp.Equal(actualUnsupport, tc.expectedUnsupport) {
+				t.Errorf("expected unsupported %v, got %v", tc.expectedUnsupport, actualUnsupport)
 			}
 		})
 	}

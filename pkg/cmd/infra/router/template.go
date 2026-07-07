@@ -30,6 +30,7 @@ import (
 	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
+	configv1 "github.com/openshift/api/config/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	projectclient "github.com/openshift/client-go/project/clientset/versioned"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned"
@@ -972,8 +973,51 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 	if versionName := env("ROUTER_METRICS_TLS_MIN_VERSION", ""); len(versionName) > 0 {
 		secureTLSConfig.MinVersion = crypto.TLSVersionOrDie(versionName)
 	}
+	if curvesStr := env("ROUTER_METRICS_TLS_CURVES", ""); len(curvesStr) > 0 {
+		var curveNames []string
+		if strings.Contains(curvesStr, ",") {
+			curveNames = strings.Split(curvesStr, ",")
+		} else {
+			curveNames = strings.Split(curvesStr, ":")
+		}
+
+		var groups []configv1.TLSGroup
+		for _, name := range curveNames {
+			groups = append(groups, configv1.TLSGroup(strings.TrimSpace(name)))
+		}
+
+		curvePrefs, unsupportedGroups := tlsGroupsToCurveIDs(groups)
+		if len(unsupportedGroups) > 0 {
+			log.V(0).Info("some curves from ROUTER_METRICS_TLS_CURVES are not supported", "unsupportedCurves", unsupportedGroups)
+		}
+		if len(curvePrefs) > 0 {
+			secureTLSConfig.CurvePreferences = curvePrefs
+		}
+	}
 
 	return secureTLSConfig, nil
+}
+
+// tlsGroupsToCurveIDs converts openshift/api TLSGroup identifiers to Go crypto/tls CurveID values.
+// Returns the mapped curve preferences and any group names not supported by this Go version.
+func tlsGroupsToCurveIDs(groups []configv1.TLSGroup) ([]tls.CurveID, []string) {
+	groupMap := map[configv1.TLSGroup]tls.CurveID{
+		configv1.TLSGroupX25519:         tls.X25519,
+		configv1.TLSGroupSecP256r1:      tls.CurveP256,
+		configv1.TLSGroupSecP384r1:      tls.CurveP384,
+		configv1.TLSGroupSecP521r1:      tls.CurveP521,
+		configv1.TLSGroupX25519MLKEM768: tls.X25519MLKEM768,
+	}
+	var curves []tls.CurveID
+	var unsupported []string
+	for _, g := range groups {
+		if id, ok := groupMap[g]; ok {
+			curves = append(curves, id)
+		} else {
+			unsupported = append(unsupported, string(g))
+		}
+	}
+	return curves, unsupported
 }
 
 // getStatsAuth returns the available stats username and password.
