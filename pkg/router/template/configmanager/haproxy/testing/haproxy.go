@@ -59,8 +59,8 @@ func startFakeHAProxyServer(prefix string) (*fakeHAProxy, error) {
 }
 
 func StartFakeServerForTest(t *testing.T) *fakeHAProxy {
-	name := fmt.Sprintf("fake-haproxy-%s", t.Name())
-	server, err := startFakeHAProxyServer(name)
+	// Shorten the prefix to avoid hitting the 104/108 byte UNIX domain socket path length limit.
+	server, err := startFakeHAProxyServer("fake-haproxy-")
 	if err != nil {
 		t.Errorf("%s error: %v", t.Name(), err)
 	}
@@ -107,9 +107,11 @@ func (p *fakeHAProxy) Commands() []string {
 
 func (p *fakeHAProxy) Start() {
 	started := make(chan bool)
+	listenErr := make(chan error, 1)
 	go func() error {
 		listener, err := net.Listen("unix", p.socketFile)
 		if err != nil {
+			listenErr <- err
 			return err
 		}
 
@@ -129,8 +131,14 @@ func (p *fakeHAProxy) Start() {
 		}
 	}()
 
-	// wait for server to indicate it started up.
-	<-started
+	// wait for server to indicate it started up or failed.
+	select {
+	case <-started:
+	case err := <-listenErr:
+		if err != nil {
+			panic(fmt.Sprintf("fakeHAProxy: failed to listen on %s: %v", p.socketFile, err))
+		}
+	}
 }
 
 func (p *fakeHAProxy) Stop() {
