@@ -974,25 +974,26 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		secureTLSConfig.MinVersion = crypto.TLSVersionOrDie(versionName)
 	}
 	if curvesStr := env("ROUTER_METRICS_TLS_CURVES", ""); len(curvesStr) > 0 {
-		var curveNames []string
-		if strings.Contains(curvesStr, ",") {
-			curveNames = strings.Split(curvesStr, ",")
-		} else {
-			curveNames = strings.Split(curvesStr, ":")
-		}
+		curveNames := strings.FieldsFunc(curvesStr, func(c rune) bool {
+			return c == ',' || c == ':'
+		})
 
 		var groups []configv1.TLSGroup
 		for _, name := range curveNames {
-			groups = append(groups, configv1.TLSGroup(strings.TrimSpace(name)))
+			trimmed := strings.TrimSpace(name)
+			if len(trimmed) > 0 {
+				groups = append(groups, configv1.TLSGroup(trimmed))
+			}
 		}
 
 		curvePrefs, unsupportedGroups := tlsGroupsToCurveIDs(groups)
 		if len(unsupportedGroups) > 0 {
-			log.V(0).Info("some curves from ROUTER_METRICS_TLS_CURVES are not supported", "unsupportedCurves", unsupportedGroups)
+			return nil, fmt.Errorf("some curves from ROUTER_METRICS_TLS_CURVES are not supported: %v", unsupportedGroups)
 		}
-		if len(curvePrefs) > 0 {
-			secureTLSConfig.CurvePreferences = curvePrefs
+		if len(curvePrefs) == 0 {
+			return nil, errors.New("no valid curves found in ROUTER_METRICS_TLS_CURVES")
 		}
+		secureTLSConfig.CurvePreferences = curvePrefs
 	}
 
 	return secureTLSConfig, nil
