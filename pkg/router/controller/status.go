@@ -7,7 +7,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	kapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -120,11 +119,11 @@ func (a *StatusAdmitter) HandleRoute(eventType watch.EventType, route *routev1.R
 	return a.plugin.HandleRoute(eventType, route)
 }
 
-func (a *StatusAdmitter) HandleNode(eventType watch.EventType, node *kapi.Node) error {
+func (a *StatusAdmitter) HandleNode(eventType watch.EventType, node *corev1.Node) error {
 	return a.plugin.HandleNode(eventType, node)
 }
 
-func (a *StatusAdmitter) HandleEndpoints(eventType watch.EventType, route *kapi.Endpoints) error {
+func (a *StatusAdmitter) HandleEndpoints(eventType watch.EventType, route *corev1.Endpoints) error {
 	return a.plugin.HandleEndpoints(eventType, route)
 }
 
