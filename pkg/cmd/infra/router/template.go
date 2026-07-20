@@ -974,24 +974,9 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 		secureTLSConfig.MinVersion = crypto.TLSVersionOrDie(versionName)
 	}
 	if curvesStr := env("ROUTER_METRICS_TLS_CURVES", ""); len(curvesStr) > 0 {
-		curveNames := strings.FieldsFunc(curvesStr, func(c rune) bool {
-			return c == ',' || c == ':'
-		})
-
-		var groups []configv1.TLSGroup
-		for _, name := range curveNames {
-			trimmed := strings.TrimSpace(name)
-			if len(trimmed) > 0 {
-				groups = append(groups, configv1.TLSGroup(trimmed))
-			}
-		}
-
-		curvePrefs, unsupportedGroups := tlsGroupsToCurveIDs(groups)
-		if len(unsupportedGroups) > 0 {
-			return nil, fmt.Errorf("some curves from ROUTER_METRICS_TLS_CURVES are not supported: %v", unsupportedGroups)
-		}
-		if len(curvePrefs) == 0 {
-			return nil, errors.New("no valid curves found in ROUTER_METRICS_TLS_CURVES")
+		curvePrefs, err := parseCurvePreferences(curvesStr)
+		if err != nil {
+			return nil, err
 		}
 		secureTLSConfig.CurvePreferences = curvePrefs
 	}
@@ -999,6 +984,32 @@ func makeTLSConfig(reloadPeriod time.Duration) (*tls.Config, error) {
 	return secureTLSConfig, nil
 }
 
+// parseCurvePreferences parses a string of comma- or colon-separated TLS group names
+// and maps them to standard Go crypto/tls CurveIDs.
+func parseCurvePreferences(curvesStr string) ([]tls.CurveID, error) {
+	curveNames := strings.FieldsFunc(curvesStr, func(c rune) bool {
+		return c == ',' || c == ':'
+	})
+
+	var groups []configv1.TLSGroup
+	for _, name := range curveNames {
+		trimmed := strings.TrimSpace(name)
+		if len(trimmed) > 0 {
+			groups = append(groups, configv1.TLSGroup(trimmed))
+		}
+	}
+
+	curvePrefs, unsupportedGroups := tlsGroupsToCurveIDs(groups)
+	if len(unsupportedGroups) > 0 {
+		return nil, fmt.Errorf("some curves from ROUTER_METRICS_TLS_CURVES are not supported: %v", unsupportedGroups)
+	}
+	if len(curvePrefs) == 0 {
+		return nil, errors.New("no valid curves found in ROUTER_METRICS_TLS_CURVES")
+	}
+	return curvePrefs, nil
+}
+
+// TODO(davidesalerno): Replace this method with the library-go equivalent (CurveIDsForTLSGroups) once https://github.com/openshift/library-go/pull/2347/ is merged.
 // tlsGroupsToCurveIDs converts openshift/api TLSGroup identifiers to Go crypto/tls CurveID values.
 // Returns the mapped curve preferences and any group names not supported by this Go version.
 func tlsGroupsToCurveIDs(groups []configv1.TLSGroup) ([]tls.CurveID, []string) {

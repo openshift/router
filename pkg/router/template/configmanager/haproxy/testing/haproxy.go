@@ -135,9 +135,7 @@ func (p *fakeHAProxy) Start() {
 	select {
 	case <-started:
 	case err := <-listenErr:
-		if err != nil {
-			panic(fmt.Sprintf("fakeHAProxy: failed to listen on %s: %v", p.socketFile, err))
-		}
+		panic(fmt.Sprintf("fakeHAProxy: failed to listen on %s: %v", p.socketFile, err))
 	}
 }
 

@@ -2,6 +2,7 @@ package router
 
 import (
 	"crypto/tls"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -136,7 +137,7 @@ func TestParseHeadersToBeSetOrDeleted(t *testing.T) {
 	}
 }
 
-func TestTlsGroupsToCurveIDs(t *testing.T) {
+func TestTLSGroupsToCurveIDs(t *testing.T) {
 	testCases := []struct {
 		description       string
 		groups            []configv1.TLSGroup
@@ -161,6 +162,12 @@ func TestTlsGroupsToCurveIDs(t *testing.T) {
 			expectedCurves:    []tls.CurveID{tls.CurveP521, tls.X25519MLKEM768},
 			expectedUnsupport: []string{"invalidCurve"},
 		},
+		{
+			description:       "all unsupported curves",
+			groups:            []configv1.TLSGroup{"invalidGroupA", "invalidGroupB"},
+			expectedCurves:    nil,
+			expectedUnsupport: []string{"invalidGroupA", "invalidGroupB"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -171,6 +178,70 @@ func TestTlsGroupsToCurveIDs(t *testing.T) {
 			}
 			if !cmp.Equal(actualUnsupport, tc.expectedUnsupport) {
 				t.Errorf("expected unsupported %v, got %v", tc.expectedUnsupport, actualUnsupport)
+			}
+		})
+	}
+}
+
+func TestParseCurvePreferences(t *testing.T) {
+	testCases := []struct {
+		description  string
+		inputValue   string
+		expected     []tls.CurveID
+		expectErr    bool
+		errSubstring string
+	}{
+		{
+			description: "comma-separated valid curves",
+			inputValue:  string(configv1.TLSGroupX25519) + "," + string(configv1.TLSGroupSecP256r1),
+			expected:    []tls.CurveID{tls.X25519, tls.CurveP256},
+			expectErr:   false,
+		},
+		{
+			description: "colon-separated valid curves",
+			inputValue:  string(configv1.TLSGroupSecP384r1) + ":" + string(configv1.TLSGroupSecP521r1),
+			expected:    []tls.CurveID{tls.CurveP384, tls.CurveP521},
+			expectErr:   false,
+		},
+		{
+			description: "mixed delimiters with whitespace",
+			inputValue:  "  " + string(configv1.TLSGroupX25519) + " , " + string(configv1.TLSGroupSecP256r1) + " : " + string(configv1.TLSGroupSecP384r1) + "  ",
+			expected:    []tls.CurveID{tls.X25519, tls.CurveP256, tls.CurveP384},
+			expectErr:   false,
+		},
+		{
+			description:  "unsupported curve in list causes error",
+			inputValue:   string(configv1.TLSGroupX25519) + ",InvalidCurve",
+			expected:     nil,
+			expectErr:    true,
+			errSubstring: "are not supported: [InvalidCurve]",
+		},
+		{
+			description:  "empty or whitespace only causes error",
+			inputValue:   "  ,  :  ",
+			expected:     nil,
+			expectErr:    true,
+			errSubstring: "no valid curves found",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			actual, err := parseCurvePreferences(tc.inputValue)
+			if tc.expectErr {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tc.errSubstring)
+				}
+				if tc.errSubstring != "" && !strings.Contains(err.Error(), tc.errSubstring) {
+					t.Errorf("expected error containing %q, got %q", tc.errSubstring, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !cmp.Equal(actual, tc.expected) {
+					t.Errorf("expected %v, got %v", tc.expected, actual)
+				}
 			}
 		})
 	}
