@@ -339,7 +339,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 				}
 			}
 			key := generateKey(namespace, routeName)
-			msg := fmt.Sprintf("secret %q deleted for route %q", secret.Name, key)
+			msg := fmt.Sprintf("external certificate validation failed: secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
 			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
