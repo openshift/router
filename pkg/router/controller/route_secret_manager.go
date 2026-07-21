@@ -354,7 +354,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			}
 
 			// Reject this route
-			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretDeleted, msg)
+			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, msg)
 		},
 	}
 }
