@@ -1309,7 +1309,7 @@ func TestSecretDelete(t *testing.T) {
 	handler.DeleteFunc(secret)
 
 	expectedRejections := []string{
-		"sandbox-route-test:ExternalCertificateSecretDeleted",
+		"sandbox-route-test:ExternalCertificateValidationFailed",
 	}
 	expectedDeletedSecrets := true
 
@@ -1353,7 +1353,7 @@ func TestSecretRecreation(t *testing.T) {
 	handler.AddFunc(secret)
 
 	expectedRejections := []string{
-		"sandbox-route-test:ExternalCertificateSecretDeleted",
+		"sandbox-route-test:ExternalCertificateValidationFailed",
 		"sandbox-route-test:ExternalCertificateSecretRecreated",
 	}
 	if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
