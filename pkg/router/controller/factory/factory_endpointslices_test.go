@@ -2,7 +2,6 @@ package factory_test
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -77,7 +76,7 @@ func protocolPtr(p kapi.Protocol) *kapi.Protocol {
 	return &p
 }
 
-func newEndpointSliceTestSetup(plugin router.Plugin, initialObjects ...runtime.Object) (*fakekubeclient.Clientset, chan struct{}) {
+func newEndpointSliceTestSetup(t *testing.T, plugin router.Plugin, initialObjects ...runtime.Object) (*fakekubeclient.Clientset, chan struct{}) {
 	stopCh := make(chan struct{})
 	client := fakekubeclient.NewSimpleClientset(initialObjects...)
 	fakeProject := &fakeproject.FakeProjectV1{}
@@ -85,7 +84,7 @@ func newEndpointSliceTestSetup(plugin router.Plugin, initialObjects ...runtime.O
 	// WatchListClient featuregate is enabled by default since v0.35. Fake client does not support
 	// initializing its cache from Watch, so falling back to use List instead. The envvar below
 	// configures the featuregate state.
-	os.Setenv("KUBE_FEATURE_"+string(features.WatchListClient), "False")
+	t.Setenv("KUBE_FEATURE_"+string(features.WatchListClient), "False")
 
 	factory.NewDefaultRouterControllerFactory(
 		fakerouterclient.NewSimpleClientset(),
@@ -104,7 +103,7 @@ func TestEndpointSlicesAdd(t *testing.T) {
 		handleEndpointsCh: make(chan handleEndpointsEvent),
 	}
 
-	client, stopCh := newEndpointSliceTestSetup(plugin)
+	client, stopCh := newEndpointSliceTestSetup(t, plugin)
 	defer close(stopCh)
 
 	type testCase struct {
@@ -339,7 +338,7 @@ func TestEndpointSlicesDelete(t *testing.T) {
 		handleEndpointsCh: make(chan handleEndpointsEvent),
 	}
 
-	client, stopCh := newEndpointSliceTestSetup(plugin)
+	client, stopCh := newEndpointSliceTestSetup(t, plugin)
 	defer close(stopCh)
 
 	for _, eps := range []discoveryv1.EndpointSlice{eps1, eps2} {
