@@ -578,6 +578,11 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	sarGet := &authorizationv1.SubjectAccessReview{
 		Spec: authorizationv1.SubjectAccessReviewSpec{
 			User: routerServiceAccount,
+			Groups: []string{
+				"system:serviceaccounts",
+				"system:serviceaccounts:openshift-ingress",
+				"system:authenticated",
+			},
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: route.Namespace, Verb: "get", Resource: "secrets", Name: secretName,
 			},
@@ -593,6 +598,11 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	sarWatch := &authorizationv1.SubjectAccessReview{
 		Spec: authorizationv1.SubjectAccessReviewSpec{
 			User: routerServiceAccount,
+			Groups: []string{
+				"system:serviceaccounts",
+				"system:serviceaccounts:openshift-ingress",
+				"system:authenticated",
+			},
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: route.Namespace, Verb: "watch", Resource: "secrets", Name: secretName,
 			},
@@ -608,6 +618,11 @@ func ValidateTLSExternalCertificate(route *routev1.Route, fldPath *field.Path, s
 	sarList := &authorizationv1.SubjectAccessReview{
 		Spec: authorizationv1.SubjectAccessReviewSpec{
 			User: routerServiceAccount,
+			Groups: []string{
+				"system:serviceaccounts",
+				"system:serviceaccounts:openshift-ingress",
+				"system:authenticated",
+			},
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: route.Namespace, Verb: "list", Resource: "secrets", Name: secretName,
 			},
