@@ -46,7 +46,6 @@ var (
 		ExtCrtStatusReasonSecretRecreated,
 		ExtCrtStatusReasonSecretUpdated,
 		ExtCrtStatusReasonSecretDeleted,
-		ExtCrtStatusReasonSARCompleted,
 	)
 )
 
@@ -295,10 +294,8 @@ func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
 
 // conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime and any reason in ignoreIngressConditionReason.
 func conditionsEqual(a, b *routev1.RouteIngressCondition) bool {
-	if a.Type == b.Type && a.Status == b.Status {
-		if ignoreIngressConditionReason.Has(a.Reason) || ignoreIngressConditionReason.Has(b.Reason) {
-			return true
-		}
+	if ignoreIngressConditionReason.Has(a.Reason) || ignoreIngressConditionReason.Has(b.Reason) {
+		return true
 	}
 	return a.Type == b.Type &&
 		a.Status == b.Status &&

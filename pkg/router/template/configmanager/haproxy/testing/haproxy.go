@@ -46,7 +46,7 @@ type fakeHAProxy struct {
 }
 
 func startFakeHAProxyServer(prefix string) (*fakeHAProxy, error) {
-	f, err := os.CreateTemp("", prefix)
+	f, err := os.CreateTemp(os.TempDir(), prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +107,10 @@ func (p *fakeHAProxy) Commands() []string {
 
 func (p *fakeHAProxy) Start() {
 	started := make(chan bool)
-	go func() {
+	go func() error {
 		listener, err := net.Listen("unix", p.socketFile)
 		if err != nil {
-			panic(fmt.Sprintf("fakeHAProxy Start failed to listen on %s: %v", p.socketFile, err))
+			return err
 		}
 
 		started <- true
@@ -119,11 +119,11 @@ func (p *fakeHAProxy) Start() {
 			shutdown := p.shutdown
 			p.lock.Unlock()
 			if shutdown {
-				return
+				return nil
 			}
 			conn, err := listener.Accept()
 			if err != nil {
-				return
+				return err
 			}
 			go p.process(conn)
 		}
