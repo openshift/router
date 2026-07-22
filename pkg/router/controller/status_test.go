@@ -1500,43 +1500,6 @@ func Test_recordIngressCondition(t *testing.T) {
 			expectCreated: false,
 		},
 		{
-			name:                    "do not overwrite existing ignored reason with empty reason",
-			routerName:              "foo",
-			routerCanonicalHostname: "router-foo.foo.local",
-			route: &routev1.Route{
-				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
-				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
-					Host:                    "foo.foo.local",
-					RouterName:              "foo",
-					RouterCanonicalHostname: "router-foo.foo.local",
-					Conditions: []routev1.RouteIngressCondition{{
-						Type:   routev1.RouteAdmitted,
-						Status: corev1.ConditionTrue,
-						Reason: ExtCrtStatusReasonSARCompleted,
-					}}},
-				}},
-			},
-			condition: routev1.RouteIngressCondition{
-				Type:   routev1.RouteAdmitted,
-				Status: corev1.ConditionTrue,
-			},
-			expectedRoute: &routev1.Route{
-				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
-				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
-					Host:                    "foo.foo.local",
-					RouterName:              "foo",
-					RouterCanonicalHostname: "router-foo.foo.local",
-					Conditions: []routev1.RouteIngressCondition{{
-						Type:   routev1.RouteAdmitted,
-						Status: corev1.ConditionTrue,
-						Reason: ExtCrtStatusReasonSARCompleted,
-					}}},
-				}},
-			},
-			expectChanged: false,
-			expectCreated: false,
-		},
-		{
 			name:                    "add new condition to existing ingress with existing condition",
 			routerName:              "foo",
 			routerCanonicalHostname: "router-foo.foo.local",

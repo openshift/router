@@ -36,13 +36,13 @@ import (
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/proc"
+	"github.com/openshift/library-go/pkg/route/secretmanager"
 
 	"github.com/openshift/router/pkg/router"
 	"github.com/openshift/router/pkg/router/client"
 	"github.com/openshift/router/pkg/router/controller"
 	"github.com/openshift/router/pkg/router/metrics"
 	"github.com/openshift/router/pkg/router/metrics/haproxy"
-	"github.com/openshift/router/pkg/router/routeapihelpers"
 	"github.com/openshift/router/pkg/router/shutdown"
 	templateplugin "github.com/openshift/router/pkg/router/template"
 	haproxyconfigmanager "github.com/openshift/router/pkg/router/template/configmanager/haproxy"
@@ -769,7 +769,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	secretManager := controller.NewSharedSecretManager(kc, nil)
+	secretManager := secretmanager.NewManager(kc, nil)
 
 	pluginCfg := templateplugin.TemplatePluginConfig{
 		AppCtx:                        ctx,
@@ -815,7 +815,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	informer := factory.CreateRoutesSharedInformer()
 	routeLister := routelisters.NewRouteLister(informer.GetIndexer())
 	if o.UpdateStatus {
-		lease := writerlease.New(time.Minute, 3*time.Second, routeapihelpers.MaxConcurrentSARChecks)
+		lease := writerlease.New(time.Minute, 3*time.Second)
 		go lease.Run(stopCh)
 		tracker := controller.NewSimpleContentionTracker(informer, o.RouterName, o.ResyncInterval/10)
 		tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", o.RouterName))

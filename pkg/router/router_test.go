@@ -94,7 +94,7 @@ func TestMain(m *testing.M) {
 	factory := routerSelection.NewFactory(routeClient, projectClient.ProjectV1().Projects(), client)
 	informer := factory.CreateRoutesSharedInformer()
 	routeLister := routelisters.NewRouteLister(informer.GetIndexer())
-	lease := writerlease.New(time.Minute, 3*time.Second, 1)
+	lease := writerlease.New(time.Minute, 3*time.Second)
 	go lease.Run(wait.NeverStop)
 	tracker := controller.NewSimpleContentionTracker(informer, namespace, 60*time.Second)
 	tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", namespace))
