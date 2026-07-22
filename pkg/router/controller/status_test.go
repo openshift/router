@@ -2013,3 +2013,7 @@ func (i *fakeInformer) SetTransform(handler cache.TransformFunc) error {
 func (i *fakeInformer) IsStopped() bool {
 	panic("not implemented")
 }
+
+func (i *fakeInformer) HasSyncedChecker() cache.DoneChecker {
+	panic("not implemented")
+}
