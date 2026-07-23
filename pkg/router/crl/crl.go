@@ -147,10 +147,8 @@ func ManageCRLs(caBundleFilename string, caUpdateChannel <-chan struct{}, update
 			updated := false
 			if nextUpdate.IsZero() {
 				log.V(4).Info("no nextUpdate. only watching for CA updates")
-				select {
-				case <-caUpdateChannel:
-					caUpdated = true
-				}
+				<-caUpdateChannel
+				caUpdated = true
 			} else {
 				log.V(4).Info("nextUpdate is at " + nextUpdate.Format(time.RFC3339))
 				select {

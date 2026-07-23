@@ -851,23 +851,21 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 
 	proc.StartReaper(6 * time.Second)
 
-	select {
-	case <-stopCh:
-		cancel()
-		// 45s is the default interval that almost all cloud load balancers require to take an unhealthy
-		// endpoint out of rotation.
-		delay := getIntervalFromEnv("ROUTER_GRACEFUL_SHUTDOWN_DELAY", 45)
-		log.Info(fmt.Sprintf("Shutdown requested, waiting %s for new connections to cease", delay))
-		time.Sleep(delay)
-		log.Info("Instructing the template router to terminate")
-		if err := templatePlugin.Stop(); err != nil {
-			log.Error(err, "Router did not shut down cleanly")
-		} else {
-			log.Info("Shutdown complete, exiting")
-		}
-		// wait one second to let any remaining actions settle
-		time.Sleep(time.Second)
+	<-stopCh
+	cancel()
+	// 45s is the default interval that almost all cloud load balancers require to take an unhealthy
+	// endpoint out of rotation.
+	delay := getIntervalFromEnv("ROUTER_GRACEFUL_SHUTDOWN_DELAY", 45)
+	log.Info(fmt.Sprintf("Shutdown requested, waiting %s for new connections to cease", delay))
+	time.Sleep(delay)
+	log.Info("Instructing the template router to terminate")
+	if err := templatePlugin.Stop(); err != nil {
+		log.Error(err, "Router did not shut down cleanly")
+	} else {
+		log.Info("Shutdown complete, exiting")
 	}
+	// wait one second to let any remaining actions settle
+	time.Sleep(time.Second)
 	return nil
 }
 
