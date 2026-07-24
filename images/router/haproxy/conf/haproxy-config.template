@@ -708,7 +708,9 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
           {{- end }}
 
           {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http")) }}
-  tcp-request content reject if { src_http_req_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http" }} }
+  # Return HTTP 429 when the per-source HTTP request rate limit is exceeded (RFE-2924).
+  # TCP connection limits above still use tcp-request reject because no HTTP response is possible there.
+  http-request deny deny_status 429 if { src_http_req_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http" }} }
           {{- else }}
   #HTTP request rate not restricted
           {{- end }}
