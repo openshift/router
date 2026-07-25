@@ -1,7 +1,6 @@
 # -*- mode: makefile -*-
 
 export GOOS=linux
-export GOARCH ?= amd64
 
 REGISTRY ?= quay.io
 IMAGE ?= openshift/openshift-router
@@ -12,8 +11,8 @@ REMOTE_IMAGE ?= $(REGISTRY)/$(IMAGE):$(TAG)
 OPENSHIFT_ENDPOINT ?= $(shell oc config view --minify --template '{{(index .clusters 0).cluster.server}}' | grep -o '//[^ :]*' | sed 's/^..//')
 
 new-openshift-router-image:
-	GO111MODULE=on CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
-	$(IMAGEBUILDER) build --arch $(GOARCH) -t $(LOCAL_IMAGE) -f hack/Dockerfile.debug .
+	GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor go build -o openshift-router -gcflags=all="-N -l" ./cmd/openshift-router
+	$(IMAGEBUILDER) build -t $(LOCAL_IMAGE) -f hack/Dockerfile.debug .
 
 push:
 	$(IMAGEBUILDER) tag $(LOCAL_IMAGE) $(REMOTE_IMAGE)
