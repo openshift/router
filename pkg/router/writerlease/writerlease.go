@@ -98,22 +98,16 @@ type WriterLease struct {
 	state   State
 	expires time.Time
 	tick    int
-
-	workers int
 }
 
 // New creates a new Lease. Specify the duration to hold leases for and the retry
 // interval on requests that fail.
-func New(leaseDuration, retryInterval time.Duration, workers int) *WriterLease {
+func New(leaseDuration, retryInterval time.Duration) *WriterLease {
 	backoff := wait.Backoff{
 		Duration: 20 * time.Millisecond,
 		Factor:   4,
 		Steps:    5,
 		Jitter:   0.5,
-	}
-
-	if workers < 1 {
-		workers = 1
 	}
 
 	return &WriterLease{
@@ -126,18 +120,12 @@ func New(leaseDuration, retryInterval time.Duration, workers int) *WriterLease {
 		queued: make(map[WorkKey]*work),
 		queue:  workqueue.NewDelayingQueue(),
 		once:   make(chan struct{}),
-
-		workers: workers,
 	}
 }
 
 // NewWithBackoff creates a new Lease. Specify the duration to hold leases for and the retry
 // interval on requests that fail.
-func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, backoff wait.Backoff, workers int) *WriterLease {
-	if workers < 1 {
-		workers = 1
-	}
-
+func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, backoff wait.Backoff) *WriterLease {
 	return &WriterLease{
 		name:          name,
 		backoff:       backoff,
@@ -148,29 +136,21 @@ func NewWithBackoff(name string, leaseDuration, retryInterval time.Duration, bac
 		queued: make(map[WorkKey]*work),
 		queue:  workqueue.NewNamedDelayingQueue(name),
 		once:   make(chan struct{}),
-
-		workers: workers,
 	}
 }
 
 func (l *WriterLease) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
+	defer l.queue.ShutDown()
 
-	var wg sync.WaitGroup
-	for i := 0; i < l.workers; i++ {
-		wg.Add(1)
-		go func(workerID int) {
-			defer utilruntime.HandleCrash()
-			defer wg.Done()
-			for l.work() {
-			}
-			log.V(4).Info("worker stopped", "worker", l.name, "workerID", workerID)
-		}(i)
-	}
+	go func() {
+		defer utilruntime.HandleCrash()
+		for l.work() {
+		}
+		log.V(4).Info("worker stopped", "worker", l.name)
+	}()
 
 	<-stopCh
-	l.queue.ShutDown()
-	wg.Wait()
 }
 
 func (l *WriterLease) Expire() {
@@ -270,8 +250,9 @@ func (l *WriterLease) work() bool {
 	if leaseState == Follower {
 		// if we are following, continue to defer work until the lease expires
 		if remaining := leaseExpires.Sub(l.nowFn()); remaining > 0 {
-			log.V(4).Info("follower awaiting lease expiration, requeueing", "worker", l.name, "key", key, "leaseTimeRemaining", remaining)
-			l.queue.AddAfter(key, remaining)
+			log.V(4).Info("follower awaiting lease expiration", "worker", l.name, "key", key, "leaseTimeRemaining", remaining)
+			time.Sleep(remaining)
+			l.queue.Add(key)
 			l.queue.Done(key)
 			return true
 		}
