@@ -1173,8 +1173,8 @@ func TestPopulateRouteTLSRace(t *testing.T) {
 	lister := &routeLister{items: []*routev1.Route{route}}
 
 	secretMgr := &fake.SecretManager{
-		Secret:    secret,
-		IsPresent: true,
+		Secret:     secret,
+		IsPresent:  true,
 		SecretName: "tls-secret",
 	}
 
