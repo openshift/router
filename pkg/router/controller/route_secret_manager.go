@@ -108,6 +108,15 @@ func (p *RouteSecretManager) Commit() error {
 func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	log.V(10).Info("HandleRoute: RouteSecretManager", "eventType", eventType)
 
+	// DeepCopy the route before any mutation. The route pointer may come from
+	// the informer cache (via the lister), which is shared across goroutines.
+	// populateRouteTLSFromSecret writes Certificate and Key in-place, which
+	// would race with informer goroutines that read the same object (e.g.,
+	// secret handler UpdateFunc calling route.DeepCopy()).
+	if hasExternalCertificate(route) {
+		route = route.DeepCopy()
+	}
+
 	switch eventType {
 	case watch.Added:
 		// register with secret monitor
@@ -203,12 +212,15 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	err := p.plugin.HandleRoute(eventType, route)
 
 	// If the route was accepted by the downstream plugin chain and it has an external certificate
-	// that we successfully validated in this pass, emit the SARCompleted status.
-	// This ensures we do not prematurely mark structurally invalid routes as Admitted=True
-	// before the ExtendedValidator has checked the cert/key contents.
+	// that we successfully validated in this pass, emit the SARCompleted status — but only if the
+	// route doesn't already have an ext-cert admitted reason. Without this guard, every HandleRoute
+	// writes SARCompleted, which triggers a status update, which re-enqueues the route, which
+	// triggers another HandleRoute — a feedback loop that doubles cert writes and HAProxy reloads.
 	if err == nil && hasExternalCertificate(route) && (eventType == watch.Added || eventType == watch.Modified) {
-		msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
-		p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+		if !hasExtCertAdmittedReason(route, p.routerName) {
+			msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+		}
 	}
 
 	return err
@@ -285,12 +297,14 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			if _, deleted := p.deletedSecrets.LoadAndDelete(key); deleted {
 				log.V(4).Info("Secret recreated for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
 
-				// Ensure fetching the updated route
+				// Ensure fetching the updated route and DeepCopy to avoid
+				// reading/writing the shared informer cache object.
 				route, err := p.routelister.Routes(namespace).Get(routeName)
 				if err != nil {
 					log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 					return
 				}
+				route = route.DeepCopy()
 
 				// The route should *remain* rejected until it's re-evaluated
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
@@ -306,18 +320,20 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
 			routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
 
-			// Ensure fetching the updated route
+			// Ensure fetching the updated route and DeepCopy to avoid
+			// reading/writing the shared informer cache object.
 			route, err := p.routelister.Routes(namespace).Get(routeName)
 			if err != nil {
 				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 				return
 			}
+			route = route.DeepCopy()
 
 			msg := fmt.Sprintf("secret %q updated for route %q (oldSecretVersion=%v, newSecretVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
 			// Update the route status to notify plugins, including this plugin, for re-evaluation.
 			// - If the route is admitted (Admitted=True), record an update event.
 			// - If the route is not admitted, record a rejection event (keep it rejected).
-			if isRouteAdmittedTrue(route.DeepCopy(), p.routerName) {
+			if isRouteAdmittedTrue(route, p.routerName) {
 				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
 			} else {
 				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
@@ -346,12 +362,14 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// keep the secret monitor active and mark the secret as deleted for this route.
 			p.deletedSecrets.Store(key, true)
 
-			// Ensure fetching the updated route
+			// Ensure fetching the updated route and DeepCopy to avoid
+			// reading/writing the shared informer cache object.
 			route, err := p.routelister.Routes(namespace).Get(routeName)
 			if err != nil {
 				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 				return
 			}
+			route = route.DeepCopy()
 
 			// Reject this route
 			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, msg)
@@ -429,6 +447,29 @@ func hasExternalCertificate(route *routev1.Route) bool {
 // generateKey creates a unique identifier for a route
 func generateKey(namespace, routeName string) string {
 	return fmt.Sprintf("%s/%s", namespace, routeName)
+}
+
+// hasExtCertAdmittedReason returns true if the route already has an
+// Admitted=True condition with an external-certificate reason (e.g.,
+// SARCompleted, SecretUpdated). Used to avoid redundant SARCompleted
+// status writes that would create a re-enqueue feedback loop.
+func hasExtCertAdmittedReason(route *routev1.Route, routerName string) bool {
+	for _, ingress := range route.Status.Ingress {
+		if ingress.RouterName != routerName {
+			continue
+		}
+		for _, condition := range ingress.Conditions {
+			if condition.Type == routev1.RouteAdmitted && condition.Status == kapi.ConditionTrue {
+				switch condition.Reason {
+				case ExtCrtStatusReasonSARCompleted,
+					ExtCrtStatusReasonSecretUpdated,
+					ExtCrtStatusReasonSecretRecreated:
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // isRouteAdmittedTrue returns true if the given route has been admitted
