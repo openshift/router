@@ -248,14 +248,10 @@ func TestCertManagerConfig(t *testing.T) {
 	}
 }
 
-// TestWriteCertificateAtomicity exposes the non-atomic PEM file write in
-// simpleCertificateWriter.WriteCertificate. The current implementation uses
-// os.WriteFile which truncates the file before writing, creating a window
-// where a concurrent reader (HAProxy during reload) can observe an empty
-// or truncated PEM file.
-//
-// Run with: go test -run TestWriteCertificateAtomicity ./pkg/router/template/
-// Expected: may FAIL intermittently on unfixed code (truncation window is small).
+// TestWriteCertificateAtomicity verifies that WriteCertificate's temp+rename
+// approach prevents concurrent readers from observing truncated or empty PEM
+// files. A writer goroutine repeatedly overwrites the cert while a reader
+// goroutine checks that the file is never empty or truncated.
 func TestWriteCertificateAtomicity(t *testing.T) {
 	dir := t.TempDir()
 	writer := &simpleCertificateWriter{}
@@ -314,7 +310,7 @@ func TestWriteCertificateAtomicity(t *testing.T) {
 
 	if emptyReads.Load() > 0 || truncatedReads.Load() > 0 {
 		t.Errorf("observed %d empty and %d truncated reads out of %d total — "+
-			"WriteCertificate is not atomic (os.WriteFile truncates before writing)",
+			"WriteCertificate must use atomic temp+rename to prevent HAProxy from reading partial PEM files during reload",
 			emptyReads.Load(), truncatedReads.Load(), totalReads.Load())
 	}
 }
