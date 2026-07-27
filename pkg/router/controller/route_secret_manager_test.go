@@ -1278,27 +1278,45 @@ func TestSARCompletedFeedbackLoop(t *testing.T) {
 	}
 
 	// Second HandleRoute: simulates the re-enqueue triggered by the
-	// SARCompleted status write. On unfixed code this STILL emits
-	// SARCompleted, proving the feedback loop exists.
+	// SARCompleted status write. The route already has SARCompleted in
+	// its status (from firstUpdates), so the guard should prevent a
+	// redundant SARCompleted write.
+	//
+	// Set the route's status to reflect the SARCompleted from the first call,
+	// as it would appear after the status write propagates through the API server.
+	route.Status = routev1.RouteStatus{
+		Ingress: []routev1.RouteIngress{
+			{
+				RouterName: testRouterName,
+				Conditions: []routev1.RouteIngressCondition{
+					{
+						Type:   routev1.RouteAdmitted,
+						Status: corev1.ConditionTrue,
+						Reason: ExtCrtStatusReasonSARCompleted,
+					},
+				},
+			},
+		},
+	}
+
 	routeapihelpers.ClearAsyncSARCacheForTest()
 	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
 		t.Fatalf("second HandleRoute failed: %v", err)
 	}
 
 	allUpdates := recorder.GetUpdates()
-	redundantCount := 0
+	sarCompletedCount := 0
 	for _, u := range allUpdates {
 		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
-			redundantCount++
+			sarCompletedCount++
 		}
 	}
 
-	// Current (unfixed) code: redundantCount == 2 (feedback loop present).
-	// Fixed code should have redundantCount == 1 (no redundant write).
-	if redundantCount < 2 {
-		t.Fatalf("expected at least 2 SARCompleted updates proving the feedback loop, got %d: %v", redundantCount, allUpdates)
+	// With the feedback loop guard, the second HandleRoute should NOT
+	// emit another SARCompleted because the route already has one.
+	if sarCompletedCount != 1 {
+		t.Fatalf("expected exactly 1 SARCompleted update (no feedback loop), got %d: %v", sarCompletedCount, allUpdates)
 	}
-	t.Logf("feedback loop confirmed: %d SARCompleted updates from 2 HandleRoute calls", redundantCount)
 }
 
 func TestSecretUpdate(t *testing.T) {
