@@ -1139,13 +1139,11 @@ func TestRouteSecretManager(t *testing.T) {
 	}
 }
 
-// TestPopulateRouteTLSRace exposes a data race between the main controller
-// goroutine (which mutates route.Spec.TLS.Certificate/Key via
-// populateRouteTLSFromSecret) and the informer goroutine (which reads the
-// same shared route object via DeepCopy in the secret handler's UpdateFunc).
-//
-// Run with: go test -race -run TestPopulateRouteTLSRace ./pkg/router/controller/
-// Expected: FAILS with "DATA RACE" on unfixed code.
+// TestPopulateRouteTLSRace verifies that HandleRoute's DeepCopy of the route
+// prevents data races between the main controller goroutine (which populates
+// TLS cert/key fields) and informer goroutines (which read the same route via
+// DeepCopy, as the secret handler's UpdateFunc does in production).
+// Run with -race to confirm no races are detected.
 func TestPopulateRouteTLSRace(t *testing.T) {
 	routeapihelpers.ClearAsyncSARCacheForTest()
 
@@ -1223,12 +1221,11 @@ func TestPopulateRouteTLSRace(t *testing.T) {
 	wg.Wait()
 }
 
-// TestSARCompletedFeedbackLoop verifies that HandleRoute unconditionally
-// emits a RecordRouteUpdate(SARCompleted) after every successful external
-// cert validation — even when the route already has a SARCompleted status.
-// This creates a status-write feedback loop: each SARCompleted write
-// triggers a route re-enqueue, which triggers another HandleRoute, which
-// writes SARCompleted again, doubling cert writes and HAProxy reloads.
+// TestSARCompletedFeedbackLoop verifies that HandleRoute only emits
+// RecordRouteUpdate(SARCompleted) when the route does not already have an
+// ext-cert admitted reason. Without this guard, every HandleRoute would
+// write SARCompleted unconditionally, creating a re-enqueue feedback loop
+// that doubles cert writes and HAProxy reloads.
 func TestSARCompletedFeedbackLoop(t *testing.T) {
 	routeapihelpers.ClearAsyncSARCacheForTest()
 
