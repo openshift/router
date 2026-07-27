@@ -1139,6 +1139,168 @@ func TestRouteSecretManager(t *testing.T) {
 	}
 }
 
+// TestPopulateRouteTLSRace exposes a data race between the main controller
+// goroutine (which mutates route.Spec.TLS.Certificate/Key via
+// populateRouteTLSFromSecret) and the informer goroutine (which reads the
+// same shared route object via DeepCopy in the secret handler's UpdateFunc).
+//
+// Run with: go test -race -run TestPopulateRouteTLSRace ./pkg/router/controller/
+// Expected: FAILS with "DATA RACE" on unfixed code.
+func TestPopulateRouteTLSRace(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	// The routeLister returns a pointer to the SAME route object,
+	// faithfully reproducing the informer cache behavior in production.
+	lister := &routeLister{items: []*routev1.Route{route}}
+
+	secretMgr := &fake.SecretManager{
+		Secret:    secret,
+		IsPresent: true,
+		SecretName: "tls-secret",
+	}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		&statusRecorder{},
+		secretMgr,
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// First call to register the route with the secret manager.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("initial HandleRoute failed: %v", err)
+	}
+
+	var wg sync.WaitGroup
+	const iterations = 100
+
+	// Goroutine A: simulates the main controller goroutine calling
+	// HandleRoute, which calls populateRouteTLSFromSecret and WRITES
+	// to route.Spec.TLS.Certificate and route.Spec.TLS.Key.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			routeapihelpers.ClearAsyncSARCacheForTest()
+			rsm.HandleRoute(watch.Modified, route)
+		}
+	}()
+
+	// Goroutine B: simulates the informer goroutine reading the same
+	// shared route object. In production, the secret handler's UpdateFunc
+	// calls isRouteAdmittedTrue(route.DeepCopy(), ...) which READS all
+	// fields including the TLS fields being written by goroutine A.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			_ = route.DeepCopy()
+		}
+	}()
+
+	wg.Wait()
+}
+
+// TestSARCompletedFeedbackLoop verifies that HandleRoute unconditionally
+// emits a RecordRouteUpdate(SARCompleted) after every successful external
+// cert validation — even when the route already has a SARCompleted status.
+// This creates a status-write feedback loop: each SARCompleted write
+// triggers a route re-enqueue, which triggers another HandleRoute, which
+// writes SARCompleted again, doubling cert writes and HAProxy reloads.
+func TestSARCompletedFeedbackLoop(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		&fake.SecretManager{
+			Secret:     secret,
+			IsPresent:  true,
+			SecretName: "tls-secret",
+		},
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// First HandleRoute: registers the route and emits SARCompleted.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("first HandleRoute failed: %v", err)
+	}
+	firstUpdates := recorder.GetUpdates()
+	if len(firstUpdates) != 1 || firstUpdates[0] != "sandbox-route-test:ExternalCertificateSARCompleted" {
+		t.Fatalf("expected one SARCompleted update after first call, got: %v", firstUpdates)
+	}
+
+	// Second HandleRoute: simulates the re-enqueue triggered by the
+	// SARCompleted status write. On unfixed code this STILL emits
+	// SARCompleted, proving the feedback loop exists.
+	routeapihelpers.ClearAsyncSARCacheForTest()
+	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+		t.Fatalf("second HandleRoute failed: %v", err)
+	}
+
+	allUpdates := recorder.GetUpdates()
+	redundantCount := 0
+	for _, u := range allUpdates {
+		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
+			redundantCount++
+		}
+	}
+
+	// Current (unfixed) code: redundantCount == 2 (feedback loop present).
+	// Fixed code should have redundantCount == 1 (no redundant write).
+	if redundantCount < 2 {
+		t.Fatalf("expected at least 2 SARCompleted updates proving the feedback loop, got %d: %v", redundantCount, allUpdates)
+	}
+	t.Logf("feedback loop confirmed: %d SARCompleted updates from 2 HandleRoute calls", redundantCount)
+}
+
 func TestSecretUpdate(t *testing.T) {
 
 	scenarios := []struct {

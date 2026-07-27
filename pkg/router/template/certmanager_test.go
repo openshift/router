@@ -1,8 +1,12 @@
 package templaterouter
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -241,5 +245,76 @@ func TestCertManagerConfig(t *testing.T) {
 		if !tc.shouldPass && err == nil {
 			t.Errorf("%s expected config to fail validation but passed", k)
 		}
+	}
+}
+
+// TestWriteCertificateAtomicity exposes the non-atomic PEM file write in
+// simpleCertificateWriter.WriteCertificate. The current implementation uses
+// os.WriteFile which truncates the file before writing, creating a window
+// where a concurrent reader (HAProxy during reload) can observe an empty
+// or truncated PEM file.
+//
+// Run with: go test -run TestWriteCertificateAtomicity ./pkg/router/template/
+// Expected: may FAIL intermittently on unfixed code (truncation window is small).
+func TestWriteCertificateAtomicity(t *testing.T) {
+	dir := t.TempDir()
+	writer := &simpleCertificateWriter{}
+
+	certA := []byte("-----BEGIN RSA PRIVATE KEY-----\nAAAAAAAAAAAAAAAA\n-----END RSA PRIVATE KEY-----\n-----BEGIN CERTIFICATE-----\nBBBBBBBBBBBBBBBB\n-----END CERTIFICATE-----\n")
+	certB := []byte("-----BEGIN RSA PRIVATE KEY-----\nCCCCCCCCCCCCCCCC\n-----END RSA PRIVATE KEY-----\n-----BEGIN CERTIFICATE-----\nDDDDDDDDDDDDDDDD\n-----END CERTIFICATE-----\n")
+
+	// Seed the file so there is always something to read.
+	if err := writer.WriteCertificate(dir, "test", certA); err != nil {
+		t.Fatalf("initial write failed: %v", err)
+	}
+
+	const iterations = 2000
+	var truncatedReads atomic.Int64
+	var emptyReads atomic.Int64
+	var totalReads atomic.Int64
+
+	var wg sync.WaitGroup
+
+	// Writer goroutine: alternates between certA and certB.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			cert := certA
+			if i%2 == 1 {
+				cert = certB
+			}
+			writer.WriteCertificate(dir, "test", cert)
+		}
+	}()
+
+	// Reader goroutine: reads the PEM file and checks for truncation.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pemPath := filepath.Join(dir, "test.pem")
+		for i := 0; i < iterations*2; i++ {
+			data, err := os.ReadFile(pemPath)
+			if err != nil {
+				continue
+			}
+			totalReads.Add(1)
+			if len(data) == 0 {
+				emptyReads.Add(1)
+			} else if len(data) < len(certA) && len(data) < len(certB) {
+				truncatedReads.Add(1)
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	t.Logf("total reads: %d, empty: %d, truncated: %d",
+		totalReads.Load(), emptyReads.Load(), truncatedReads.Load())
+
+	if emptyReads.Load() > 0 || truncatedReads.Load() > 0 {
+		t.Errorf("observed %d empty and %d truncated reads out of %d total — "+
+			"WriteCertificate is not atomic (os.WriteFile truncates before writing)",
+			emptyReads.Load(), truncatedReads.Load(), totalReads.Load())
 	}
 }
