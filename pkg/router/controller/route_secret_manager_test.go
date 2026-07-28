@@ -1202,7 +1202,10 @@ func TestPopulateRouteTLSRace(t *testing.T) {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
 			routeapihelpers.ClearAsyncSARCacheForTest()
-			rsm.HandleRoute(watch.Modified, route)
+			if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+				t.Errorf("HandleRoute iteration %d: %v", i, err)
+				return
+			}
 		}
 	}()
 

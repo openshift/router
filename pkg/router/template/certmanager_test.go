@@ -280,7 +280,10 @@ func TestWriteCertificateAtomicity(t *testing.T) {
 			if i%2 == 1 {
 				cert = certB
 			}
-			writer.WriteCertificate(dir, "test", cert)
+			if err := writer.WriteCertificate(dir, "test", cert); err != nil {
+				t.Errorf("WriteCertificate iteration %d: %v", i, err)
+				return
+			}
 		}
 	}()
 
