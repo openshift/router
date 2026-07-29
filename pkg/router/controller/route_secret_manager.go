@@ -217,7 +217,9 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	// writes SARCompleted, which triggers a status update, which re-enqueues the route, which
 	// triggers another HandleRoute — a feedback loop that doubles cert writes and HAProxy reloads.
 	if err == nil && hasExternalCertificate(route) && (eventType == watch.Added || eventType == watch.Modified) {
-		if !hasExtCertAdmittedReason(route, p.routerName) {
+		key := generateKey(route.Namespace, route.Name)
+		_, secretDeleted := p.deletedSecrets.Load(key)
+		if !secretDeleted && !hasExtCertAdmittedReason(route, p.routerName) {
 			msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
 			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
 		}

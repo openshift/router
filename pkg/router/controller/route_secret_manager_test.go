@@ -1319,6 +1319,106 @@ func TestSARCompletedFeedbackLoop(t *testing.T) {
 	}
 }
 
+// TestDeletedSecretDoesNotGetReadmitted reproduces the failure mode from
+// the Hypershift conformance test "the secret is deleted then routes are
+// not reachable": after the DeleteFunc rejects the route (Admitted=False),
+// the status update triggers a re-enqueue. If the subsequent HandleRoute
+// call succeeds (because GetSecret still returns the secret from cache
+// during the deletion propagation window), the SARCompleted write must
+// NOT flip the route back to Admitted=True. Otherwise the route bounces
+// between admitted and rejected, and the E2E test polls for Admitted=False
+// until timeout.
+//
+// Expected: FAILS on unfixed code (route is re-admitted via SARCompleted).
+func TestDeletedSecretDoesNotGetReadmitted(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+	secretMgr := &fake.SecretManager{
+		Secret:     secret,
+		IsPresent:  true,
+		SecretName: "tls-secret",
+	}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		secretMgr,
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// Step 1: Admit the route — should succeed and write SARCompleted.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("initial HandleRoute failed: %v", err)
+	}
+	updates := recorder.GetUpdates()
+	if len(updates) != 1 || updates[0] != "sandbox-route-test:ExternalCertificateSARCompleted" {
+		t.Fatalf("expected SARCompleted after initial admission, got: %v", updates)
+	}
+
+	// Step 2: Simulate secret deletion via the handler.
+	// This records a rejection (Admitted=False, ValidationFailed).
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+	handler.DeleteFunc(secret)
+
+	rejections := recorder.GetRejections()
+	if len(rejections) != 1 || rejections[0] != "sandbox-route-test:ExternalCertificateValidationFailed" {
+		t.Fatalf("expected ValidationFailed rejection after delete, got: %v", rejections)
+	}
+
+	// Step 3: Simulate the re-enqueue triggered by the rejection status
+	// update. The route still has externalCertificate in its spec. The
+	// SecretManager still returns the secret (simulating the informer
+	// cache race where the delete hasn't propagated yet). validate() and
+	// populateRouteTLSFromSecret() both succeed.
+	//
+	// On unfixed code, HandleRoute succeeds, then the SARCompleted guard
+	// sees the route has Admitted=False (no ext-cert admitted reason) and
+	// writes SARCompleted — flipping the route BACK to Admitted=True.
+	// This re-admission is the bug that causes the E2E test to timeout.
+	routeapihelpers.ClearAsyncSARCacheForTest()
+	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+		t.Fatalf("re-enqueued HandleRoute failed: %v", err)
+	}
+
+	// Verify the route was NOT re-admitted. After the DeleteFunc rejection,
+	// no new SARCompleted update should have been recorded.
+	allUpdates := recorder.GetUpdates()
+	sarCount := 0
+	for _, u := range allUpdates {
+		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
+			sarCount++
+		}
+	}
+	if sarCount > 1 {
+		t.Fatalf("route was re-admitted after secret deletion: got %d SARCompleted updates (expected 1 from initial admission only): %v",
+			sarCount, allUpdates)
+	}
+}
+
 func TestSecretUpdate(t *testing.T) {
 
 	scenarios := []struct {
