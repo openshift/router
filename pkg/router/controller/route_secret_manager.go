@@ -25,6 +25,7 @@ const (
 	ExtCrtStatusReasonSecretUpdated    = "ExternalCertificateSecretUpdated"
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
+	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
 )
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -107,6 +108,15 @@ func (p *RouteSecretManager) Commit() error {
 func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
 	log.V(10).Info("HandleRoute: RouteSecretManager", "eventType", eventType)
 
+	// DeepCopy the route before any mutation. The route pointer may come from
+	// the informer cache (via the lister), which is shared across goroutines.
+	// populateRouteTLSFromSecret writes Certificate and Key in-place, which
+	// would race with informer goroutines that read the same object (e.g.,
+	// secret handler UpdateFunc calling route.DeepCopy()).
+	if hasExternalCertificate(route) {
+		route = route.DeepCopy()
+	}
+
 	switch eventType {
 	case watch.Added:
 		// register with secret monitor
@@ -157,7 +167,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
 				log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
-				// re-validate
+				// re-validate (synchronous, throttled by semaphore)
 				if err := p.validate(route); err != nil {
 					return err
 				}
@@ -165,6 +175,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				if err := p.populateRouteTLSFromSecret(route); err != nil {
 					return err
 				}
+
 			}
 
 		case newHasExt && !oldHadExt:
@@ -198,13 +209,27 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	}
 
 	// call next plugin
-	return p.plugin.HandleRoute(eventType, route)
+	err := p.plugin.HandleRoute(eventType, route)
+
+	// If the route was accepted by the downstream plugin chain and it has an external certificate
+	// that we successfully validated in this pass, emit the SARCompleted status — but only if the
+	// route doesn't already have an ext-cert admitted reason. Without this guard, every HandleRoute
+	// writes SARCompleted, which triggers a status update, which re-enqueues the route, which
+	// triggers another HandleRoute — a feedback loop that doubles cert writes and HAProxy reloads.
+	if err == nil && hasExternalCertificate(route) && (eventType == watch.Added || eventType == watch.Modified) {
+		if !hasExtCertAdmittedReason(route, p.routerName) {
+			msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+		}
+	}
+
+	return err
 }
 
 // validateAndRegister validates the route's externalCertificate configuration and registers it with the secret manager.
 // It also updates the in-memory TLS certificate and key after reading from secret informer's cache.
 func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
-	// validate
+	// validate (synchronous, throttled by semaphore)
 	if err := p.validate(route); err != nil {
 		return err
 	}
@@ -213,6 +238,7 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
 		return fmt.Errorf("failed to register router: %w", err)
 	}
+
 	// read referenced secret and update TLS certificate and key
 	if err := p.populateRouteTLSFromSecret(route); err != nil {
 		return err
@@ -260,6 +286,7 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 		AddFunc: func(obj interface{}) {
 			secret := obj.(*kapi.Secret)
 			log.V(4).Info("Secret added for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
 			// Secret re-creation scenario
 			// Check if the route key exists in the deletedSecrets map, indicating that the secret was previously deleted for this route.
@@ -270,12 +297,14 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			if _, deleted := p.deletedSecrets.LoadAndDelete(key); deleted {
 				log.V(4).Info("Secret recreated for route", "namespace", namespace, "secret", secret.Name, "route", routeName)
 
-				// Ensure fetching the updated route
+				// Ensure fetching the updated route and DeepCopy to avoid
+				// reading/writing the shared informer cache object.
 				route, err := p.routelister.Routes(namespace).Get(routeName)
 				if err != nil {
 					log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 					return
 				}
+				route = route.DeepCopy()
 
 				// The route should *remain* rejected until it's re-evaluated
 				// by all the plugins (including this plugin). Once passes, the route will become active again.
@@ -289,19 +318,22 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			secretNew := new.(*kapi.Secret)
 			key := generateKey(namespace, routeName)
 			log.V(4).Info("Secret updated for route", "namespace", namespace, "secret", secretNew.Name, "oldSecretVersion", secretOld.ResourceVersion, "newSecretVersion", secretNew.ResourceVersion, "route", routeName)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
 
-			// Ensure fetching the updated route
+			// Ensure fetching the updated route and DeepCopy to avoid
+			// reading/writing the shared informer cache object.
 			route, err := p.routelister.Routes(namespace).Get(routeName)
 			if err != nil {
 				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 				return
 			}
+			route = route.DeepCopy()
 
 			msg := fmt.Sprintf("secret %q updated for route %q (oldSecretVersion=%v, newSecretVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
 			// Update the route status to notify plugins, including this plugin, for re-evaluation.
 			// - If the route is admitted (Admitted=True), record an update event.
 			// - If the route is not admitted, record a rejection event (keep it rejected).
-			if isRouteAdmittedTrue(route.DeepCopy(), p.routerName) {
+			if isRouteAdmittedTrue(route, p.routerName) {
 				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
 			} else {
 				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
@@ -309,23 +341,38 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 		},
 
 		DeleteFunc: func(obj interface{}) {
-			secret := obj.(*kapi.Secret)
+			secret, ok := obj.(*kapi.Secret)
+			if !ok {
+				tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+				if !ok {
+					log.Error(nil, "Couldn't get object from tombstone", "type", fmt.Sprintf("%T", obj))
+					return
+				}
+				secret, ok = tombstone.Obj.(*kapi.Secret)
+				if !ok {
+					log.Error(nil, "Tombstone contained object that is not a secret", "type", fmt.Sprintf("%T", tombstone.Obj))
+					return
+				}
+			}
 			key := generateKey(namespace, routeName)
-			msg := fmt.Sprintf("secret %q deleted for route %q", secret.Name, key)
+			msg := fmt.Sprintf("external certificate validation failed: secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
+			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
 
 			// keep the secret monitor active and mark the secret as deleted for this route.
 			p.deletedSecrets.Store(key, true)
 
-			// Ensure fetching the updated route
+			// Ensure fetching the updated route and DeepCopy to avoid
+			// reading/writing the shared informer cache object.
 			route, err := p.routelister.Routes(namespace).Get(routeName)
 			if err != nil {
 				log.Error(err, "failed to get route", "namespace", namespace, "route", routeName)
 				return
 			}
+			route = route.DeepCopy()
 
 			// Reject this route
-			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretDeleted, msg)
+			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, msg)
 		},
 	}
 }
@@ -334,10 +381,14 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 // If the validation fails, it records the route rejection and triggers
 // the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
 //
+// This function is synchronous: it blocks until the SAR check completes.
+// Concurrency is throttled by the semaphore in ValidateTLSExternalCertificate.
+//
 // NOTE: TLS data validation and sanitization are handled by the next plugin `ExtendedValidator`,
 // by reading the "tls.crt" and "tls.key" added by populateRouteTLSFromSecret.
 func (p *RouteSecretManager) validate(route *routev1.Route) error {
 	fldPath := field.NewPath("spec").Child("tls").Child("externalCertificate")
+
 	if err := routeapihelpers.ValidateTLSExternalCertificate(route, fldPath, p.sarClient, p.secretsGetter).ToAggregate(); err != nil {
 		log.Error(err, "skipping route due to invalid externalCertificate configuration", "namespace", route.Namespace, "route", route.Name)
 		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, err.Error())
@@ -352,7 +403,9 @@ func (p *RouteSecretManager) validate(route *routev1.Route) error {
 // the deletion of the route by calling the HandleRoute method with a watch.Deleted event.
 // Note: This function performs an in-place update of the route. The caller should be aware that the route's TLS configuration will be modified directly.
 func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) error {
-	// read referenced secret
+	// read referenced secret from the informer cache.
+	// GetSecret attempts to read from the cache and falls back to a direct API
+	// call if the cache is not synced or the secret is not found.
 	secret, err := p.secretManager.GetSecret(context.TODO(), route.Namespace, route.Name)
 	if err != nil {
 		log.Error(err, "failed to get referenced secret")
@@ -394,6 +447,29 @@ func hasExternalCertificate(route *routev1.Route) bool {
 // generateKey creates a unique identifier for a route
 func generateKey(namespace, routeName string) string {
 	return fmt.Sprintf("%s/%s", namespace, routeName)
+}
+
+// hasExtCertAdmittedReason returns true if the route already has an
+// Admitted=True condition with an external-certificate reason (e.g.,
+// SARCompleted, SecretUpdated). Used to avoid redundant SARCompleted
+// status writes that would create a re-enqueue feedback loop.
+func hasExtCertAdmittedReason(route *routev1.Route, routerName string) bool {
+	for _, ingress := range route.Status.Ingress {
+		if ingress.RouterName != routerName {
+			continue
+		}
+		for _, condition := range ingress.Conditions {
+			if condition.Type == routev1.RouteAdmitted && condition.Status == kapi.ConditionTrue {
+				switch condition.Reason {
+				case ExtCrtStatusReasonSARCompleted,
+					ExtCrtStatusReasonSecretUpdated,
+					ExtCrtStatusReasonSecretRecreated:
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // isRouteAdmittedTrue returns true if the given route has been admitted
