@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 	logFlags := flag.FlagSet{}
 	klog.InitFlags(&logFlags)
 	if err := logFlags.Set("v", "6"); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
