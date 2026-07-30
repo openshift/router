@@ -1329,7 +1329,8 @@ func TestSARCompletedFeedbackLoop(t *testing.T) {
 // between admitted and rejected, and the E2E test polls for Admitted=False
 // until timeout.
 //
-// Expected: FAILS on unfixed code (route is re-admitted via SARCompleted).
+// Guards against a regression where the SARCompleted write re-admits
+// the route during the informer cache propagation window after deletion.
 func TestDeletedSecretDoesNotGetReadmitted(t *testing.T) {
 	routeapihelpers.ClearAsyncSARCacheForTest()
 
@@ -1413,8 +1414,8 @@ func TestDeletedSecretDoesNotGetReadmitted(t *testing.T) {
 			sarCount++
 		}
 	}
-	if sarCount > 1 {
-		t.Fatalf("route was re-admitted after secret deletion: got %d SARCompleted updates (expected 1 from initial admission only): %v",
+	if sarCount != 1 {
+		t.Fatalf("expected exactly 1 SARCompleted (from initial admission), got %d: %v",
 			sarCount, allUpdates)
 	}
 }
