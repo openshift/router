@@ -117,6 +117,10 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 		route = route.DeepCopy()
 	}
 
+	// registered tracks whether validateAndRegister was called, meaning this
+	// is a first-time or new-cert registration that should emit SARCompleted.
+	registered := false
+
 	switch eventType {
 	case watch.Added:
 		// register with secret monitor
@@ -125,6 +129,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 			if err := p.validateAndRegister(route); err != nil {
 				return err
 			}
+			registered = true
 		}
 
 	case watch.Modified:
@@ -145,6 +150,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				if err := p.validateAndRegister(route); err != nil {
 					return err
 				}
+				registered = true
 			} else {
 				// ExternalCertificate is not updated
 				// Re-validate and update the in-memory TLS certificate and key (even if ExternalCertificate remains unchanged)
@@ -185,6 +191,7 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 			if err := p.validateAndRegister(route); err != nil {
 				return err
 			}
+			registered = true
 
 		case !newHasExt && oldHadExt:
 			// Old route had externalCertificate, new route does not
@@ -211,18 +218,14 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	// call next plugin
 	err := p.plugin.HandleRoute(eventType, route)
 
-	// If the route was accepted by the downstream plugin chain and it has an external certificate
-	// that we successfully validated in this pass, emit the SARCompleted status — but only if the
-	// route doesn't already have an ext-cert admitted reason. Without this guard, every HandleRoute
-	// writes SARCompleted, which triggers a status update, which re-enqueues the route, which
-	// triggers another HandleRoute — a feedback loop that doubles cert writes and HAProxy reloads.
-	if err == nil && hasExternalCertificate(route) && (eventType == watch.Added || eventType == watch.Modified) {
-		key := generateKey(route.Namespace, route.Name)
-		_, secretDeleted := p.deletedSecrets.Load(key)
-		if !secretDeleted && !hasExtCertAdmittedReason(route, p.routerName) {
-			msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
-			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
-		}
+	// Only emit SARCompleted when validateAndRegister was called in this
+	// pass — i.e., on first-time registration or cert change. Skip it on
+	// re-validation (Modified with same cert), which would create a
+	// re-enqueue feedback loop and can re-admit routes that were rejected
+	// by the secret handlers.
+	if err == nil && registered {
+		msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+		p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
 	}
 
 	return err
@@ -449,29 +452,6 @@ func hasExternalCertificate(route *routev1.Route) bool {
 // generateKey creates a unique identifier for a route
 func generateKey(namespace, routeName string) string {
 	return fmt.Sprintf("%s/%s", namespace, routeName)
-}
-
-// hasExtCertAdmittedReason returns true if the route already has an
-// Admitted=True condition with an external-certificate reason (e.g.,
-// SARCompleted, SecretUpdated). Used to avoid redundant SARCompleted
-// status writes that would create a re-enqueue feedback loop.
-func hasExtCertAdmittedReason(route *routev1.Route, routerName string) bool {
-	for _, ingress := range route.Status.Ingress {
-		if ingress.RouterName != routerName {
-			continue
-		}
-		for _, condition := range ingress.Conditions {
-			if condition.Type == routev1.RouteAdmitted && condition.Status == kapi.ConditionTrue {
-				switch condition.Reason {
-				case ExtCrtStatusReasonSARCompleted,
-					ExtCrtStatusReasonSecretUpdated,
-					ExtCrtStatusReasonSecretRecreated:
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
 
 // isRouteAdmittedTrue returns true if the given route has been admitted

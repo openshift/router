@@ -709,7 +709,7 @@ func TestRouteSecretManager(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "route updated: old route with externalCertificate, new route with same externalCertificate allowed and correct secret",
+			name: "route updated: old route with externalCertificate, new route with same externalCertificate allowed and correct secret (no SARCompleted on re-validation)",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
@@ -749,9 +749,6 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Modified,
-			expectedUpdates: []string{
-				"sandbox-route-test:ExternalCertificateSARCompleted",
-			},
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route with different externalCertificate)
@@ -1224,12 +1221,11 @@ func TestPopulateRouteTLSRace(t *testing.T) {
 	wg.Wait()
 }
 
-// TestSARCompletedFeedbackLoop verifies that HandleRoute only emits
-// RecordRouteUpdate(SARCompleted) when the route does not already have an
-// ext-cert admitted reason. Without this guard, every HandleRoute would
-// write SARCompleted unconditionally, creating a re-enqueue feedback loop
-// that doubles cert writes and HAProxy reloads.
-func TestSARCompletedFeedbackLoop(t *testing.T) {
+// TestSARCompletedOnlyOnAdded verifies that HandleRoute emits
+// RecordRouteUpdate(SARCompleted) only on watch.Added events, not on
+// watch.Modified. Emitting on Modified creates a re-enqueue feedback
+// loop and can re-admit routes that were rejected by secret handlers.
+func TestSARCompletedOnlyOnAdded(t *testing.T) {
 	routeapihelpers.ClearAsyncSARCacheForTest()
 
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
@@ -1268,54 +1264,30 @@ func TestSARCompletedFeedbackLoop(t *testing.T) {
 		&testSARCreator{allow: true},
 	)
 
-	// First HandleRoute: registers the route and emits SARCompleted.
+	// HandleRoute(Added): should emit SARCompleted.
 	if err := rsm.HandleRoute(watch.Added, route); err != nil {
-		t.Fatalf("first HandleRoute failed: %v", err)
+		t.Fatalf("HandleRoute(Added) failed: %v", err)
 	}
-	firstUpdates := recorder.GetUpdates()
-	if len(firstUpdates) != 1 || firstUpdates[0] != "sandbox-route-test:ExternalCertificateSARCompleted" {
-		t.Fatalf("expected one SARCompleted update after first call, got: %v", firstUpdates)
-	}
-
-	// Second HandleRoute: simulates the re-enqueue triggered by the
-	// SARCompleted status write. The route already has SARCompleted in
-	// its status (from firstUpdates), so the guard should prevent a
-	// redundant SARCompleted write.
-	//
-	// Set the route's status to reflect the SARCompleted from the first call,
-	// as it would appear after the status write propagates through the API server.
-	route.Status = routev1.RouteStatus{
-		Ingress: []routev1.RouteIngress{
-			{
-				RouterName: testRouterName,
-				Conditions: []routev1.RouteIngressCondition{
-					{
-						Type:   routev1.RouteAdmitted,
-						Status: corev1.ConditionTrue,
-						Reason: ExtCrtStatusReasonSARCompleted,
-					},
-				},
-			},
-		},
+	updates := recorder.GetUpdates()
+	if len(updates) != 1 || updates[0] != "sandbox-route-test:ExternalCertificateSARCompleted" {
+		t.Fatalf("expected one SARCompleted on Added, got: %v", updates)
 	}
 
+	// HandleRoute(Modified): should NOT emit SARCompleted.
 	routeapihelpers.ClearAsyncSARCacheForTest()
 	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
-		t.Fatalf("second HandleRoute failed: %v", err)
+		t.Fatalf("HandleRoute(Modified) failed: %v", err)
 	}
 
-	allUpdates := recorder.GetUpdates()
-	sarCompletedCount := 0
-	for _, u := range allUpdates {
+	updates = recorder.GetUpdates()
+	sarCount := 0
+	for _, u := range updates {
 		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
-			sarCompletedCount++
+			sarCount++
 		}
 	}
-
-	// With the feedback loop guard, the second HandleRoute should NOT
-	// emit another SARCompleted because the route already has one.
-	if sarCompletedCount != 1 {
-		t.Fatalf("expected exactly 1 SARCompleted update (no feedback loop), got %d: %v", sarCompletedCount, allUpdates)
+	if sarCount != 1 {
+		t.Fatalf("expected exactly 1 SARCompleted (from Added only), got %d: %v", sarCount, updates)
 	}
 }
 
