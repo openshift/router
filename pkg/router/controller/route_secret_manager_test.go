@@ -1507,14 +1507,16 @@ func TestSecretUpdate(t *testing.T) {
 				"tls.key": []byte("my-key"),
 			}
 
-			// Call the handler directly (synchronous)
+			// Call the handler directly (synchronous — the delayed goroutine
+			// fires in the background but we only check immediate results).
 			handler.UpdateFunc(secret, updatedSecret)
 
-			// UpdateFunc always rejects to force a full re-validation
-			// cycle through HandleRoute, regardless of current admission.
-			expectedRejections := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
-			if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
-				t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.GetRejections())
+			// UpdateFunc always calls RecordRouteUpdate (keeps Admitted=True)
+			// to ensure the route remains reachable while the new cert is
+			// picked up on re-enqueue.
+			expectedUpdates := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			if !reflect.DeepEqual(expectedUpdates, recorder.GetUpdates()) {
+				t.Fatalf("expected updates %v, but got %v", expectedUpdates, recorder.GetUpdates())
 			}
 
 			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {

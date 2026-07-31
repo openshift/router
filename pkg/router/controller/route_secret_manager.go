@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	routelisters "github.com/openshift/client-go/route/listers/route/v1"
@@ -342,14 +343,28 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			route = route.DeepCopy()
 
 			msg := fmt.Sprintf("secret %q updated for route %q (oldSecretVersion=%v, newSecretVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
-			// Reject the route so the full plugin chain re-evaluates it.
-			// If validate() passes on re-evaluation, the StatusAdmitter
-			// re-admits the route. If RBAC was revoked, the SAR check
-			// fails and the route stays rejected. The rejection also
-			// triggers a second re-enqueue (status changes from False
-			// back to True on re-admission), giving the SAR check
-			// another chance to detect RBAC propagation delays.
-			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
+			// Keep the route admitted so it remains reachable while the
+			// new cert is picked up by the plugin chain on re-enqueue.
+			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
+
+			// Schedule a delayed re-evaluation to catch RBAC revocations
+			// that may not have propagated to the API server's authorizer
+			// by the time the first HandleRoute re-validation runs. The
+			// delay gives the RBAC watch time to sync. The second status
+			// write (with an updated message) triggers one more re-enqueue
+			// where validate() runs a fresh SAR check (cache invalidated
+			// after the first re-validation).
+			go func() {
+				time.Sleep(3 * time.Second)
+				routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
+				route, err := p.routelister.Routes(namespace).Get(routeName)
+				if err != nil {
+					return
+				}
+				route = route.DeepCopy()
+				retryMsg := fmt.Sprintf("secret %q re-validated for route %q", secretNew.Name, key)
+				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, retryMsg)
+			}()
 		},
 
 		DeleteFunc: func(obj interface{}) {
