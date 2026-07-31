@@ -1510,19 +1510,11 @@ func TestSecretUpdate(t *testing.T) {
 			// Call the handler directly (synchronous)
 			handler.UpdateFunc(secret, updatedSecret)
 
-			expectedStatus := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
-			expectedRejectionsOnUpdate := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
-
-			if s.isRouteAdmittedTrue {
-				// RecordRouteUpdate will be called if `Admitted=True`
-				if !reflect.DeepEqual(expectedStatus, recorder.GetUpdates()) {
-					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.GetUpdates())
-				}
-			} else {
-				// RecordRouteRejection will be called if `Admitted=False`
-				if !reflect.DeepEqual(expectedRejectionsOnUpdate, recorder.GetRejections()) {
-					t.Fatalf("expected status %v, but got %v", expectedRejectionsOnUpdate, recorder.GetRejections())
-				}
+			// UpdateFunc always rejects to force a full re-validation
+			// cycle through HandleRoute, regardless of current admission.
+			expectedRejections := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
+				t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.GetRejections())
 			}
 
 			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {

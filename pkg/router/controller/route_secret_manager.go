@@ -177,6 +177,13 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				if err := p.validate(route); err != nil {
 					return err
 				}
+				// Don't let the SAR result from this re-validation persist
+				// in the cache. If RBAC was just revoked, the API server
+				// may not have propagated the change yet, producing a stale
+				// "allowed" result. Invalidating ensures the next evaluation
+				// (triggered by the rejection→re-admission status cycle)
+				// does a fresh SAR check.
+				routeapihelpers.InvalidateAsyncSARCache(route.Namespace, route.Spec.TLS.ExternalCertificate.Name)
 				// read referenced secret and update TLS certificate and key
 				if err := p.populateRouteTLSFromSecret(route); err != nil {
 					return err
@@ -335,14 +342,14 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			route = route.DeepCopy()
 
 			msg := fmt.Sprintf("secret %q updated for route %q (oldSecretVersion=%v, newSecretVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
-			// Update the route status to notify plugins, including this plugin, for re-evaluation.
-			// - If the route is admitted (Admitted=True), record an update event.
-			// - If the route is not admitted, record a rejection event (keep it rejected).
-			if isRouteAdmittedTrue(route, p.routerName) {
-				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
-			} else {
-				p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
-			}
+			// Reject the route so the full plugin chain re-evaluates it.
+			// If validate() passes on re-evaluation, the StatusAdmitter
+			// re-admits the route. If RBAC was revoked, the SAR check
+			// fails and the route stays rejected. The rejection also
+			// triggers a second re-enqueue (status changes from False
+			// back to True on re-admission), giving the SAR check
+			// another chance to detect RBAC propagation delays.
+			p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonSecretUpdated, msg)
 		},
 
 		DeleteFunc: func(obj interface{}) {
