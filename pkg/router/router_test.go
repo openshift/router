@@ -491,6 +491,129 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"HSTS with newline": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-nl1",
+					host: "hstsnl1.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\n;\npreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-nl1"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
+			},
+		},
+		"HSTS with CRLF": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-nl2",
+					host: "hstsnl2.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\r\n;\r\npreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-nl2"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
+			},
+		},
+		"HSTS with carriage return": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-nl3",
+					host: "hstsnl3.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\r;\rpreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-nl3"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
+			},
+		},
+		"HSTS with trailing semicolon": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-ts1",
+					host: "hststs1.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000;includeSubDomains;",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-ts1"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=31536000;includeSubDomains;'`,
+				},
+			},
+		},
+		"HSTS with trailing semicolon after preload": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-ts2",
+					host: "hststs2.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000;preload;",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-ts2"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security 'max-age=31536000;preload;'`,
+				},
+			},
+		},
+		"HSTS with tab whitespace": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-tab1",
+					host: "hststab1.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\t;\tpreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-tab1"),
+					attribute:   "http-response",
+					value:       "set-header Strict-Transport-Security 'max-age=31536000\t;\tpreload'",
+				},
+			},
+		},
 		"Simple global HTTP request header": {
 			mustCreateWithConfig{
 				mustMatchConfig: mustMatchConfig{
