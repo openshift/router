@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/openshift/library-go/pkg/route/secretmanager/fake"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
@@ -1526,6 +1527,106 @@ func TestSecretUpdate(t *testing.T) {
 		})
 	}
 
+}
+
+// TestSecretUpdateDelayedRecheck verifies the delayed re-check spawned by
+// UpdateFunc only writes a status update when it actually needs to: it must
+// be a silent no-op when SAR still passes (the common case: secret rotated,
+// RBAC unchanged), and it must reject the route when SAR now fails (RBAC was
+// revoked and has since propagated). Making the common case a no-op avoids
+// doubling the load on the router's status-write queue for every secret
+// update, regardless of whether RBAC ever changes.
+func TestSecretUpdateDelayedRecheck(t *testing.T) {
+	// Shrink the delay so the test doesn't sleep for real seconds. Stored
+	// atomically since a prior test's spawned goroutine (e.g. TestSecretUpdate,
+	// which uses the real default delay) may still be sleeping on this value.
+	originalDelay := secretUpdateRecheckDelay.Load()
+	secretUpdateRecheckDelay.Store(int64(10 * time.Millisecond))
+	defer secretUpdateRecheckDelay.Store(originalDelay)
+
+	scenarios := []struct {
+		name               string
+		allow              bool
+		expectedRejections []string
+	}{
+		{
+			name:               "SAR still allowed: delayed re-check is a no-op",
+			allow:              true,
+			expectedRejections: nil,
+		},
+		{
+			name:  "SAR now denied: delayed re-check rejects the route",
+			allow: false,
+			expectedRejections: []string{
+				"sandbox-route-test:ExternalCertificateValidationFailed",
+			},
+		},
+	}
+
+	for _, s := range scenarios {
+		t.Run(s.name, func(t *testing.T) {
+			routeapihelpers.ClearAsyncSARCacheForTest()
+
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "route-test",
+					Namespace: "sandbox",
+				},
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						ExternalCertificate: &routev1.LocalObjectReference{
+							Name: "tls-secret",
+						},
+					},
+				},
+			}
+
+			recorder := &statusRecorder{}
+			lister := &routeLister{items: []*routev1.Route{route}}
+			secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+				"tls.crt": []byte("my-crt"),
+				"tls.key": []byte("my-key"),
+			})
+			rsm := NewRouteSecretManager(
+				&fakePlugin{},
+				recorder,
+				&fake.SecretManager{},
+				testRouterName,
+				&testSecretGetter{namespace: "sandbox", secret: secret},
+				lister,
+				&testSARCreator{allow: s.allow},
+			)
+
+			handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+			updatedSecret := secret.DeepCopy()
+			updatedSecret.Data = map[string][]byte{
+				"tls.crt": []byte("new-crt"),
+				"tls.key": []byte("new-key"),
+			}
+			handler.UpdateFunc(secret, updatedSecret)
+
+			// Wait for the delayed re-check goroutine to finish rather than
+			// sleeping a fixed amount, keeping the test fast and non-flaky.
+			deadline := time.Now().Add(2 * time.Second)
+			for time.Now().Before(deadline) {
+				if len(recorder.GetRejections()) == len(s.expectedRejections) {
+					break
+				}
+				time.Sleep(time.Millisecond)
+			}
+
+			if !reflect.DeepEqual(s.expectedRejections, recorder.GetRejections()) {
+				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.GetRejections())
+			}
+
+			// The immediate write always happens regardless of the delayed
+			// re-check's outcome.
+			expectedUpdates := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			if !reflect.DeepEqual(expectedUpdates, recorder.GetUpdates()) {
+				t.Fatalf("expected updates %v, but got %v", expectedUpdates, recorder.GetUpdates())
+			}
+		})
+	}
 }
 
 func TestSecretDelete(t *testing.T) {

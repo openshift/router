@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -28,6 +29,18 @@ const (
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
 	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
 )
+
+// secretUpdateRecheckDelay is how long the UpdateFunc secret handler waits
+// before re-checking SAR permissions after a secret update, to catch RBAC
+// revocations that haven't propagated to the API server's authorizer yet.
+// Overridable in tests (via atomic Store/Load, since a prior test's spawned
+// goroutine may still be sleeping on this value when a later test runs) to
+// avoid real sleeps.
+var secretUpdateRecheckDelay atomic.Int64
+
+func init() {
+	secretUpdateRecheckDelay.Store(int64(3 * time.Second))
+}
 
 // RouteSecretManager implements the router.Plugin interface to register
 // or unregister route with secretManger if externalCertificate is used.
@@ -347,23 +360,23 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// new cert is picked up by the plugin chain on re-enqueue.
 			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
 
-			// Schedule a delayed re-evaluation to catch RBAC revocations
-			// that may not have propagated to the API server's authorizer
-			// by the time the first HandleRoute re-validation runs. The
-			// delay gives the RBAC watch time to sync. The second status
-			// write (with an updated message) triggers one more re-enqueue
-			// where validate() runs a fresh SAR check (cache invalidated
-			// after the first re-validation).
+			// Schedule a delayed re-check to catch RBAC revocations that
+			// may not have propagated to the API server's authorizer by
+			// the time the first HandleRoute re-validation runs. The delay
+			// gives the RBAC watch time to sync, then a fresh SAR check
+			// runs (cache invalidated). validate() rejects and deactivates
+			// the route only if the check now fails; a passing check is a
+			// silent no-op, so this costs nothing extra in the common case
+			// where RBAC did not change.
 			go func() {
-				time.Sleep(3 * time.Second)
+				time.Sleep(time.Duration(secretUpdateRecheckDelay.Load()))
 				routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
 				route, err := p.routelister.Routes(namespace).Get(routeName)
 				if err != nil {
 					return
 				}
 				route = route.DeepCopy()
-				retryMsg := fmt.Sprintf("secret %q re-validated for route %q", secretNew.Name, key)
-				p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, retryMsg)
+				_ = p.validate(route)
 			}()
 		},
 
