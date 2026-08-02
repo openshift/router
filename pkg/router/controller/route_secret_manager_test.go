@@ -1493,13 +1493,9 @@ func TestSecretUpdate(t *testing.T) {
 		t.Run(s.name, func(t *testing.T) {
 			recorder := &statusRecorder{}
 			lister := &routeLister{items: []*routev1.Route{s.route}}
-			rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
 			// Create a fakeSecret
 			secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
-
-			// Get the handler
-			handler := rsm.generateSecretHandler(s.route.Namespace, s.route.Name)
 
 			// update the secret
 			updatedSecret := secret.DeepCopy()
@@ -1507,6 +1503,23 @@ func TestSecretUpdate(t *testing.T) {
 				"tls.crt": []byte("my-crt"),
 				"tls.key": []byte("my-key"),
 			}
+
+			// UpdateFunc now synchronously re-validates and re-reads the
+			// secret (SAR still allowed, secret still present), so these
+			// fakes must reflect that success path rather than being
+			// zero-valued stand-ins.
+			rsm := NewRouteSecretManager(
+				&fakePlugin{},
+				recorder,
+				&fake.SecretManager{Secret: updatedSecret, IsPresent: true, SecretName: "tls-secret"},
+				testRouterName,
+				&testSecretGetter{namespace: "sandbox", secret: updatedSecret},
+				lister,
+				&testSARCreator{allow: true},
+			)
+
+			// Get the handler
+			handler := rsm.generateSecretHandler(s.route.Namespace, s.route.Name)
 
 			// Call the handler directly (synchronous — the delayed goroutine
 			// fires in the background but we only check immediate results).
@@ -1587,10 +1600,19 @@ func TestSecretUpdateDelayedRecheck(t *testing.T) {
 				"tls.crt": []byte("my-crt"),
 				"tls.key": []byte("my-key"),
 			})
+			updatedSecret := secret.DeepCopy()
+			updatedSecret.Data = map[string][]byte{
+				"tls.crt": []byte("new-crt"),
+				"tls.key": []byte("new-key"),
+			}
+			// UpdateFunc now synchronously re-reads the secret when SAR
+			// allows, so the secret manager fake must return a real secret
+			// for that path (scenario "SAR still allowed") rather than a
+			// zero-valued stand-in that would nil-panic in populateRouteTLSFromSecret.
 			rsm := NewRouteSecretManager(
 				&fakePlugin{},
 				recorder,
-				&fake.SecretManager{},
+				&fake.SecretManager{Secret: updatedSecret, IsPresent: true, SecretName: "tls-secret"},
 				testRouterName,
 				&testSecretGetter{namespace: "sandbox", secret: secret},
 				lister,
@@ -1598,11 +1620,6 @@ func TestSecretUpdateDelayedRecheck(t *testing.T) {
 			)
 
 			handler := rsm.generateSecretHandler(route.Namespace, route.Name)
-			updatedSecret := secret.DeepCopy()
-			updatedSecret.Data = map[string][]byte{
-				"tls.crt": []byte("new-crt"),
-				"tls.key": []byte("new-key"),
-			}
 			handler.UpdateFunc(secret, updatedSecret)
 
 			// Wait for the delayed re-check goroutine to finish rather than

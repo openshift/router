@@ -357,17 +357,37 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 
 			msg := fmt.Sprintf("secret %q updated for route %q (oldSecretVersion=%v, newSecretVersion=%v)", secretNew.Name, key, secretOld.ResourceVersion, secretNew.ResourceVersion)
 			// Keep the route admitted so it remains reachable while the
-			// new cert is picked up by the plugin chain on re-enqueue.
+			// new cert is picked up below.
 			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
+
+			// Validate and re-read the new secret content synchronously, then
+			// push it through the plugin chain immediately, instead of relying
+			// solely on the router observing its own status write above as a
+			// Modified event to trigger reprocessing. That observation is an
+			// indirect round trip through the route watch, which can be
+			// delayed or dropped under high API-server latency/packet loss
+			// (e.g. HyperShift's separated control plane), leaving the route
+			// serving a stale certificate until an unrelated future event
+			// happens to reprocess it. validate() and populateRouteTLSFromSecret()
+			// already record rejection and tear down the route on failure.
+			if err := p.validate(route); err != nil {
+				return
+			}
+			if err := p.populateRouteTLSFromSecret(route); err != nil {
+				return
+			}
+			if err := p.plugin.HandleRoute(watch.Modified, route); err != nil {
+				log.Error(err, "failed to propagate route after secret update", "namespace", namespace, "route", routeName)
+			}
 
 			// Schedule a delayed re-check to catch RBAC revocations that
 			// may not have propagated to the API server's authorizer by
-			// the time the first HandleRoute re-validation runs. The delay
-			// gives the RBAC watch time to sync, then a fresh SAR check
-			// runs (cache invalidated). validate() rejects and deactivates
-			// the route only if the check now fails; a passing check is a
-			// silent no-op, so this costs nothing extra in the common case
-			// where RBAC did not change.
+			// the time the synchronous check above ran. The delay gives the
+			// RBAC watch time to sync, then a fresh SAR check runs (cache
+			// invalidated). validate() rejects and deactivates the route
+			// only if the check now fails; a passing check is a silent
+			// no-op, so this costs nothing extra in the common case where
+			// RBAC did not change.
 			go func() {
 				time.Sleep(time.Duration(secretUpdateRecheckDelay.Load()))
 				routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
