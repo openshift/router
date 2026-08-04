@@ -162,7 +162,7 @@ func (f *RouterControllerFactory) registerInformerEventHandlers(rc *routercontro
 func (f *RouterControllerFactory) aggregateEndpointSlice(namespace, name string) []discoveryv1.EndpointSlice {
 	objType := reflect.TypeOf(&discoveryv1.EndpointSlice{})
 	objs, _ := f.informers[objType].GetIndexer().ByIndex(ServiceNameIndex, path.Join(namespace, name))
-	fullSet := make([]discoveryv1.EndpointSlice, len(objs), len(objs))
+	fullSet := make([]discoveryv1.EndpointSlice, len(objs))
 
 	for i := range objs {
 		eps := objs[i].(*discoveryv1.EndpointSlice)

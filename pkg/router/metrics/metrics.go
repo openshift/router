@@ -65,7 +65,7 @@ func (l Listener) authorizeHandler(protected http.Handler) http.Handler {
 				if u == l.Username && p == l.Password {
 					protected.ServeHTTP(w, req)
 				} else {
-					http.Error(w, fmt.Sprintf("Unauthorized"), http.StatusUnauthorized)
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				}
 				return
 			}

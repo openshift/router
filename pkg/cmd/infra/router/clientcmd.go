@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/pflag"
 
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	kclientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
@@ -22,7 +21,7 @@ type Config struct {
 	// Namespace is the namespace to act in
 	Namespace string
 
-	clientConfig clientcmd.ClientConfig
+	clientConfig kclientcmd.ClientConfig
 }
 
 // NewConfig returns a new configuration
