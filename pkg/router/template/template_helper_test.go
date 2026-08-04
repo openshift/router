@@ -436,17 +436,6 @@ func TestGenerateHAProxyMap(t *testing.T) {
 		ServiceUnits: make(map[ServiceUnitKey]ServiceUnit),
 	}
 
-	wildcardDomainOrder := []string{
-		`^[^\.]*\.foo\.wildcard\.test\.?(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.foo\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
-		`^[^\.]*\.127\.0\.0\.1\.nip\.io\.?(:[0-9]+)?(/.*)?$`,
-	}
-
-	lines := generateHAProxyMap("os_wildcard_domain.map", td)
-	if err := checkExpectedOrderPrefixes(lines, wildcardDomainOrder); err != nil {
-		t.Errorf("TestGenerateHAProxyMap os_tcp_be.map error: %v", err)
-	}
-
 	httpBackendOrder := []string{
 		"be_edge_http:zzz:zed-route",
 		"be_edge_http:dev:api-route",
@@ -454,7 +443,7 @@ func TestGenerateHAProxyMap(t *testing.T) {
 		"be_edge_http:devel2:foo-wildcard-route",
 	}
 
-	lines = generateHAProxyMap("os_http_be.map", td)
+	lines := generateHAProxyMap("os_http_be.map", td)
 	if err := checkExpectedOrderSuffixes(lines, httpBackendOrder); err != nil {
 		t.Errorf("TestGenerateHAProxyMap os_http_be.map error: %v", err)
 	}

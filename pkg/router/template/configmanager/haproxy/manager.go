@@ -842,9 +842,6 @@ func (entry *routeBackendEntry) BuildMapAssociations(route *routev1.Route) {
 
 	// And then handle the host specific regular expression usage.
 	hostRE := templateutil.GenerateRouteRegexp(hostspec, "", entry.wildcard)
-	if len(os.Getenv("ROUTER_ALLOW_WILDCARD_ROUTES")) > 0 && entry.wildcard {
-		associate("os_wildcard_domain.map", hostRE, "1")
-	}
 	switch termination {
 	case routev1.TLSTerminationReencrypt:
 		associate("os_tcp_be.map", hostRE, name)

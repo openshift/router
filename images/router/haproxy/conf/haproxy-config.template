@@ -909,19 +909,6 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
 {{ end }}{{/* end haproxy config template */}}
 
 {{/*--------------------------------- END OF HAPROXY CONFIG, BELOW ARE MAPPING FILES ------------------------*/}}
-{{/*
-    os_wildcard_domain.map: contains a mapping of wildcard hosts for a
-			[sub]domain regexps. This map is used to check if
-			a host matches a [sub]domain with has wildcard support.
-*/}}
-{{ define "conf/os_wildcard_domain.map" -}}
-{{ if isTrue (env "ROUTER_ALLOW_WILDCARD_ROUTES") -}}
-  {{ range $idx, $line := generateHAProxyMap . -}}
-    {{ $line }}
-  {{ end -}}
-{{ end -}}{{/* end if router allows wildcard routes */ -}}
-{{ end -}}{{/* end wildcard domain map template */}}
-
 
 {{/*
     os_http_be.map : contains a mapping of www.example.com -> <service name>. This map is used to discover the correct backend
