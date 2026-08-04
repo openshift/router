@@ -36,7 +36,7 @@ function haproxyHealthCheck() {
   while true; do
     local httpcode=$(curl $timeout_opts $proxy_opts -s -o /dev/null -I -H "Host: " -w "%{http_code}" ${url})
 
-    if [[ "$httpcode" = 503 || "$httpcode" = 404 ]]; then
+    if [[ "$httpcode" = 503 || "$httpcode" = 404 || "$httpcode" = 403 ]]; then
       echo " - Health check ok : $retries retry attempt(s)."
       return 0
     fi
