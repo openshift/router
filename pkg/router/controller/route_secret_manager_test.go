@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1812,4 +1813,84 @@ func TestSecretRecreation(t *testing.T) {
 	if _, exists := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); exists {
 		t.Fatalf("expected deletedSecrets to not have %q key", generateKey(route.Namespace, route.Name))
 	}
+}
+
+// TestLockRouteSerializesSameKey verifies lockRoute provides genuine mutual
+// exclusion per key: concurrent callers for the SAME route key never
+// overlap their critical sections, while callers for DIFFERENT keys don't
+// block each other at all. This is the core guarantee that closes the race
+// between HandleRoute's periodic re-validation and UpdateFunc's
+// secret-triggered refresh (see the routeLocks field comment) -- both call
+// lockRoute with the same "namespace/routeName" key, so proving the
+// primitive itself is correct here is what makes that higher-level claim
+// trustworthy without needing to reproduce the full race end-to-end.
+func TestLockRouteSerializesSameKey(t *testing.T) {
+	rsm := &RouteSecretManager{}
+
+	const goroutines = 50
+	var active int32
+	var maxObservedActive int32
+	var wg sync.WaitGroup
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			unlock := rsm.lockRoute("sandbox/route-test")
+			defer unlock()
+
+			n := atomic.AddInt32(&active, 1)
+			for {
+				m := atomic.LoadInt32(&maxObservedActive)
+				if n <= m || atomic.CompareAndSwapInt32(&maxObservedActive, m, n) {
+					break
+				}
+			}
+			// Give another goroutine a chance to (incorrectly) enter the
+			// critical section concurrently, if the lock were not working.
+			time.Sleep(time.Millisecond)
+			atomic.AddInt32(&active, -1)
+		}()
+	}
+	wg.Wait()
+
+	if maxObservedActive != 1 {
+		t.Fatalf("expected at most 1 goroutine in the critical section at a time for the same key, observed %d", maxObservedActive)
+	}
+}
+
+// TestLockRouteDoesNotSerializeDifferentKeys verifies lockRoute only
+// serializes callers sharing the same key -- different routes must still be
+// able to make progress concurrently.
+func TestLockRouteDoesNotSerializeDifferentKeys(t *testing.T) {
+	rsm := &RouteSecretManager{}
+
+	release := make(chan struct{})
+	holding := make(chan struct{})
+
+	go func() {
+		unlock := rsm.lockRoute("sandbox/route-a")
+		defer unlock()
+		close(holding)
+		<-release
+	}()
+
+	<-holding
+
+	done := make(chan struct{})
+	go func() {
+		unlock := rsm.lockRoute("sandbox/route-b")
+		unlock()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Different key acquired the lock without waiting for route-a's
+		// holder to release -- correct.
+	case <-time.After(2 * time.Second):
+		t.Fatal("lockRoute for a different key blocked on an unrelated key's lock")
+	}
+
+	close(release)
 }

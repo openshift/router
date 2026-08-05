@@ -61,6 +61,40 @@ type RouteSecretManager struct {
 	// Populated inside DeleteFunc, and consumed or cleaned inside AddFunc and unregister().
 	// It is thread safe and "namespace/routeName" is used as its key.
 	deletedSecrets sync.Map
+
+	// routeLocks serializes cert validation and refresh (validate +
+	// populateRouteTLSFromSecret + propagation to the plugin chain) per
+	// route, keyed by "namespace/routeName". This work can be triggered
+	// concurrently from two different goroutines for the same route: the
+	// route-watch-driven HandleRoute path (re-validation on any Modified
+	// event) and the secret-watch-driven UpdateFunc path (reacting to a
+	// secret change). GetSecret always reads the current, monotonically
+	// advancing informer cache rather than a captured-earlier snapshot, so
+	// serializing the full read-then-propagate sequence guarantees whichever
+	// side runs second observes state at least as fresh as the first --
+	// closing the race where a slower call that started earlier finishes
+	// after a faster one and silently overwrites its fresh cert with stale
+	// data.
+	//
+	// Deliberately never cleaned up: safely removing a keyed mutex entry
+	// requires knowing no one else is about to look it up, which a simple
+	// sync.Map can't guarantee -- deleting while another goroutine is
+	// mid-LoadOrStore for the same key would hand out two different mutex
+	// objects for the same route, silently defeating the serialization this
+	// exists for. A live router process seeing enough distinct route names
+	// over its lifetime to make this map's size a real concern is not a
+	// realistic scenario, so unbounded (but tiny, one *sync.Mutex per name)
+	// growth is the safer tradeoff over a subtly-reintroduced race.
+	routeLocks sync.Map // map[string]*sync.Mutex
+}
+
+// lockRoute acquires the per-route lock for key, creating it on first use,
+// and returns a function to release it.
+func (p *RouteSecretManager) lockRoute(key string) func() {
+	value, _ := p.routeLocks.LoadOrStore(key, &sync.Mutex{})
+	mu := value.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
 }
 
 // NewRouteSecretManager creates a new instance of RouteSecretManager.
@@ -140,9 +174,11 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 		// register with secret monitor
 		if hasExternalCertificate(route) {
 			log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
-			if err := p.validateAndRegister(route); err != nil {
+			unlock, err := p.validateAndRegister(route)
+			if err != nil {
 				return err
 			}
+			defer unlock()
 			registered = true
 		}
 
@@ -161,9 +197,11 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				if err := p.unregister(route); err != nil {
 					return err
 				}
-				if err := p.validateAndRegister(route); err != nil {
+				unlock, err := p.validateAndRegister(route)
+				if err != nil {
 					return err
 				}
+				defer unlock()
 				registered = true
 			} else {
 				// ExternalCertificate is not updated
@@ -187,7 +225,12 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
 				log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
-				// re-validate (synchronous, throttled by semaphore)
+				// re-validate (synchronous, throttled by semaphore). Runs
+				// outside the per-route lock below: it only checks SAR/secret
+				// existence and doesn't write cert content, so there's
+				// nothing here for a concurrent UpdateFunc refresh to race
+				// against -- serializing it too would just add this call's
+				// SAR-check latency to the critical section for no benefit.
 				if err := p.validate(route); err != nil {
 					return err
 				}
@@ -198,6 +241,14 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				// (triggered by the rejection→re-admission status cycle)
 				// does a fresh SAR check.
 				routeapihelpers.InvalidateAsyncSARCache(route.Namespace, route.Spec.TLS.ExternalCertificate.Name)
+
+				// Serialize with any concurrent secret-triggered refresh (see
+				// UpdateFunc) from here through the propagation call below,
+				// so the two can never race to write different cert content
+				// to the plugin chain (see the routeLocks field comment).
+				unlock := p.lockRoute(generateKey(route.Namespace, route.Name))
+				defer unlock()
+
 				// read referenced secret and update TLS certificate and key
 				if err := p.populateRouteTLSFromSecret(route); err != nil {
 					return err
@@ -209,9 +260,11 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 			// New route has externalCertificate, old route did not
 			log.V(4).Info("Validating and registering new external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
 			// register with secret monitor
-			if err := p.validateAndRegister(route); err != nil {
+			unlock, err := p.validateAndRegister(route)
+			if err != nil {
 				return err
 			}
+			defer unlock()
 			registered = true
 
 		case !newHasExt && oldHadExt:
@@ -264,23 +317,36 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 
 // validateAndRegister validates the route's externalCertificate configuration and registers it with the secret manager.
 // It also updates the in-memory TLS certificate and key after reading from secret informer's cache.
-func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
+//
+// The per-route lock (see the routeLocks field comment) is acquired only
+// after validate() succeeds and held until the caller releases it -- the
+// caller is expected to keep it held through the trailing propagation call
+// in HandleRoute, so registration/cert-population and propagation happen as
+// one atomic unit with respect to any concurrent secret-triggered refresh.
+// validate()'s SAR checks run unlocked since they don't write cert content,
+// so a concurrent call for the same route doesn't have to wait on them.
+func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) (unlock func(), err error) {
 	// validate (synchronous, throttled by semaphore)
 	if err := p.validate(route); err != nil {
-		return err
+		return nil, err
 	}
+
+	unlock = p.lockRoute(generateKey(route.Namespace, route.Name))
+
 	// register route with secretManager
 	handler := p.generateSecretHandler(route.Namespace, route.Name)
 	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
-		return fmt.Errorf("failed to register router: %w", err)
+		unlock()
+		return nil, fmt.Errorf("failed to register router: %w", err)
 	}
 
 	// read referenced secret and update TLS certificate and key
 	if err := p.populateRouteTLSFromSecret(route); err != nil {
-		return err
+		unlock()
+		return nil, err
 	}
 
-	return nil
+	return unlock, nil
 }
 
 // generateSecretHandler creates ResourceEventHandlerFuncs to handle Add, Update, and Delete events on secrets.
@@ -380,9 +446,23 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// serving a stale certificate until an unrelated future event
 			// happens to reprocess it. validate() and populateRouteTLSFromSecret()
 			// already record rejection and tear down the route on failure.
+			//
+			// validate() only checks SAR/secret existence and writes no cert
+			// content, so it runs unlocked -- there's nothing for a
+			// concurrent HandleRoute re-validation to race against here.
 			if err := p.validate(route); err != nil {
 				return
 			}
+
+			// Serialize with HandleRoute's own periodic re-validation of this
+			// same route (see the lockRoute comment on the struct) from here
+			// through propagation below: both paths read the secret fresh at
+			// execution time, so forcing them to run one at a time
+			// guarantees whichever runs second can only observe state at
+			// least as new as the first, never overwriting fresh content
+			// with something stale.
+			unlock := p.lockRoute(key)
+			defer unlock()
 			if err := p.populateRouteTLSFromSecret(route); err != nil {
 				return
 			}
