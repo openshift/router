@@ -244,9 +244,19 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	// re-validation (Modified with same cert), which would create a
 	// re-enqueue feedback loop and can re-admit routes that were rejected
 	// by the secret handlers.
+	//
+	// registered alone is not enough: validateAndRegister runs concurrently
+	// with the secret informer's own DeleteFunc on a different goroutine, so
+	// a watch.Added registration that was already in flight when the secret
+	// got deleted can finish afterward and write this SARCompleted status,
+	// silently overwriting DeleteFunc's rejection. Checking deletedSecrets
+	// here closes that race regardless of which goroutine finishes last.
 	if err == nil && registered {
-		msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
-		p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+		key := generateKey(route.Namespace, route.Name)
+		if _, secretDeleted := p.deletedSecrets.Load(key); !secretDeleted {
+			msg := fmt.Sprintf("SAR check and secret load completed for secret %q", route.Spec.TLS.ExternalCertificate.Name)
+			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSARCompleted, msg)
+		}
 	}
 
 	return err

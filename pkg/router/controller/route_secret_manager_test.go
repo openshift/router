@@ -1646,6 +1646,91 @@ func TestSecretUpdateDelayedRecheck(t *testing.T) {
 	}
 }
 
+// TestInFlightRegistrationDoesNotReAdmitDeletedSecretRoute reproduces the
+// production failure of the same "the secret is deleted then routes are not
+// reachable" E2E test, but via a different trigger than
+// TestDeletedSecretDoesNotGetReadmitted: a watch.Added registration that was
+// already in flight when the secret got deleted, rather than a re-validation
+// after the rejection.
+//
+// validateAndRegister (driven by the route informer, on the router's main
+// control loop) and DeleteFunc (driven by the secret informer, on its own
+// goroutine) run concurrently. If DeleteFunc's rejection lands first but the
+// already-in-flight Added registration finishes afterward, the `registered`
+// flag alone does not protect against it -- registered is legitimately true
+// for a first-time registration, so without also checking deletedSecrets the
+// late-finishing SARCompleted write silently re-admits a route that was just
+// correctly rejected.
+func TestInFlightRegistrationDoesNotReAdmitDeletedSecretRoute(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		&fake.SecretManager{
+			Secret:     secret,
+			IsPresent:  true,
+			SecretName: "tls-secret",
+		},
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// Simulate the secret being deleted BEFORE the route's own watch.Added
+	// registration (started earlier, e.g. right after route creation) gets a
+	// chance to finish. This is exactly DeleteFunc's own behavior.
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+	handler.DeleteFunc(secret)
+
+	rejections := recorder.GetRejections()
+	if len(rejections) != 1 || rejections[0] != "sandbox-route-test:ExternalCertificateValidationFailed" {
+		t.Fatalf("expected ValidationFailed rejection after delete, got: %v", rejections)
+	}
+
+	// Now the in-flight registration finishes. The fake SecretManager still
+	// returns the secret (simulating the informer cache race where the
+	// delete hasn't propagated to GetSecret's cache yet), so validate() and
+	// populateRouteTLSFromSecret() both succeed and registered=true.
+	//
+	// On unfixed code, the SARCompleted guard only checks `registered`, so
+	// it writes SARCompleted here -- flipping the route BACK to Admitted=True
+	// even though the secret is already gone.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("in-flight HandleRoute(Added) failed: %v", err)
+	}
+
+	updates := recorder.GetUpdates()
+	for _, u := range updates {
+		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
+			t.Fatalf("expected no SARCompleted write for a route whose secret was already deleted, got updates: %v", updates)
+		}
+	}
+}
+
 func TestSecretDelete(t *testing.T) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
