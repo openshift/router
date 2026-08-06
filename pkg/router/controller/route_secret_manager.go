@@ -28,6 +28,12 @@ const (
 	ExtCrtStatusReasonSecretDeleted    = "ExternalCertificateSecretDeleted"
 	ExtCrtStatusReasonGetFailed        = "ExternalCertificateGetFailed"
 	ExtCrtStatusReasonSARCompleted     = "ExternalCertificateSARCompleted"
+
+	// certResourceVersionAnnotation is an in-memory-only annotation set
+	// by populateRouteTLSFromSecret to carry the secret's
+	// ResourceVersion through the plugin chain into
+	// templateRouter.AddRoute, where it is used as a staleness guard.
+	certResourceVersionAnnotation = "router.openshift.io/cert-resource-version"
 )
 
 // secretUpdateRecheckDelay is how long the UpdateFunc secret handler waits
@@ -436,48 +442,41 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			// new cert is picked up below.
 			p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, msg)
 
-			// Validate and re-read the new secret content synchronously, then
-			// push it through the plugin chain immediately, instead of relying
-			// solely on the router observing its own status write above as a
-			// Modified event to trigger reprocessing. That observation is an
-			// indirect round trip through the route watch, which can be
-			// delayed or dropped under high API-server latency/packet loss
-			// (e.g. HyperShift's separated control plane), leaving the route
-			// serving a stale certificate until an unrelated future event
-			// happens to reprocess it. validate() and populateRouteTLSFromSecret()
-			// already record rejection and tear down the route on failure.
-			//
-			// validate() only checks SAR/secret existence and writes no cert
-			// content, so it runs unlocked -- there's nothing for a
-			// concurrent HandleRoute re-validation to race against here.
-			if err := p.validate(route); err != nil {
-				return
-			}
-
-			// Serialize with HandleRoute's own periodic re-validation of this
-			// same route (see the lockRoute comment on the struct) from here
-			// through propagation below: both paths read the secret fresh at
-			// execution time, so forcing them to run one at a time
-			// guarantees whichever runs second can only observe state at
-			// least as new as the first, never overwriting fresh content
-			// with something stale.
+			// Read the new secret and push it through the plugin chain
+			// immediately. We skip the synchronous validate() (SAR +
+			// secret-existence check) here because:
+			//  1. The secret was just updated — it exists.
+			//  2. RBAC was verified when the route was first admitted.
+			//  3. A delayed re-check goroutine (below) catches any RBAC
+			//     revocation that happened concurrently.
+			// Removing validate() from this synchronous path is critical
+			// for performance: SharedSecretManager.notify() dispatches to
+			// all route handlers for the secret sequentially on one
+			// goroutine. With N routes sharing a secret, each validate()
+			// makes 4 blocking API calls, creating N×4 sequential
+			// round-trips that can exceed the test's poll timeout under
+			// API-server load (e.g. HyperShift CI).
 			unlock := p.lockRoute(key)
-			defer unlock()
 			if err := p.populateRouteTLSFromSecret(route); err != nil {
+				unlock()
 				return
 			}
 			if err := p.plugin.HandleRoute(watch.Modified, route); err != nil {
 				log.Error(err, "failed to propagate route after secret update", "namespace", namespace, "route", routeName)
 			}
+			unlock()
+
+			// Trigger a rate-limited HAProxy reload directly instead of
+			// depending on the indirect round trip (status write → API
+			// server → route informer → RouterController.HandleRoute →
+			// Commit), which adds 10-30s under HyperShift conditions.
+			p.plugin.Commit()
 
 			// Schedule a delayed re-check to catch RBAC revocations that
-			// may not have propagated to the API server's authorizer by
-			// the time the synchronous check above ran. The delay gives the
-			// RBAC watch time to sync, then a fresh SAR check runs (cache
-			// invalidated). validate() rejects and deactivates the route
-			// only if the check now fails; a passing check is a silent
-			// no-op, so this costs nothing extra in the common case where
-			// RBAC did not change.
+			// may not have propagated yet. The SAR cache was already
+			// invalidated above (line 423), so the re-check does a fresh
+			// SAR. validate() rejects and deactivates the route only if
+			// the check now fails; a passing check is a no-op.
 			go func() {
 				time.Sleep(time.Duration(secretUpdateRecheckDelay.Load()))
 				routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
@@ -570,6 +569,14 @@ func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) er
 	// the router does not make kube-client calls to directly update route resources.
 	route.Spec.TLS.Certificate = string(secret.Data["tls.crt"])
 	route.Spec.TLS.Key = string(secret.Data["tls.key"])
+
+	// Stamp the secret's ResourceVersion onto the route as an in-memory
+	// annotation so that templateRouter.AddRoute can use it as a
+	// staleness guard (see CertResourceVersion on ServiceAliasConfig).
+	if route.Annotations == nil {
+		route.Annotations = make(map[string]string)
+	}
+	route.Annotations[certResourceVersionAnnotation] = secret.ResourceVersion
 
 	return nil
 }

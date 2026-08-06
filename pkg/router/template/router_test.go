@@ -1516,6 +1516,88 @@ func Test_configsAreEqual(t *testing.T) {
 	}
 }
 
+func TestAddRouteStalenessGuard(t *testing.T) {
+	router := NewFakeTemplateRouter()
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "extcert-route",
+			Annotations: map[string]string{
+				"router.openshift.io/cert-resource-version": "100",
+			},
+		},
+		Spec: routev1.RouteSpec{
+			Host: "extcert.example.com",
+			To:   routev1.RouteTargetReference{Name: "svc"},
+			TLS: &routev1.TLSConfig{
+				Termination: routev1.TLSTerminationEdge,
+				Certificate: "cert-v100",
+				Key:         "key-v100",
+			},
+		},
+	}
+	router.AddRoute(route)
+
+	backendKey := routeKey(route)
+	cfg, exists := router.state[backendKey]
+	if !exists {
+		t.Fatal("route not added to state")
+	}
+	if cfg.CertResourceVersion != "100" {
+		t.Fatalf("expected CertResourceVersion '100', got %q", cfg.CertResourceVersion)
+	}
+
+	// Update with a newer version — should be accepted.
+	routeV200 := route.DeepCopy()
+	routeV200.Annotations["router.openshift.io/cert-resource-version"] = "200"
+	routeV200.Spec.TLS.Certificate = "cert-v200"
+	routeV200.Spec.TLS.Key = "key-v200"
+	router.AddRoute(routeV200)
+
+	cfg = router.state[backendKey]
+	if cfg.CertResourceVersion != "200" {
+		t.Fatalf("expected CertResourceVersion '200' after newer update, got %q", cfg.CertResourceVersion)
+	}
+
+	// Update with an older version — should be silently dropped.
+	routeV150 := route.DeepCopy()
+	routeV150.Annotations["router.openshift.io/cert-resource-version"] = "150"
+	routeV150.Spec.TLS.Certificate = "cert-v150"
+	routeV150.Spec.TLS.Key = "key-v150"
+	router.AddRoute(routeV150)
+
+	cfg = router.state[backendKey]
+	if cfg.CertResourceVersion != "200" {
+		t.Fatalf("stale update should have been dropped, but CertResourceVersion is %q (expected '200')", cfg.CertResourceVersion)
+	}
+
+	// Update with the same version — should be dropped (<=).
+	routeV200Again := route.DeepCopy()
+	routeV200Again.Annotations["router.openshift.io/cert-resource-version"] = "200"
+	routeV200Again.Spec.TLS.Certificate = "cert-v200-again"
+	routeV200Again.Spec.TLS.Key = "key-v200-again"
+	router.AddRoute(routeV200Again)
+
+	cfg = router.state[backendKey]
+	if cfg.CertResourceVersion != "200" {
+		t.Fatalf("same-version update should have been dropped, but CertResourceVersion is %q", cfg.CertResourceVersion)
+	}
+
+	// Update without cert annotation (non-extcert route update) — should proceed normally.
+	routeNoCert := route.DeepCopy()
+	routeNoCert.Annotations = map[string]string{}
+	routeNoCert.Spec.TLS.Certificate = "cert-nocert"
+	routeNoCert.Spec.TLS.Key = "key-nocert"
+	routeNoCert.Spec.Path = "/changed"
+	router.AddRoute(routeNoCert)
+
+	cfg = router.state[backendKey]
+	if cfg.Path != "/changed" {
+		t.Fatalf("non-extcert update should have proceeded, but Path is %q", cfg.Path)
+	}
+}
+
 const (
 	testWildcardCertificate = `-----BEGIN CERTIFICATE-----
 MIIFJjCCAw4CCQCLGB4wxqgxHjANBgkqhkiG9w0BAQsFADBOMQswCQYDVQQGEwJV

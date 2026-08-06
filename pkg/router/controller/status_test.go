@@ -50,9 +50,10 @@ func (_ noopLease) Remove(key writerlease.WorkKey) {
 }
 
 type fakePlugin struct {
-	t     watch.EventType
-	route *routev1.Route
-	err   error
+	t       watch.EventType
+	route   *routev1.Route
+	err     error
+	commits int
 }
 
 func (p *fakePlugin) HandleRoute(t watch.EventType, route *routev1.Route) error {
@@ -71,7 +72,8 @@ func (p *fakePlugin) HandleNamespaces(namespaces sets.String) error {
 	return fmt.Errorf("not expected")
 }
 func (p *fakePlugin) Commit() error {
-	return fmt.Errorf("not expected")
+	p.commits++
+	return nil
 }
 
 type routeLister struct {

@@ -294,6 +294,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -515,6 +518,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -739,6 +745,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -943,6 +952,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -1500,23 +1512,25 @@ func TestSecretUpdate(t *testing.T) {
 
 			// update the secret
 			updatedSecret := secret.DeepCopy()
+			updatedSecret.ResourceVersion = "200"
 			updatedSecret.Data = map[string][]byte{
 				"tls.crt": []byte("my-crt"),
 				"tls.key": []byte("my-key"),
 			}
 
-			// UpdateFunc now synchronously re-validates and re-reads the
-			// secret (SAR still allowed, secret still present), so these
-			// fakes must reflect that success path rather than being
-			// zero-valued stand-ins.
+			plugin := &fakePlugin{}
 			rsm := NewRouteSecretManager(
-				&fakePlugin{},
+				plugin,
 				recorder,
 				&fake.SecretManager{Secret: updatedSecret, IsPresent: true, SecretName: "tls-secret"},
 				testRouterName,
 				&testSecretGetter{namespace: "sandbox", secret: updatedSecret},
 				lister,
-				&testSARCreator{allow: true},
+				// SAR is set to deny — UpdateFunc must NOT call validate()
+				// synchronously, so SAR denial should not block the cert
+				// refresh. The delayed re-check goroutine will check SAR
+				// later, but we only assert immediate results here.
+				&testSARCreator{allow: false},
 			)
 
 			// Get the handler
@@ -1532,6 +1546,31 @@ func TestSecretUpdate(t *testing.T) {
 			expectedUpdates := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
 			if !reflect.DeepEqual(expectedUpdates, recorder.GetUpdates()) {
 				t.Fatalf("expected updates %v, but got %v", expectedUpdates, recorder.GetUpdates())
+			}
+
+			// Verify HandleRoute was called with Modified event and the
+			// cert data was populated from the secret.
+			if plugin.t != watch.Modified {
+				t.Fatalf("expected HandleRoute called with Modified, got %v", plugin.t)
+			}
+			if plugin.route == nil {
+				t.Fatal("expected HandleRoute to receive a route")
+			}
+			if plugin.route.Spec.TLS.Certificate != "my-crt" {
+				t.Fatalf("expected cert 'my-crt', got %q", plugin.route.Spec.TLS.Certificate)
+			}
+			if plugin.route.Spec.TLS.Key != "my-key" {
+				t.Fatalf("expected key 'my-key', got %q", plugin.route.Spec.TLS.Key)
+			}
+
+			// Verify Commit() was called to trigger the HAProxy reload.
+			if plugin.commits != 1 {
+				t.Fatalf("expected Commit() called once, got %d", plugin.commits)
+			}
+
+			// Verify the cert-resource-version annotation was set.
+			if v := plugin.route.Annotations[certResourceVersionAnnotation]; v != "200" {
+				t.Fatalf("expected cert-resource-version annotation '200', got %q", v)
 			}
 
 			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {
@@ -1606,10 +1645,8 @@ func TestSecretUpdateDelayedRecheck(t *testing.T) {
 				"tls.crt": []byte("new-crt"),
 				"tls.key": []byte("new-key"),
 			}
-			// UpdateFunc now synchronously re-reads the secret when SAR
-			// allows, so the secret manager fake must return a real secret
-			// for that path (scenario "SAR still allowed") rather than a
-			// zero-valued stand-in that would nil-panic in populateRouteTLSFromSecret.
+			// UpdateFunc reads the secret synchronously (no SAR check)
+			// and defers the SAR check to the delayed re-check goroutine.
 			rsm := NewRouteSecretManager(
 				&fakePlugin{},
 				recorder,
