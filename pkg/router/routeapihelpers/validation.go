@@ -512,7 +512,10 @@ func InvalidateAsyncSARCache(namespace, secretName string) {
 
 // ClearAsyncSARCacheForTest clears the global SAR cache for testing purposes.
 func ClearAsyncSARCacheForTest() {
-	sarCache = sync.Map{}
+	sarCache.Range(func(key, _ any) bool {
+		sarCache.Delete(key)
+		return true
+	})
 }
 
 // checkSARCache returns the cached SAR result if it exists and hasn't expired.
