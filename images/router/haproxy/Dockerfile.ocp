@@ -1,5 +1,11 @@
 FROM registry.ci.openshift.org/ocp/5.0:haproxy-router-base
-RUN INSTALL_PKGS="socat haproxy32 rsyslog procps-ng util-linux" && \
+
+RUN curl -fLo /tmp/haproxy.rpm https://github.com/jcmoraisjr/openshift-router/raw/refs/heads/rpms/haproxy32-3.2.22-1.rhocp.el9.x86_64.rpm && \
+    rpm -ivh /tmp/haproxy.rpm && \
+    rm -f /tmp/haproxy.rpm && \
+    haproxy -vv
+
+RUN INSTALL_PKGS="socat rsyslog procps-ng util-linux" && \
     yum install -y --setopt=install_weak_deps=0 $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
