@@ -321,30 +321,35 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	return err
 }
 
-// validateAndRegister validates the route's externalCertificate configuration and registers it with the secret manager.
-// It also updates the in-memory TLS certificate and key after reading from secret informer's cache.
+// validateAndRegister registers the route with the secret manager, validates
+// its externalCertificate configuration, and loads the TLS cert data.
 //
-// The per-route lock (see the routeLocks field comment) is acquired only
-// after validate() succeeds and held until the caller releases it -- the
-// caller is expected to keep it held through the trailing propagation call
-// in HandleRoute, so registration/cert-population and propagation happen as
-// one atomic unit with respect to any concurrent secret-triggered refresh.
-// validate()'s SAR checks run unlocked since they don't write cert content,
-// so a concurrent call for the same route doesn't have to wait on them.
+// Registration happens BEFORE validation so the route receives informer
+// events (Add/Update/Delete) even if the initial SAR check fails due to
+// RBAC propagation delays. Without this ordering, a transient SAR failure
+// permanently orphans the route from the secret informer — it never
+// receives UpdateFunc events and can never pick up secret changes.
+//
+// If validation fails after registration, the route stays registered (so
+// future informer events can trigger re-evaluation) but is not admitted.
+//
+// The per-route lock is acquired after registration and held until the
+// caller releases it, so cert-population and propagation happen as one
+// atomic unit with respect to any concurrent secret-triggered refresh.
 func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) (unlock func(), err error) {
+	// Register route with secretManager first, so it receives informer
+	// events regardless of whether the SAR check below passes.
+	handler := p.generateSecretHandler(route.Namespace, route.Name)
+	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
+		return nil, fmt.Errorf("failed to register router: %w", err)
+	}
+
 	// validate (synchronous, throttled by semaphore)
 	if err := p.validate(route); err != nil {
 		return nil, err
 	}
 
 	unlock = p.lockRoute(generateKey(route.Namespace, route.Name))
-
-	// register route with secretManager
-	handler := p.generateSecretHandler(route.Namespace, route.Name)
-	if err := p.secretManager.RegisterRoute(context.TODO(), route.Namespace, route.Name, route.Spec.TLS.ExternalCertificate.Name, handler); err != nil {
-		unlock()
-		return nil, fmt.Errorf("failed to register router: %w", err)
-	}
 
 	// read referenced secret and update TLS certificate and key
 	if err := p.populateRouteTLSFromSecret(route); err != nil {
