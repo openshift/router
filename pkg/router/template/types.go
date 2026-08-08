@@ -87,6 +87,16 @@ type ServiceAliasConfig struct {
 
 	// PrimaryServiceUnitKey is the key of the primary service of the route.
 	PrimaryServiceUnitKey ServiceUnitKey
+
+	// CertResourceVersion is the Kubernetes ResourceVersion of the secret
+	// that supplied the TLS certificate for this config.  It is set only
+	// for routes using externalCertificate and is used as a staleness
+	// guard in AddRoute: an incoming config whose CertResourceVersion is
+	// numerically <= the existing one is silently dropped, preventing
+	// stale cert data from overwriting fresher data.  This field is
+	// deliberately excluded from configsAreEqual — it is a version
+	// marker, not user-visible configuration.
+	CertResourceVersion string
 }
 
 type ServiceAliasConfigStatus string

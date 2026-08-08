@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 	logFlags := flag.FlagSet{}
 	klog.InitFlags(&logFlags)
 	if err := logFlags.Set("v", "6"); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -94,7 +94,7 @@ func TestMain(m *testing.M) {
 	factory := routerSelection.NewFactory(routeClient, projectClient.ProjectV1().Projects(), client)
 	informer := factory.CreateRoutesSharedInformer()
 	routeLister := routelisters.NewRouteLister(informer.GetIndexer())
-	lease := writerlease.New(time.Minute, 3*time.Second)
+	lease := writerlease.New(time.Minute, 3*time.Second, 1)
 	go lease.Run(wait.NeverStop)
 	tracker := controller.NewSimpleContentionTracker(informer, namespace, 60*time.Second)
 	tracker.SetConflictMessage(fmt.Sprintf("The router detected another process is writing conflicting updates to route status with name %q. Please ensure that the configuration of all routers is consistent. Route status will not be updated as long as conflicts are detected.", namespace))
