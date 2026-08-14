@@ -3,13 +3,22 @@ package endpointsubset
 import (
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
+
+	logf "github.com/openshift/router/log"
 )
+
+var log = logf.Logger.WithName("endpointsubset")
 
 // ConvertEndpointSlice converts items to a slice of EndpointSubset's.
 func ConvertEndpointSlice(items []discoveryv1.EndpointSlice, addressOrderByFuncs []EndpointAddressLessFunc, portOrderByFuncs []EndpointPortLessFunc) []corev1.EndpointSubset {
 	var subsets []corev1.EndpointSubset
 
 	for i := range items {
+		if items[i].AddressType != discoveryv1.AddressTypeIPv4 && items[i].AddressType != discoveryv1.AddressTypeIPv6 {
+			log.Info("Skipping EndpointSlice with unsupported address type", "namespace", items[i].Namespace, "name", items[i].Name, "addressType", items[i].AddressType)
+			continue
+		}
+
 		var ports []corev1.EndpointPort
 		var addresses []corev1.EndpointAddress
 		var notReadyAddresses []corev1.EndpointAddress
