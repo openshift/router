@@ -1039,6 +1039,7 @@ func (e mustCreateEndpointSlice) Apply(h *harness) error {
 			},
 			UID: h.nextUID(),
 		},
+		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{{
 			Addresses: []string{"1.1.1.1"},
 		}},
