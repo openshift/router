@@ -16,6 +16,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		cmdAdd           cmd = "add"
 		cmdDel           cmd = "del"
 		cmdUpdate        cmd = "update"
+		cmdReplace       cmd = "replace"
 		cmdEnableHealth  cmd = "enable-health"
 		cmdDisableHealth cmd = "disable-health"
 	)
@@ -24,20 +25,26 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		cmd             cmd
 		backendName     *templaterouter.ServiceAliasConfigKey // default: "route1"
 		endpointID      *string                               // default: "server1"
+		oldIP           *string                               // default: "10.0.1.11"
 		ip              *string                               // default: "10.0.1.11"
+		oldPort         *string                               // default: "9000"
 		port            *string                               // default: "9000"
+		oldWeight       *int32                                // default: 1
 		weight          *int32                                // default: 1
-		workingDir      *string                               // default: "tmp"
+		workingDir      *string                               // default: "/tmp"
 		publicHostname  string
 		serviceHostname string
 		tlsTermination  routev1.TLSTerminationType
-		verifyHostname  bool
-		appProtocol     string
+		oldVerifyHost   bool
+		verifyHost      bool
+		oldAppProto     string
+		appProto        string
 		certificates    map[string]templaterouter.Certificate
 		annotations     map[string]string
 		envvars         []string
 		defaultCA       string
 		cmdCustomResp   []string // 1:1 to `cmdExpected`, trailing empty items can be omited.
+		addedExpected   bool
 		errExpected     string
 		removedExpected bool
 		cmdExpected     []string
@@ -105,10 +112,19 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				"set server route1/server1 state ready",
 			},
 		},
-		"should add edge termination h2 server": {
+		"should add edge termination h2 server with h2c proto": {
 			cmd:            cmdAdd,
 			tlsTermination: routev1.TLSTerminationEdge,
-			appProtocol:    "h2c",
+			appProto:       "h2c",
+			cmdExpected: []string{
+				"add server route1/server1 10.0.1.11:9000 weight 1 proto h2 check inter 5000ms",
+				"set server route1/server1 state ready",
+			},
+		},
+		"should add edge termination h2 server with kubernetes.io/h2c proto": {
+			cmd:            cmdAdd,
+			tlsTermination: routev1.TLSTerminationEdge,
+			appProto:       "kubernetes.io/h2c",
 			cmdExpected: []string{
 				"add server route1/server1 10.0.1.11:9000 weight 1 proto h2 check inter 5000ms",
 				"set server route1/server1 state ready",
@@ -125,7 +141,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		"should add reencrypt termination server with verify host": {
 			cmd:             cmdAdd,
 			tlsTermination:  routev1.TLSTerminationReencrypt,
-			verifyHostname:  true,
+			verifyHost:      true,
 			serviceHostname: "route1.default.svc",
 			cmdExpected: []string{
 				"add server route1/server1 10.0.1.11:9000 weight 1 ssl alpn h2,http/1.1 verifyhost route1.default.svc verify none check-ssl check inter 5000ms",
@@ -182,7 +198,6 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd:    cmdUpdate,
 			weight: ptr.To[int32](10),
 			cmdExpected: []string{
-				"set server route1/server1 addr 10.0.1.11 port 9000",
 				"set server route1/server1 weight 10",
 			},
 		},
@@ -191,16 +206,126 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			tlsTermination: routev1.TLSTerminationPassthrough,
 			weight:         ptr.To[int32](10),
 			cmdExpected: []string{
-				"set server route1/server1 addr 10.0.1.11 port 9000",
 				"set server route1/server1 weight 100%",
+			},
+		},
+		"should update server changing port": {
+			cmd:     cmdUpdate,
+			oldPort: ptr.To("8000"),
+			port:    ptr.To("9000"),
+			cmdExpected: []string{
+				"set server route1/server1 addr 10.0.1.11 port 9000",
+			},
+		},
+		"should update server changing weight": {
+			cmd:       cmdUpdate,
+			oldWeight: ptr.To[int32](10),
+			weight:    ptr.To[int32](20),
+			cmdExpected: []string{
+				"set server route1/server1 weight 20",
+			},
+		},
+		"should update server changing backend proto": {
+			cmd:           cmdUpdate,
+			oldAppProto:   "",
+			appProto:      "h2c",
+			addedExpected: true,
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+				"del server route1/server1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 proto h2 check inter 5000ms",
+				"set server route1/server1 state ready",
 			},
 		},
 		"should fail if failing to update server": {
 			cmd:           cmdUpdate,
+			oldWeight:     ptr.To[int32](2),
+			weight:        ptr.To[int32](1),
 			cmdCustomResp: []string{"Some unknown updating error."},
 			errExpected:   "unexpected response from haproxy: Some unknown updating error.",
 			cmdExpected: []string{
-				"set server route1/server1 addr 10.0.1.11 port 9000",
+				"set server route1/server1 weight 1",
+			},
+		},
+		"should fail if failing to update server changing proto": {
+			cmd:           cmdUpdate,
+			oldAppProto:   "",
+			appProto:      "h2c",
+			addedExpected: true,
+			cmdCustomResp: []string{
+				"",                             // first cmd
+				"Some unknown deleting error.", // second cmd
+			},
+			errExpected: "unexpected response from haproxy: Some unknown deleting error.",
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+				"del server route1/server1",
+				"set server route1/server1 state ready",
+			},
+		},
+
+		//
+		// replacing
+		"should replace an existing server": {
+			cmd: cmdReplace,
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+				"del server route1/server1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"set server route1/server1 state ready",
+			},
+		},
+		"should fail if failing to disable on replace server": {
+			cmd: cmdReplace,
+			cmdCustomResp: []string{
+				"Some unknown set server error.",
+			},
+			errExpected: "unexpected response from haproxy: Some unknown set server error.",
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+			},
+		},
+		"should fail if failing to delete on replace server": {
+			cmd: cmdReplace,
+			cmdCustomResp: []string{
+				"",                             // first cmd
+				"Some unknown deleting error.", // second cmd
+			},
+			errExpected: "unexpected response from haproxy: Some unknown deleting error.",
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+				"del server route1/server1",
+				"set server route1/server1 state ready",
+			},
+		},
+		"should fail if failing to add on replace server": {
+			cmd: cmdReplace,
+			cmdCustomResp: []string{
+				"",                               // first cmd
+				"",                               // second cmd
+				"Some unknown add server error.", // third cmd
+			},
+			errExpected: "unexpected response from haproxy: Some unknown add server error.",
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+				"del server route1/server1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+			},
+		},
+		"should fail if failing to set server state on replace server": {
+			cmd: cmdReplace,
+			cmdCustomResp: []string{
+				"",                                     // first cmd
+				"",                                     // second cmd
+				"",                                     // third cmd
+				"Some unknown set server state error.", // forth cmd
+			},
+			errExpected: "unexpected response from haproxy: Some unknown set server state error.",
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+				"del server route1/server1",
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
+				"set server route1/server1 state ready",
 			},
 		},
 
@@ -224,6 +349,7 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmd: cmdDisableHealth,
 			cmdExpected: []string{
 				"disable health route1/server1",
+				"set server route1/server1 health up",
 			},
 		},
 		"should fail if failing to disable health check": {
@@ -272,14 +398,17 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			backendName := ptr.Deref(test.backendName, "route1")
 			endpointID := ptr.Deref(test.endpointID, "server1")
+			oldIP := ptr.Deref(test.oldIP, "10.0.1.11")
 			ip := ptr.Deref(test.ip, "10.0.1.11")
+			oldPort := ptr.Deref(test.oldPort, "9000")
 			port := ptr.Deref(test.port, "9000")
-			weight := ptr.Deref(test.weight, 1)
+			oldWeight := ptr.Deref(test.oldWeight, 1)
+			newWeight := ptr.Deref(test.weight, 1)
 			workingDir := ptr.Deref(test.workingDir, "/tmp")
 
 			cfg := &templaterouter.ServiceAliasConfig{
 				TLSTermination:        test.tlsTermination,
-				VerifyServiceHostname: test.verifyHostname,
+				VerifyServiceHostname: test.verifyHost,
 				Host:                  test.publicHostname,
 				Certificates:          test.certificates,
 				Annotations:           test.annotations,
@@ -287,11 +416,21 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			svc := &templaterouter.ServiceUnit{
 				Hostname: test.serviceHostname,
 			}
-			ep := templaterouter.Endpoint{
-				ID:          endpointID,
-				IP:          ip,
-				Port:        port,
-				AppProtocol: test.appProtocol,
+			oldEP := &templaterouter.Endpoint{
+				ID:             endpointID,
+				IP:             oldIP,
+				Port:           oldPort,
+				AppProtocol:    test.oldAppProto,
+				Weight:         oldWeight,
+				VerifyHostname: test.oldVerifyHost,
+			}
+			newEP := &templaterouter.Endpoint{
+				ID:             endpointID,
+				IP:             ip,
+				Port:           port,
+				AppProtocol:    test.appProto,
+				Weight:         newWeight,
+				VerifyHostname: test.verifyHost,
 			}
 			isPassthrough := test.tlsTermination == routev1.TLSTerminationPassthrough
 			client := &fakeClient{cmdCustomResp: test.cmdCustomResp}
@@ -299,18 +438,21 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			b := newBackend(backendName, client)
 
 			var removed bool
+			var addedFromUpdate bool
 			var err error
 			switch test.cmd {
 			case cmdAdd:
-				err = b.AddServer(cfg, svc, ep, weight, workingDir, test.defaultCA)
+				err = b.AddServer(cfg, svc, newEP, workingDir, test.defaultCA)
 			case cmdDel:
-				removed, err = b.DeleteServer(ep)
+				removed, err = b.DeleteServer(newEP)
 			case cmdUpdate:
-				err = b.UpdateServer(ep, weight, isPassthrough)
+				addedFromUpdate, err = b.UpdateServer(cfg, svc, oldEP, newEP, isPassthrough, workingDir, test.defaultCA)
+			case cmdReplace:
+				err = b.ReplaceServer(cfg, svc, oldEP, newEP, workingDir, test.defaultCA)
 			case cmdEnableHealth:
-				err = b.EnableHealthCheck(ep)
+				err = b.EnableHealthCheck(newEP)
 			case cmdDisableHealth:
-				err = b.DisableHealthCheck(ep)
+				err = b.DisableHealthCheck(newEP)
 			default:
 				t.Errorf("invalid cmd: %s", test.cmd)
 			}
@@ -320,11 +462,11 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+			assert.Equal(t, test.addedExpected, addedFromUpdate)
 			assert.Equal(t, test.removedExpected, removed)
 			assert.Equal(t, test.cmdExpected, client.executedCmds)
 		})
 	}
-
 }
 
 type fakeClient struct {
