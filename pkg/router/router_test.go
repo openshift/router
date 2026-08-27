@@ -976,6 +976,138 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"retry-on annotation": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-on-valid",
+					host: "retry-on-valid.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retry-on": "conn-failure 503",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "haproxy.config",
+					value:   "  retry-on conn-failure 503",
+				},
+			},
+		},
+		"retry-on annotation with commas": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-on-comma",
+					host: "retry-on-comma.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retry-on": "conn-failure,empty-response,502",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "haproxy.config",
+					value:   "  retry-on conn-failure,empty-response,502",
+				},
+			},
+		},
+		"retry-on all-retryable-errors": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-on-all",
+					host: "retry-on-all.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retry-on": "all-retryable-errors",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile: "haproxy.config",
+					value:   "  retry-on all-retryable-errors",
+				},
+			},
+		},
+		"retries annotation": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-count",
+					host: "retry-count.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retries": "7",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "retry-count"),
+					attribute:   "retries",
+					value:       "7",
+				},
+			},
+		},
+		"retries annotation on passthrough route": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-passthrough",
+					host: "retry-passthrough.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retries": "4",
+					},
+					tlsTermination: routev1.TLSTerminationPassthrough,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: passthroughBackendName(h.namespace, "retry-passthrough"),
+					attribute:   "retries",
+					value:       "4",
+				},
+			},
+		},
+		"invalid retry-on annotation is ignored": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-on-invalid",
+					host: "retry-on-invalid.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retry-on": "conn-failure; bind :80",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile:  "haproxy.config",
+					value:    "  retry-on conn-failure; bind :80",
+					notFound: true,
+				},
+			},
+		},
+		"retry-on is ignored on passthrough routes": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "retry-on-passthrough",
+					host: "retry-on-passthrough.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/retry-on": "429 empty-response",
+					},
+					tlsTermination: routev1.TLSTerminationPassthrough,
+				},
+				mustMatchConfig: mustMatchConfig{
+					mapFile:  "haproxy.config",
+					value:    "  retry-on 429 empty-response",
+					notFound: true,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
@@ -1293,6 +1425,8 @@ func matchConfig(m mustMatchConfig, parser haproxyconfparser.Parser) error {
 				}
 			}
 		}
+	case *haproxyconfparsertypes.Int64C:
+		contains = strconv.FormatInt(data.Value, 10) == m.value
 	}
 
 	if !contains && !m.notFound {

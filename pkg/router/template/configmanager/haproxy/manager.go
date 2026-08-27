@@ -990,12 +990,14 @@ func modAnnotationsList(termination routev1.TLSTerminationType) []string {
 		"haproxy.router.openshift.io/rate-limit-connections.rate-http",
 		"haproxy.router.openshift.io/pod-concurrent-connections",
 		"router.openshift.io/haproxy.health.check.interval",
+		"haproxy.router.openshift.io/retries",
 	}
 
 	if termination == routev1.TLSTerminationPassthrough {
 		return annotations
 	}
 
+	annotations = append(annotations, "haproxy.router.openshift.io/retry-on")
 	annotations = append(annotations, "haproxy.router.openshift.io/disable_cookies")
 	annotations = append(annotations, "router.openshift.io/cookie_name")
 	annotations = append(annotations, "haproxy.router.openshift.io/hsts_header")
