@@ -2,6 +2,9 @@ package router
 
 import (
 	"crypto/tls"
+	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -245,4 +248,156 @@ func TestParseCurvePreferences(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestValidate verifies the checks performed by TemplateRouterOptions.Validate.
+// Each test case starts from a set of options that pass validation and mutates
+// only the fields relevant to the check being exercised.  Checks that need
+// heavy setup or that have a large number of cases of their own should get a
+// dedicated test function instead.
+func TestValidate(t *testing.T) {
+	const reloadScript = "/var/lib/haproxy/reload-haproxy"
+
+	// validOptions returns options that pass Validate.
+	validOptions := func() *TemplateRouterOptions {
+		return &TemplateRouterOptions{
+			TemplateRouter: TemplateRouter{
+				TemplateFile: "/var/lib/haproxy/conf/haproxy-config.template",
+				ReloadScript: reloadScript,
+			},
+		}
+	}
+
+	testCases := []struct {
+		description string
+		// mutate modifies the valid options to exercise a specific check.
+		mutate func(t *testing.T, o *TemplateRouterOptions)
+		// expectedError is a substring of the expected error message, or
+		// empty if Validate is expected to succeed.
+		expectedError string
+	}{
+		{
+			description: "valid options",
+			mutate:      func(t *testing.T, o *TemplateRouterOptions) {},
+		},
+		{
+			description: "supported metrics type",
+			mutate:      func(t *testing.T, o *TemplateRouterOptions) { o.MetricsType = "haproxy" },
+		},
+		{
+			description:   "unsupported metrics type",
+			mutate:        func(t *testing.T, o *TemplateRouterOptions) { o.MetricsType = "foo" },
+			expectedError: "supported metrics types are: haproxy",
+		},
+		{
+			description: "update status with router name",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.UpdateStatus = true
+				o.RouterName = "default"
+			},
+		},
+		{
+			description:   "update status without router name",
+			mutate:        func(t *testing.T, o *TemplateRouterOptions) { o.UpdateStatus = true },
+			expectedError: "router must have a name to identify itself in route status",
+		},
+		{
+			description:   "missing template file",
+			mutate:        func(t *testing.T, o *TemplateRouterOptions) { o.TemplateFile = "" },
+			expectedError: "template file must be specified",
+		},
+		{
+			description: "existing default destination CA",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				path := filepath.Join(t.TempDir(), "ca.crt")
+				if err := os.WriteFile(path, nil, 0o600); err != nil {
+					t.Fatalf("failed to create CA file: %v", err)
+				}
+				o.DefaultDestinationCAPath = path
+			},
+		},
+		{
+			description: "missing default destination CA",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.DefaultDestinationCAPath = filepath.Join(t.TempDir(), "missing.crt")
+			},
+			expectedError: "unable to load default destination CA certificate",
+		},
+		{
+			description: "neither reload script nor admin socket",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.ReloadScript = ""
+				o.HAProxyAdminUnixSocket = ""
+			},
+			expectedError: "either the reload script or the HAProxy admin unix socket must be specified",
+		},
+		{
+			description: "reload script only",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.ReloadScript = reloadScript
+				o.HAProxyAdminUnixSocket = ""
+			},
+		},
+		{
+			description: "admin socket only",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.ReloadScript = ""
+				o.HAProxyAdminUnixSocket = newUnixSocket(t)
+			},
+		},
+		{
+			description: "missing admin socket",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.HAProxyAdminUnixSocket = filepath.Join(t.TempDir(), "missing.sock")
+			},
+			expectedError: "unable to find the HAProxy admin unix socket",
+		},
+		{
+			description: "admin socket is not a unix socket",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				path := filepath.Join(t.TempDir(), "admin.sock")
+				if err := os.WriteFile(path, nil, 0o600); err != nil {
+					t.Fatalf("failed to create file: %v", err)
+				}
+				o.HAProxyAdminUnixSocket = path
+			},
+			expectedError: "is not a unix socket",
+		},
+		{
+			description: "both reload script and admin socket",
+			mutate: func(t *testing.T, o *TemplateRouterOptions) {
+				o.ReloadScript = reloadScript
+				o.HAProxyAdminUnixSocket = newUnixSocket(t)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			o := validOptions()
+			tc.mutate(t, o)
+			err := o.Validate()
+			switch {
+			case tc.expectedError == "" && err != nil:
+				t.Fatalf("unexpected error: %v", err)
+			case tc.expectedError != "" && err == nil:
+				t.Fatalf("expected error containing %q, got nil", tc.expectedError)
+			case err != nil && !strings.Contains(err.Error(), tc.expectedError):
+				t.Fatalf("expected error containing %q, got %q", tc.expectedError, err.Error())
+			}
+		})
+	}
+}
+
+// newUnixSocket creates a listening unix socket in a temporary directory and
+// returns its path. The socket is closed when the test finishes.
+func newUnixSocket(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "admin.sock")
+	l, err := net.Listen("unix", path)
+	if err != nil {
+		t.Fatalf("failed to create unix socket: %v", err)
+	}
+	t.Cleanup(func() { l.Close() })
+	return path
 }

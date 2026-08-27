@@ -111,6 +111,7 @@ type TemplateRouter struct {
 	WorkingDir                          string
 	TemplateFile                        string
 	ReloadScript                        string
+	HAProxyAdminUnixSocket              string
 	ReloadInterval                      time.Duration
 	DefaultCertificate                  string
 	DefaultCertificatePath              string
@@ -180,6 +181,7 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.DefaultDestinationCAPath, "default-destination-ca-path", env("DEFAULT_DESTINATION_CA_PATH", ""), "A path to a PEM file containing the default CA bundle to use with re-encrypt routes. This CA should sign for certificates in the Kubernetes DNS space (service.namespace.svc).")
 	flag.StringVar(&o.TemplateFile, "template", env("TEMPLATE_FILE", ""), "The path to the template file to use")
 	flag.StringVar(&o.ReloadScript, "reload", env("RELOAD_SCRIPT", ""), "The path to the reload script to use")
+	flag.StringVar(&o.HAProxyAdminUnixSocket, "haproxy-admin-unix-socket", env("ROUTER_HAPROXY_ADMIN_UNIX_SOCKET", ""), "The path to the HAProxy admin unix socket")
 	flag.DurationVar(&o.ReloadInterval, "interval", getIntervalFromEnv("RELOAD_INTERVAL", defaultReloadInterval), "Controls how often router reloads are invoked. Mutiple router reload requests are coalesced for the duration of this interval since the last reload time.")
 	flag.BoolVar(&o.BindPortsAfterSync, "bind-ports-after-sync", env("ROUTER_BIND_PORTS_AFTER_SYNC", "") == "true", "Bind ports only after route state has been synchronized")
 	flag.StringVar(&o.MaxConnections, "max-connections", env("ROUTER_MAX_CONNECTIONS", ""), "Specifies the maximum number of concurrent connections.")
@@ -560,15 +562,42 @@ func (o *TemplateRouterOptions) Validate() error {
 			return fmt.Errorf("unable to load default destination CA certificate: %v", err)
 		}
 	}
-	if len(o.ReloadScript) == 0 {
-		return errors.New("reload script must be specified")
+	if len(o.ReloadScript) == 0 && len(o.HAProxyAdminUnixSocket) == 0 {
+		return errors.New("either the reload script or the HAProxy admin unix socket must be specified")
+	}
+	if len(o.HAProxyAdminUnixSocket) > 0 {
+		// HAProxy runs as a sidecar that is already up when the router
+		// starts, so its admin socket must exist at this point. Failing
+		// here avoids a router that starts but can never reload HAProxy.
+		fi, err := os.Stat(o.HAProxyAdminUnixSocket)
+		if err != nil {
+			return fmt.Errorf("unable to find the HAProxy admin unix socket: %w", err)
+		}
+		if fi.Mode()&os.ModeSocket == 0 {
+			return fmt.Errorf("HAProxy admin unix socket %q is not a unix socket", o.HAProxyAdminUnixSocket)
+		}
 	}
 	return nil
+}
+
+// logReloadMode logs how the router is going to reload HAProxy, warning when
+// the reload script is ignored because the HAProxy admin unix socket takes
+// precedence over it.
+func (o *TemplateRouterOptions) logReloadMode() {
+	if len(o.HAProxyAdminUnixSocket) == 0 {
+		log.Info("router reload mode", "mode", "embedded", "reloadScript", o.ReloadScript)
+		return
+	}
+	log.Info("router reload mode", "mode", "sidecar", "haproxyAdminUnixSocket", o.HAProxyAdminUnixSocket)
+	if len(o.ReloadScript) > 0 {
+		log.Info("WARNING: both the reload script and the HAProxy admin unix socket were specified; the reload script is ignored", "reloadScript", o.ReloadScript)
+	}
 }
 
 // Run launches a template router using the provided options. It never exits.
 func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	log.V(0).Info("starting router", "version", version.String())
+	o.logReloadMode()
 	var ptrTemplatePlugin *templateplugin.TemplatePlugin
 
 	var reloadCallbacks []func()
@@ -619,12 +648,11 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			}
 		}
 
-		adminUnixSocket := os.Getenv("ROUTER_HAPROXY_ADMIN_UNIX_SOCKET")
-		hasHAProxySidecar := len(adminUnixSocket) > 0
+		hasHAProxySidecar := len(o.HAProxyAdminUnixSocket) > 0
 
 		pidFn := haproxyPidEmbedded
 		if hasHAProxySidecar {
-			pidFn = haproxyPidSidecar(ctx, adminUnixSocket)
+			pidFn = haproxyPidSidecar(ctx, o.HAProxyAdminUnixSocket)
 		}
 		collector, err := haproxy.NewPrometheusCollector(haproxy.PrometheusOptions{
 			// Only template router customizers who alter the image should need this
@@ -785,6 +813,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		WorkingDir:                    o.WorkingDir,
 		TemplatePath:                  o.TemplateFile,
 		ReloadScriptPath:              o.ReloadScript,
+		HAProxyAdminUnixSocketPath:    o.HAProxyAdminUnixSocket,
 		ReloadInterval:                o.ReloadInterval,
 		ReloadCallbacks:               reloadCallbacks,
 		DefaultCertificate:            o.DefaultCertificate,
