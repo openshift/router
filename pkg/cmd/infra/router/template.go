@@ -801,9 +801,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	if o.UpgradeValidation {
 		plugin = controller.NewUpgradeValidation(plugin, recorder, o.UpgradeValidationForceAddCondition, o.UpgradeValidationForceRemoveCondition)
 	}
-	if o.ExtendedValidation {
-		plugin = controller.NewExtendedValidator(plugin, recorder)
-	}
+	plugin = controller.NewExtendedValidator(plugin, recorder, o.ExtendedValidation)
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
