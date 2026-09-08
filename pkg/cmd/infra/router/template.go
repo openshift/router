@@ -798,9 +798,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		recorder = status
 		plugin = status
 	}
-	if o.ExtendedValidation {
-		plugin = controller.NewExtendedValidator(plugin, recorder)
-	}
+	plugin = controller.NewExtendedValidator(plugin, recorder, o.ExtendedValidation)
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
