@@ -526,6 +526,7 @@ func (r *templateRouter) Commit() {
 	r.lock.Unlock()
 
 	if needsCommit {
+		log.V(4).Info("queuing reload")
 		r.rateLimitedCommitFunction.RegisterChange()
 	}
 }
@@ -726,6 +727,8 @@ func (r *templateRouter) FilterNamespaces(namespaces sets.String) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	previouslyChanged := r.stateChanged
+
 	if len(namespaces) == 0 {
 		r.state = make(map[ServiceAliasConfigKey]ServiceAliasConfig)
 		r.serviceUnits = make(map[ServiceUnitKey]ServiceUnit)
@@ -751,6 +754,9 @@ func (r *templateRouter) FilterNamespaces(namespaces sets.String) {
 	}
 
 	if r.stateChanged {
+		if !previouslyChanged {
+			log.V(4).Info("namespace filter caused state change, reload needed")
+		}
 		r.dynamicallyConfigured = false
 	}
 }
@@ -1272,6 +1278,8 @@ func (r *templateRouter) removeRouteInternal(route *routev1.Route) {
 	for key := range serviceAliasConfig.ServiceUnits {
 		r.removeServiceAliasAssociation(key, backendKey)
 	}
+
+	log.V(4).Info("removing route", "backendKey", backendKey, "dynamicRemoveFailed", !configChanged)
 
 	r.cleanUpServiceAliasConfig(&serviceAliasConfig)
 	delete(r.state, backendKey)
