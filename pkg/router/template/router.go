@@ -68,6 +68,11 @@ type templateRouter struct {
 	state            map[ServiceAliasConfigKey]ServiceAliasConfig
 	serviceUnits     map[ServiceUnitKey]ServiceUnit
 	certManager      certificateManager
+	// haproxyAdminUnixSocketPath is the path to the unix socket of the HAProxy master process.
+	// The HAProxy master process has the ability to reach any running worker, as well as
+	// launch a new one to apply changes in the configuration file. If provided, it has priority
+	// over the reload script when the router needs to reload the proxy.
+	haproxyAdminUnixSocketPath string
 	// defaultCertificate is a concatenated certificate(s), their keys, and their CAs that should be used by the underlying
 	// implementation as the default certificate if no certificate is resolved by the normal matching mechanisms.  This is
 	// usually a wildcard certificate for a cloud domain such as *.mypaas.com to allow applications to create app.mypaas.com
@@ -140,6 +145,7 @@ type templateRouterCfg struct {
 	dir                           string
 	templates                     map[string]*template.Template
 	reloadScriptPath              string
+	haproxyAdminUnixSocketPath    string
 	reloadFn                      func(shutdown bool) error
 	reloadInterval                time.Duration
 	reloadCallbacks               []func()
@@ -253,6 +259,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		dir:                           dir,
 		templates:                     cfg.templates,
 		reloadScriptPath:              cfg.reloadScriptPath,
+		haproxyAdminUnixSocketPath:    cfg.haproxyAdminUnixSocketPath,
 		reloadInterval:                cfg.reloadInterval,
 		reloadCallbacks:               cfg.reloadCallbacks,
 		reloadFn:                      cfg.reloadFn,
@@ -675,14 +682,13 @@ func (r *templateRouter) writeCertificates(cfg *ServiceAliasConfig) error {
 
 // reloadRouter reloads haproxy.
 func (r *templateRouter) reloadRouter(shutdown bool) error {
-	adminSocket := os.Getenv("ROUTER_HAPROXY_ADMIN_UNIX_SOCKET")
-	if adminSocket != "" {
+	if r.haproxyAdminUnixSocketPath != "" {
 		if shutdown {
 			// We are in HAProxy's master/worker mode, currently implemented as a sidecar,
-			// so there is no local process to handle and the sidecar one already received SIGTERM.
+			// so there is no local process to handle and the sidecar one will receive its own SIGTERM from kubelet.
 			return nil
 		}
-		return reloadRouterSidecar(r.appCtx, "unix://"+adminSocket)
+		return reloadRouterSidecar(r.appCtx, "unix://"+r.haproxyAdminUnixSocketPath)
 	}
 	return r.reloadRouterEmbedded(shutdown)
 }
