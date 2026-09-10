@@ -309,8 +309,13 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	// with the secret informer's own DeleteFunc on a different goroutine, so
 	// a watch.Added registration that was already in flight when the secret
 	// got deleted can finish afterward and write this SARCompleted status,
-	// silently overwriting DeleteFunc's rejection. Checking deletedSecrets
-	// here closes that race regardless of which goroutine finishes last.
+	// silently overwriting DeleteFunc's rejection. Two things guard against
+	// that: every registered path still holds the per-route lock here (via
+	// validateAndRegister's deferred unlock), and DeleteFunc takes that same
+	// lock around its deletedSecrets.Store + rejection -- so the Load below
+	// and the Store there can't interleave, and whichever side runs second
+	// observes the other's write. If DeleteFunc ran first, secretDeleted is
+	// true and we skip the write, leaving the rejection authoritative.
 	if err == nil && registered {
 		key := routeKey(route.Namespace, route.Name)
 		if _, secretDeleted := p.deletedSecrets.Load(key); !secretDeleted {
@@ -514,6 +519,20 @@ func (p *RouteSecretManager) generateSecretHandler(namespace, routeName string) 
 			msg := fmt.Sprintf("external certificate validation failed: secret %q deleted for route %q", secret.Name, key)
 			log.V(4).Info(msg)
 			routeapihelpers.InvalidateAsyncSARCache(namespace, secret.Name)
+
+			// Serialize the mark-deleted + reject sequence against a
+			// concurrent registration's SARCompleted write in HandleRoute's
+			// tail, which holds this same per-route lock. Without it, the two
+			// steps here are not atomic relative to that tail's
+			// deletedSecrets.Load() guard and RecordRouteUpdate(SARCompleted)
+			// write: an in-flight registration that loaded deletedSecrets
+			// before this handler stored it can still finish afterward and
+			// overwrite the rejection below with a stale SARCompleted status,
+			// leaving the route admitted with its backing secret already gone.
+			// Holding the lock across both makes the rejection authoritative
+			// regardless of which goroutine runs second (OCPBUGS-77056).
+			unlock := p.lockRoute(key)
+			defer unlock()
 
 			// keep the secret monitor active and mark the secret as deleted for this route.
 			p.deletedSecrets.Store(key, true)
