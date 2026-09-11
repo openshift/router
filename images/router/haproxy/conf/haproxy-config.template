@@ -131,11 +131,7 @@ global
     {{- end }}
   {{- end }}
 
-  # By default when a ROUTER_CURVES is not defined HAProxy
-  # will use its built-in default supported groups for TLS key exchange.
-  {{- with (env "ROUTER_CURVES") }}
-  ssl-default-bind-curves {{ . }}
-  {{- end }}
+  ssl-default-bind-curves X25519MLKEM768
 
 defaults
   {{- with $value := env "ROUTER_MAX_CONNECTIONS" "50000" }}
