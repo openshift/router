@@ -14,7 +14,6 @@ import (
 	"text/template"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/router/pkg/router/routeapihelpers"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
 	haproxyutil "github.com/openshift/router/pkg/router/template/util/haproxy"
 	"github.com/openshift/router/pkg/router/template/util/haproxytime"
@@ -127,25 +126,6 @@ func matchPattern(pattern, s string) bool {
 	}
 	log.Error(err, "error with regex pattern in call to matchPattern")
 	return false
-}
-
-// genSubdomainWildcardRegexp is now legacy and around for backward
-// compatibility and allows old templates to continue running.
-// Generate a regular expression to match wildcard hosts (and paths if any)
-// for a [sub]domain.
-func genSubdomainWildcardRegexp(hostname, path string, exactPath bool) string {
-	subdomain := routeapihelpers.GetDomainForHost(hostname)
-	if len(subdomain) == 0 {
-		log.V(0).Info("generating subdomain wildcard regexp - invalid host name", "hostname", hostname)
-		return fmt.Sprintf("%s%s", hostname, path)
-	}
-
-	expr := regexp.QuoteMeta(fmt.Sprintf(".%s%s", subdomain, path))
-	if exactPath {
-		return fmt.Sprintf(`^[^\.]*%s$`, expr)
-	}
-
-	return fmt.Sprintf(`^[^\.]*%s(|/.*)$`, expr)
 }
 
 // generateRouteRegexp is now legacy and around for backward
@@ -414,10 +394,9 @@ var helperFunctions = template.FuncMap{
 	"isInteger":                isInteger,                //determines if a given variable is an integer
 	"matchValues":              matchValues,              //compares a given string to a list of allowed strings
 
-	"genSubdomainWildcardRegexp": genSubdomainWildcardRegexp,             //generates a regular expression matching the subdomain for hosts (and paths) with a wildcard policy
-	"generateRouteRegexp":        generateRouteRegexp,                    //generates a regular expression matching the route hosts (and paths)
-	"genCertificateHostName":     genCertificateHostName,                 //generates host name to use for serving/matching certificates
-	"genBackendNamePrefix":       templateutil.GenerateBackendNamePrefix, //generates the prefix for the backend name
+	"generateRouteRegexp":    generateRouteRegexp,                    //generates a regular expression matching the route hosts (and paths)
+	"genCertificateHostName": genCertificateHostName,                 //generates host name to use for serving/matching certificates
+	"genBackendNamePrefix":   templateutil.GenerateBackendNamePrefix, //generates the prefix for the backend name
 
 	"isTrue":     isTrue,     //determines if a given variable is a true value
 	"firstMatch": firstMatch, //anchors provided regular expression and evaluates against given strings, returns the first matched string or ""
