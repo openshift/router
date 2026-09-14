@@ -1,0 +1,67 @@
+stages:
+  - diff
+  - lint
+  - test
+diff:
+  stage: diff
+  image:
+    name: $CI_REGISTRY_GO/golang:1.16
+    entrypoint: [""]
+  tags:
+    - go
+  script:
+    - go run generate/go-generate.go $(pwd)
+    - test -z "$(git diff 2> /dev/null)" || exit 'Files are not generated, issue `go run generate/go-generate.go $(pwd)` and commit the result'
+    - test -z "$(git ls-files --others --exclude-standard 2> /dev/null)" || exit 'Generation created untracked files, cannot proceed'
+  only:
+    - merge_requests
+    - branches
+golangci_lint:
+  stage: lint
+  image:
+    name: $CI_REGISTRY_GO/lint:latest
+    entrypoint: [""]
+  tags:
+    - go
+  script:
+    - golangci-lint run --enable-all
+  only:
+    - merge_requests
+    - branches
+lint-commit-msg:
+  stage: lint
+  image:
+    name: $CI_REGISTRY_GO/check-commit:v2.1.0
+    entrypoint: [""]
+  tags:
+    - go
+  script:
+    - /check
+  only:
+    - merge_requests
+tidy:
+  stage: lint
+  image:
+    name: $CI_REGISTRY_GO/golang:1.16
+    entrypoint: [""]
+  tags:
+    - go
+  script:
+    - go mod tidy
+    - test -z "$(git diff 2> /dev/null)" || exit 'Go modules not tidied, issue \`go mod tidy\` and commit the result'
+  only:
+    - merge_requests
+    - branches
+test:
+  stage: test
+  image:
+    name: $CI_REGISTRY_GO/golang:1.16
+    entrypoint: [""]
+  tags:
+    - go
+  script:
+    - go build -v .
+    - go test ./...
+  only:
+    - merge_requests
+    - branches
