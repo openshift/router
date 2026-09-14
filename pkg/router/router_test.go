@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 	logFlags := flag.FlagSet{}
 	klog.InitFlags(&logFlags)
 	if err := logFlags.Set("v", "6"); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -104,10 +104,10 @@ func TestMain(m *testing.M) {
 
 	workdir, err := os.MkdirTemp("", "router")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Printf("router working directory: %s\n", workdir)
+	fmt.Fprintf(os.Stderr, "router working directory: %s\n", workdir)
 
 	h.workdir = workdir
 	h.dirs = map[string]string{
@@ -180,7 +180,7 @@ u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 	}
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.RemoveAll(workdir)
 		os.Exit(1)
 	}
@@ -488,6 +488,89 @@ func TestConfigTemplate(t *testing.T) {
 					attribute:   "http-response",
 					value:       `set-header Strict-Transport-Security 'max-age=99999;includesubdomain'`,
 					notFound:    true,
+				},
+			},
+		},
+		"HSTS with newline": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-nl1",
+					host: "hstsnl1.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\n;\npreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-nl1"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
+			},
+		},
+		"HSTS with CRLF": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-nl2",
+					host: "hstsnl2.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\r\n;\r\npreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-nl2"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
+			},
+		},
+		"HSTS with carriage return": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-nl3",
+					host: "hstsnl3.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\r;\rpreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-nl3"),
+					attribute:   "http-response",
+					value:       `set-header Strict-Transport-Security`,
+					notFound:    true,
+				},
+			},
+		},
+		"HSTS with tab whitespace": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "hsts-tab1",
+					host: "hststab1.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/hsts_header": "max-age=31536000\t;\tpreload",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "hsts-tab1"),
+					attribute:   "http-response",
+					value:       "set-header Strict-Transport-Security 'max-age=31536000\t;\tpreload'",
 				},
 			},
 		},
