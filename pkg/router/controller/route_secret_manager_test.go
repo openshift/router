@@ -1769,6 +1769,101 @@ func TestInFlightRegistrationDoesNotReAdmitDeletedSecretRoute(t *testing.T) {
 	}
 }
 
+// TestDeleteFuncSerializesWithRegistrationLock verifies that DeleteFunc takes
+// the per-route lock before marking the secret deleted and rejecting the route.
+//
+// The deletedSecrets guard alone (see TestInFlightRegistrationDoesNotReAdmitDeletedSecretRoute)
+// only covers the ordering where DeleteFunc fully completes before an in-flight
+// registration reaches its SARCompleted write. It does NOT cover the interleaving
+// that actually regressed in CI: the registration's guard reads deletedSecrets
+// (not yet set) first, then DeleteFunc stores + rejects, then the registration
+// overwrites the rejection with SARCompleted. Serializing both sides on the
+// per-route lock is what closes that window; this test asserts DeleteFunc is
+// blocked while that lock is held (OCPBUGS-77056).
+func TestDeleteFuncSerializesWithRegistrationLock(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		&fake.SecretManager{
+			Secret:     secret,
+			IsPresent:  true,
+			SecretName: "tls-secret",
+		},
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	key := routeKey(route.Namespace, route.Name)
+
+	// Simulate an in-flight registration holding the per-route lock across its
+	// guard-check + SARCompleted write. HandleRoute holds this same lock through
+	// its tail on every registered path (via validateAndRegister's deferred
+	// unlock), so DeleteFunc must block on it here.
+	unlock := rsm.lockRoute(key)
+
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+	done := make(chan struct{})
+	go func() {
+		handler.DeleteFunc(secret)
+		close(done)
+	}()
+
+	// While the lock is held, DeleteFunc must not proceed: no rejection recorded
+	// and deletedSecrets not yet set (both live inside the locked section).
+	select {
+	case <-done:
+		t.Fatal("DeleteFunc completed while the per-route lock was held; it is not serialized against the registration path (OCPBUGS-77056)")
+	case <-time.After(200 * time.Millisecond):
+		// expected: DeleteFunc is blocked on the per-route lock
+	}
+	if _, ok := rsm.deletedSecrets.Load(key); ok {
+		t.Fatal("deletedSecrets was set before the per-route lock was acquired; Store is not inside the locked section")
+	}
+	if r := recorder.GetRejections(); len(r) != 0 {
+		t.Fatalf("rejection recorded before the per-route lock was acquired: %v", r)
+	}
+
+	// Release the lock; DeleteFunc should now proceed and reject the route.
+	unlock()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("DeleteFunc did not complete after the per-route lock was released")
+	}
+
+	rejections := recorder.GetRejections()
+	if len(rejections) != 1 || rejections[0] != "sandbox-route-test:ExternalCertificateValidationFailed" {
+		t.Fatalf("expected one ValidationFailed rejection after lock release, got: %v", rejections)
+	}
+}
+
 func TestSecretDelete(t *testing.T) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
