@@ -1,4 +1,5 @@
 /openshift-router
+**/.DS_Store
 
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 
@@ -51,7 +52,7 @@ projectile-bookmarks.eld
 .dir-locals.el
 
 # saveplace
-places
+/places
 
 # url cache
 url/cache/
