@@ -785,7 +785,15 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 	}
 
 	log.V(4).Info("dynamically adding route backend", "backendKey", backendKey)
-	r.dynamicConfigManager.Register(backendKey, route)
+	r.dynamicConfigManager.Register(backendKey, backend, route)
+
+	// Saving the initial state of the endpoints from all the service units of the backend.
+	// This state is used later to calculate added and removed endpoints without the need to read proxy api.
+	for key := range backend.ServiceUnits {
+		if service, found := r.findMatchingServiceUnit(key); found {
+			backend.EndpointTable[key] = endpointsForAlias(*backend, service)
+		}
+	}
 
 	// Fully skipping DCM for now when adding or changing routes,
 	// should be reincluded along with the fix for https://issues.redhat.com/browse/OCPBUGS-77344
@@ -799,7 +807,7 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 
 	err := r.dynamicConfigManager.AddRoute(backendKey, backend.RoutingKeyName, route)
 	if err != nil {
-		log.V(4).Info("router will reload as the ConfigManager could not dynamically add route for backend", "backendKey", backendKey, "error", err)
+		log.Info("router will reload as the ConfigManager could not dynamically add route for backend", "backendKey", backendKey, "error", err)
 		return false
 	}
 
@@ -817,8 +825,8 @@ func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, r
 			if !ok {
 				weight = 0
 			}
-			if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, oldEndpoints, newEndpoints, weight); err != nil {
-				log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for route backend",
+			if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, &service, oldEndpoints, newEndpoints, weight); err != nil {
+				log.Info("router will reload as the ConfigManager could not dynamically replace endpoints for route backend",
 					"backendKey", backendKey, "serviceKey", key, "error", err)
 				return false
 			}
@@ -844,7 +852,7 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey
 	log.V(4).Info("dynamically removing route backend", "backendKey", backendKey)
 
 	if err := r.dynamicConfigManager.RemoveRoute(backendKey, route); err != nil {
-		log.V(4).Info("router will reload as the ConfigManager could not dynamically remove route backend", "backendKey", backendKey, "error", err)
+		log.Info("router will reload as the ConfigManager could not dynamically remove route backend", "backendKey", backendKey, "error", err)
 		return false
 	}
 
@@ -855,7 +863,7 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey
 // on all the routes associated with a given service.
 // Note: The config should have been synced at least once initially and
 // the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service ServiceUnit, oldEndpoints []Endpoint) bool {
+func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service ServiceUnit) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
 	}
@@ -877,7 +885,11 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 			return false
 		}
 
+		// Synchronizing EndpointTable only after backing up the former state, which is the current state in the proxy.
+		// These old (current haproxy state) and new (current cluster state) are used to calculate added and removed endpoints.
+		oldEndpoints := cfg.EndpointTable[id]
 		newEndpoints := endpointsForAlias(cfg, service)
+		cfg.EndpointTable[id] = newEndpoints
 
 		// If a service is idled, createRouterEndpoints returns a slice
 		// containing 1 endpoint (namely the idled service's ClusterIP
@@ -921,9 +933,9 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 		}
 
 		log.V(4).Info("dynamically replacing endpoints for associated backend", "backendKey", backendKey, "newEndpoints", newEndpoints)
-		if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, oldEndpoints, newEndpoints, weight); err != nil {
+		if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, &service, oldEndpoints, newEndpoints, weight); err != nil {
 			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			log.V(4).Info("router will reload as the ConfigManager could not dynamically replace endpoints for service", "service", id, "backendKey", backendKey, "weight", weight, "error", err)
+			log.Info("router will reload as the ConfigManager could not dynamically replace endpoints for service", "service", id, "backendKey", backendKey, "weight", weight, "error", err)
 			return false
 		}
 	}
@@ -950,7 +962,7 @@ func (r *templateRouter) dynamicallyRemoveEndpoints(service ServiceUnit, endpoin
 		log.V(4).Info("dynamically removing endpoints for associated backend", "backendKey", backendKey)
 		if err := r.dynamicConfigManager.RemoveRouteEndpoints(backendKey, endpoints); err != nil {
 			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			log.V(4).Info("router will reload as the ConfigManager could not dynamically remove endpoints for backend", "backendKey", backendKey, "error", err)
+			log.Info("router will reload as the ConfigManager could not dynamically remove endpoints for backend", "backendKey", backendKey, "error", err)
 			return false
 		}
 	}
@@ -1033,6 +1045,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		IsWildcard:            wildcard,
 		Annotations:           route.Annotations,
 		ServiceUnits:          serviceUnits,
+		EndpointTable:         make(map[ServiceUnitKey][]Endpoint),
 		PrimaryServiceUnitKey: primaryServiceUnitKey,
 		ActiveServiceUnits:    activeServiceUnits,
 		HTTPResponseHeaders:   httpResponseHeadersList,
@@ -1232,12 +1245,10 @@ func (r *templateRouter) AddEndpoints(id ServiceUnitKey, endpoints []Endpoint) {
 		return
 	}
 
-	oldEndpoints := frontend.EndpointTable
-
 	frontend.EndpointTable = endpoints
 	r.serviceUnits[id] = frontend
 
-	configChanged := r.dynamicallyReplaceEndpoints(id, frontend, oldEndpoints)
+	configChanged := r.dynamicallyReplaceEndpoints(id, frontend)
 	if len(frontend.ServiceAliasAssociations) > 0 {
 		r.stateChanged = true
 	}
@@ -1251,25 +1262,6 @@ func (r *templateRouter) cleanUpServiceAliasConfig(cfg *ServiceAliasConfig) {
 	if err != nil {
 		log.Error(err, "error deleting certificates for route, the route will still be deleted but files may remain in the container", "host", cfg.Host)
 	}
-}
-
-func cmpStrSlices(first []string, second []string) bool {
-	if len(first) != len(second) {
-		return false
-	}
-	for _, fi := range first {
-		found := false
-		for _, si := range second {
-			if fi == si {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }
 
 // shouldWriteCerts determines if the router should ask the cert manager to write out certificates

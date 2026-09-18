@@ -75,6 +75,10 @@ type ServiceAliasConfig struct {
 	// ActiveEndpoints is a count of the route endpoints that are part of a service unit with a non-zero weight
 	ActiveEndpoints int
 
+	// EndpointTable are endpoints that back the service in this ServiceAliasConfig: non matching ports from
+	// route configuration is filtered out. This translates into a final backend implementation for routers.
+	EndpointTable map[ServiceUnitKey][]Endpoint
+
 	// HTTPResponseHeaders has route-specific custom HTTP response headers.
 	HTTPResponseHeaders []HTTPHeader
 
@@ -174,15 +178,20 @@ type ConfigManagerOptions struct {
 	//    router.openshift.io/pool-size
 	BlueprintRoutePoolSize int
 
-	// MaxDynamicServers is the maximum number of dynamic servers we
-	// will allocate on a per-route basis.
-	MaxDynamicServers int
-
 	// WildcardRoutesAllowed indicates if wildcard routes are allowed.
 	WildcardRoutesAllowed bool
 
 	// ExtendedValidation indicates if extended route validation is enabled.
 	ExtendedValidation bool
+
+	// WorkingDir is the router's working directory containing configuration
+	// files, certificates, and other router-managed resources.
+	WorkingDir string
+
+	// DefaultDestinationCA is the path to the default CA certificate file used
+	// to verify backend server certificates for re-encrypt routes when no
+	// route-specific destination CA is configured.
+	DefaultDestinationCA string
 }
 
 // ConfigManager is used by the router to make configuration changes using
@@ -204,7 +213,7 @@ type ConfigManager interface {
 	RemoveBlueprint(route *routev1.Route)
 
 	// Register registers an id to be associated with a route.
-	Register(id ServiceAliasConfigKey, route *routev1.Route)
+	Register(id ServiceAliasConfigKey, backend *ServiceAliasConfig, route *routev1.Route)
 
 	// AddRoute adds a new route or updates an existing route.
 	AddRoute(id ServiceAliasConfigKey, routingKey string, route *routev1.Route) error
@@ -214,7 +223,7 @@ type ConfigManager interface {
 
 	// ReplaceRouteEndpoints replaces a subset (the ones associated with
 	// a single service unit) of a route endpoints.
-	ReplaceRouteEndpoints(id ServiceAliasConfigKey, oldEndpoints, newEndpoints []Endpoint, weight int32) error
+	ReplaceRouteEndpoints(id ServiceAliasConfigKey, svc *ServiceUnit, oldEndpoints, newEndpoints []Endpoint, weight int32) error
 
 	// RemoveRouteEndpoints removes a set of endpoints from a route.
 	RemoveRouteEndpoints(id ServiceAliasConfigKey, endpoints []Endpoint) error
@@ -224,15 +233,6 @@ type ConfigManager interface {
 	// which indicates whether or not the configuration manager should
 	// reset all the dynamically applied changes it is keeping track of.
 	Notify(event RouterEventType)
-
-	// ServerTemplateName returns the dynamic server template name.
-	ServerTemplateName(id ServiceAliasConfigKey) string
-
-	// ServerTemplateSize returns the dynamic server template size.
-	ServerTemplateSize(id ServiceAliasConfigKey) string
-
-	// GenerateDynamicServerNames generates the dynamic server names.
-	GenerateDynamicServerNames(id ServiceAliasConfigKey) []string
 }
 
 // CaptureHTTPHeader specifies an HTTP header that should be captured for access

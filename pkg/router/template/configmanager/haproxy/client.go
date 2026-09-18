@@ -24,6 +24,11 @@ const (
 	maxRetries = 3
 )
 
+type HAProxyClient interface {
+	RunCommand(cmd string, converter Converter) ([]byte, error)
+	Execute(cmd string) ([]byte, error)
+}
+
 // Client is a client used to dynamically configure haproxy.
 type Client struct {
 	socketAddress string
