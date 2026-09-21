@@ -106,6 +106,12 @@ func isInteger(s string) bool {
 	return (err == nil)
 }
 
+// isPositiveInteger reports whether s represents an integer greater than zero.
+func isPositiveInteger(s string) bool {
+	value, err := strconv.Atoi(s)
+	return err == nil && value > 0
+}
+
 func matchValues(s string, allowedValues ...string) bool {
 	log.V(7).Info("matchValues called", "s", s, "allowedValues", allowedValues)
 	for _, value := range allowedValues {
@@ -412,6 +418,7 @@ var helperFunctions = template.FuncMap{
 	"env":                      env,                      //tries to get an environment variable, returns the first non-empty default value or "" on failure
 	"matchPattern":             matchPattern,             //anchors provided regular expression and evaluates against given string
 	"isInteger":                isInteger,                //determines if a given variable is an integer
+	"isPositiveInteger":        isPositiveInteger,        //determines if a given variable is a positive integer
 	"matchValues":              matchValues,              //compares a given string to a list of allowed strings
 
 	"genSubdomainWildcardRegexp": genSubdomainWildcardRegexp,             //generates a regular expression matching the subdomain for hosts (and paths) with a wildcard policy
