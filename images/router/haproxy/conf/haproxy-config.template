@@ -695,20 +695,23 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
         {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections") }}
   stick-table type ip size 100k expire 30s store conn_cur,conn_rate(3s),http_req_rate(10s)
   tcp-request content track-sc2 src
-          {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp")) }}
-  tcp-request content reject if { src_conn_cur ge  {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp" }} }
+          {{- $maxConcurrentTCP := index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp" }}
+          {{- if isInteger $maxConcurrentTCP }}
+  tcp-request content reject if { src_conn_cur ge  {{ $maxConcurrentTCP }} }
           {{- else }}
   # concurrent TCP connections not restricted
           {{- end }}
 
-          {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-tcp")) }}
-  tcp-request content reject if { src_conn_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-tcp" }} }
+          {{- $rateLimitTCP := index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-tcp" }}
+          {{- if isInteger $rateLimitTCP }}
+  tcp-request content reject if { src_conn_rate ge {{ $rateLimitTCP }} }
           {{- else }}
   #TCP connection rate not restricted
           {{- end }}
 
-          {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http")) }}
-  tcp-request content reject if { src_http_req_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http" }} }
+          {{- $rateLimitHTTP := index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-http" }}
+          {{- if isInteger $rateLimitHTTP }}
+  tcp-request content reject if { src_http_req_rate ge {{ $rateLimitHTTP }} }
           {{- else }}
   #HTTP request rate not restricted
           {{- end }}
@@ -827,7 +830,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
                 {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ $health_check_interval }}
                 {{- end }}{{/* end else no health check */}}
                 {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
-                {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
+                {{- if isInteger $podMaxConn }} maxconn {{ $podMaxConn }} {{- end }}
                 {{- end }}{{/* end pod-concurrent-connections annotation */}}
 
               {{- end }}{{/* end if cg.TLSTermination */}}
@@ -863,14 +866,16 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
         {{- if isTrue (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections") }}
   stick-table type ip size 100k expire 30s store conn_cur,conn_rate(3s),http_req_rate(10s)
   tcp-request content track-sc2 src
-          {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp")) }}
-  tcp-request content reject if { src_conn_cur ge  {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp" }} }
+          {{- $maxConcurrentTCP := index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp" }}
+          {{- if isInteger $maxConcurrentTCP }}
+  tcp-request content reject if { src_conn_cur ge  {{ $maxConcurrentTCP }} }
           {{- else }}
   # concurrent TCP connections not restricted
           {{- end }}
 
-          {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-tcp")) }}
-  tcp-request content reject if { src_conn_rate ge {{ index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-tcp" }} }
+          {{- $rateLimitTCP := index $cfg.Annotations "haproxy.router.openshift.io/rate-limit-connections.rate-tcp" }}
+          {{- if isInteger $rateLimitTCP }}
+  tcp-request content reject if { src_conn_rate ge {{ $rateLimitTCP }} }
           {{- else }}
   #TCP connection rate not restricted
           {{- end }}
@@ -892,7 +897,7 @@ backend {{ genBackendNamePrefix $cfg.TLSTermination }}:{{ $cfgIdx }}
                 {{- if and (not $endpoint.NoHealthCheck) (gt $cfg.ActiveEndpoints 1) }} check inter {{ $health_check_interval }}
                 {{- end }}{{/* end else no health check */}}
                 {{- with $podMaxConn := index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections" }}
-                {{- if (isInteger (index $cfg.Annotations "haproxy.router.openshift.io/pod-concurrent-connections")) }} maxconn {{$podMaxConn }} {{- end }}
+                {{- if isInteger $podMaxConn }} maxconn {{ $podMaxConn }} {{- end }}
                 {{- end }}{{/* end pod-concurrent-connections annotation */}}
 
               {{- end }}{{/* end range processEndpointsForAlias */}}
