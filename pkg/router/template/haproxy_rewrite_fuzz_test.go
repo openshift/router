@@ -151,6 +151,14 @@ func runHAProxy(t *testing.T, config string) func() {
 
 func requestBackendPath(t *testing.T, port int, path string) string {
 	t.Helper()
+	backendPath, err := requestBackendPathWithError(port, path)
+	if err != nil {
+		t.Fatalf("request %q: %v", path, err)
+	}
+	return backendPath
+}
+
+func requestBackendPathWithError(port int, path string) (string, error) {
 	url := fmt.Sprintf("http://127.0.0.1:%d%s", port, path)
 	client := &http.Client{Timeout: time.Second}
 	deadline := time.Now().Add(5 * time.Second)
@@ -159,12 +167,12 @@ func requestBackendPath(t *testing.T, port int, path string) string {
 		if err == nil {
 			defer response.Body.Close()
 			if response.StatusCode != http.StatusOK {
-				t.Fatalf("request %q: status %d", path, response.StatusCode)
+				return "", fmt.Errorf("status %d", response.StatusCode)
 			}
-			return response.Header.Get("X-Backend-Path")
+			return response.Header.Get("X-Backend-Path"), nil
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("request %q: %v", path, err)
+			return "", err
 		}
 		time.Sleep(25 * time.Millisecond)
 	}
@@ -235,6 +243,8 @@ func TestRewritePathConfigFuzzingWithLiveHAProxy(t *testing.T) {
 	rng := rand.New(rand.NewSource(liveFuzzSeed))
 	const cases = 1000
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789/._-+*()[]{}$|"
+	oldRejected := 0
+	newRejected := 0
 	for i := 0; i < cases; i++ {
 		length := 1 + rng.Intn(40)
 		path := make([]byte, length+1)
@@ -242,10 +252,65 @@ func TestRewritePathConfigFuzzingWithLiveHAProxy(t *testing.T) {
 		for j := 1; j < len(path); j++ {
 			path[j] = charset[rng.Intn(len(charset))]
 		}
-		config := generateHAProxyConfig(testConfig{string(path), "/rewritten", "NEW", 10000 + i, 18000 + i})
-		if err := validateHAProxyConfig(config); err != nil {
-			t.Fatalf("seed=%d case=%d path=%q: %v", liveFuzzSeed, i, string(path), err)
+		specPath := string(path)
+		oldErr := validateHAProxyConfig(generateHAProxyConfig(testConfig{specPath, "/rewritten", "OLD", 10000 + i, 18000 + i}))
+		newErr := validateHAProxyConfig(generateHAProxyConfig(testConfig{specPath, "/rewritten", "NEW", 12000 + i, 20000 + i}))
+		if oldErr != nil {
+			oldRejected++
+		}
+		if newErr != nil {
+			newRejected++
+			t.Fatalf("NEW rejected seed=%d case=%d path=%q oldRejected=%t: %v", liveFuzzSeed, i, specPath, oldErr != nil, newErr)
 		}
 	}
-	t.Logf("validated %d deterministic fuzz configs with seed %d", cases, liveFuzzSeed)
+	t.Logf("differential config fuzz seed=%d cases=%d oldRejected=%d oldAccepted=%d newRejected=%d newAccepted=%d", liveFuzzSeed, cases, oldRejected, cases-oldRejected, newRejected, cases-newRejected)
+}
+
+func TestRewritePathOldVsNewWithLiveHAProxy(t *testing.T) {
+	requireHAProxy(t)
+	backendPort := getFreePort(t)
+	defer startBackendServer(t, backendPort)()
+
+	testCases := []struct {
+		name          string
+		specPath      string
+		rewriteTarget string
+	}{
+		{"plain", "/bar", "/foo"},
+		{"dot", "/api/v1.0", "/api/v2"},
+		{"plus", "/bar+", "/foo"},
+		{"star", "/bar*", "/foo"},
+		{"dollar", "/bar$", "/foo"},
+		{"parentheses", "/bar()", "/foo"},
+		{"brackets", "/bar[a-z]", "/foo"},
+		{"combined", "/api/v1.0+beta", "/api/v2"},
+		{"c-plus-plus", "/c++", "/cplusplus"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			requestPath := tc.specPath + "/sub"
+			want := tc.rewriteTarget + "/sub"
+			for _, configType := range []string{"OLD", "NEW"} {
+				listenPort := getFreePort(t)
+				config := generateHAProxyConfig(testConfig{tc.specPath, tc.rewriteTarget, configType, listenPort, backendPort})
+				if err := validateHAProxyConfig(config); err != nil {
+					t.Logf("path=%q type=%s config=REJECTED error=%v", tc.specPath, configType, err)
+					continue
+				}
+				cleanup := runHAProxy(t, config)
+				got, err := requestBackendPathWithError(listenPort, requestPath)
+				cleanup()
+				if err != nil {
+					t.Logf("path=%q type=%s request=ERROR error=%v", tc.specPath, configType, err)
+					continue
+				}
+				outcome := "CORRECT"
+				if got != want {
+					outcome = "DIFFERENT"
+				}
+				t.Logf("path=%q type=%s request=%q backend=%q expected=%q outcome=%s", tc.specPath, configType, requestPath, got, want, outcome)
+			}
+		})
+	}
 }
