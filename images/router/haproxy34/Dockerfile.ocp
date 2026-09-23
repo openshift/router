@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/ocp/5.0:base-rhel9
+FROM registry.ci.openshift.org/ocp/5.0:base-rhel10
 RUN INSTALL_PKGS="socat haproxy34" && \
     yum install -y --setopt=install_weak_deps=0 $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
