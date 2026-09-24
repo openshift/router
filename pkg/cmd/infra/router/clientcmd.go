@@ -60,6 +60,13 @@ func (cfg *Config) KubeConfig() (*restclient.Config, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
+
+	// Increase client-side rate limiting to support higher throughput during
+	// router startup, especially when many external certificate routes are
+	// present.
+	clientConfig.QPS = 50
+	clientConfig.Burst = 100
+
 	return clientConfig, namespace, nil
 }
 

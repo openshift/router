@@ -46,7 +46,7 @@ type fakeHAProxy struct {
 }
 
 func startFakeHAProxyServer(prefix string) (*fakeHAProxy, error) {
-	f, err := os.CreateTemp(os.TempDir(), prefix)
+	f, err := os.CreateTemp("", prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,7 @@ func startFakeHAProxyServer(prefix string) (*fakeHAProxy, error) {
 }
 
 func StartFakeServerForTest(t *testing.T) *fakeHAProxy {
-	name := fmt.Sprintf("fake-haproxy-%s", t.Name())
-	server, err := startFakeHAProxyServer(name)
+	server, err := startFakeHAProxyServer("fake-haproxy-*")
 	if err != nil {
 		t.Errorf("%s error: %v", t.Name(), err)
 	}

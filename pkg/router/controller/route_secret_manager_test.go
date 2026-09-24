@@ -3,25 +3,22 @@ package controller
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/openshift/library-go/pkg/route/secretmanager/fake"
-	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/routeapihelpers"
 
 	routev1 "github.com/openshift/api/route/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/features"
 	testclient "k8s.io/client-go/kubernetes/fake"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/cache"
 )
 
 const testRouterName = "test-router"
@@ -50,30 +47,6 @@ func (t *testSecretGetter) Secrets(_ string) corev1client.SecretInterface {
 	return testclient.NewSimpleClientset(t.secret).CoreV1().Secrets(t.namespace)
 }
 
-// fakeSecretInformer will list/watch only one secret inside a namespace
-func fakeSecretInformer(fakeKubeClient *testclient.Clientset, namespace, name string) cache.SharedInformer {
-	// WatchListClient featuregate is enabled by default since v0.35. Fake client does not support
-	// initializing its cache from Watch, so falling back to use List instead. The envvar below
-	// configures the featuregate state.
-	os.Setenv("KUBE_FEATURE_"+string(features.WatchListClient), "False")
-
-	fieldSelector := fields.OneTermEqualSelector("metadata.name", name).String()
-	return cache.NewSharedInformer(
-		&cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				options.FieldSelector = fieldSelector
-				return fakeKubeClient.CoreV1().Secrets(namespace).List(context.TODO(), options)
-			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				options.FieldSelector = fieldSelector
-				return fakeKubeClient.CoreV1().Secrets(namespace).Watch(context.TODO(), options)
-			},
-		},
-		&corev1.Secret{},
-		0,
-	)
-}
-
 func fakeSecret(namespace, name string, secretType corev1.SecretType, data map[string][]byte) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -85,58 +58,53 @@ func fakeSecret(namespace, name string, secretType corev1.SecretType, data map[s
 	}
 }
 
-type fakePluginDone struct {
-	eventType watch.EventType
-	route     *routev1.Route
-	err       error
-	doneCh    chan struct{}
-}
-
-func (p *fakePluginDone) HandleRoute(eventType watch.EventType, route *routev1.Route) error {
-	defer close(p.doneCh)
-	p.eventType, p.route = eventType, route
-	return p.err
-}
-func (p *fakePluginDone) HandleNode(t watch.EventType, node *corev1.Node) error {
-	return fmt.Errorf("not expected")
-}
-func (p *fakePluginDone) HandleEndpoints(watch.EventType, *corev1.Endpoints) error {
-	return fmt.Errorf("not expected")
-}
-func (p *fakePluginDone) HandleNamespaces(namespaces sets.String) error {
-	return fmt.Errorf("not expected")
-}
-func (p *fakePluginDone) Commit() error {
-	return p.err
-}
-
-var _ router.Plugin = &fakePluginDone{}
-
 type statusRecorder struct {
+	sync.Mutex
 	rejections                 []string
 	updates                    []string
 	unservableInFutureVersions map[string]string
-	doneCh                     chan struct{}
 }
 
 func (r *statusRecorder) routeKey(route *routev1.Route) string {
 	return route.Namespace + "-" + route.Name
 }
 func (r *statusRecorder) RecordRouteRejection(route *routev1.Route, reason, message string) {
-	defer close(r.doneCh)
+	r.Lock()
+	defer r.Unlock()
 	r.rejections = append(r.rejections, fmt.Sprintf("%s:%s", r.routeKey(route), reason))
 }
 
 func (r *statusRecorder) RecordRouteUpdate(route *routev1.Route, reason, message string) {
-	defer close(r.doneCh)
+	r.Lock()
+	defer r.Unlock()
 	r.updates = append(r.updates, fmt.Sprintf("%s:%s", r.routeKey(route), reason))
 }
 
 func (r *statusRecorder) RecordRouteUnservableInFutureVersionsClear(route *routev1.Route) {
+	r.Lock()
+	defer r.Unlock()
 	delete(r.unservableInFutureVersions, r.routeKey(route))
 }
 func (r *statusRecorder) RecordRouteUnservableInFutureVersions(route *routev1.Route, reason, message string) {
+	r.Lock()
+	defer r.Unlock()
 	r.unservableInFutureVersions[r.routeKey(route)] = reason
+}
+
+func (r *statusRecorder) GetRejections() []string {
+	r.Lock()
+	defer r.Unlock()
+	var res []string
+	res = append(res, r.rejections...)
+	return res
+}
+
+func (r *statusRecorder) GetUpdates() []string {
+	r.Lock()
+	defer r.Unlock()
+	var res []string
+	res = append(res, r.updates...)
+	return res
 }
 
 var _ RouteStatusRecorder = &statusRecorder{}
@@ -152,6 +120,7 @@ func TestRouteSecretManager(t *testing.T) {
 		expectedRoute      *routev1.Route
 		expectedEventType  watch.EventType
 		expectedRejections []string
+		expectedUpdates    []string
 		expectedError      bool
 	}{
 		// scenarios when route is added
@@ -325,6 +294,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -337,6 +309,9 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Added,
+			expectedUpdates: []string{
+				"sandbox-route-test:ExternalCertificateSARCompleted",
+			},
 		},
 		{
 			name: "route added without externalCertificate",
@@ -543,6 +518,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -555,6 +533,9 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Modified,
+			expectedUpdates: []string{
+				"sandbox-route-test:ExternalCertificateSARCompleted",
+			},
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route with same externalCertificate)
@@ -736,7 +717,7 @@ func TestRouteSecretManager(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name: "route updated: old route with externalCertificate, new route with same externalCertificate allowed and correct secret",
+			name: "route updated: old route with externalCertificate, new route with same externalCertificate allowed and correct secret (no SARCompleted on re-validation)",
 			route: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
@@ -764,6 +745,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -968,6 +952,9 @@ func TestRouteSecretManager(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "route-test",
 					Namespace: "sandbox",
+					Annotations: map[string]string{
+						certResourceVersionAnnotation: "",
+					},
 				},
 				Spec: routev1.RouteSpec{
 					TLS: &routev1.TLSConfig{
@@ -980,6 +967,9 @@ func TestRouteSecretManager(t *testing.T) {
 				},
 			},
 			expectedEventType: watch.Modified,
+			expectedUpdates: []string{
+				"sandbox-route-test:ExternalCertificateSARCompleted",
+			},
 		},
 
 		// scenarios when route is updated (old route with externalCertificate, new route without externalCertificate)
@@ -1131,13 +1121,13 @@ func TestRouteSecretManager(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
+			routeapihelpers.ClearAsyncSARCacheForTest()
 			p := &fakePlugin{}
-			recorder := &statusRecorder{
-				doneCh: make(chan struct{}),
-			}
-			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, testRouterName, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{}, &testSARCreator{allow: s.allow})
+			recorder := &statusRecorder{}
+			rsm := NewRouteSecretManager(p, recorder, &s.secretManager, testRouterName, &testSecretGetter{namespace: s.route.Namespace, secret: s.secretManager.Secret}, &routeLister{items: []*routev1.Route{s.route}}, &testSARCreator{allow: s.allow})
 
 			gotErr := rsm.HandleRoute(s.eventType, s.route)
+
 			if (gotErr != nil) != s.expectedError {
 				t.Fatalf("expected error to be %t, but got %t", s.expectedError, gotErr != nil)
 			}
@@ -1147,13 +1137,272 @@ func TestRouteSecretManager(t *testing.T) {
 			if s.expectedEventType != p.t {
 				t.Fatalf("expected %s event for next plugin, but got %s", s.expectedEventType, p.t)
 			}
-			if !reflect.DeepEqual(s.expectedRejections, recorder.rejections) {
-				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.rejections)
+			if !reflect.DeepEqual(s.expectedRejections, recorder.GetRejections()) {
+				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.GetRejections())
 			}
-			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {
-				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route.Namespace, s.route.Name))
+			if !reflect.DeepEqual(s.expectedUpdates, recorder.GetUpdates()) {
+				t.Fatalf("expected updates %v, but got %v", s.expectedUpdates, recorder.GetUpdates())
+			}
+			if _, exists := rsm.deletedSecrets.Load(routeKey(s.route.Namespace, s.route.Name)); exists {
+				t.Fatalf("expected deletedSecrets to not have %q key", routeKey(s.route.Namespace, s.route.Name))
 			}
 		})
+	}
+}
+
+// TestPopulateRouteTLSRace verifies that HandleRoute's DeepCopy of the route
+// prevents data races between the main controller goroutine (which populates
+// TLS cert/key fields) and informer goroutines (which read the same route via
+// DeepCopy, as the secret handler's UpdateFunc does in production).
+// Run with -race to confirm no races are detected.
+func TestPopulateRouteTLSRace(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	// The routeLister returns a pointer to the SAME route object,
+	// faithfully reproducing the informer cache behavior in production.
+	lister := &routeLister{items: []*routev1.Route{route}}
+
+	secretMgr := &fake.SecretManager{
+		Secret:     secret,
+		IsPresent:  true,
+		SecretName: "tls-secret",
+	}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		&statusRecorder{},
+		secretMgr,
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// First call to register the route with the secret manager.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("initial HandleRoute failed: %v", err)
+	}
+
+	var wg sync.WaitGroup
+	const iterations = 100
+
+	// Goroutine A: simulates the main controller goroutine calling
+	// HandleRoute, which calls populateRouteTLSFromSecret and WRITES
+	// to route.Spec.TLS.Certificate and route.Spec.TLS.Key.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			routeapihelpers.ClearAsyncSARCacheForTest()
+			if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+				t.Errorf("HandleRoute iteration %d: %v", i, err)
+				return
+			}
+		}
+	}()
+
+	// Goroutine B: simulates the informer goroutine reading the same
+	// shared route object. In production, the secret handler's UpdateFunc
+	// calls isRouteAdmittedTrue(route.DeepCopy(), ...) which READS all
+	// fields including the TLS fields being written by goroutine A.
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			_ = route.DeepCopy()
+		}
+	}()
+
+	wg.Wait()
+}
+
+// TestSARCompletedOnlyOnAdded verifies that HandleRoute emits
+// RecordRouteUpdate(SARCompleted) only on watch.Added events, not on
+// watch.Modified. Emitting on Modified creates a re-enqueue feedback
+// loop and can re-admit routes that were rejected by secret handlers.
+func TestSARCompletedOnlyOnAdded(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		&fake.SecretManager{
+			Secret:     secret,
+			IsPresent:  true,
+			SecretName: "tls-secret",
+		},
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// HandleRoute(Added): should emit SARCompleted.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("HandleRoute(Added) failed: %v", err)
+	}
+	updates := recorder.GetUpdates()
+	if len(updates) != 1 || updates[0] != "sandbox-route-test:ExternalCertificateSARCompleted" {
+		t.Fatalf("expected one SARCompleted on Added, got: %v", updates)
+	}
+
+	// HandleRoute(Modified): should NOT emit SARCompleted.
+	routeapihelpers.ClearAsyncSARCacheForTest()
+	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+		t.Fatalf("HandleRoute(Modified) failed: %v", err)
+	}
+
+	updates = recorder.GetUpdates()
+	sarCount := 0
+	for _, u := range updates {
+		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
+			sarCount++
+		}
+	}
+	if sarCount != 1 {
+		t.Fatalf("expected exactly 1 SARCompleted (from Added only), got %d: %v", sarCount, updates)
+	}
+}
+
+// TestDeletedSecretDoesNotGetReadmitted reproduces the failure mode from
+// the Hypershift conformance test "the secret is deleted then routes are
+// not reachable": after the DeleteFunc rejects the route (Admitted=False),
+// the status update triggers a re-enqueue. If the subsequent HandleRoute
+// call succeeds (because GetSecret still returns the secret from cache
+// during the deletion propagation window), the SARCompleted write must
+// NOT flip the route back to Admitted=True. Otherwise the route bounces
+// between admitted and rejected, and the E2E test polls for Admitted=False
+// until timeout.
+//
+// Guards against a regression where the SARCompleted write re-admits
+// the route during the informer cache propagation window after deletion.
+func TestDeletedSecretDoesNotGetReadmitted(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+	secretMgr := &fake.SecretManager{
+		Secret:     secret,
+		IsPresent:  true,
+		SecretName: "tls-secret",
+	}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		secretMgr,
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// Step 1: Admit the route — should succeed and write SARCompleted.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("initial HandleRoute failed: %v", err)
+	}
+	updates := recorder.GetUpdates()
+	if len(updates) != 1 || updates[0] != "sandbox-route-test:ExternalCertificateSARCompleted" {
+		t.Fatalf("expected SARCompleted after initial admission, got: %v", updates)
+	}
+
+	// Step 2: Simulate secret deletion via the handler.
+	// This records a rejection (Admitted=False, ValidationFailed).
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+	handler.DeleteFunc(secret)
+
+	rejections := recorder.GetRejections()
+	if len(rejections) != 1 || rejections[0] != "sandbox-route-test:ExternalCertificateValidationFailed" {
+		t.Fatalf("expected ValidationFailed rejection after delete, got: %v", rejections)
+	}
+
+	// Step 3: Simulate the re-enqueue triggered by the rejection status
+	// update. The route still has externalCertificate in its spec. The
+	// SecretManager still returns the secret (simulating the informer
+	// cache race where the delete hasn't propagated yet). validate() and
+	// populateRouteTLSFromSecret() both succeed.
+	//
+	// On unfixed code, HandleRoute succeeds, then the SARCompleted guard
+	// sees the route has Admitted=False (no ext-cert admitted reason) and
+	// writes SARCompleted — flipping the route BACK to Admitted=True.
+	// This re-admission is the bug that causes the E2E test to timeout.
+	routeapihelpers.ClearAsyncSARCacheForTest()
+	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+		t.Fatalf("re-enqueued HandleRoute failed: %v", err)
+	}
+
+	// Verify the route was NOT re-admitted. After the DeleteFunc rejection,
+	// no new SARCompleted update should have been recorded.
+	allUpdates := recorder.GetUpdates()
+	sarCount := 0
+	for _, u := range allUpdates {
+		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
+			sarCount++
+		}
+	}
+	if sarCount != 1 {
+		t.Fatalf("expected exactly 1 SARCompleted (from initial admission), got %d: %v",
+			sarCount, allUpdates)
 	}
 }
 
@@ -1255,61 +1504,269 @@ func TestSecretUpdate(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.name, func(t *testing.T) {
-			recorder := &statusRecorder{
-				doneCh: make(chan struct{}),
-			}
+			recorder := &statusRecorder{}
 			lister := &routeLister{items: []*routev1.Route{s.route}}
-			rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
-			// Create a fakeSecret and start an informer for it
+			// Create a fakeSecret
 			secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
-			kubeClient := testclient.NewSimpleClientset(secret)
-			informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
-			go informer.Run(context.TODO().Done())
-
-			// wait for informer to start
-			if !cache.WaitForCacheSync(context.TODO().Done(), informer.HasSynced) {
-				t.Fatal("cache not synced yet")
-			}
-
-			if _, err := informer.AddEventHandler(rsm.generateSecretHandler(s.route.Namespace, s.route.Name)); err != nil {
-				t.Fatalf("failed to add handler: %v", err)
-			}
 
 			// update the secret
 			updatedSecret := secret.DeepCopy()
+			updatedSecret.ResourceVersion = "200"
 			updatedSecret.Data = map[string][]byte{
 				"tls.crt": []byte("my-crt"),
 				"tls.key": []byte("my-key"),
 			}
-			if _, err := kubeClient.CoreV1().Secrets(s.route.Namespace).Update(context.TODO(), updatedSecret, metav1.UpdateOptions{}); err != nil {
-				t.Fatalf("failed to update secret: %v", err)
+
+			plugin := &fakePlugin{}
+			rsm := NewRouteSecretManager(
+				plugin,
+				recorder,
+				&fake.SecretManager{Secret: updatedSecret, IsPresent: true, SecretName: "tls-secret"},
+				testRouterName,
+				&testSecretGetter{namespace: "sandbox", secret: updatedSecret},
+				lister,
+				// SAR is set to deny — UpdateFunc must NOT call validate()
+				// synchronously, so SAR denial should not block the cert
+				// refresh. The delayed re-check goroutine will check SAR
+				// later, but we only assert immediate results here.
+				&testSARCreator{allow: false},
+			)
+
+			// Get the handler
+			handler := rsm.generateSecretHandler(s.route.Namespace, s.route.Name)
+
+			// Call the handler directly (synchronous — the delayed goroutine
+			// fires in the background but we only check immediate results).
+			handler.UpdateFunc(secret, updatedSecret)
+
+			// UpdateFunc always calls RecordRouteUpdate (keeps Admitted=True)
+			// to ensure the route remains reachable while the new cert is
+			// picked up on re-enqueue.
+			expectedUpdates := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			if !reflect.DeepEqual(expectedUpdates, recorder.GetUpdates()) {
+				t.Fatalf("expected updates %v, but got %v", expectedUpdates, recorder.GetUpdates())
 			}
 
-			// wait until route's status is updated
-			<-recorder.doneCh
-
-			expectedStatus := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
-
-			if s.isRouteAdmittedTrue {
-				// RecordRouteUpdate will be called if `Admitted=True`
-				if !reflect.DeepEqual(expectedStatus, recorder.updates) {
-					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.updates)
-				}
-			} else {
-				// RecordRouteRejection will be called if `Admitted=False`
-				if !reflect.DeepEqual(expectedStatus, recorder.rejections) {
-					t.Fatalf("expected status %v, but got %v", expectedStatus, recorder.rejections)
-				}
+			// Verify HandleRoute was called with Modified event and the
+			// cert data was populated from the secret.
+			if plugin.t != watch.Modified {
+				t.Fatalf("expected HandleRoute called with Modified, got %v", plugin.t)
+			}
+			if plugin.route == nil {
+				t.Fatal("expected HandleRoute to receive a route")
+			}
+			if plugin.route.Spec.TLS.Certificate != "my-crt" {
+				t.Fatalf("expected cert 'my-crt', got %q", plugin.route.Spec.TLS.Certificate)
+			}
+			if plugin.route.Spec.TLS.Key != "my-key" {
+				t.Fatalf("expected key 'my-key', got %q", plugin.route.Spec.TLS.Key)
 			}
 
-			if _, exists := rsm.deletedSecrets.Load(generateKey(s.route.Namespace, s.route.Name)); exists {
-				t.Fatalf("expected deletedSecrets to not have %q key", generateKey(s.route.Namespace, s.route.Name))
+			// Verify Commit() was called to trigger the HAProxy reload.
+			if plugin.commits != 1 {
+				t.Fatalf("expected Commit() called once, got %d", plugin.commits)
+			}
+
+			// Verify the cert-resource-version annotation was set.
+			if v := plugin.route.Annotations[certResourceVersionAnnotation]; v != "200" {
+				t.Fatalf("expected cert-resource-version annotation '200', got %q", v)
+			}
+
+			if _, exists := rsm.deletedSecrets.Load(routeKey(s.route.Namespace, s.route.Name)); exists {
+				t.Fatalf("expected deletedSecrets to not have %q key", routeKey(s.route.Namespace, s.route.Name))
 			}
 
 		})
 	}
 
+}
+
+// TestSecretUpdateDelayedRecheck verifies the delayed re-check spawned by
+// UpdateFunc only writes a status update when it actually needs to: it must
+// be a silent no-op when SAR still passes (the common case: secret rotated,
+// RBAC unchanged), and it must reject the route when SAR now fails (RBAC was
+// revoked and has since propagated). Making the common case a no-op avoids
+// doubling the load on the router's status-write queue for every secret
+// update, regardless of whether RBAC ever changes.
+func TestSecretUpdateDelayedRecheck(t *testing.T) {
+	// Shrink the delay so the test doesn't sleep for real seconds. Stored
+	// atomically since a prior test's spawned goroutine (e.g. TestSecretUpdate,
+	// which uses the real default delay) may still be sleeping on this value.
+	originalDelay := secretUpdateRecheckDelay.Load()
+	secretUpdateRecheckDelay.Store(int64(10 * time.Millisecond))
+	defer secretUpdateRecheckDelay.Store(originalDelay)
+
+	scenarios := []struct {
+		name               string
+		allow              bool
+		expectedRejections []string
+	}{
+		{
+			name:               "SAR still allowed: delayed re-check is a no-op",
+			allow:              true,
+			expectedRejections: nil,
+		},
+		{
+			name:  "SAR now denied: delayed re-check rejects the route",
+			allow: false,
+			expectedRejections: []string{
+				"sandbox-route-test:ExternalCertificateValidationFailed",
+			},
+		},
+	}
+
+	for _, s := range scenarios {
+		t.Run(s.name, func(t *testing.T) {
+			routeapihelpers.ClearAsyncSARCacheForTest()
+
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "route-test",
+					Namespace: "sandbox",
+				},
+				Spec: routev1.RouteSpec{
+					TLS: &routev1.TLSConfig{
+						ExternalCertificate: &routev1.LocalObjectReference{
+							Name: "tls-secret",
+						},
+					},
+				},
+			}
+
+			recorder := &statusRecorder{}
+			lister := &routeLister{items: []*routev1.Route{route}}
+			secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+				"tls.crt": []byte("my-crt"),
+				"tls.key": []byte("my-key"),
+			})
+			updatedSecret := secret.DeepCopy()
+			updatedSecret.Data = map[string][]byte{
+				"tls.crt": []byte("new-crt"),
+				"tls.key": []byte("new-key"),
+			}
+			// UpdateFunc reads the secret synchronously (no SAR check)
+			// and defers the SAR check to the delayed re-check goroutine.
+			rsm := NewRouteSecretManager(
+				&fakePlugin{},
+				recorder,
+				&fake.SecretManager{Secret: updatedSecret, IsPresent: true, SecretName: "tls-secret"},
+				testRouterName,
+				&testSecretGetter{namespace: "sandbox", secret: secret},
+				lister,
+				&testSARCreator{allow: s.allow},
+			)
+
+			handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+			handler.UpdateFunc(secret, updatedSecret)
+
+			// Wait for the delayed re-check goroutine to finish rather than
+			// sleeping a fixed amount, keeping the test fast and non-flaky.
+			deadline := time.Now().Add(2 * time.Second)
+			for time.Now().Before(deadline) {
+				if len(recorder.GetRejections()) == len(s.expectedRejections) {
+					break
+				}
+				time.Sleep(time.Millisecond)
+			}
+
+			if !reflect.DeepEqual(s.expectedRejections, recorder.GetRejections()) {
+				t.Fatalf("expected rejections %v, but got %v", s.expectedRejections, recorder.GetRejections())
+			}
+
+			// The immediate write always happens regardless of the delayed
+			// re-check's outcome.
+			expectedUpdates := []string{"sandbox-route-test:ExternalCertificateSecretUpdated"}
+			if !reflect.DeepEqual(expectedUpdates, recorder.GetUpdates()) {
+				t.Fatalf("expected updates %v, but got %v", expectedUpdates, recorder.GetUpdates())
+			}
+		})
+	}
+}
+
+// TestInFlightRegistrationDoesNotReAdmitDeletedSecretRoute reproduces the
+// production failure of the same "the secret is deleted then routes are not
+// reachable" E2E test, but via a different trigger than
+// TestDeletedSecretDoesNotGetReadmitted: a watch.Added registration that was
+// already in flight when the secret got deleted, rather than a re-validation
+// after the rejection.
+//
+// validateAndRegister (driven by the route informer, on the router's main
+// control loop) and DeleteFunc (driven by the secret informer, on its own
+// goroutine) run concurrently. If DeleteFunc's rejection lands first but the
+// already-in-flight Added registration finishes afterward, the `registered`
+// flag alone does not protect against it -- registered is legitimately true
+// for a first-time registration, so without also checking deletedSecrets the
+// late-finishing SARCompleted write silently re-admits a route that was just
+// correctly rejected.
+func TestInFlightRegistrationDoesNotReAdmitDeletedSecretRoute(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route-test",
+			Namespace: "sandbox",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	lister := &routeLister{items: []*routev1.Route{route}}
+	recorder := &statusRecorder{}
+
+	rsm := NewRouteSecretManager(
+		&fakePlugin{},
+		recorder,
+		&fake.SecretManager{
+			Secret:     secret,
+			IsPresent:  true,
+			SecretName: "tls-secret",
+		},
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		lister,
+		&testSARCreator{allow: true},
+	)
+
+	// Simulate the secret being deleted BEFORE the route's own watch.Added
+	// registration (started earlier, e.g. right after route creation) gets a
+	// chance to finish. This is exactly DeleteFunc's own behavior.
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+	handler.DeleteFunc(secret)
+
+	rejections := recorder.GetRejections()
+	if len(rejections) != 1 || rejections[0] != "sandbox-route-test:ExternalCertificateValidationFailed" {
+		t.Fatalf("expected ValidationFailed rejection after delete, got: %v", rejections)
+	}
+
+	// Now the in-flight registration finishes. The fake SecretManager still
+	// returns the secret (simulating the informer cache race where the
+	// delete hasn't propagated to GetSecret's cache yet), so validate() and
+	// populateRouteTLSFromSecret() both succeed and registered=true.
+	//
+	// On unfixed code, the SARCompleted guard only checks `registered`, so
+	// it writes SARCompleted here -- flipping the route BACK to Admitted=True
+	// even though the secret is already gone.
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("in-flight HandleRoute(Added) failed: %v", err)
+	}
+
+	updates := recorder.GetUpdates()
+	for _, u := range updates {
+		if u == "sandbox-route-test:ExternalCertificateSARCompleted" {
+			t.Fatalf("expected no SARCompleted write for a route whose secret was already deleted, got updates: %v", updates)
+		}
+	}
 }
 
 func TestSecretDelete(t *testing.T) {
@@ -1326,42 +1783,29 @@ func TestSecretDelete(t *testing.T) {
 			},
 		},
 	}
-	recorder := &statusRecorder{
-		doneCh: make(chan struct{}),
-	}
+	recorder := &statusRecorder{}
 	lister := &routeLister{items: []*routev1.Route{route}}
 	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
-	// Create a fakeSecret and start an informer for it
+	// Create a fakeSecret
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
-	kubeClient := testclient.NewSimpleClientset(secret)
-	informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
-	go informer.Run(context.TODO().Done())
 
-	// wait for informer to start
-	if !cache.WaitForCacheSync(context.TODO().Done(), informer.HasSynced) {
-		t.Fatal("cache not synced yet")
+	// Get the handler
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
+
+	// delete the secret by calling the handler directly
+	handler.DeleteFunc(secret)
+
+	expectedRejections := []string{
+		"sandbox-route-test:ExternalCertificateValidationFailed",
 	}
-
-	if _, err := informer.AddEventHandler(rsm.generateSecretHandler(route.Namespace, route.Name)); err != nil {
-		t.Fatalf("failed to add handler: %v", err)
-	}
-
-	// delete the secret
-	if err := kubeClient.CoreV1().Secrets(route.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{}); err != nil {
-		t.Fatalf("failed to delete secret: %v", err)
-	}
-
-	<-recorder.doneCh // wait until the route's status is updated
-
-	expectedRejections := []string{"sandbox-route-test:ExternalCertificateSecretDeleted"}
 	expectedDeletedSecrets := true
 
-	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
-		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
+	if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
+		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.GetRejections())
 	}
 
-	if val, _ := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); !reflect.DeepEqual(val, expectedDeletedSecrets) {
+	if val, _ := rsm.deletedSecrets.Load(routeKey(route.Namespace, route.Name)); !reflect.DeepEqual(val, expectedDeletedSecrets) {
 		t.Fatalf("expected deletedSecrets %v, but got %v", expectedDeletedSecrets, val)
 	}
 }
@@ -1380,50 +1824,110 @@ func TestSecretRecreation(t *testing.T) {
 			},
 		},
 	}
-	recorder := &statusRecorder{
-		doneCh: make(chan struct{}),
-	}
+	recorder := &statusRecorder{}
 	lister := &routeLister{items: []*routev1.Route{route}}
 	rsm := NewRouteSecretManager(&fakePlugin{}, recorder, &fake.SecretManager{}, testRouterName, &testSecretGetter{}, lister, &testSARCreator{})
 
-	// Create a fakeSecret and start an informer for it
+	// Create a fakeSecret
 	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{})
-	kubeClient := testclient.NewSimpleClientset(secret)
-	informer := fakeSecretInformer(kubeClient, "sandbox", "tls-secret")
-	go informer.Run(context.TODO().Done())
 
-	// wait for informer to start
-	if !cache.WaitForCacheSync(context.TODO().Done(), informer.HasSynced) {
-		t.Fatal("cache not synced yet")
-	}
+	// Get the handler
+	handler := rsm.generateSecretHandler(route.Namespace, route.Name)
 
-	if _, err := informer.AddEventHandler(rsm.generateSecretHandler(route.Namespace, route.Name)); err != nil {
-		t.Fatalf("failed to add handler: %v", err)
-	}
+	// 1. delete the secret
+	handler.DeleteFunc(secret)
 
-	// delete the secret
-	if err := kubeClient.CoreV1().Secrets(route.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{}); err != nil {
-		t.Fatalf("failed to delete secret: %v", err)
-	}
-
-	<-recorder.doneCh // wait until the route's status is updated (deletion)
-
-	// re-create the secret
-	recorder.doneCh = make(chan struct{}) // need a new doneCh for re-creation
-	if _, err := kubeClient.CoreV1().Secrets(route.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{}); err != nil {
-		t.Fatalf("failed to create secret: %v", err)
-	}
-
-	<-recorder.doneCh // wait until the route's status is updated (re-creation)
+	// 2. re-create the secret
+	handler.AddFunc(secret)
 
 	expectedRejections := []string{
-		"sandbox-route-test:ExternalCertificateSecretDeleted",
+		"sandbox-route-test:ExternalCertificateValidationFailed",
 		"sandbox-route-test:ExternalCertificateSecretRecreated",
 	}
-	if !reflect.DeepEqual(expectedRejections, recorder.rejections) {
-		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.rejections)
+	if !reflect.DeepEqual(expectedRejections, recorder.GetRejections()) {
+		t.Fatalf("expected rejections %v, but got %v", expectedRejections, recorder.GetRejections())
 	}
-	if _, exists := rsm.deletedSecrets.Load(generateKey(route.Namespace, route.Name)); exists {
-		t.Fatalf("expected deletedSecrets to not have %q key", generateKey(route.Namespace, route.Name))
+	if _, exists := rsm.deletedSecrets.Load(routeKey(route.Namespace, route.Name)); exists {
+		t.Fatalf("expected deletedSecrets to not have %q key", routeKey(route.Namespace, route.Name))
 	}
+}
+
+// TestLockRouteSerializesSameKey verifies lockRoute provides genuine mutual
+// exclusion per key: concurrent callers for the SAME route key never
+// overlap their critical sections, while callers for DIFFERENT keys don't
+// block each other at all. This is the core guarantee that closes the race
+// between HandleRoute's periodic re-validation and UpdateFunc's
+// secret-triggered refresh (see the routeLocks field comment) -- both call
+// lockRoute with the same "namespace/routeName" key, so proving the
+// primitive itself is correct here is what makes that higher-level claim
+// trustworthy without needing to reproduce the full race end-to-end.
+func TestLockRouteSerializesSameKey(t *testing.T) {
+	rsm := &RouteSecretManager{}
+
+	const goroutines = 50
+	var active int32
+	var maxObservedActive int32
+	var wg sync.WaitGroup
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			unlock := rsm.lockRoute(routeKey("sandbox", "route-test"))
+			defer unlock()
+
+			n := atomic.AddInt32(&active, 1)
+			for {
+				m := atomic.LoadInt32(&maxObservedActive)
+				if n <= m || atomic.CompareAndSwapInt32(&maxObservedActive, m, n) {
+					break
+				}
+			}
+			// Give another goroutine a chance to (incorrectly) enter the
+			// critical section concurrently, if the lock were not working.
+			time.Sleep(time.Millisecond)
+			atomic.AddInt32(&active, -1)
+		}()
+	}
+	wg.Wait()
+
+	if maxObservedActive != 1 {
+		t.Fatalf("expected at most 1 goroutine in the critical section at a time for the same key, observed %d", maxObservedActive)
+	}
+}
+
+// TestLockRouteDoesNotSerializeDifferentKeys verifies lockRoute only
+// serializes callers sharing the same key -- different routes must still be
+// able to make progress concurrently.
+func TestLockRouteDoesNotSerializeDifferentKeys(t *testing.T) {
+	rsm := &RouteSecretManager{}
+
+	release := make(chan struct{})
+	holding := make(chan struct{})
+
+	go func() {
+		unlock := rsm.lockRoute(routeKey("sandbox", "route-a"))
+		defer unlock()
+		close(holding)
+		<-release
+	}()
+
+	<-holding
+
+	done := make(chan struct{})
+	go func() {
+		unlock := rsm.lockRoute(routeKey("sandbox", "route-b"))
+		unlock()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Different key acquired the lock without waiting for route-a's
+		// holder to release -- correct.
+	case <-time.After(2 * time.Second):
+		t.Fatal("lockRoute for a different key blocked on an unrelated key's lock")
+	}
+
+	close(release)
 }
