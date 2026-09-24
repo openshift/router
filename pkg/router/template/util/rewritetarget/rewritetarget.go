@@ -158,6 +158,20 @@ func SanitizeInput(val string) string {
 	return val
 }
 
+// SanitizeRewritePathInput processes the route's spec.path for use as
+// the <match-regex> argument of HAProxy's http-request replace-path
+// directive. It escapes regex metacharacters so the path is matched
+// literally, and handles newlines and single quotes to prevent HAProxy
+// config syntax errors.
+func SanitizeRewritePathInput(path string) string {
+	path = regexp.QuoteMeta(path)
+	path = strings.ReplaceAll(path, "\r", `\r`)
+	path = strings.ReplaceAll(path, "\n", `\n`)
+
+	path = EscapeSingleQuotes(path)
+	return path
+}
+
 // EscapeSingleQuotes escapes its argument for use within single quotes
 // by escaping single-quote characters "'" as "'\”", following the semantics of
 // Bourne shell, and returns the result. Carriage return and line feed
