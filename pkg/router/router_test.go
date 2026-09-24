@@ -976,6 +976,47 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+		"HTTP rate limit returns 429": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rate-limit-http",
+					host: "rate-limit-http.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rate-limit-connections":           "true",
+						"haproxy.router.openshift.io/rate-limit-connections.rate-http": "40",
+					},
+					tlsTermination: routev1.TLSTerminationEdge,
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: edgeBackendName(h.namespace, "rate-limit-http"),
+					attribute:   "http-request",
+					value:       `deny deny_status 429 if { src_http_req_rate ge 40 }`,
+				},
+			},
+		},
+		"HTTP rate limit 429 on insecure backend": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rate-limit-http-insecure",
+					host: "rate-limit-http-insecure.example.com",
+					path: "",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rate-limit-connections":           "true",
+						"haproxy.router.openshift.io/rate-limit-connections.rate-http": "10",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "rate-limit-http-insecure"),
+					attribute:   "http-request",
+					value:       `deny deny_status 429 if { src_http_req_rate ge 10 }`,
+				},
+			},
+		},
 	}
 
 	defer cleanUpRoutes(t)
