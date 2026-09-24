@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -331,6 +332,119 @@ func TestRewritePathSemanticFuzzingWithLiveHAProxy(t *testing.T) {
 			t.Logf("semantic differential fuzz seed=%d cases=%d oldRejected=%d oldCorrect=%d oldDifferent=%d newRejected=%d newDifferent=%d", seed, cases, oldRejected, oldCorrect, oldDifferent, newRejected, newDifferent)
 		})
 	}
+}
+
+func compatibilityRequests(specPath string) []string {
+	requests := map[string]struct{}{
+		specPath + "/tail": {},
+	}
+
+	add := func(path string) {
+		if path != specPath {
+			requests[path+"/tail"] = struct{}{}
+		}
+	}
+
+	add(strings.Replace(specPath, ".", "x", 1))
+	add(strings.Replace(specPath, "+", "", 1))
+	add(strings.Replace(specPath, "+", "r", 1))
+	add(strings.Replace(specPath, "+", "rr", 1))
+	add(strings.Replace(specPath, "*", "", 1))
+	add(strings.Replace(specPath, "*", "x", 1))
+	add(strings.Replace(specPath, "?", "", 1))
+	add(strings.Replace(specPath, "?", "x", 1))
+	add(strings.Replace(specPath, "[a-z]", "a", 1))
+	add(strings.Replace(specPath, "[a-z]", "z", 1))
+	add(strings.Replace(specPath, "|", "", 1))
+	add(strings.Replace(specPath, "|", "alt", 1))
+	add(strings.Replace(specPath, "()", "", 1))
+	add(strings.Replace(specPath, "(", "", 1))
+	add(strings.Replace(specPath, ")", "", 1))
+	add(strings.Replace(specPath, "$", "", 1))
+	add(strings.Replace(specPath, "^", "", 1))
+	add(strings.Replace(specPath, "{2}", "xx", 1))
+
+	result := make([]string, 0, len(requests))
+	for request := range requests {
+		result = append(result, request)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func runCompatibilityConfig(t *testing.T, specPath string, configType string, backendPort int, requests []string) map[string]string {
+	t.Helper()
+	listenPort := getFreePort(t)
+	config := generateHAProxyConfig(testConfig{specPath, "/rewritten", configType, listenPort, backendPort})
+	if err := validateHAProxyConfig(config); err != nil {
+		return nil
+	}
+	cleanup := runHAProxy(t, config)
+	defer cleanup()
+
+	results := make(map[string]string, len(requests))
+	for _, request := range requests {
+		backendPath, err := requestBackendPathWithError(listenPort, request)
+		if err != nil {
+			results[request] = "ERROR: " + err.Error()
+			continue
+		}
+		results[request] = backendPath
+	}
+	return results
+}
+
+func TestRewritePathCompatibilityDifferentialWithLiveHAProxy(t *testing.T) {
+	requireHAProxy(t)
+	backendPort := getFreePort(t)
+	defer startBackendServer(t, backendPort)()
+
+	testCases := []string{
+		"/bar",
+		"/api/v1.0",
+		"/bar+",
+		"/bar*",
+		"/bar?",
+		"/bar$",
+		"/bar^",
+		"/bar()",
+		"/bar[a-z]",
+		"/bar{2}",
+		"/foo|bar",
+		"/api/v1.0+beta",
+		"/c++",
+	}
+
+	totalRequests := 0
+	compatibilityDifferences := 0
+	oldRejected := 0
+
+	for _, specPath := range testCases {
+		t.Run(strings.ReplaceAll(specPath, "/", "_"), func(t *testing.T) {
+			requests := compatibilityRequests(specPath)
+			totalRequests += len(requests)
+			oldResults := runCompatibilityConfig(t, specPath, "OLD", backendPort, requests)
+			newResults := runCompatibilityConfig(t, specPath, "NEW", backendPort, requests)
+			if newResults == nil {
+				t.Fatalf("NEW config rejected for %q", specPath)
+			}
+			if oldResults == nil {
+				oldRejected++
+				t.Logf("path=%q oldConfig=REJECTED newConfig=ACCEPTED requests=%d", specPath, len(requests))
+				return
+			}
+
+			for _, request := range requests {
+				oldResult := oldResults[request]
+				newResult := newResults[request]
+				if oldResult != newResult {
+					compatibilityDifferences++
+					t.Logf("path=%q request=%q oldBackend=%q newBackend=%q outcome=COMPATIBILITY_DIFFERENCE", specPath, request, oldResult, newResult)
+				}
+			}
+		})
+	}
+	t.Logf("compatibility differential paths=%d candidateRequests=%d oldRejected=%d oldNewDifferences=%d", len(testCases), totalRequests, oldRejected, compatibilityDifferences)
 }
 
 func TestRewritePathOldVsNewWithLiveHAProxy(t *testing.T) {
