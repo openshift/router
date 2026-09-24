@@ -17,6 +17,8 @@ import (
 
 const liveFuzzSeed int64 = 27741
 
+var semanticFuzzSeeds = []int64{27741, 6174, 8675309, 424242}
+
 var haproxyBinary = os.Getenv("HAPROXY_BINARY")
 
 func init() {
@@ -66,7 +68,6 @@ func generateHAProxyConfig(tc testConfig) string {
 
 	return fmt.Sprintf(`
 global
-  daemon
 
 defaults
   mode http
@@ -141,7 +142,6 @@ func runHAProxy(t *testing.T, config string) func() {
 		os.Remove(tmpfile.Name())
 		t.Fatalf("start HAProxy: %v", err)
 	}
-	time.Sleep(100 * time.Millisecond)
 	return func() {
 		_ = cmd.Process.Kill()
 		_ = cmd.Wait()
@@ -264,6 +264,73 @@ func TestRewritePathConfigFuzzingWithLiveHAProxy(t *testing.T) {
 		}
 	}
 	t.Logf("differential config fuzz seed=%d cases=%d oldRejected=%d oldAccepted=%d newRejected=%d newAccepted=%d", liveFuzzSeed, cases, oldRejected, cases-oldRejected, newRejected, cases-newRejected)
+}
+
+func TestRewritePathSemanticFuzzingWithLiveHAProxy(t *testing.T) {
+	requireHAProxy(t)
+	backendPort := getFreePort(t)
+	defer startBackendServer(t, backendPort)()
+
+	const cases = 100
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/._~-!$&'()*+,;=:@"
+	for _, seed := range semanticFuzzSeeds {
+		t.Run(fmt.Sprintf("seed_%d", seed), func(t *testing.T) {
+			rng := rand.New(rand.NewSource(seed))
+			oldRejected := 0
+			oldCorrect := 0
+			oldDifferent := 0
+			newRejected := 0
+			newDifferent := 0
+
+			for i := 0; i < cases; i++ {
+				length := 1 + rng.Intn(24)
+				path := make([]byte, length+1)
+				path[0] = '/'
+				for j := 1; j < len(path); j++ {
+					path[j] = charset[rng.Intn(len(charset))]
+				}
+				specPath := string(path)
+				requestPath := specPath + "/tail"
+				want := "/rewritten/tail"
+
+				for _, configType := range []string{"OLD", "NEW"} {
+					listenPort := getFreePort(t)
+					config := generateHAProxyConfig(testConfig{specPath, "/rewritten", configType, listenPort, backendPort})
+					if err := validateHAProxyConfig(config); err != nil {
+						if configType == "OLD" {
+							oldRejected++
+							continue
+						}
+						newRejected++
+						t.Fatalf("seed=%d case=%d path=%q type=NEW outcome=CONFIG_REJECTED error=%v", seed, i, specPath, err)
+					}
+					cleanup := runHAProxy(t, config)
+					got, err := requestBackendPathWithError(listenPort, requestPath)
+					cleanup()
+					if err != nil {
+						if configType == "NEW" {
+							t.Fatalf("seed=%d case=%d path=%q type=NEW request error=%v", seed, i, specPath, err)
+						}
+						oldDifferent++
+						continue
+					}
+					if got == want {
+						if configType == "OLD" {
+							oldCorrect++
+						}
+						continue
+					}
+					if configType == "OLD" {
+						oldDifferent++
+						continue
+					}
+					newDifferent++
+					t.Fatalf("seed=%d case=%d path=%q type=NEW outcome=SEMANTIC_DIFFERENCE backend=%q expected=%q", seed, i, specPath, got, want)
+				}
+			}
+			t.Logf("semantic differential fuzz seed=%d cases=%d oldRejected=%d oldCorrect=%d oldDifferent=%d newRejected=%d newDifferent=%d", seed, cases, oldRejected, oldCorrect, oldDifferent, newRejected, newDifferent)
+		})
+	}
 }
 
 func TestRewritePathOldVsNewWithLiveHAProxy(t *testing.T) {
