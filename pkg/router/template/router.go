@@ -47,6 +47,8 @@ const (
 	// '_' is not used as this could be part of the name in the future
 	// '/' is not safe to use in names of router config files
 	routeKeySeparator = ":"
+
+	certResourceVersionAnnotation = "router.openshift.io/cert-resource-version"
 )
 
 // templateRouter is a backend-agnostic router implementation
@@ -1037,6 +1039,7 @@ func (r *templateRouter) createServiceAliasConfig(route *routev1.Route, backendK
 		ActiveServiceUnits:    activeServiceUnits,
 		HTTPResponseHeaders:   httpResponseHeadersList,
 		HTTPRequestHeaders:    httpRequestHeadersList,
+		CertResourceVersion:   route.Annotations[certResourceVersionAnnotation],
 	}
 
 	if route.Spec.Port != nil {
@@ -1138,6 +1141,14 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 
 	if existingConfig, exists := r.state[backendKey]; exists {
 		if configsAreEqual(newConfig, &existingConfig) {
+			return
+		}
+
+		if isStaleExtCert(newConfig, &existingConfig) {
+			log.V(4).Info("dropping stale external certificate update",
+				"namespace", route.Namespace, "name", route.Name,
+				"existingVersion", existingConfig.CertResourceVersion,
+				"incomingVersion", newConfig.CertResourceVersion)
 			return
 		}
 
@@ -1534,6 +1545,25 @@ func configsAreEqual(config1, config2 *ServiceAliasConfig) bool {
 		reflect.DeepEqual(config1.HTTPRequestHeaders, config2.HTTPRequestHeaders) &&
 		reflect.DeepEqual(config1.Annotations, config2.Annotations) &&
 		reflect.DeepEqual(config1.ServiceUnits, config2.ServiceUnits)
+}
+
+// isStaleExtCert returns true when incoming carries an external-certificate
+// ResourceVersion that is numerically <= the existing one, indicating the
+// incoming config was built from a stale secret read.  Both versions must
+// be non-empty (only set for externalCertificate routes) for the guard to
+// fire; routes without externalCertificate always return false.
+// Non-cert route changes (spec edits, label changes, etc.) never carry a
+// CertResourceVersion, so this guard cannot drop legitimate route updates.
+func isStaleExtCert(incoming, existing *ServiceAliasConfig) bool {
+	if incoming.CertResourceVersion == "" || existing.CertResourceVersion == "" {
+		return false
+	}
+	inV, errIn := strconv.ParseInt(incoming.CertResourceVersion, 10, 64)
+	exV, errEx := strconv.ParseInt(existing.CertResourceVersion, 10, 64)
+	if errIn != nil || errEx != nil {
+		return false
+	}
+	return inV <= exV
 }
 
 // privateKeysFromPEM extracts all blocks recognized as private keys into an output PEM encoded byte array,

@@ -50,9 +50,10 @@ func (_ noopLease) Remove(key writerlease.WorkKey) {
 }
 
 type fakePlugin struct {
-	t     watch.EventType
-	route *routev1.Route
-	err   error
+	t       watch.EventType
+	route   *routev1.Route
+	err     error
+	commits int
 }
 
 func (p *fakePlugin) HandleRoute(t watch.EventType, route *routev1.Route) error {
@@ -71,7 +72,8 @@ func (p *fakePlugin) HandleNamespaces(namespaces sets.String) error {
 	return fmt.Errorf("not expected")
 }
 func (p *fakePlugin) Commit() error {
-	return fmt.Errorf("not expected")
+	p.commits++
+	return nil
 }
 
 type routeLister struct {
@@ -1494,6 +1496,43 @@ func Test_recordIngressCondition(t *testing.T) {
 						RouterCanonicalHostname: "router-foo.foo.local",
 						Conditions:              []routev1.RouteIngressCondition{admittedTrueCondition},
 					},
+				}},
+			},
+			expectChanged: false,
+			expectCreated: false,
+		},
+		{
+			name:                    "do not overwrite existing ignored reason with empty reason",
+			routerName:              "foo",
+			routerCanonicalHostname: "router-foo.foo.local",
+			route: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "foo.foo.local",
+					RouterName:              "foo",
+					RouterCanonicalHostname: "router-foo.foo.local",
+					Conditions: []routev1.RouteIngressCondition{{
+						Type:   routev1.RouteAdmitted,
+						Status: corev1.ConditionTrue,
+						Reason: ExtCrtStatusReasonSARCompleted,
+					}}},
+				}},
+			},
+			condition: routev1.RouteIngressCondition{
+				Type:   routev1.RouteAdmitted,
+				Status: corev1.ConditionTrue,
+			},
+			expectedRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{Host: "foo.foo.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					Host:                    "foo.foo.local",
+					RouterName:              "foo",
+					RouterCanonicalHostname: "router-foo.foo.local",
+					Conditions: []routev1.RouteIngressCondition{{
+						Type:   routev1.RouteAdmitted,
+						Status: corev1.ConditionTrue,
+						Reason: ExtCrtStatusReasonSARCompleted,
+					}}},
 				}},
 			},
 			expectChanged: false,

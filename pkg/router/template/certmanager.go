@@ -178,15 +178,41 @@ func newSimpleCertificateWriter() certificateWriter {
 }
 
 // WriteCertificate creates and writes the file identified by <id> in <directory>.  The file extension
-// .pem will be added to id.
+// .pem will be added to id. The write is atomic: data is written to a temporary file first, then
+// renamed into place, so concurrent readers (HAProxy during reload) never observe a truncated or
+// empty PEM file.
 func (cm *simpleCertificateWriter) WriteCertificate(directory string, id string, cert []byte) error {
 	fileName := filepath.Join(directory, id+".pem")
-	err := os.WriteFile(fileName, cert, 0644)
 
+	tmpFile, err := os.CreateTemp(directory, id+"*.pem.tmp")
 	if err != nil {
-		log.Error(err, "error writing certificate file", "file", fileName)
+		log.Error(err, "error creating temp certificate file", "directory", directory)
 		return err
 	}
+	tmpName := tmpFile.Name()
+
+	if _, err := tmpFile.Write(cert); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpName)
+		log.Error(err, "error writing temp certificate file", "file", tmpName)
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpName)
+		log.Error(err, "error closing temp certificate file", "file", tmpName)
+		return err
+	}
+	if err := os.Chmod(tmpName, 0644); err != nil {
+		os.Remove(tmpName)
+		log.Error(err, "error setting permissions on temp certificate file", "file", tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, fileName); err != nil {
+		os.Remove(tmpName)
+		log.Error(err, "error renaming temp certificate file", "tmpFile", tmpName, "targetFile", fileName)
+		return err
+	}
+
 	return nil
 }
 
