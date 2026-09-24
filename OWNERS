@@ -17,6 +17,7 @@ approvers:
   - davidesalerno
   - bentito
   - jcmoraisjr
+  - pedjak
 reviewers:
   - ironcladlou
   - knobunc
@@ -37,4 +38,5 @@ reviewers:
   - davidesalerno
   - bentito
   - jcmoraisjr
+  - pedjak
 component: Routing
