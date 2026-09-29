@@ -1,0 +1,28 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+objects:
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      name: service-unsecure
+    name: hello-pod
+  spec:
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+    to:
+      kind: Service
+      name: service-unsecure
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      name: service-unsecure
+    name: hello-pod-http
+  spec:
+    path: "/test"
+    to:
+      kind: Service
+      name: service-unsecure
+parameters: []
