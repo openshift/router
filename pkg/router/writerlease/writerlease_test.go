@@ -6,7 +6,7 @@ import (
 )
 
 func TestWaitForLeader(t *testing.T) {
-	l := New(0, 0)
+	l := New(0, 0, 1)
 	defer func() {
 		if len(l.queued) > 0 {
 			t.Fatalf("queue was not empty on shutdown: %#v", l.queued)
@@ -30,7 +30,7 @@ func TestWaitForLeader(t *testing.T) {
 }
 
 func TestBecomeLeaderAfterRetry(t *testing.T) {
-	l := New(0, 0)
+	l := New(0, 0, 1)
 	ch := make(chan struct{})
 	defer close(ch)
 	go l.Run(ch)
@@ -50,7 +50,7 @@ func TestBecomeLeaderAfterRetry(t *testing.T) {
 }
 
 func TestBecomeFollowerAfterRetry(t *testing.T) {
-	l := New(0, 0)
+	l := New(0, 0, 1)
 	l.backoff.Steps = 0
 	l.backoff.Duration = 0
 	ch := make(chan struct{})
@@ -72,7 +72,7 @@ func TestBecomeFollowerAfterRetry(t *testing.T) {
 }
 
 func TestRunOverlappingWork(t *testing.T) {
-	l := New(0, 0)
+	l := New(0, 0, 1)
 	l.backoff.Steps = 0
 	l.backoff.Duration = 0
 	done := make(chan struct{})
@@ -112,7 +112,7 @@ func TestRunOverlappingWork(t *testing.T) {
 }
 
 func TestExtend(t *testing.T) {
-	l := New(10*time.Millisecond, 0)
+	l := New(10*time.Millisecond, 0, 1)
 	l.nowFn = func() time.Time { return time.Unix(0, 0) }
 	l.backoff.Steps = 0
 	l.backoff.Duration = 2 * time.Millisecond
