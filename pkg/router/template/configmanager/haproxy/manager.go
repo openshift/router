@@ -1,12 +1,13 @@
 package haproxy
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -27,13 +28,6 @@ const (
 	// haproxyManagerName is the name of this config manager.
 	haproxyManagerName = "haproxy-manager"
 
-	// haproxyRunDir is the name of run directory within the haproxy
-	// router working directory heirarchy.
-	haproxyRunDir = "run"
-
-	// haproxySocketFile is the name of haproxy socket file.
-	haproxySocketFile = "haproxy.sock"
-
 	// haproxyConnectionTimeout is the timeout (in seconds) used for
 	// preventing slow connections to the haproxy socket from blocking
 	// the config manager from doing any work.
@@ -42,10 +36,6 @@ const (
 	// blueprintRoutePoolNamePrefix is the prefix used for the managed
 	// pool of blueprint routes.
 	blueprintRoutePoolNamePrefix = "_hapcm_blueprint_pool"
-
-	// dynamicServerPrefix is the prefix used in the haproxy template
-	// for adding dynamic servers (pods) to a backend.
-	dynamicServerPrefix = "_dynamic"
 
 	// routePoolSizeAnnotation is the annotation on the blueprint route
 	// overriding the default pool size.
@@ -61,9 +51,6 @@ const (
 	blueprintRoutePoolServiceName = blueprintRoutePoolNamePrefix + ".svc"
 )
 
-// endpointToDynamicServerMap is a map of endpoint to dynamic server names.
-type endpointToDynamicServerMap map[string]string
-
 // configEntryMap is a map containing name-value pairs representing the
 // config entries to add to an haproxy map.
 type configEntryMap map[string]templaterouter.ServiceAliasConfigKey
@@ -75,6 +62,9 @@ type haproxyMapAssociation map[string]configEntryMap
 type routeBackendEntry struct {
 	// id is the route id.
 	id string
+
+	//
+	backend *templaterouter.ServiceAliasConfig
 
 	// termination is the route termination.
 	termination routev1.TLSTerminationType
@@ -92,9 +82,6 @@ type routeBackendEntry struct {
 	// poolRouteBackendName is backend name for any associated route
 	// from the pre-configured blueprint route pool.
 	poolRouteBackendName templaterouter.ServiceAliasConfigKey
-
-	// DynamicServerMap is a map of all the allocated dynamic servers.
-	dynamicServerMap endpointToDynamicServerMap
 }
 
 // haproxyConfigManager is a template router config manager implementation
@@ -116,10 +103,6 @@ type haproxyConfigManager struct {
 	// backends for each route blueprint.
 	blueprintRoutePoolSize int
 
-	// maxDynamicServers is the maximum number of dynamic servers
-	// allocated per backend in the haproxy template configuration.
-	maxDynamicServers int
-
 	// wildcardRoutesAllowed indicates if wildcard routes are allowed.
 	wildcardRoutesAllowed bool
 
@@ -129,8 +112,17 @@ type haproxyConfigManager struct {
 	// router is the associated template router.
 	router templaterouter.RouterInterface
 
+	// workingDir is the router's working directory containing configuration
+	// files, certificates, and other router-managed resources.
+	workingDir string
+
 	// defaultCertificate is the default certificate bytes.
 	defaultCertificate string
+
+	// defaultDestinationCA is the path to the default CA certificate file used
+	// to verify backend server certificates for re-encrypt routes when no
+	// route-specific destination CA is configured.
+	defaultDestinationCA string
 
 	// client is the client used to dynamically manage haproxy.
 	client *Client
@@ -163,10 +155,11 @@ func NewHAProxyConfigManager(options templaterouter.ConfigManagerOptions) *hapro
 		commitInterval:         options.CommitInterval,
 		blueprintRoutes:        buildBlueprintRoutes(options.BlueprintRoutes, options.ExtendedValidation),
 		blueprintRoutePoolSize: options.BlueprintRoutePoolSize,
-		maxDynamicServers:      options.MaxDynamicServers,
 		wildcardRoutesAllowed:  options.WildcardRoutesAllowed,
 		extendedValidation:     options.ExtendedValidation,
+		workingDir:             options.WorkingDir,
 		defaultCertificate:     "",
+		defaultDestinationCA:   options.DefaultDestinationCA,
 
 		client:           client,
 		reloadInProgress: false,
@@ -283,14 +276,14 @@ func (cm *haproxyConfigManager) RemoveBlueprint(route *routev1.Route) {
 }
 
 // Register registers an id with an expected haproxy backend for a route.
-func (cm *haproxyConfigManager) Register(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) {
+func (cm *haproxyConfigManager) Register(id templaterouter.ServiceAliasConfigKey, backend *templaterouter.ServiceAliasConfig, route *routev1.Route) {
 	wildcard := cm.wildcardRoutesAllowed && (route.Spec.WildcardPolicy == routev1.WildcardPolicySubdomain)
 	entry := &routeBackendEntry{
-		id:               string(id),
-		termination:      routeTerminationType(route),
-		wildcard:         wildcard,
-		backendName:      routeBackendName(id, route),
-		dynamicServerMap: make(endpointToDynamicServerMap),
+		id:          string(id),
+		backend:     backend,
+		termination: routeTerminationType(route),
+		wildcard:    wildcard,
+		backendName: routeBackendName(id, route),
 	}
 
 	cm.lock.Lock()
@@ -316,8 +309,6 @@ func (cm *haproxyConfigManager) AddRoute(id templaterouter.ServiceAliasConfigKey
 	if matchedBlueprint == nil {
 		return fmt.Errorf("no blueprint found that would match route %s/%s", route.Namespace, route.Name)
 	}
-
-	cm.Register(id, route)
 
 	cm.lock.Lock()
 	defer func() {
@@ -410,9 +401,16 @@ func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfig
 	if err != nil {
 		return err
 	}
-	log.V(4).Info("disabling all servers for backend", "backend", backendName)
-	if err := backend.Disable(); err != nil {
+
+	log.V(4).Info("deleting all servers for backend", "backend", backendName)
+	servers, err := backend.Servers()
+	if err != nil {
 		return err
+	}
+	for _, server := range servers {
+		if _, err := backend.DeleteServer(templaterouter.Endpoint{ID: server.Name}); err != nil {
+			return err
+		}
 	}
 
 	log.V(4).Info("committing changes made to backend", "backend", backendName)
@@ -421,7 +419,7 @@ func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfig
 
 // ReplaceRouteEndpoints dynamically replaces a subset of the endpoints for
 // a route - modifies a subset of the servers on an haproxy backend.
-func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
+func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, svc *templaterouter.ServiceUnit, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
 	log.V(4).Info("replacing route endpoints", "id", id, "weight", weight)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically add endpoints for %s", id)
@@ -442,17 +440,6 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		return fmt.Errorf("route id %s was not registered", id)
 	}
 
-	weightIsRelative := false
-	if entry.termination == routev1.TLSTerminationPassthrough {
-		// Passthrough is a wee bit odd and is like a boolean on/off
-		// switch. Setting actual weights, causing the haproxy
-		// dynamic API to either hang or then haproxy dying off.
-		// So 100% works for us today because we use a dynamic hash
-		// balancing algorithm. Needs a follow up on this issue.
-		weightIsRelative = true
-		weight = 100
-	}
-
 	backendName := entry.BackendName()
 	log.V(4).Info("finding backend", "backend", backendName)
 	backend, err := cm.client.FindBackend(backendName)
@@ -460,9 +447,17 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		return err
 	}
 
+	addedEndpoints := make(map[string]templaterouter.Endpoint)
 	modifiedEndpoints := make(map[string]templaterouter.Endpoint)
 	for _, ep := range newEndpoints {
-		modifiedEndpoints[ep.ID] = ep
+		existing := slices.ContainsFunc(oldEndpoints, func(v2ep templaterouter.Endpoint) bool {
+			return v2ep.ID == ep.ID
+		})
+		if existing {
+			modifiedEndpoints[ep.ID] = ep
+		} else {
+			addedEndpoints[ep.ID] = ep
+		}
 	}
 
 	deletedEndpoints := make(map[string]templaterouter.Endpoint)
@@ -471,135 +466,74 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 			if reflect.DeepEqual(ep, v2ep) {
 				// endpoint was unchanged.
 				delete(modifiedEndpoints, v2ep.ID)
+				continue
 			}
 			epUsesH2C := ep.AppProtocol == "h2c" || ep.AppProtocol == "kubernetes.io/h2c"
 			v2epUsesH2c := v2ep.AppProtocol == "h2c" || v2ep.AppProtocol == "kubernetes.io/h2c"
 			if (epUsesH2C || v2epUsesH2c) && epUsesH2C != v2epUsesH2c {
-				return fmt.Errorf("endpoint %s changed appProtocol from %q to %q, and dynamically updating proto is unsupported", ep.ID, ep.AppProtocol, v2ep.AppProtocol)
+				return fmt.Errorf("endpoint %s changed appProtocol from %q to %q, dynamically updating proto is unsupported - route will be updated on next reload", ep.ID, ep.AppProtocol, v2ep.AppProtocol)
 			}
 		} else {
-			configChanged = true
 			deletedEndpoints[ep.ID] = ep
 		}
 	}
 
-	log.V(4).Info("getting servers for backend", "backend", backendName)
-	servers, err := backend.Servers()
-	if err != nil {
-		return err
+	// there is a configuration change if any of the tracking maps have endpoint(s)
+	configChanged = len(deletedEndpoints)+len(modifiedEndpoints)+len(addedEndpoints) > 0
+
+	log.V(4).Info("processing endpoint changes", "added", addedEndpoints, "deleted", deletedEndpoints, "modified", modifiedEndpoints)
+
+	// Aggregating errors instead of failing fast in the first API error. This ensures that the old
+	// process has a more accurate configuration in case it lives longer due to persistent connections.
+	var errs []error
+
+	for name, ep := range deletedEndpoints {
+		if _, err := backend.DeleteServer(ep); err != nil {
+			errs = append(errs, fmt.Errorf("error deleting backend server %s: %w", name, err))
+		}
+	}
+	for name, ep := range modifiedEndpoints {
+		if err := backend.UpdateServer(ep, weight, entry.termination == routev1.TLSTerminationPassthrough); err != nil {
+			errs = append(errs, fmt.Errorf("error updating backend server %s: %w", name, err))
+		}
+	}
+	for name, ep := range addedEndpoints {
+		if err := backend.AddServer(entry.backend, svc, ep, weight, cm.workingDir, cm.defaultDestinationCA); err != nil {
+			errs = append(errs, fmt.Errorf("error adding backend server %s: %w", name, err))
+		}
 	}
 
-	// Backends having only one server have their server's health check turned off; health check
-	// is only enabled when there are two or more endpoints in the backend.
-	//
-	// Currently we don't support enabling or disabling health checks, so we are:
-	//
-	// * Checking whether we are adding endpoints; and
-	// * Checking if the current state of the backend is just one static endpoint.
-	//
-	// If both of the above matches, we cannot dynamically update and return from here.
-	// This behavior should be improved via https://issues.redhat.com/browse/NE-2496
-	// using `del server` and `add server` API calls.
-	//
-	// This is the expected lay out from the running HAProxy in case there is only one static
-	// backend server:
-	//
-	// # be_id be_name srv_id srv_name srv_addr ... srv_port ...
-	// 20 be_http:default:route 1 pod:app-848554c7d4-mbhsf:app::10.128.0.78:8000 10.128.0.78 ... 8000 ...
-	// 20 be_http:default:route 2 _dynamic-pod-1 172.4.0.4 ... 8765 ...
-	// 20 be_http:default:route 3 _dynamic-pod-2 172.4.0.4 ... 8765 ...
-	// ... other "_dynamic-pod-NN"
-
-	// checking for more newEndpoints than oldEndpoints, if this happens we are adding new ones
-	if len(newEndpoints) > len(oldEndpoints) {
-		var staticCount int
-		// we cannot infer the first ones are the static, since this list is built from a hashmap,
-		// so the order is not deterministic. Need to iterate over all of them.
-		for _, s := range servers {
-			// if not a dynamic backend server, count as static
-			if !isDynamicBackendServer(s) {
-				staticCount++
+	// Checking health check. We need to:
+	// * enable new endpoints if `cfg.ActiveEndpoints > 1`
+	// * enable also the only former endpoint if scaling from 1 to 2 or more
+	// * disable the only current endpoint if scaling to 1
+	if len(newEndpoints) > 1 {
+		var newEPs []templaterouter.Endpoint
+		for _, ep := range addedEndpoints {
+			// enabling for all the new added endpoints
+			newEPs = append(newEPs, ep)
+		}
+		if len(oldEndpoints) == 1 {
+			// enabling also for the former single endpoint as well
+			newEPs = append(newEPs, oldEndpoints[0])
+		}
+		for _, ep := range newEPs {
+			if !ep.NoHealthCheck {
+				if err := backend.EnableHealthCheck(ep); err != nil {
+					errs = append(errs, err)
+				}
 			}
 		}
-		if staticCount == 1 {
-			return fmt.Errorf("single endpoint on backend %s, need to reload to enable health check", backendName)
-		}
-	}
-
-	log.V(4).Info("processing endpoint changes", "deleted", deletedEndpoints, "modified", modifiedEndpoints)
-
-	// First process the deleted endpoints and update the servers we
-	// have already used - these would be the ones where the name
-	// matches the endpoint name or is a dynamic server already in use.
-	// Also keep track of the unused dynamic servers.
-	unusedServerNames := []string{}
-	for _, s := range servers {
-		relatedEndpointID := s.Name
-		if isDynamicBackendServer(s) {
-			if epid, ok := entry.dynamicServerMap[s.Name]; ok {
-				relatedEndpointID = epid
-			} else {
-				unusedServerNames = append(unusedServerNames, s.Name)
-				continue
+	} else if len(newEndpoints) == 1 && len(oldEndpoints) != 1 {
+		// the single backend server scenario, health check should be disabled
+		if ep := newEndpoints[0]; !ep.NoHealthCheck {
+			if err := backend.DisableHealthCheck(ep); err != nil {
+				errs = append(errs, err)
 			}
 		}
-
-		if _, ok := deletedEndpoints[relatedEndpointID]; ok {
-			configChanged = true
-			log.V(4).Info("disabling server for deleted endpoint", "endpoint", relatedEndpointID, "server", s.Name)
-			backend.DisableServer(s.Name)
-			if _, ok := entry.dynamicServerMap[s.Name]; ok {
-				log.V(4).Info("removing server from dynamic server map", "server", s.Name, "backend", backendName)
-				delete(entry.dynamicServerMap, s.Name)
-			}
-			continue
-		}
-
-		if ep, ok := modifiedEndpoints[relatedEndpointID]; ok {
-			configChanged = true
-			log.V(4).Info("enabling server for modified endpoint", "endpoint", relatedEndpointID, "server", s.Name, "ip", ep.IP, "port", ep.Port, "appProtocol", ep.AppProtocol, "weight", weight)
-			backend.UpdateServerInfo(s.Name, ep.IP, ep.Port, ep.AppProtocol, weight, weightIsRelative)
-			backend.EnableServer(s.Name)
-
-			delete(modifiedEndpoints, relatedEndpointID)
-		}
 	}
 
-	// Processed all existing endpoints, now check if there's any more
-	// more modified endpoints (aka newly added ones). For these, we can
-	// choose any of the unused dynamic servers.
-	for _, name := range unusedServerNames {
-		if len(modifiedEndpoints) == 0 {
-			break
-		}
-
-		var ep templaterouter.Endpoint
-		for _, v := range modifiedEndpoints {
-			// Just get first modified endpoint.
-			ep = v
-			break
-		}
-
-		// Add entry for the dyamic server used.
-		configChanged = true
-		entry.dynamicServerMap[name] = ep.ID
-
-		log.V(4).Info("enabling server for added endpoint", "endpoint", ep.ID, "server", name, "ip", ep.IP, "port", ep.Port, "appProtocol", ep.AppProtocol, "weight", weight)
-		backend.UpdateServerInfo(name, ep.IP, ep.Port, ep.AppProtocol, weight, weightIsRelative)
-		backend.EnableServer(name)
-
-		delete(modifiedEndpoints, ep.ID)
-	}
-
-	// If we got here, then either we are done with all the endpoints or
-	// there are no free dynamic server slots available that we can use.
-	if len(modifiedEndpoints) > 0 {
-		return fmt.Errorf("no free dynamic server slots for backend %s, %d endpoint(s) remaining",
-			id, len(modifiedEndpoints))
-	}
-
-	log.V(4).Info("committing backend", "backend", backendName)
-	return backend.Commit()
+	return errors.Join(errs...)
 }
 
 // RemoveRouteEndpoints removes servers matching the endpoints from a haproxy backend.
@@ -628,26 +562,15 @@ func (cm *haproxyConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAl
 		return err
 	}
 
-	// Build a reversed map (endpoint id -> server name) to allow us to
-	// search by endpoint.
-	endpointToDynServerMap := make(map[string]string)
-	for serverName, endpointID := range entry.dynamicServerMap {
-		endpointToDynServerMap[endpointID] = serverName
-	}
-
+	var errs []error
 	for _, ep := range endpoints {
-		name := ep.ID
-		if serverName, ok := endpointToDynServerMap[ep.ID]; ok {
-			name = serverName
-			delete(entry.dynamicServerMap, name)
+		log.V(4).Info("deleting server for endpoint", "endpoint", ep.ID)
+		if _, err := backend.DeleteServer(ep); err != nil {
+			errs = append(errs, fmt.Errorf("error deleting server %s: %w", ep.ID, err))
 		}
-
-		log.V(4).Info("disabling server for endpoint", "endpoint", ep.ID, "server", name)
-		backend.DisableServer(name)
 	}
 
-	log.V(4).Info("committing backend", "backend", backendName)
-	return backend.Commit()
+	return errors.Join(errs...)
 }
 
 // Notify informs the config manager of any template router state changes.
@@ -673,41 +596,6 @@ func (cm *haproxyConfigManager) Notify(event templaterouter.RouterEventType) {
 func (cm *haproxyConfigManager) Commit() {
 	log.V(4).Info("committing dynamic config manager changes")
 	cm.commitRouterConfig()
-}
-
-// ServerTemplateName returns the dynamic server template name.
-func (cm *haproxyConfigManager) ServerTemplateName(id templaterouter.ServiceAliasConfigKey) string {
-	if cm.maxDynamicServers > 0 {
-		// Adding the id makes the name unwieldy - use pod.
-		return fmt.Sprintf("%s-pod", dynamicServerPrefix)
-	}
-
-	return ""
-}
-
-// ServerTemplateSize returns the dynamic server template size.
-// Note this is returned as a string for easier use in the haproxy template.
-func (cm *haproxyConfigManager) ServerTemplateSize(id templaterouter.ServiceAliasConfigKey) string {
-	if cm.maxDynamicServers < 1 {
-		return ""
-	}
-
-	return fmt.Sprintf("%v", cm.maxDynamicServers)
-}
-
-// GenerateDynamicServerNames generates the dynamic server names.
-func (cm *haproxyConfigManager) GenerateDynamicServerNames(id templaterouter.ServiceAliasConfigKey) []string {
-	if cm.maxDynamicServers > 0 {
-		if prefix := cm.ServerTemplateName(id); len(prefix) > 0 {
-			names := make([]string, cm.maxDynamicServers)
-			for i := 0; i < cm.maxDynamicServers; i++ {
-				names[i] = fmt.Sprintf("%s-%v", prefix, i+1)
-			}
-			return names
-		}
-	}
-
-	return []string{}
 }
 
 // scheduleRouterReload schedules a reload by deferring commit on the
@@ -836,14 +724,10 @@ func (cm *haproxyConfigManager) reset() {
 		cm.commitTimer = nil
 	}
 
-	// Reset the blueprint route pool use and dynamic server maps as
-	// the router was reloaded.
+	// Reset the blueprint route pool use as the router was reloaded.
 	cm.poolUsage = make(map[templaterouter.ServiceAliasConfigKey]templaterouter.ServiceAliasConfigKey)
 	for _, entry := range cm.backendEntries {
 		entry.poolRouteBackendName = ""
-		if len(entry.dynamicServerMap) > 0 {
-			entry.dynamicServerMap = make(endpointToDynamicServerMap)
-		}
 	}
 
 	// Reset the client - clear its caches.
@@ -1074,15 +958,6 @@ func routeTerminationType(route *routev1.Route) routev1.TLSTerminationType {
 	}
 
 	return termination
-}
-
-// isDynamicBackendServer indicates if a backend server is a dynamic server.
-func isDynamicBackendServer(server BackendServerInfo) bool {
-	if len(dynamicServerPrefix) == 0 {
-		return false
-	}
-
-	return strings.HasPrefix(server.Name, dynamicServerPrefix)
 }
 
 // backendModAnnotations return the annotations in a route that will

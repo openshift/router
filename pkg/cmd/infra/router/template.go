@@ -141,7 +141,6 @@ type TemplateRouterConfigManager struct {
 	BlueprintRouteNamespace     string
 	BlueprintRouteLabelSelector string
 	BlueprintRoutePoolSize      int
-	MaxDynamicServers           int
 }
 
 // isTrue here has the same logic as the function within package pkg/router/template
@@ -182,13 +181,15 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.BlueprintRouteNamespace, "blueprint-route-namespace", env("ROUTER_BLUEPRINT_ROUTE_NAMESPACE", ""), "Specifies the namespace which contains the routes that serve as blueprints for the dynamic configuration manager.")
 	flag.StringVar(&o.BlueprintRouteLabelSelector, "blueprint-route-labels", env("ROUTER_BLUEPRINT_ROUTE_LABELS", ""), "A label selector to apply to the routes in the blueprint route namespace. These selected routes will serve as blueprints for the dynamic dynamic configuration manager.")
 	flag.IntVar(&o.BlueprintRoutePoolSize, "blueprint-route-pool-size", int(envInt("ROUTER_BLUEPRINT_ROUTE_POOL_SIZE", 10, 0)), "Specifies the size of the pre-allocated pool for each route blueprint managed by the router specific dynamic configuration manager. This can be overriden by an annotation router.openshift.io/pool-size on an individual route.")
-	flag.IntVar(&o.MaxDynamicServers, "max-dynamic-servers", int(envInt("ROUTER_MAX_DYNAMIC_SERVERS", 5, 1)), "Specifies the maximum number of dynamic servers added to a route for use by the router specific dynamic configuration manager.")
 	flag.StringVar(&o.CaptureHTTPRequestHeadersString, "capture-http-request-headers", env("ROUTER_CAPTURE_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
 	flag.StringVar(&o.HTTPHeaderNameCaseAdjustmentsString, "http-header-name-case-adjustments", env("ROUTER_H1_CASE_ADJUST", ""), "A comma-delimited list of HTTP header names that should have their case adjusted. Each item must be a valid HTTP header name and should have the desired capitalization.")
 	flag.StringVar(&o.HTTPResponseHeadersString, "set-delete-http-response-header", env("ROUTER_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and values that should be set/deleted.")
 	flag.StringVar(&o.HTTPRequestHeadersString, "set-delete-http-request-header", env("ROUTER_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and values that should be set/deleted.")
+
+	// deprecated flags
+	_ = flag.Int("max-dynamic-servers", int(envInt("ROUTER_MAX_DYNAMIC_SERVERS", 5, 1)), "Specifies the maximum number of dynamic servers added to a route for use by the router specific dynamic configuration manager. DEPRECATED: router now created backend servers dynamically.")
 }
 
 type RouterStats struct {
@@ -740,9 +741,10 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 			CommitInterval:         o.CommitInterval,
 			BlueprintRoutes:        blueprintRoutes,
 			BlueprintRoutePoolSize: o.BlueprintRoutePoolSize,
-			MaxDynamicServers:      o.MaxDynamicServers,
 			WildcardRoutesAllowed:  o.AllowWildcardRoutes,
 			ExtendedValidation:     o.ExtendedValidation,
+			WorkingDir:             o.WorkingDir,
+			DefaultDestinationCA:   o.DefaultDestinationCAPath,
 		}
 		cfgManager = haproxyconfigmanager.NewHAProxyConfigManager(cmopts)
 		if len(o.BlueprintRouteNamespace) > 0 {
