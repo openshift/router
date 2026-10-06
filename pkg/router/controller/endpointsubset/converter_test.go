@@ -115,9 +115,10 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 	}
 
 	tests := []struct {
-		name  string
-		items []discoveryv1.EndpointSlice
-		want  []v1.EndpointSubset
+		name              string
+		items             []discoveryv1.EndpointSlice
+		want              []v1.EndpointSubset
+		disableValidation bool
 	}{{
 		name: "FQDN AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -135,6 +136,28 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Port: int32Ptr(8080),
 			}},
 		}},
+	}, {
+		name: "FQDN AddressType is kept when validation is disabled",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-fqdn",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeFQDN,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"metadata.google.internal"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(8080),
+			}},
+		}},
+		want: []v1.EndpointSubset{{
+			Addresses: []v1.EndpointAddress{{IP: "metadata.google.internal"}},
+			Ports:     []v1.EndpointPort{{Port: 8080}},
+		}},
+		disableValidation: true,
 	}, {
 		name: "unknown AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -281,6 +304,9 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.disableValidation {
+				t.Setenv("ROUTER_DISABLE_ENDPOINT_ADDRESS_VALIDATION", "true")
+			}
 			got := endpointsubset.ConvertEndpointSlice(
 				tc.items,
 				endpointsubset.DefaultEndpointAddressOrderByFuncs(),
