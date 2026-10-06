@@ -12,6 +12,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/router/pkg/router"
+	"github.com/openshift/router/pkg/router/controller/endpointsubset"
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 )
 
@@ -30,8 +31,11 @@ type ExtendedValidator struct {
 
 // NewExtendedValidator creates a plugin wrapper that ensures only routes and
 // endpoints that pass validation are relayed to the next plugin in the chain.
-// Endpoint address validation is always enabled. Route validation is
-// controlled by extendedRouteValidation.
+// Endpoint address validation is enabled by default; it can be disabled by
+// setting the ROUTER_ENABLE_ENDPOINT_ADDRESS_VALIDATION environment variable
+// to "false", for deployments that still rely on the now-unsupported FQDN
+// address type in EndpointSlices. Route validation is controlled by
+// extendedRouteValidation.
 func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder, extendedRouteValidation bool) *ExtendedValidator {
 	return &ExtendedValidator{
 		plugin:                  plugin,
@@ -53,13 +57,16 @@ func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints
 		return p.plugin.HandleEndpoints(eventType, endpoints)
 	}
 
-	// endpoints may be an object shared with (and owned by) an informer's
-	// cache, so it must be deep-copied before it is mutated below.
-	endpoints = endpoints.DeepCopy()
-	for i, subset := range endpoints.Subsets {
-		endpoints.Subsets[i].Addresses = filterValidAddresses(subset.Addresses)
-		endpoints.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses)
+	if endpointsubset.EndpointAddressValidationEnabled() {
+		// endpoints may be an object shared with (and owned by) an informer's
+		// cache, so it must be deep-copied before it is mutated below.
+		endpoints = endpoints.DeepCopy()
+		for i, subset := range endpoints.Subsets {
+			endpoints.Subsets[i].Addresses = filterValidAddresses(subset.Addresses)
+			endpoints.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses)
+		}
 	}
+
 	return p.plugin.HandleEndpoints(eventType, endpoints)
 }
 
