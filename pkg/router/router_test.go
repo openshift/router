@@ -989,8 +989,29 @@ func TestConfigTemplate(t *testing.T) {
 		}
 	}
 
-	// let the router reload
-	time.Sleep(reloadInterval * 2)
+	// Wait for the router to process every route and write the resulting config.
+	// A fixed sleep can observe an earlier reload while routes are still queued.
+	config := filepath.Join(h.workdir, "conf", "haproxy.config")
+	var lastErr error
+	err := wait.PollImmediate(reloadInterval, 20*time.Second, func() (bool, error) {
+		parser, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
+		if err != nil {
+			lastErr = err
+			return false, nil
+		}
+		for _, expectations := range tests {
+			for _, expectation := range expectations {
+				if err := expectation.Match(parser); err != nil {
+					lastErr = err
+					return false, nil
+				}
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Errorf("timed out waiting for the router config to include all routes: %v (last error: %v)", err, lastErr)
+	}
 
 	stopCh <- struct{}{}
 	wg.Wait()
@@ -1003,7 +1024,6 @@ func TestConfigTemplate(t *testing.T) {
 	}
 
 	// check the generated config
-	config := filepath.Join(h.workdir, "conf", "haproxy.config")
 	parser, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
 	if err != nil {
 		t.Fatalf("Failed to parse the generated config: %v", err)
