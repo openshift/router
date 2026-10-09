@@ -1,0 +1,15 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+reviewers:
+- bertinatto
+- ingvagabund
+- jacobsee
+- jubittajohn
+approvers:
+- bertinatto
+- ingvagabund
+- jacobsee
+- jubittajohn
+labels:
+- "e2e-images-update"
+options:
+  no_parent_owners: true
