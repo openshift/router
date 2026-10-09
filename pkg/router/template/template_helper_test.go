@@ -1,17 +1,22 @@
 package templaterouter
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+	"text/template"
 
 	routev1 "github.com/openshift/api/route/v1"
 	templateutil "github.com/openshift/router/pkg/router/template/util"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func buildServiceAliasConfig(name, namespace, host, path string, termination routev1.TLSTerminationType, policy routev1.InsecureEdgeTerminationPolicyType, wildcard bool) ServiceAliasConfig {
@@ -156,6 +161,153 @@ func TestFirstMatch(t *testing.T) {
 			t.Errorf("%s: expected match of %v to %s is '%s', but didn't", tt.name, tt.inputs, tt.pattern, tt.match)
 		}
 	}
+}
+
+// Test_isPositiveInteger verifies that only integers greater than zero are valid.
+func Test_isPositiveInteger(t *testing.T) {
+	testCases := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{
+			name:  "positive integer",
+			value: "1",
+			want:  true,
+		},
+		{
+			name:  "zero",
+			value: "0",
+			want:  false,
+		},
+		{
+			name:  "negative integer",
+			value: "-1",
+			want:  false,
+		},
+		{
+			name:  "non-integer",
+			value: "one",
+			want:  false,
+		},
+		{
+			name:  "empty",
+			value: "",
+			want:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, isPositiveInteger(tc.value), "isPositiveInteger(%q)", tc.value)
+		})
+	}
+}
+
+// TestHAProxyRateLimitAnnotationsRequirePositiveIntegers verifies that rate
+// limits render only for positive integer annotation values.
+func TestHAProxyRateLimitAnnotationsRequirePositiveIntegers(t *testing.T) {
+	testCases := []struct {
+		name        string
+		termination routev1.TLSTerminationType
+		value       string
+		expected    []string
+		unexpected  []string
+	}{
+		{
+			name:        "positive edge rate limits are rendered",
+			termination: routev1.TLSTerminationEdge,
+			value:       "1",
+			expected: []string{
+				"src_conn_cur ge  1",
+				"src_conn_rate ge 1",
+				"src_http_req_rate ge 1",
+			},
+		},
+		{
+			name:        "positive passthrough rate limits are rendered",
+			termination: routev1.TLSTerminationPassthrough,
+			value:       "1",
+			expected: []string{
+				"src_conn_cur ge  1",
+				"src_conn_rate ge 1",
+			},
+		},
+		{
+			name:        "zero edge rate limits are not rendered",
+			termination: routev1.TLSTerminationEdge,
+			value:       "0",
+			unexpected: []string{
+				"src_conn_cur ge  0",
+				"src_conn_rate ge 0",
+				"src_http_req_rate ge 0",
+			},
+		},
+		{
+			name:        "negative passthrough rate limits are not rendered",
+			termination: routev1.TLSTerminationPassthrough,
+			value:       "-1",
+			unexpected: []string{
+				"src_conn_cur ge  -1",
+				"src_conn_rate ge -1",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := buildServiceAliasConfig("rate-limited", "test", "example.com", "", tc.termination, routev1.InsecureEdgeTerminationPolicyNone, false)
+			config.Annotations = map[string]string{
+				"haproxy.router.openshift.io/rate-limit-connections":                "true",
+				"haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp": tc.value,
+				"haproxy.router.openshift.io/rate-limit-connections.rate-tcp":       tc.value,
+				"haproxy.router.openshift.io/rate-limit-connections.rate-http":      tc.value,
+			}
+
+			rendered := renderHAProxyConfig(t, templateData{
+				BindPorts:    true,
+				State:        map[ServiceAliasConfigKey]ServiceAliasConfig{"test:rate-limited": config},
+				ServiceUnits: map[ServiceUnitKey]ServiceUnit{},
+			})
+
+			for _, expected := range tc.expected {
+				assert.Contains(t, rendered, expected)
+			}
+			for _, unexpected := range tc.unexpected {
+				assert.NotContains(t, rendered, unexpected)
+			}
+		})
+	}
+}
+
+// TestHAProxyMaxConnectionsVariableRequiresInteger verifies that the special
+// value -1 is allowed for ROUTER_MAX_CONNECTIONS.
+func TestHAProxyMaxConnectionsVariableRequiresInteger(t *testing.T) {
+	t.Setenv("ROUTER_MAX_CONNECTIONS", "-1")
+
+	rendered := renderHAProxyConfig(t, templateData{BindPorts: true})
+	assert.Equal(t, 2, strings.Count(rendered, "maxconn -1"))
+}
+
+// renderHAProxyConfig renders the HAProxy configuration template with data.
+func renderHAProxyConfig(t *testing.T, data templateData) string {
+	t.Helper()
+
+	templatePath := filepath.Join("..", "..", "..", "images", "router", "haproxy", "conf", "haproxy-config.template")
+	masterTemplate, err := template.New("config").Funcs(helperFunctions).ParseFiles(templatePath)
+	require.NoError(t, err)
+	require.NotNil(t, masterTemplate)
+
+	configTemplate := masterTemplate.Lookup("conf/haproxy.config")
+	require.NotNil(t, configTemplate)
+	configTemplate, err = createTemplateWithHelper(configTemplate)
+	require.NoError(t, err)
+	require.NotNil(t, configTemplate)
+
+	var rendered bytes.Buffer
+	require.NoError(t, configTemplate.Execute(&rendered, data))
+
+	return rendered.String()
 }
 
 func TestGenerateRouteRegexp(t *testing.T) {
