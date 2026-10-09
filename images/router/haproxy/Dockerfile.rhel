@@ -5,7 +5,7 @@ RUN INSTALL_PKGS="socat haproxy28 rsyslog sysvinit-tools" && \
     yum clean all && \
     mkdir -p /var/lib/haproxy/router/{certs,cacerts,allowlists} && \
     mkdir -p /var/lib/haproxy/{conf/.tmp,run,bin,log,mtls} && \
-    touch /var/lib/haproxy/conf/{{os_http_be,os_edge_reencrypt_be,os_tcp_be,os_sni_passthrough,os_route_http_redirect,cert_config,os_wildcard_domain}.map,haproxy.config} && \
+    touch /var/lib/haproxy/conf/{{os_http_be,os_edge_reencrypt_be,os_tcp_be,os_sni_passthrough,os_route_http_redirect,cert_config}.map,haproxy.config} && \
     setcap 'cap_net_bind_service=ep' /usr/sbin/haproxy && \
     chown -R :0 /var/lib/haproxy && \
     chmod -R g+w /var/lib/haproxy
