@@ -104,3 +104,191 @@ func TestConvertEndpointSlice(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertEndpointSlice_addressTypes(t *testing.T) {
+	serviceLabels := map[string]string{
+		discoveryv1.LabelServiceName: "service-a",
+	}
+	sliceMeta := metav1.TypeMeta{
+		Kind:       "EndpointSlice",
+		APIVersion: "discovery.k8s.io/v1",
+	}
+
+	tests := []struct {
+		name  string
+		items []discoveryv1.EndpointSlice
+		want  []v1.EndpointSubset
+	}{{
+		name: "FQDN AddressType is skipped",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-fqdn",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeFQDN,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"metadata.google.internal"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(8080),
+			}},
+		}},
+	}, {
+		name: "unknown AddressType is skipped",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-unknown",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressType("Unknown"),
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.2"},
+			}},
+		}},
+	}, {
+		name: "empty AddressType is skipped",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-empty-type",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.3"},
+			}},
+		}},
+	}, {
+		name: "IPv6 AddressType is converted",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-ipv6",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeIPv6,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"2001:db8::1"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(443),
+			}},
+		}},
+		want: []v1.EndpointSubset{{
+			Addresses: []v1.EndpointAddress{{IP: "2001:db8::1"}},
+			Ports:     []v1.EndpointPort{{Port: 443}},
+		}},
+	}, {
+		name: "IPv4 slice with hostname in addresses passes through conversion",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-ipv4-hostname",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.1", "metadata.google.internal"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(8080),
+			}},
+		}},
+		want: []v1.EndpointSubset{{
+			Addresses: []v1.EndpointAddress{
+				{IP: "metadata.google.internal"},
+				{IP: "10.0.0.1"},
+			},
+			Ports: []v1.EndpointPort{{Port: 8080}},
+		}},
+	}, {
+		name: "mixed supported and unsupported slices",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-fqdn",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeFQDN,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"metadata.google.internal"},
+			}},
+		}, {
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-unknown",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressType("Unknown"),
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.2"},
+			}},
+		}, {
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-empty-type",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.3"},
+			}},
+		}, {
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-ipv4",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.1"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(80),
+			}},
+		}, {
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-ipv6",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeIPv6,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"2001:db8::1"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(443),
+			}},
+		}},
+		want: []v1.EndpointSubset{{
+			Addresses: []v1.EndpointAddress{{IP: "10.0.0.1"}},
+			Ports:     []v1.EndpointPort{{Port: 80}},
+		}, {
+			Addresses: []v1.EndpointAddress{{IP: "2001:db8::1"}},
+			Ports:     []v1.EndpointPort{{Port: 443}},
+		}},
+	}}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := endpointsubset.ConvertEndpointSlice(
+				tc.items,
+				endpointsubset.DefaultEndpointAddressOrderByFuncs(),
+				endpointsubset.DefaultEndpointPortOrderByFuncs(),
+			)
+			if diff := cmp.Diff(tc.want, got); len(diff) != 0 {
+				t.Errorf("ConvertEndpointSlice() failed (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
