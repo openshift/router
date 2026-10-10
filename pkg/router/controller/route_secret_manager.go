@@ -47,6 +47,11 @@ const (
 // avoid real sleeps.
 var secretUpdateRecheckDelay atomic.Int64
 
+// postAdmissionRecheckDelay gives RBAC changes time to propagate before a
+// newly admitted route is checked again. This covers Secret events missed
+// while its restricted informer is starting.
+const postAdmissionRecheckDelay = 10 * time.Second
+
 func init() {
 	secretUpdateRecheckDelay.Store(int64(3 * time.Second))
 }
@@ -59,8 +64,9 @@ type routeSecretRetry struct {
 
 type routeSecretValidation struct {
 	routeSecretRetry
-	validated     bool
-	everValidated bool
+	validated                 bool
+	everValidated             bool
+	postAdmissionCheckPending bool
 }
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -111,8 +117,9 @@ type RouteSecretManager struct {
 	// routeValidation is read and written only while holding the matching
 	// route lock. It records whether the current route and secret reference
 	// have passed full validation, independently of lagging Route status.
-	routeValidation sync.Map // map[types.NamespacedName]routeSecretValidation
-	retryQueue      workqueue.RateLimitingInterface
+	routeValidation    sync.Map // map[types.NamespacedName]routeSecretValidation
+	retryQueue         workqueue.RateLimitingInterface
+	postAdmissionQueue workqueue.DelayingInterface
 }
 
 // lockRoute acquires the per-route lock for key, creating it on first use,
@@ -134,11 +141,72 @@ func (p *RouteSecretManager) Start(stopCh <-chan struct{}) {
 		),
 		"external-certificate-initial-validation",
 	)
+	p.postAdmissionQueue = workqueue.NewNamedDelayingQueue("external-certificate-post-admission-check")
+	postAdmissionContext, cancelPostAdmissionChecks := context.WithCancel(context.Background())
 	go func() {
 		<-stopCh
 		p.retryQueue.ShutDown()
+		cancelPostAdmissionChecks()
+		p.postAdmissionQueue.ShutDown()
 	}()
 	go p.runValidationRetries()
+	go p.runPostAdmissionChecks(postAdmissionContext)
+}
+
+// runPostAdmissionChecks limits the follow-up API work to five routes per
+// second, including when many routes are admitted during router startup.
+func (p *RouteSecretManager) runPostAdmissionChecks(ctx context.Context) {
+	limiter := rate.NewLimiter(5, 1)
+	for {
+		item, shutdown := p.postAdmissionQueue.Get()
+		if shutdown {
+			return
+		}
+		if err := limiter.Wait(ctx); err == nil {
+			p.recheckAdmittedRoute(item.(routeSecretRetry))
+		}
+		p.postAdmissionQueue.Done(item)
+	}
+}
+
+// recheckAdmittedRoute performs a fresh SAR and Secret check after initial
+// admission. It only rejects a route whose current reference no longer
+// validates; successful checks leave the route and its status untouched.
+func (p *RouteSecretManager) recheckAdmittedRoute(retry routeSecretRetry) {
+	unlock := p.lockRoute(retry.key)
+	defer unlock()
+
+	stored, ok := p.routeValidation.Load(retry.key)
+	if !ok {
+		return
+	}
+	state := stored.(routeSecretValidation)
+	if state.routeSecretRetry != retry || !state.postAdmissionCheckPending {
+		return
+	}
+	state.postAdmissionCheckPending = false
+	p.routeValidation.Store(retry.key, state)
+	if !state.validated {
+		return
+	}
+
+	route, err := p.routelister.Routes(retry.key.Namespace).Get(retry.key.Name)
+	if err != nil || route.UID != retry.uid || !hasExternalCertificate(route) || route.Spec.TLS.ExternalCertificate.Name != retry.secretName {
+		return
+	}
+	if secretName, registered := p.secretManager.LookupRouteSecret(retry.key.Namespace, retry.key.Name); !registered || secretName != retry.secretName {
+		return
+	}
+	if _, deleted := p.deletedSecrets.Load(retry.key); deleted {
+		return
+	}
+
+	routeapihelpers.InvalidateAsyncSARCache(retry.key.Namespace, retry.secretName)
+	if err := p.validate(route.DeepCopy()); err != nil {
+		if err := p.plugin.Commit(); err != nil {
+			log.Error(err, "failed to commit route rejection after post-admission check", "namespace", retry.key.Namespace, "route", retry.key.Name)
+		}
+	}
 }
 
 func (p *RouteSecretManager) runValidationRetries() {
@@ -226,9 +294,16 @@ func (p *RouteSecretManager) markRouteValidated(route *routev1.Route) {
 	if state.uid != route.UID || !hasExternalCertificate(route) || state.secretName != route.Spec.TLS.ExternalCertificate.Name {
 		return
 	}
+	firstValidation := !state.everValidated
 	state.validated = true
 	state.everValidated = true
+	if firstValidation && p.postAdmissionQueue != nil {
+		state.postAdmissionCheckPending = true
+	}
 	p.routeValidation.Store(key, state)
+	if firstValidation && p.postAdmissionQueue != nil {
+		p.postAdmissionQueue.AddAfter(state.routeSecretRetry, postAdmissionRecheckDelay)
+	}
 	if p.retryQueue != nil {
 		p.retryQueue.Forget(state.routeSecretRetry)
 	}
@@ -475,6 +550,7 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 		previous := stored.(routeSecretValidation)
 		if previous.routeSecretRetry == state.routeSecretRetry {
 			state.everValidated = previous.everValidated
+			state.postAdmissionCheckPending = previous.postAdmissionCheckPending
 		}
 	}
 	p.routeValidation.Store(key, state)
@@ -614,7 +690,11 @@ func (p *RouteSecretManager) generateSecretHandler(registeredRoute *routev1.Rout
 					return
 				}
 				routeapihelpers.InvalidateAsyncSARCache(namespace, secretNew.Name)
-				_ = p.validate(route)
+				if err := p.validate(route); err != nil {
+					if err := p.plugin.Commit(); err != nil {
+						log.Error(err, "failed to commit route rejection after delayed SAR check", "namespace", namespace, "route", routeName)
+					}
+				}
 			}()
 		},
 
