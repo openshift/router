@@ -78,6 +78,9 @@ func TestSharedSecretManagerHybrid(t *testing.T) {
 				t.Errorf("expected restricted=%v, got %v", s.expectedRestricted, ref.restricted)
 			}
 			mgr.lock.RUnlock()
+			if got := mgr.RouteUsesRestrictedInformer(s.namespace, routeName); got != s.expectedRestricted {
+				t.Errorf("RouteUsesRestrictedInformer = %v, want %v", got, s.expectedRestricted)
+			}
 
 			// Test Unregister
 			err = mgr.UnregisterRoute(s.namespace, routeName)

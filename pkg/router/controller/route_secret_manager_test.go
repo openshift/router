@@ -1616,6 +1616,7 @@ func TestPostAdmissionRecheck(t *testing.T) {
 		secret := fakeSecret(route.Namespace, "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
 			"tls.crt": []byte("my-crt"), "tls.key": []byte("my-key"),
 		})
+		secret.ResourceVersion = "100"
 		lister := &routeLister{items: []*routev1.Route{route}}
 		sar := &testSARCreator{allow: true}
 		recorder := &statusRecorder{}
@@ -1665,6 +1666,41 @@ func TestPostAdmissionRecheck(t *testing.T) {
 		}
 	})
 
+	t.Run("a missed Secret update refreshes the served certificate", func(t *testing.T) {
+		manager, route, _, _, recorder, plugin := newFixture(t)
+		updated := fakeSecret(route.Namespace, "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+			"tls.crt": []byte("new-crt"), "tls.key": []byte("new-key"),
+		})
+		updated.ResourceVersion = "200"
+		// Keep the informer cache on version 100 while the API returns 200.
+		manager.secretsGetter.(*testSecretGetter).secret = updated
+		retry := routeSecretRetry{key: routeKey(route.Namespace, route.Name), uid: route.UID, secretName: "tls-secret"}
+		manager.recheckAdmittedRoute(retry)
+		if plugin.t != watch.Modified || plugin.route.Spec.TLS.Certificate != "new-crt" || plugin.route.Annotations[certResourceVersionAnnotation] != "200" || plugin.commits != 1 {
+			t.Fatalf("missed update was not propagated: event=%s route=%v commits=%d", plugin.t, plugin.route, plugin.commits)
+		}
+		if got := recorder.GetUpdates(); !reflect.DeepEqual(got, []string{
+			"sandbox-route-test:ExternalCertificateSARCompleted", "sandbox-route-test:ExternalCertificateSecretUpdated",
+		}) {
+			t.Fatalf("unexpected route status updates: %v", got)
+		}
+		stored, _ := manager.routeValidation.Load(retry.key)
+		if got := stored.(routeSecretValidation).loadedSecretVersion; got != "200" {
+			t.Fatalf("propagated Secret version = %q, want 200", got)
+		}
+	})
+
+	t.Run("previously rejected route is checked again", func(t *testing.T) {
+		manager, route, _, sar, recorder, plugin := newFixture(t)
+		manager.markRouteValidationFailed(route)
+		sar.allow = false
+		retry := routeSecretRetry{key: routeKey(route.Namespace, route.Name), uid: route.UID, secretName: "tls-secret"}
+		manager.recheckAdmittedRoute(retry)
+		if got := recorder.GetRejections(); !reflect.DeepEqual(got, []string{"sandbox-route-test:ExternalCertificateValidationFailed"}) || plugin.t != watch.Deleted || plugin.commits != 1 {
+			t.Fatalf("recheck did not reassert rejection: rejections=%v event=%s commits=%d", got, plugin.t, plugin.commits)
+		}
+	})
+
 	t.Run("stale route UID is skipped", func(t *testing.T) {
 		manager, route, lister, sar, recorder, plugin := newFixture(t)
 		sar.allow = false
@@ -1677,16 +1713,45 @@ func TestPostAdmissionRecheck(t *testing.T) {
 		}
 	})
 
-	t.Run("deleted Secret marker is respected", func(t *testing.T) {
+	t.Run("deleted Secret marker reasserts rejection", func(t *testing.T) {
 		manager, route, _, sar, recorder, plugin := newFixture(t)
 		sar.allow = false
 		retry := routeSecretRetry{key: routeKey(route.Namespace, route.Name), uid: route.UID, secretName: "tls-secret"}
 		manager.deletedSecrets.Store(retry.key, true)
 		manager.recheckAdmittedRoute(retry)
-		if len(recorder.GetRejections()) != 0 || plugin.t != watch.Added {
-			t.Fatalf("recheck overrode Secret deletion: rejections=%v event=%s", recorder.GetRejections(), plugin.t)
+		if got := recorder.GetRejections(); !reflect.DeepEqual(got, []string{"sandbox-route-test:ExternalCertificateValidationFailed"}) || plugin.t != watch.Deleted || plugin.commits != 1 {
+			t.Fatalf("recheck did not preserve Secret deletion: rejections=%v event=%s commits=%d", got, plugin.t, plugin.commits)
 		}
 	})
+}
+
+func TestPostAdmissionCheckScope(t *testing.T) {
+	for _, restricted := range []bool{false, true} {
+		t.Run(fmt.Sprintf("restricted=%v", restricted), func(t *testing.T) {
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "sandbox", Name: "route-test", UID: "route-uid"},
+				Spec: routev1.RouteSpec{TLS: &routev1.TLSConfig{
+					ExternalCertificate: &routev1.LocalObjectReference{Name: "tls-secret"},
+				}},
+			}
+			key := routeKey(route.Namespace, route.Name)
+			manager := &RouteSecretManager{
+				secretManager: &SharedSecretManager{registeredRoutes: map[string]referencedSecret{
+					"sandbox/route-test": {secretName: "tls-secret", restricted: restricted},
+				}},
+				postAdmissionQueue: workqueue.NewNamedDelayingQueue("post-admission-scope-test"),
+			}
+			t.Cleanup(manager.postAdmissionQueue.ShutDown)
+			manager.routeValidation.Store(key, routeSecretValidation{routeSecretRetry: routeSecretRetry{
+				key: key, uid: route.UID, secretName: "tls-secret",
+			}})
+			manager.markRouteValidated(route)
+			stored, _ := manager.routeValidation.Load(key)
+			if got := stored.(routeSecretValidation).postAdmissionCheckPending; got != restricted {
+				t.Fatalf("post-admission check pending = %v, want %v", got, restricted)
+			}
+		})
+	}
 }
 
 func TestInitialValidationRetry(t *testing.T) {
