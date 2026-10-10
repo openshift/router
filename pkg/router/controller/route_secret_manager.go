@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/router/pkg/router/routeapihelpers"
 	"golang.org/x/time/rate"
 	kapi "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -47,9 +48,8 @@ const (
 // avoid real sleeps.
 var secretUpdateRecheckDelay atomic.Int64
 
-// postAdmissionRecheckDelay gives RBAC changes time to propagate before a
-// newly admitted route is checked again. This covers Secret events missed
-// while its restricted informer is starting.
+// postAdmissionRecheckDelay gives RBAC and Secret changes time to propagate
+// before a newly admitted route using a restricted informer is checked again.
 const postAdmissionRecheckDelay = 10 * time.Second
 
 func init() {
@@ -67,6 +67,7 @@ type routeSecretValidation struct {
 	validated                 bool
 	everValidated             bool
 	postAdmissionCheckPending bool
+	loadedSecretVersion       string
 }
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -131,8 +132,8 @@ func (p *RouteSecretManager) lockRoute(key types.NamespacedName) func() {
 	return mu.Unlock
 }
 
-// Start runs one rate-limited worker for routes whose initial external
-// certificate validation failed. The worker stops with the router.
+// Start runs rate-limited workers for failed initial validation and restricted
+// route follow-up checks. Both workers stop with the router.
 func (p *RouteSecretManager) Start(stopCh <-chan struct{}) {
 	p.retryQueue = workqueue.NewNamedRateLimitingQueue(
 		workqueue.NewMaxOfRateLimiter(
@@ -170,8 +171,8 @@ func (p *RouteSecretManager) runPostAdmissionChecks(ctx context.Context) {
 }
 
 // recheckAdmittedRoute performs a fresh SAR and Secret check after initial
-// admission. It only rejects a route whose current reference no longer
-// validates; successful checks leave the route and its status untouched.
+// admission. It also recovers Secret changes missed while a restricted
+// informer was starting.
 func (p *RouteSecretManager) recheckAdmittedRoute(retry routeSecretRetry) {
 	unlock := p.lockRoute(retry.key)
 	defer unlock()
@@ -186,9 +187,6 @@ func (p *RouteSecretManager) recheckAdmittedRoute(retry routeSecretRetry) {
 	}
 	state.postAdmissionCheckPending = false
 	p.routeValidation.Store(retry.key, state)
-	if !state.validated {
-		return
-	}
 
 	route, err := p.routelister.Routes(retry.key.Namespace).Get(retry.key.Name)
 	if err != nil || route.UID != retry.uid || !hasExternalCertificate(route) || route.Spec.TLS.ExternalCertificate.Name != retry.secretName {
@@ -198,14 +196,58 @@ func (p *RouteSecretManager) recheckAdmittedRoute(retry routeSecretRetry) {
 		return
 	}
 	if _, deleted := p.deletedSecrets.Load(retry.key); deleted {
+		// Reassert a deletion rejection in case its status write lost to an
+		// earlier admission write in the writer lease.
+		p.markRouteValidationFailed(route)
+		p.recorder.RecordRouteRejection(route, ExtCrtStatusReasonValidationFailed, fmt.Sprintf("secret %q was deleted", retry.secretName))
+		p.plugin.HandleRoute(watch.Deleted, route)
+		if err := p.plugin.Commit(); err != nil {
+			log.Error(err, "failed to commit route rejection after Secret deletion", "namespace", retry.key.Namespace, "route", retry.key.Name)
+		}
 		return
 	}
 
+	route = route.DeepCopy()
 	routeapihelpers.InvalidateAsyncSARCache(retry.key.Namespace, retry.secretName)
-	if err := p.validate(route.DeepCopy()); err != nil {
+	if err := p.validate(route); err != nil {
 		if err := p.plugin.Commit(); err != nil {
 			log.Error(err, "failed to commit route rejection after post-admission check", "namespace", retry.key.Namespace, "route", retry.key.Name)
 		}
+		return
+	}
+
+	// A Secret update immediately after Route creation can precede the
+	// restricted informer's first list and therefore deliver no update event.
+	// Fetch the authoritative version instead of relying on its cache.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	secret, err := p.secretsGetter.Secrets(retry.key.Namespace).Get(ctx, retry.secretName, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err, "failed to read Secret during post-admission check", "namespace", retry.key.Namespace, "secret", retry.secretName)
+		return
+	}
+	if secret.Type != kapi.SecretTypeTLS {
+		routeapihelpers.InvalidateAsyncSARCache(retry.key.Namespace, retry.secretName)
+		if err := p.validate(route); err != nil {
+			if err := p.plugin.Commit(); err != nil {
+				log.Error(err, "failed to commit route rejection after Secret type changed", "namespace", retry.key.Namespace, "route", retry.key.Name)
+			}
+		}
+		return
+	}
+	if state.validated && secret.ResourceVersion == state.loadedSecretVersion {
+		return
+	}
+
+	populateRouteTLSFromSecretObject(route, secret)
+	if err := p.plugin.HandleRoute(watch.Modified, route); err != nil {
+		log.Error(err, "failed to propagate route after post-admission Secret refresh", "namespace", retry.key.Namespace, "route", retry.key.Name)
+		return
+	}
+	p.markRouteValidated(route)
+	p.recorder.RecordRouteUpdate(route, ExtCrtStatusReasonSecretUpdated, fmt.Sprintf("revalidated secret %q after route admission", retry.secretName))
+	if err := p.plugin.Commit(); err != nil {
+		log.Error(err, "failed to commit route after post-admission Secret refresh", "namespace", retry.key.Namespace, "route", retry.key.Name)
 	}
 }
 
@@ -297,11 +339,21 @@ func (p *RouteSecretManager) markRouteValidated(route *routev1.Route) {
 	firstValidation := !state.everValidated
 	state.validated = true
 	state.everValidated = true
-	if firstValidation && p.postAdmissionQueue != nil {
+	state.loadedSecretVersion = route.Annotations[certResourceVersionAnnotation]
+	// Namespace-wide informers are shared by all routes in a namespace.
+	// Avoid one fresh SAR and Secret read per route in large unrestricted
+	// namespaces; the missed startup events were in per-Secret informers.
+	needsPostAdmissionCheck := firstValidation && p.postAdmissionQueue != nil
+	if needsPostAdmissionCheck {
+		if shared, ok := p.secretManager.(*SharedSecretManager); ok {
+			needsPostAdmissionCheck = shared.RouteUsesRestrictedInformer(route.Namespace, route.Name)
+		}
+	}
+	if needsPostAdmissionCheck {
 		state.postAdmissionCheckPending = true
 	}
 	p.routeValidation.Store(key, state)
-	if firstValidation && p.postAdmissionQueue != nil {
+	if needsPostAdmissionCheck {
 		p.postAdmissionQueue.AddAfter(state.routeSecretRetry, postAdmissionRecheckDelay)
 	}
 	if p.retryQueue != nil {
@@ -551,6 +603,7 @@ func (p *RouteSecretManager) validateAndRegister(route *routev1.Route) error {
 		if previous.routeSecretRetry == state.routeSecretRetry {
 			state.everValidated = previous.everValidated
 			state.postAdmissionCheckPending = previous.postAdmissionCheckPending
+			state.loadedSecretVersion = previous.loadedSecretVersion
 		}
 	}
 	p.routeValidation.Store(key, state)
@@ -791,7 +844,13 @@ func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) er
 		p.plugin.HandleRoute(watch.Deleted, route)
 		return err
 	}
+	populateRouteTLSFromSecretObject(route, secret)
+	return nil
+}
 
+// populateRouteTLSFromSecretObject copies a fetched Secret into the in-memory
+// Route and stamps its version for the template router's staleness guard.
+func populateRouteTLSFromSecretObject(route *routev1.Route, secret *kapi.Secret) {
 	// Update the tls.Certificate and tls.Key fields of the route with the data from the referenced secret.
 	// Since externalCertificate does not contain the CACertificate, tls.CACertificate will not be updated.
 	// NOTE that this update is only performed in-memory and will not reflect in the actual route resource stored in etcd, because
@@ -806,8 +865,6 @@ func (p *RouteSecretManager) populateRouteTLSFromSecret(route *routev1.Route) er
 		route.Annotations = make(map[string]string)
 	}
 	route.Annotations[certResourceVersionAnnotation] = secret.ResourceVersion
-
-	return nil
 }
 
 // unregister removes the route's registration with the secret manager and ensures
