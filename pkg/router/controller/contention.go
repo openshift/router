@@ -37,15 +37,15 @@ const (
 	stateContended
 )
 
-// ignoreIngressConditionReason is a set of reasons for ingress conditions that should be ignored
-// when comparing if two route ingresses are the same. This is used to avoid false positives
-// mainly when the state of the ExternalCertificate is changed.
+// ignoreIngressConditionReason contains external-certificate reasons that should
+// not count as contention when comparing ingresses or writing route status.
 var (
 	ignoreIngressConditionReason sets.String = sets.NewString(
 		ExtCrtStatusReasonValidationFailed,
 		ExtCrtStatusReasonSecretRecreated,
 		ExtCrtStatusReasonSecretUpdated,
 		ExtCrtStatusReasonSecretDeleted,
+		ExtCrtStatusReasonGetFailed,
 		ExtCrtStatusReasonSARCompleted,
 	)
 )

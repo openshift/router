@@ -382,6 +382,84 @@ func TestStatusRecordRejection(t *testing.T) {
 	}
 }
 
+func TestExternalCertificateStatusBypassesContention(t *testing.T) {
+	tests := []struct {
+		name         string
+		oldStatus    corev1.ConditionStatus
+		oldReason    string
+		newStatus    corev1.ConditionStatus
+		newReason    string
+		expectUpdate bool
+	}{
+		{
+			name:         "validation rejection",
+			oldStatus:    corev1.ConditionTrue,
+			oldReason:    ExtCrtStatusReasonSARCompleted,
+			newStatus:    corev1.ConditionFalse,
+			newReason:    ExtCrtStatusReasonValidationFailed,
+			expectUpdate: true,
+		},
+		{
+			name:         "secret read rejection",
+			oldStatus:    corev1.ConditionTrue,
+			oldReason:    ExtCrtStatusReasonSARCompleted,
+			newStatus:    corev1.ConditionFalse,
+			newReason:    ExtCrtStatusReasonGetFailed,
+			expectUpdate: true,
+		},
+		{
+			name:         "secret update admission",
+			oldStatus:    corev1.ConditionFalse,
+			oldReason:    ExtCrtStatusReasonValidationFailed,
+			newStatus:    corev1.ConditionTrue,
+			newReason:    ExtCrtStatusReasonSecretUpdated,
+			expectUpdate: true,
+		},
+		{
+			name:      "unrelated rejection remains contended",
+			oldStatus: corev1.ConditionTrue,
+			oldReason: ExtCrtStatusReasonSARCompleted,
+			newStatus: corev1.ConditionFalse,
+			newReason: "OtherFailure",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{Name: "route1", Namespace: "default", UID: types.UID("uid1")},
+				Spec:       routev1.RouteSpec{Host: "route1.test.local"},
+				Status: routev1.RouteStatus{Ingress: []routev1.RouteIngress{{
+					RouterName: "test",
+					Host:       "route1.test.local",
+					Conditions: []routev1.RouteIngressCondition{{
+						Type:   routev1.RouteAdmitted,
+						Status: tc.oldStatus,
+						Reason: tc.oldReason,
+					}},
+				}}},
+			}
+			client := fake.NewSimpleClientset(route.DeepCopy())
+			tracker := &fakeTracker{results: map[contentionKey]bool{contentionKey(route.UID): true}}
+			admitter := NewStatusAdmitter(&fakePlugin{}, client.RouteV1(), &routeLister{items: []*routev1.Route{route}}, "test", "", noopLease{}, tracker)
+			if tc.newStatus == corev1.ConditionFalse {
+				admitter.RecordRouteRejection(route, tc.newReason, "external certificate validation failed")
+			} else {
+				admitter.RecordRouteUpdate(route, tc.newReason, "external certificate validation succeeded")
+			}
+			if got := len(client.Actions()); (got == 1) != tc.expectUpdate {
+				t.Fatalf("expected status update %v, got %d API actions", tc.expectUpdate, got)
+			}
+			if tc.expectUpdate {
+				updated := client.Actions()[0].(clientgotesting.UpdateAction).GetObject().(*routev1.Route)
+				condition := updated.Status.Ingress[0].Conditions[0]
+				if condition.Status != tc.newStatus || condition.Reason != tc.newReason {
+					t.Fatalf("unexpected status condition: %#v", condition)
+				}
+			}
+		})
+	}
+}
+
 func TestStatusRecordRejectionNoChange(t *testing.T) {
 	now := nowFn()
 	nowFn = func() metav1.Time { return now }
