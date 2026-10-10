@@ -303,3 +303,12 @@ func (m *SharedSecretManager) LookupRouteSecret(namespace string, routeName stri
 	}
 	return ref.secretName, true
 }
+
+// RouteUsesRestrictedInformer reports whether the route has a per-Secret
+// informer. These informers are most exposed to missed startup events.
+func (m *SharedSecretManager) RouteUsesRestrictedInformer(namespace, routeName string) bool {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	ref, exists := m.registeredRoutes[namespace+"/"+routeName]
+	return exists && ref.restricted
+}
