@@ -1,6 +1,9 @@
 package endpointsubset
 
 import (
+	"os"
+	"strconv"
+
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 
@@ -10,11 +13,18 @@ import (
 var log = logf.Logger.WithName("endpointsubset")
 
 // ConvertEndpointSlice converts items to a slice of EndpointSubset's.
+//
+// By default, EndpointSlices whose address type is neither IPv4 nor IPv6
+// (e.g. FQDN) are skipped. Set the ROUTER_DISABLE_ENDPOINT_ADDRESS_VALIDATION
+// environment variable to "true" to disable this check, for deployments that
+// still rely on the now-unsupported FQDN address type.
 func ConvertEndpointSlice(items []discoveryv1.EndpointSlice, addressOrderByFuncs []EndpointAddressLessFunc, portOrderByFuncs []EndpointPortLessFunc) []corev1.EndpointSubset {
 	var subsets []corev1.EndpointSubset
 
+	disableValidation, _ := strconv.ParseBool(os.Getenv("ROUTER_DISABLE_ENDPOINT_ADDRESS_VALIDATION"))
+
 	for i := range items {
-		if items[i].AddressType != discoveryv1.AddressTypeIPv4 && items[i].AddressType != discoveryv1.AddressTypeIPv6 {
+		if !disableValidation && items[i].AddressType != discoveryv1.AddressTypeIPv4 && items[i].AddressType != discoveryv1.AddressTypeIPv6 {
 			log.Info("Skipping EndpointSlice with unsupported address type", "namespace", items[i].Namespace, "name", items[i].Name, "addressType", items[i].AddressType)
 			continue
 		}
