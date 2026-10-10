@@ -978,6 +978,9 @@ func TestConfigTemplate(t *testing.T) {
 		},
 	}
 
+	cleanUpRoutes(t)
+	// Wait for the controller to process route deletions from prior tests.
+	time.Sleep(reloadInterval * 5)
 	defer cleanUpRoutes(t)
 
 	for name, expectations := range tests {
@@ -989,8 +992,9 @@ func TestConfigTemplate(t *testing.T) {
 		}
 	}
 
-	// let the router reload
-	time.Sleep(reloadInterval * 2)
+	// Let the router reload. Commits are rate-limited, so allow multiple reload
+	// cycles when many routes are created in a single test.
+	time.Sleep(reloadInterval * 20)
 
 	stopCh <- struct{}{}
 	wg.Wait()

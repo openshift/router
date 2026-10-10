@@ -202,7 +202,7 @@ func (cm *simpleCertificateWriter) WriteCertificate(directory string, id string,
 		log.Error(err, "error closing temp certificate file", "file", tmpName)
 		return err
 	}
-	if err := os.Chmod(tmpName, 0644); err != nil {
+	if err := os.Chmod(tmpName, 0600); err != nil {
 		os.Remove(tmpName)
 		log.Error(err, "error setting permissions on temp certificate file", "file", tmpName)
 		return err
