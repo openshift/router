@@ -37,15 +37,15 @@ const (
 	stateContended
 )
 
-// ignoreIngressConditionReason is a set of reasons for ingress conditions that should be ignored
-// when comparing if two route ingresses are the same. This is used to avoid false positives
-// mainly when the state of the ExternalCertificate is changed.
+// ignoreIngressConditionReason contains external-certificate reasons that should
+// not count as contention when comparing ingresses or writing route status.
 var (
 	ignoreIngressConditionReason sets.String = sets.NewString(
 		ExtCrtStatusReasonValidationFailed,
 		ExtCrtStatusReasonSecretRecreated,
 		ExtCrtStatusReasonSecretUpdated,
 		ExtCrtStatusReasonSecretDeleted,
+		ExtCrtStatusReasonGetFailed,
 		ExtCrtStatusReasonSARCompleted,
 	)
 )
@@ -293,8 +293,15 @@ func ingressConditionsEqual(a, b []routev1.RouteIngressCondition) bool {
 	return true
 }
 
-// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime and any reason in ignoreIngressConditionReason.
+// conditionsEqual compares two RouteIngressConditions, ignoring LastTransitionTime
+// and changes between external-certificate reasons. Rapid admission and rejection
+// writes can reach the informer after the tracker has already recorded a newer
+// write from this router, so these transitions do not indicate another writer.
 func conditionsEqual(a, b *routev1.RouteIngressCondition) bool {
+	if a.Type == routev1.RouteAdmitted && b.Type == routev1.RouteAdmitted &&
+		ignoreIngressConditionReason.Has(a.Reason) && ignoreIngressConditionReason.Has(b.Reason) {
+		return true
+	}
 	if a.Type == b.Type && a.Status == b.Status {
 		if ignoreIngressConditionReason.Has(a.Reason) || ignoreIngressConditionReason.Has(b.Reason) {
 			return true

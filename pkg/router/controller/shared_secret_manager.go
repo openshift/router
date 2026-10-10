@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -126,7 +125,7 @@ func (m *SharedSecretManager) RegisterRoute(ctx context.Context, namespace strin
 				selector,
 			),
 			&corev1.Secret{},
-			30*time.Second,
+			0,
 			cache.Indexers{},
 		)
 
@@ -180,6 +179,11 @@ func (m *SharedSecretManager) notify(namespace string, obj interface{}, eventTyp
 
 	if secret == nil {
 		return
+	}
+	if eventType == "Update" {
+		if previous, ok := oldObj.(*corev1.Secret); ok && previous.UID == secret.UID && previous.ResourceVersion == secret.ResourceVersion {
+			return
+		}
 	}
 
 	// Find all routes in this namespace that reference this secret
@@ -298,4 +302,13 @@ func (m *SharedSecretManager) LookupRouteSecret(namespace string, routeName stri
 		return "", false
 	}
 	return ref.secretName, true
+}
+
+// RouteUsesRestrictedInformer reports whether the route has a per-Secret
+// informer. These informers are most exposed to missed startup events.
+func (m *SharedSecretManager) RouteUsesRestrictedInformer(namespace, routeName string) bool {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	ref, exists := m.registeredRoutes[namespace+"/"+routeName]
+	return exists && ref.restricted
 }
