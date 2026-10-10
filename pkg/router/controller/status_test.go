@@ -966,6 +966,46 @@ func TestRouterContentionOnCondition(t *testing.T) {
 			expectContend: true,
 		},
 		{
+			name: "external certificate rejection does not cause contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:   routev1.RouteAdmitted,
+				Status: kapi.ConditionTrue,
+				Reason: ExtCrtStatusReasonSARCompleted,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:   routev1.RouteAdmitted,
+				Status: kapi.ConditionFalse,
+				Reason: ExtCrtStatusReasonValidationFailed,
+			}},
+		},
+		{
+			name: "external certificate re-admission does not cause contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:   routev1.RouteAdmitted,
+				Status: kapi.ConditionFalse,
+				Reason: ExtCrtStatusReasonValidationFailed,
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:   routev1.RouteAdmitted,
+				Status: kapi.ConditionTrue,
+				Reason: ExtCrtStatusReasonSecretUpdated,
+			}},
+		},
+		{
+			name: "unrelated admission and external certificate rejection cause contention",
+			conditions: []routev1.RouteIngressCondition{{
+				Type:   routev1.RouteAdmitted,
+				Status: kapi.ConditionTrue,
+				Reason: "OtherAdmission",
+			}},
+			updateConditions: []routev1.RouteIngressCondition{{
+				Type:   routev1.RouteAdmitted,
+				Status: kapi.ConditionFalse,
+				Reason: ExtCrtStatusReasonValidationFailed,
+			}},
+			expectContend: true,
+		},
+		{
 			name: "changing condition reason causes contention",
 			conditions: []routev1.RouteIngressCondition{{
 				Type:               routev1.RouteUnservableInFutureVersions,
