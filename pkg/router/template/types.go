@@ -127,6 +127,10 @@ type Endpoint struct {
 	IdHash        string
 	NoHealthCheck bool
 	AppProtocol   string
+
+	// fields with late update, when assigned to a ServiceAliasConfig
+	Weight         int32
+	VerifyHostname bool
 }
 
 // certificateManager provides the ability to write certificates for a ServiceAliasConfig
@@ -232,8 +236,11 @@ type ConfigManager interface {
 	RemoveRoute(id ServiceAliasConfigKey, route *routev1.Route) error
 
 	// ReplaceRouteEndpoints replaces a subset (the ones associated with
-	// a single service unit) of a route endpoints.
-	ReplaceRouteEndpoints(id ServiceAliasConfigKey, svc *ServiceUnit, oldEndpoints, newEndpoints []Endpoint, weight int32) error
+	// a single service unit) of a route endpoints. activeEndpoints is the
+	// total number of endpoints with non-zero weight across all service
+	// units for the route, used to determine whether health checks should
+	// be enabled (multiple active endpoints) or disabled (single endpoint).
+	ReplaceRouteEndpoints(id ServiceAliasConfigKey, svc *ServiceUnit, oldEndpoints, newEndpoints []Endpoint, activeEndpoints int) error
 
 	// RemoveRouteEndpoints removes a set of endpoints from a route.
 	RemoveRouteEndpoints(id ServiceAliasConfigKey, endpoints []Endpoint) error
