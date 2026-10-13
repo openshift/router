@@ -1,0 +1,86 @@
+#!/bin/bash
+
+set -o nounset
+
+config_file=/var/lib/haproxy/conf/haproxy.config
+pid_file=/var/lib/haproxy/run/haproxy.pid
+readonly timeout_opts="-m 1 --connect-timeout 1"
+
+readonly max_wait_time=30
+readonly numeric_re='^[0-9]+$'
+wait_time=${MAX_RELOAD_WAIT_TIME:-$max_wait_time}
+if ! [[ $wait_time =~ $numeric_re ]]; then
+  echo " - Invalid max reload wait time, using default $max_wait_time ..."
+  wait_time=$max_wait_time
+fi
+shutdown_wait_time=${ROUTER_MAX_SHUTDOWN_TIMEOUT:-${wait_time}}
+if ! [[ $shutdown_wait_time =~ $numeric_re ]]; then
+  echo " - Invalid max shutdown wait time, using $wait_time ..."
+  shutdown_wait_time=$wait_time
+fi
+
+function haproxyHealthCheck() {
+  local port=${ROUTER_SERVICE_HTTP_PORT:-"80"}
+  local url="http://localhost:${port}"
+  local retries=0
+  local start_ts=$(date +"%s")
+  local proxy_proto="${ROUTER_USE_PROXY_PROTOCOL-}"
+  local proxy_opts=''
+  local end_ts=$((start_ts + wait_time))
+
+  if [[ "${proxy_proto}" == "TRUE" || "${proxy_proto}" == "true" ]]; then
+    proxy_opts='--haproxy-protocol'
+  fi
+
+  echo " - Checking ${url}${proxy_opts:+ using PROXY protocol} ..."
+  while true; do
+    local httpcode=$(curl $timeout_opts $proxy_opts -s -o /dev/null -I -H "Host: " -w "%{http_code}" ${url})
+
+    if [[ "$httpcode" = 503 || "$httpcode" = 404 ]]; then
+      echo " - Health check ok : $retries retry attempt(s)."
+      return 0
+    fi
+
+    if [ $(date +"%s") -ge $end_ts ]; then
+      echo " - Exceeded max wait time ($wait_time) in health check - $retries retry attempt(s)."
+      return 1
+    fi
+
+    sleep 0.5
+    retries=$((retries + 1))
+  done
+}
+
+
+old_pids=$(pidof haproxy)
+
+# If signaled, stop accepting new connections and drain the current processes
+if [ -n "${ROUTER_SHUTDOWN-}" ]; then
+  echo " - Shutting down"
+  if [ -z "$old_pids" ]; then
+    exit 0
+  fi
+  kill -USR1 $old_pids
+  for i in $( seq 1 $shutdown_wait_time ); do
+    old_pids=$(pidof haproxy)
+    if [ -z "$old_pids" ]; then
+      exit 0
+    fi
+    sleep 1
+  done
+  kill -TERM $old_pids
+  echo "error: Some processes did not exit within ${shutdown_wait_time}s"
+  exit 1
+fi
+
+reload_status=0
+if [ -n "$old_pids" ]; then
+  /usr/sbin/haproxy -f $config_file -p $pid_file -x /var/lib/haproxy/run/haproxy.sock -sf $old_pids
+  reload_status=$?
+else
+  /usr/sbin/haproxy -f $config_file -p $pid_file
+  reload_status=$?
+fi
+
+[ $reload_status -ne 0 ] && exit $reload_status
+haproxyHealthCheck

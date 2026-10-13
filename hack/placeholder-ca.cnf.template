@@ -1,0 +1,18 @@
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid, issuer
+basicConstraints=CA:TRUE
+
+[ca]
+default_ca=placeholder_ca
+
+[placeholder_ca]
+authorityKeyIdentifier=keyid,issuer
+certificate=%%tmpdir%%/placeholder-ca.crt
+database=%%tmpdir%%/placeholder-crl-index.txt
+default_crl_hours=1
+default_md=sha256
+private_key=%%tmpdir%%/placeholder-ca.key
+crl_extensions=crl_exts
+
+[crl_exts]
+authorityKeyIdentifier=keyid, issuer
