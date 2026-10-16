@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
 
 	"github.com/openshift/router/pkg/router/controller/endpointsubset"
 
@@ -115,9 +116,10 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 	}
 
 	tests := []struct {
-		name  string
-		items []discoveryv1.EndpointSlice
-		want  []v1.EndpointSubset
+		name             string
+		items            []discoveryv1.EndpointSlice
+		want             []v1.EndpointSubset
+		enableValidation string // defaults to true if empty
 	}{{
 		name: "FQDN AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -136,6 +138,28 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 			}},
 		}},
 	}, {
+		name: "FQDN AddressType is kept when validation is disabled",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-fqdn",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeFQDN,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"metadata.google.internal"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(8080),
+			}},
+		}},
+		want: []v1.EndpointSubset{{
+			Addresses: []v1.EndpointAddress{{IP: "metadata.google.internal"}},
+			Ports:     []v1.EndpointPort{{Port: 8080}},
+		}},
+		enableValidation: "false",
+	}, {
 		name: "unknown AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
 			TypeMeta: sliceMeta,
@@ -149,6 +173,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Addresses: []string{"10.0.0.2"},
 			}},
 		}},
+		enableValidation: "true",
 	}, {
 		name: "empty AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -281,6 +306,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("ROUTER_ENABLE_ENDPOINT_ADDRESS_VALIDATION", tc.enableValidation)
 			got := endpointsubset.ConvertEndpointSlice(
 				tc.items,
 				endpointsubset.DefaultEndpointAddressOrderByFuncs(),
@@ -289,6 +315,46 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 			if diff := cmp.Diff(tc.want, got); len(diff) != 0 {
 				t.Errorf("ConvertEndpointSlice() failed (-want +got):\n%s", diff)
 			}
+		})
+	}
+}
+
+func TestEndpointAddressValidationEnabled(t *testing.T) {
+	testCases := map[string]struct {
+		value    string
+		expected bool
+	}{
+		"value is True": {
+			value:    "True",
+			expected: true,
+		},
+		"value is False": {
+			value:    "False",
+			expected: false,
+		},
+		"value renders to true": {
+			value:    "1",
+			expected: true,
+		},
+		"value renders to false": {
+			value:    "0",
+			expected: false,
+		},
+		"value is invalid": {
+			value:    "not-a-bool",
+			expected: true,
+		},
+		"value is empty": {
+			value:    "",
+			expected: true,
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("ROUTER_ENABLE_ENDPOINT_ADDRESS_VALIDATION", test.value)
+			enabled := endpointsubset.EndpointAddressValidationEnabled()
+			require.Equal(t, test.expected, enabled)
 		})
 	}
 }
