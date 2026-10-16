@@ -6,12 +6,11 @@ COPY tests-extension/ tests-extension/
 RUN cd tests-extension && \
     make build && \
     cd bin && \
-    tar -czvf router-test-extension.tar.gz router-tests-ext && \
-    rm -f router-tests-ext
+    gzip -n router-tests-ext
 
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-# Copy test extension binary (added by ote-migration)
-COPY --from=test-extension-builder /go/src/github.com/openshift/router/tests-extension/bin/router-test-extension.tar.gz /usr/bin/
+# Copy test extension binary (raw gzip per OTE convention)
+COPY --from=test-extension-builder /go/src/github.com/openshift/router/tests-extension/bin/router-tests-ext.gz /usr/bin/
 RUN INSTALL_PKGS="socat haproxy28 rsyslog sysvinit-tools" && \
     yum install -y --setopt=install_weak_deps=0 $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
