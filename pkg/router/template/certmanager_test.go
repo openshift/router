@@ -317,3 +317,21 @@ func TestWriteCertificateAtomicity(t *testing.T) {
 			emptyReads.Load(), truncatedReads.Load(), totalReads.Load())
 	}
 }
+
+func TestWriteCertificateFileMode(t *testing.T) {
+	dir := t.TempDir()
+	writer := &simpleCertificateWriter{}
+
+	cert := []byte("-----BEGIN RSA PRIVATE KEY-----\ntest\n-----END RSA PRIVATE KEY-----\n")
+	if err := writer.WriteCertificate(dir, "test", cert); err != nil {
+		t.Fatalf("WriteCertificate failed: %v", err)
+	}
+
+	info, err := os.Stat(filepath.Join(dir, "test.pem"))
+	if err != nil {
+		t.Fatalf("stat written certificate: %v", err)
+	}
+	if info.Mode().Perm() != 0600 {
+		t.Errorf("expected certificate file mode 0600, got %o", info.Mode().Perm())
+	}
+}
