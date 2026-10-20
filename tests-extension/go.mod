@@ -6,7 +6,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.0
 	github.com/onsi/gomega v1.42.1
 	github.com/openshift-eng/openshift-tests-extension v0.0.0-20260812190735-a8b44e9f9fed
-	github.com/openshift/origin v1.6.1-0.20260820072230-dbd1161c1894
+	github.com/openshift/origin v1.6.2
 	github.com/spf13/cobra v1.10.2
 	k8s.io/apimachinery v0.36.2
 	k8s.io/component-base v0.36.2
