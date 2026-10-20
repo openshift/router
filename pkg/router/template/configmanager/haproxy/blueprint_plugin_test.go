@@ -41,7 +41,7 @@ func (cm *fakeConfigManager) FindBlueprint(id templaterouter.ServiceAliasConfigK
 	return route, ok
 }
 
-func (cm *fakeConfigManager) Register(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) {
+func (cm *fakeConfigManager) Register(id templaterouter.ServiceAliasConfigKey, backend *templaterouter.ServiceAliasConfig, route *routev1.Route) {
 }
 
 func (cm *fakeConfigManager) AddRoute(id templaterouter.ServiceAliasConfigKey, routingKey string, route *routev1.Route) error {
@@ -52,7 +52,7 @@ func (cm *fakeConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfigKey
 	return nil
 }
 
-func (cm *fakeConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
+func (cm *fakeConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceAliasConfigKey, svc *templaterouter.ServiceUnit, oldEndpoints, newEndpoints []templaterouter.Endpoint, weight int32) error {
 	return nil
 }
 
@@ -61,18 +61,6 @@ func (cm *fakeConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAlias
 }
 
 func (cm *fakeConfigManager) Notify(event templaterouter.RouterEventType) {
-}
-
-func (cm *fakeConfigManager) ServerTemplateName(id templaterouter.ServiceAliasConfigKey) string {
-	return "fakeConfigManager"
-}
-
-func (cm *fakeConfigManager) ServerTemplateSize(id templaterouter.ServiceAliasConfigKey) string {
-	return "1"
-}
-
-func (cm *fakeConfigManager) GenerateDynamicServerNames(id templaterouter.ServiceAliasConfigKey) []string {
-	return []string{}
 }
 
 func routeKey(route *routev1.Route) templaterouter.ServiceAliasConfigKey {

@@ -175,8 +175,7 @@ u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 			Action: "Set",
 		}},
 		DynamicConfigManager: haproxyconfigmanager.NewHAProxyConfigManager(templateplugin.ConfigManagerOptions{
-			ConnectionInfo:    "unix:///var/lib/dymmy",
-			MaxDynamicServers: 1,
+			ConnectionInfo: "unix:///var/lib/dummy",
 		}),
 	}
 	plugin, err = templateplugin.NewTemplatePlugin(pluginCfg, svcFetcher)
@@ -749,62 +748,6 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
-		"Verifyhost for dynamic slot": {
-			mustCreateWithConfig{
-				mustCreateEndpointSlices: []mustCreateEndpointSlice{
-					{
-						name:        "serviceq",
-						serviceName: "serviceq",
-					},
-				},
-				mustCreateRoute: mustCreateRoute{
-					name:              "q",
-					host:              "qexample.com",
-					targetServiceName: "serviceq",
-					weight:            int32(100),
-					time:              start,
-					tlsTermination:    routev1.TLSTerminationReencrypt,
-				},
-				mustMatchConfig: mustMatchConfig{
-					section:     "backend",
-					sectionName: reencryptBackendName(h.namespace, "q"),
-					attribute:   "server",
-					value:       "_dynamic-pod-1 172.4.0.4:8765 weight 0 ssl disabled check inter 5000ms alpn h2,http/1.1 verifyhost serviceq.default.svc verify required ca-file dummy",
-					fullMatch:   true,
-				},
-			},
-		},
-		"Verifyhost for dynamic slot with alternate backend": {
-			mustCreateWithConfig{
-				mustCreateEndpointSlices: []mustCreateEndpointSlice{
-					{
-						name:        "serviceq1",
-						serviceName: "serviceq1",
-					},
-					{
-						name:        "serviceq2",
-						serviceName: "serviceq2",
-					},
-				},
-				mustCreateRoute: mustCreateRoute{
-					name:                   "q1",
-					host:                   "q1example.com",
-					targetServiceName:      "serviceq1",
-					weight:                 int32(50),
-					alternateBackend:       "serviceq2",
-					alternateBackendWeight: int32(50),
-					time:                   start,
-					tlsTermination:         routev1.TLSTerminationReencrypt,
-				},
-				mustMatchConfig: mustMatchConfig{
-					section:     "backend",
-					sectionName: reencryptBackendName(h.namespace, "q1"),
-					attribute:   "server",
-					value:       "_dynamic-pod-1 172.4.0.4:8765 weight 0 ssl disabled check inter 5000ms alpn h2,http/1.1 verifyhost serviceq1.default.svc verify required ca-file dummy",
-					fullMatch:   true,
-				},
-			},
-		},
 		"valid route health check interval annotation": {
 			mustCreateWithConfig{
 				mustCreateEndpointSlices: []mustCreateEndpointSlice{
@@ -928,57 +871,6 @@ func TestConfigTemplate(t *testing.T) {
 					sectionName: "public",
 					attribute:   "http-request",
 					value:       `redirect location https://%[req.hdr(host),regsub(:[0-9]+$,,)]%[url] code 302 if secure_redirect`,
-				},
-			},
-		},
-		"server-template with default health check interval": {
-			mustCreateWithConfig{
-				mustCreateEndpointSlices: []mustCreateEndpointSlice{
-					{
-						name:        "servicest2",
-						serviceName: "servicest2",
-						addresses:   []string{"1.1.1.1"},
-					},
-				},
-				mustCreateRoute: mustCreateRoute{
-					name:              "st2",
-					host:              "st2example.com",
-					targetServiceName: "servicest2",
-					weight:            1,
-					time:              start,
-				},
-				mustMatchConfig: mustMatchConfig{
-					section:     "backend",
-					sectionName: insecureBackendName(h.namespace, "st2"),
-					attribute:   "server-template",
-					value:       "inter 5000ms", // Default value
-				},
-			},
-		},
-		"server-template with custom health check interval": {
-			mustCreateWithConfig{
-				mustCreateEndpointSlices: []mustCreateEndpointSlice{
-					{
-						name:        "servicest1",
-						serviceName: "servicest1",
-						addresses:   []string{"1.1.1.1"}, // Single endpoint initially
-					},
-				},
-				mustCreateRoute: mustCreateRoute{
-					name:              "st1",
-					host:              "st1example.com",
-					targetServiceName: "servicest1",
-					weight:            1,
-					time:              start,
-					annotations: map[string]string{
-						"router.openshift.io/haproxy.health.check.interval": "15s",
-					},
-				},
-				mustMatchConfig: mustMatchConfig{
-					section:     "backend",
-					sectionName: insecureBackendName(h.namespace, "st1"),
-					attribute:   "server-template",
-					value:       "inter 15s",
 				},
 			},
 		},
