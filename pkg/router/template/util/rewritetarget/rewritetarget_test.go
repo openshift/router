@@ -93,6 +93,119 @@ func Test_SanitizeInput(t *testing.T) {
 	}
 }
 
+func Test_SanitizeRewritePathInput(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		output string
+	}{
+		{
+			name:   "plain path unchanged",
+			input:  `/foo/bar`,
+			output: `/foo/bar`,
+		},
+		{
+			name:   "dot escaped for HAProxy quoted string",
+			input:  `/api/v1.0`,
+			output: `/api/v1\.0`,
+		},
+		{
+			name:   "multiple dots escaped for HAProxy quoted string",
+			input:  `/api/v1.0.0`,
+			output: `/api/v1\.0\.0`,
+		},
+		{
+			name:   "plus escaped for HAProxy quoted string",
+			input:  `/search+results`,
+			output: `/search\+results`,
+		},
+		{
+			name:   "star escaped",
+			input:  `/bar*`,
+			output: `/bar\*`,
+		},
+		{
+			name:   "parens escaped",
+			input:  `/foo(bar)`,
+			output: `/foo\(bar\)`,
+		},
+		{
+			name:   "dollar escaped",
+			input:  `/price$10`,
+			output: `/price\$10`,
+		},
+		{
+			name:   "caret escaped",
+			input:  `/foo^bar`,
+			output: `/foo\^bar`,
+		},
+		{
+			name:   "brackets escaped",
+			input:  `/foo[0]`,
+			output: `/foo\[0\]`,
+		},
+		{
+			name:   "pipe escaped",
+			input:  `/a|b`,
+			output: `/a\|b`,
+		},
+		{
+			name:   "backslash escaped for HAProxy quoted string",
+			input:  `/foo\bar`,
+			output: `/foo\\bar`,
+		},
+		{
+			name:   "question mark escaped",
+			input:  `/foo?bar`,
+			output: `/foo\?bar`,
+		},
+		{
+			name:   "braces escaped",
+			input:  `/foo{2}`,
+			output: `/foo\{2\}`,
+		},
+		{
+			name:   "c++ double plus",
+			input:  `/c++`,
+			output: `/c\+\+`,
+		},
+		{
+			name:   "single quote escaped for HAProxy",
+			input:  `/it's`,
+			output: `/it'\''s`,
+		},
+		{
+			name:   "newline preserved as literal \\n for HAProxy quoted string",
+			input:  "/foo\nbar",
+			output: `/foo\nbar`,
+		},
+		{
+			name:   "carriage return preserved as literal \\r for HAProxy quoted string",
+			input:  "/foo\rbar",
+			output: `/foo\rbar`,
+		},
+		{
+			name:   "combined dot and plus",
+			input:  `/v1.0+beta`,
+			output: `/v1\.0\+beta`,
+		},
+		{
+			name:   "file extension",
+			input:  `/files/report.pdf`,
+			output: `/files/report\.pdf`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := rewritetarget.SanitizeRewritePathInput(tc.input)
+			if got != tc.output {
+				t.Errorf("SanitizeRewritePathInput(%q): expected %q, got %q", tc.input, tc.output, got)
+			}
+		})
+	}
+}
+
 func Test_EscapeSingleQuotes(t *testing.T) {
 	testCases := []struct {
 		name   string
