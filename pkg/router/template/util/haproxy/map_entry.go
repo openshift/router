@@ -10,17 +10,6 @@ import (
 // mapEntryGeneratorFunc generates an haproxy config map entry.
 type mapEntryGeneratorFunc func(*BackendConfig) *HAProxyMapEntry
 
-// generateWildcardDomainMapEntry generates a wildcard domain map entry.
-func generateWildcardDomainMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
-	if len(cfg.Host) > 0 && cfg.IsWildcard {
-		return &HAProxyMapEntry{
-			Key:   templateutil.GenerateRouteRegexp(cfg.Host, "", cfg.IsWildcard),
-			Value: "1",
-		}
-	}
-	return nil
-}
-
 // generateHttpMapEntry generates a map entry for insecure/http hosts.
 func generateHttpMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 	if len(cfg.Host) == 0 {
@@ -111,7 +100,6 @@ func generateCertConfigMapEntry(cfg *BackendConfig) *HAProxyMapEntry {
 // GenerateMapEntry generates a haproxy map entry.
 func GenerateMapEntry(id string, cfg *BackendConfig) *HAProxyMapEntry {
 	generator, ok := map[string]mapEntryGeneratorFunc{
-		"os_wildcard_domain.map":     generateWildcardDomainMapEntry,
 		"os_http_be.map":             generateHttpMapEntry,
 		"os_edge_reencrypt_be.map":   generateEdgeReencryptMapEntry,
 		"os_route_http_redirect.map": generateHttpRedirectMapEntry,
