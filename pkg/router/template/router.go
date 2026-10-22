@@ -478,32 +478,36 @@ func (r *templateRouter) writeDefaultCert() error {
 // mutual TLS and reloads the router if the directory contents change.
 func (r *templateRouter) watchMutualTLSCert() error {
 	caPath := os.Getenv("ROUTER_MUTUAL_TLS_AUTH_CA")
-	if len(caPath) != 0 {
-		r.haveClientCA = true
-		if err := crl.InitMTLSDirectory(caPath); err != nil {
-			return err
-		}
-		haveCRLs, err := crl.CABundleHasCRLs(caPath)
-		if err != nil {
-			log.V(0).Error(err, "failed to parse CA Bundle", "path", caPath)
-			return err
-		}
+	// If there are no CAs provided, there are no CRLs to download.
+	if len(caPath) == 0 {
+		crl.SetCRLsUpdated(true)
+		return nil
+	}
+
+	r.haveClientCA = true
+	if err := crl.InitMTLSDirectory(caPath); err != nil {
+		return err
+	}
+	haveCRLs, err := crl.CABundleHasCRLs(caPath)
+	if err != nil {
+		log.V(0).Error(err, "failed to parse CA Bundle", "path", caPath)
+		return err
+	}
+	r.haveCRLs = haveCRLs
+	caUpdateChannel := make(chan struct{})
+	crlReloadFn := func(haveCRLs bool) {
 		r.haveCRLs = haveCRLs
-		caUpdateChannel := make(chan struct{})
-		crlReloadFn := func(haveCRLs bool) {
-			r.haveCRLs = haveCRLs
-			log.V(0).Info("reloading to get updated client CA CRL", "name", crl.CRLFilename, "have CRLs", haveCRLs)
-			r.rateLimitedCommitFunction.RegisterChange()
-		}
-		crl.ManageCRLs(caPath, caUpdateChannel, crlReloadFn)
-		caReloadFn := func() {
-			// Send signal to CRL management goroutine that client CA has been changed
-			caUpdateChannel <- struct{}{}
-		}
-		if err := r.watchVolumeMountDir(filepath.Dir(caPath), caReloadFn); err != nil {
-			log.V(0).Error(err, "failed to establish watch on mTLS certificate directory")
-			return nil
-		}
+		log.V(0).Info("reloading to get updated client CA CRL", "name", crl.CRLFilename, "have CRLs", haveCRLs)
+		r.rateLimitedCommitFunction.RegisterChange()
+	}
+	crl.ManageCRLs(caPath, caUpdateChannel, crlReloadFn)
+	caReloadFn := func() {
+		// Send signal to CRL management goroutine that client CA has been changed
+		caUpdateChannel <- struct{}{}
+	}
+	if err := r.watchVolumeMountDir(filepath.Dir(caPath), caReloadFn); err != nil {
+		log.V(0).Error(err, "failed to establish watch on mTLS certificate directory")
+		return err
 	}
 	return nil
 }
