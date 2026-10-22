@@ -26,17 +26,21 @@ type ExtendedValidator struct {
 
 	// extendedRouteValidation enables extended route validation checks.
 	extendedRouteValidation bool
+
+	// endpointAddressValidation enables address validation for endpoints.
+	endpointAddressValidation bool
 }
 
 // NewExtendedValidator creates a plugin wrapper that ensures only routes and
 // endpoints that pass validation are relayed to the next plugin in the chain.
-// Endpoint address validation is always enabled. Route validation is
-// controlled by extendedRouteValidation.
-func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder, extendedRouteValidation bool) *ExtendedValidator {
+// Endpoint address validation is controlled by endpointAddressValidation. Route
+// validation is controlled by extendedRouteValidation.
+func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder, extendedRouteValidation bool, endpointAddressValidation bool) *ExtendedValidator {
 	return &ExtendedValidator{
-		plugin:                  plugin,
-		recorder:                recorder,
-		extendedRouteValidation: extendedRouteValidation,
+		plugin:                    plugin,
+		recorder:                  recorder,
+		extendedRouteValidation:   extendedRouteValidation,
+		endpointAddressValidation: endpointAddressValidation,
 	}
 }
 
@@ -53,13 +57,22 @@ func (p *ExtendedValidator) HandleEndpoints(eventType watch.EventType, endpoints
 		return p.plugin.HandleEndpoints(eventType, endpoints)
 	}
 
-	// endpoints may be an object shared with (and owned by) an informer's
-	// cache, so it must be deep-copied before it is mutated below.
-	endpoints = endpoints.DeepCopy()
-	for i, subset := range endpoints.Subsets {
-		endpoints.Subsets[i].Addresses = filterValidAddresses(subset.Addresses)
-		endpoints.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses)
+	// endpointAddressValidation is also what allows FQDN-typed EndpointSlices through
+	// in ConvertEndpointSlice. Turning it off to support FQDN endpoints also makes the
+	// restricted-IP filtering below pointless: a malicious or careless FQDN can simply
+	// resolve to a blocked address (loopback, link-local, multicast, cloud metadata,
+	// etc.) and reach it anyway, sidestepping the IP check entirely; operators accept
+	// that bypass risk when disabling this flag.
+	if p.endpointAddressValidation {
+		// endpoints may be an object shared with (and owned by) an informer's
+		// cache, so it must be deep-copied before it is mutated below.
+		endpoints = endpoints.DeepCopy()
+		for i, subset := range endpoints.Subsets {
+			endpoints.Subsets[i].Addresses = filterValidAddresses(subset.Addresses)
+			endpoints.Subsets[i].NotReadyAddresses = filterValidAddresses(subset.NotReadyAddresses)
+		}
 	}
+
 	return p.plugin.HandleEndpoints(eventType, endpoints)
 }
 

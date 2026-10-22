@@ -773,7 +773,7 @@ func (p *fakePlugin) Commit() error {
 func TestHandleRouteExtendedValidation(t *testing.T) {
 	rejections := &fakeStatusRecorder{}
 	fake := &fakePlugin{}
-	plugin := controller.NewExtendedValidator(fake, rejections, true)
+	plugin := controller.NewExtendedValidator(fake, rejections, true, true)
 
 	original := metav1.Time{Time: time.Now()}
 
