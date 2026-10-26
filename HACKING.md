@@ -22,6 +22,11 @@ tests. In CI (`OPENSHIFT_CI=true`), `make verify` checks `go mod vendor` and
 To refresh extension dependencies, run those commands inside `tests-extension`;
 QE generation does not regenerate files vendored from dependencies.
 
+Test-name changes also require `make -C tests-extension update-metadata` and
+the regenerated `.openshift-tests-extension` metadata in the same commit.
+Extension verification checks both fixture freshness and registered metadata;
+metadata generation compiles the binary without running the fixture generator.
+
 This is a living document containing suggestions for testing Router changes on an existing cluster.
 These "hacks" are not officially supported and are subject to change, break, etc.
 

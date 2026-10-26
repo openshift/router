@@ -12,6 +12,12 @@ of the cluster. The process launches proxies as children and triggers reloads as
 has been written. The standard logic for handling conflicting routes, supporting wildcards, reporting status
 back to the Route object, and metrics live in the standard process.
 
+Router tests
+------------
+
+See the [router test extension README](tests-extension/test/qe/README.md) for
+build prerequisites, test suites, commands to run individual tests, and reports.
+
 
 Deploying to Kubernetes
 -----------------------
