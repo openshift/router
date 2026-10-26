@@ -1,10 +1,14 @@
 package util
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -65,7 +69,10 @@ func (route *RouteDescription) Create(oc *exutil.CLI) {
 
 // Create web server deployment from template
 func (websrvdeploy *WebServerDeployDescription) Create(oc *exutil.CLI) {
-	err := CreateResourceToNsFromTemplate(oc, websrvdeploy.Namespace, "--ignore-unknown-parameters=true", "-f", websrvdeploy.Template, "-p", "DEPLOY_NAME="+websrvdeploy.DeployName, "SVC_SECURE_NAME="+websrvdeploy.SvcSecureName, "SVC_UNSECURE_NAME="+websrvdeploy.SvcUnsecureName)
+	// Mirror before processing: the image reference is a literal in the template
+	// body, not a template parameter.
+	template := MirrorFixtureImages(oc, websrvdeploy.Namespace, websrvdeploy.Template)
+	err := CreateResourceToNsFromTemplate(oc, websrvdeploy.Namespace, "--ignore-unknown-parameters=true", "-f", template, "-p", "DEPLOY_NAME="+websrvdeploy.DeployName, "SVC_SECURE_NAME="+websrvdeploy.SvcSecureName, "SVC_UNSECURE_NAME="+websrvdeploy.SvcUnsecureName)
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
@@ -238,9 +245,127 @@ func WaitForResourceToDisappear(oc *exutil.CLI, ns, rsname string) error {
 	})
 }
 
-// CreateResourceFromFile creates resources in the specified namespace from the file (not template)
+// internalRegistryHostname is the in-cluster address of the integrated image
+// registry.  A pod that references an ImageStream tag through this address pulls
+// the image from the cluster instead of reaching out to the public internet.
+const internalRegistryHostname = "image-registry.openshift-image-registry.svc:5000"
+
+// fixtureImageRe matches the external fixture images that the manifests under
+// testdata are written against, capturing the repository's final path segment and
+// the digest.
+var fixtureImageRe = regexp.MustCompile(`quay\.io/openshifttest/([a-zA-Z0-9._-]+)@sha256:([0-9a-f]{64})`)
+
+// MirrorFixtureImages imports every external fixture image referenced by the
+// given manifest into an ImageStream in ns, and returns the path of an equivalent
+// manifest that pulls those images from the cluster's integrated registry.  A
+// manifest that references no such image is returned unchanged.
+//
+// Referencing an external registry from a pod spec fails in CI two different
+// ways.  The known-image-checker monitor flags any image that is not in the
+// mirrored registry and fails the job.  Separately, on a cluster with no route to
+// quay.io the pod simply never becomes ready, so the test times out part way
+// through an assertion and reports a misleading failure instead of the real
+// cause; this is what happened to the ingress operator tests on disconnected IPv6
+// metal lanes in OCPBUGS-132070.  Importing through an ImageStream addresses the
+// first problem outright, and turns the second into a single explicit step whose
+// failure message names the image that could not be fetched.
+//
+// Note that the import still reads from the source registry, so this does not by
+// itself make the fixtures work on a fully disconnected cluster.  It makes the
+// dependency explicit and fails fast when it cannot be satisfied.
+func MirrorFixtureImages(oc *exutil.CLI, ns, file string) string {
+	manifest, err := ioutil.ReadFile(file)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read fixture %s", file)
+
+	matches := fixtureImageRe.FindAllStringSubmatch(string(manifest), -1)
+	if len(matches) == 0 {
+		return file
+	}
+
+	skipWithoutInternalRegistry(oc)
+
+	rewritten := string(manifest)
+	mirrored := make(map[string]bool, len(matches))
+	for _, match := range matches {
+		source, name, digest := match[0], match[1], match[2]
+		if mirrored[source] {
+			continue
+		}
+		mirrored[source] = true
+		// Tag with a prefix of the digest so that two manifests pinning different
+		// digests of the same repository get distinct tags rather than colliding.
+		tag := digest[:12]
+		importImageStreamTag(oc, ns, name, tag, source)
+		rewritten = strings.ReplaceAll(rewritten, source,
+			fmt.Sprintf("%s/%s/%s:%s", internalRegistryHostname, ns, name, tag))
+	}
+
+	mirroredFile := filepath.Join(os.TempDir(), GetRandomString()+"-"+filepath.Base(file))
+	err = ioutil.WriteFile(mirroredFile, []byte(rewritten), 0644)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write mirrored fixture %s", mirroredFile)
+	g.DeferCleanup(os.Remove, mirroredFile)
+	e2e.Logf("mirrored fixture %s to %s for namespace %s", file, mirroredFile, ns)
+	return mirroredFile
+}
+
+// skipWithoutInternalRegistry skips the running spec when the cluster has no
+// integrated image registry to mirror fixture images through.
+//
+// A mirrored manifest pulls from internalRegistryHostname, so the registry has
+// to be serving even when the source registry is reachable.  The registry is an
+// optional capability and its operator can be set to Removed -- which is the
+// default wherever the installer finds no supported object storage -- so this
+// cannot be expressed as an environment selector: the capability can be present
+// while the operator is Removed.  Check the operator's management state
+// directly instead, and skip rather than fail, so a cluster that simply cannot
+// host the fixtures reports a skip instead of a spurious routing failure.
+func skipWithoutInternalRegistry(oc *exutil.CLI) {
+	state, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
+		"configs.imageregistry.operator.openshift.io/cluster",
+		"-o=jsonpath={.spec.managementState}").Output()
+	if err != nil {
+		g.Skip(fmt.Sprintf("the image registry operator is not available, so fixture images "+
+			"cannot be mirrored into the cluster: %v", err))
+	}
+	if strings.EqualFold(strings.TrimSpace(state), "Removed") {
+		g.Skip("the image registry operator is Removed, so fixture images cannot be mirrored " +
+			"into the cluster")
+	}
+}
+
+// importImageStreamTag imports source into the ns/name:tag ImageStream tag.  The
+// import is retried, because pulling from a registry is prone to transient
+// failures such as throttling or an integrated registry that is not yet serving,
+// and the OTE guidelines require tests to retry through those rather than fail.
+//
+// PreserveOriginal keeps a multi-architecture manifest list intact, so that the
+// same ImageStream tag works on every architecture the tests run on.
+func importImageStreamTag(oc *exutil.CLI, ns, name, tag, source string) {
+	var lastOutput string
+	waitErr := wait.PollImmediate(5*time.Second, 3*time.Minute, func() (bool, error) {
+		output, err := oc.AsAdmin().WithoutNamespace().Run("import-image").Args(
+			name+":"+tag,
+			"--from="+source,
+			"--confirm",
+			"--reference-policy=local",
+			"--import-mode=PreserveOriginal",
+			"-n", ns,
+		).Output()
+		if err != nil {
+			lastOutput = output
+			e2e.Logf("waiting to import %s into imagestream %s/%s:%s: %v", source, ns, name, tag, err)
+			return false, nil
+		}
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
+		"failed to import %s into imagestream %s/%s:%s, last output: %s", source, ns, name, tag, lastOutput))
+}
+
+// CreateResourceFromFile mirrors fixture images and creates resources from a
+// manifest in the specified namespace.
 func CreateResourceFromFile(oc *exutil.CLI, ns, file string) {
-	err := oc.WithoutNamespace().Run("create").Args("-f", file, "-n", ns).Execute()
+	err := oc.WithoutNamespace().Run("create").Args("-f", MirrorFixtureImages(oc, ns, file), "-n", ns).Execute()
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
@@ -255,6 +380,12 @@ func CreateResourceFromWebServer(oc *exutil.CLI, ns, file, srvrcInfo string) []s
 
 // OperateResourceFromFile creates or deletes resources in the specified namespace from the file (not template)
 func OperateResourceFromFile(oc *exutil.CLI, oper, ns, file string) {
+	// Only an operation that admits the resource needs its images mirrored; a
+	// delete matches on name alone, and importing images for it would be wasted
+	// work against the source registry.
+	if oper != "delete" {
+		file = MirrorFixtureImages(oc, ns, file)
+	}
 	err := oc.AsAdmin().WithoutNamespace().Run(oper).Args("-f", file, "-n", ns).Execute()
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
@@ -521,8 +652,37 @@ func ReadPodData(oc *exutil.CLI, podname string, ns string, executeCmd string, s
 	return output
 }
 
-// WaitForOutsideCurlContains waits until curling route returns expected output
+// WaitForOutsideCurlContains waits until curling a route returns expected output.
 func WaitForOutsideCurlContains(url string, curlOptions string, expected string) string {
+	return waitForOutsideCurl(url, curlOptions, expected, func(result string) bool {
+		return strings.Contains(result, expected)
+	})
+}
+
+// WaitForOutsideCurlRedirect waits until a HEAD request returns an HTTP 302
+// response with the expected Location value. Header names are case-insensitive,
+// including when a proxy changes their capitalization.
+func WaitForOutsideCurlRedirect(url, expectedLocation string) string {
+	return waitForOutsideCurl(url, "-I -k", "HTTP 302 redirect to "+expectedLocation, func(result string) bool {
+		return matchesHTTPRedirect(result, expectedLocation)
+	})
+}
+
+// matchesHTTPRedirect reports whether output contains an HTTP 302 response with
+// the exact expected Location value. Only header names are case-insensitive;
+// URL paths retain their case-sensitive semantics.
+func matchesHTTPRedirect(output, expectedLocation string) bool {
+	response, err := http.ReadResponse(bufio.NewReader(strings.NewReader(output)), &http.Request{Method: http.MethodHead})
+	if err != nil {
+		return false
+	}
+	defer response.Body.Close()
+	return response.StatusCode == http.StatusFound && response.Header.Get("Location") == expectedLocation
+}
+
+// waitForOutsideCurl polls curl until its output matches or an expected
+// execution error occurs, and logs a verbose response on timeout.
+func waitForOutsideCurl(url, curlOptions, expected string, matches func(string) bool) string {
 	var output []byte
 	cmd := fmt.Sprintf(`curl --connect-timeout 10 -s %s %s 2>&1`, curlOptions, url)
 	e2e.Logf("the command is: %s", cmd)
@@ -545,8 +705,8 @@ func WaitForOutsideCurlContains(url string, curlOptions string, expected string)
 				return false, nil
 			}
 		}
-		if !strings.Contains(string(result), expected) {
-			e2e.Logf("no expected string in the curl response: %s, retrying...", result)
+		if !matches(string(result)) {
+			e2e.Logf("curl response did not match %q: %s, retrying...", expected, result)
 			return false, nil
 		}
 		return true, nil
@@ -558,7 +718,7 @@ func WaitForOutsideCurlContains(url string, curlOptions string, expected string)
 		result, err := exec.Command("bash", "-c", debug_cmd).Output()
 		e2e.Logf("debug: the result of curl is %s and err is %v", result, err)
 	}
-	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but not get expected string"))
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached waiting for %q from %s", expected, url))
 	return string(output)
 }
 
@@ -848,12 +1008,69 @@ func SearchInDescribeResource(oc *exutil.CLI, resource, resourceName, match stri
 	return output
 }
 
-// CheckCookieFile checks the cookie file generated through curl command
+// CheckCookieFile checks the cookie file generated through curl command.
+//
+// curl writes the cookie jar when the transfer finishes, and if it cannot create
+// the file it says so only as a warning on stderr -- the exit status stays zero.
+// A bare read therefore fails later with a plain "no such file or directory"
+// that says nothing about why, so poll briefly for the file and, when it never
+// appears, report what is actually in the directory.
 func CheckCookieFile(fileDir string, expectedString string) {
-	output, err := ioutil.ReadFile(fileDir)
-	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the cookie file content is: %s", output)
-	o.Expect(strings.Contains(string(output), expectedString)).To(o.BeTrue())
+	var content string
+	waitErr := wait.PollImmediate(2*time.Second, 30*time.Second, func() (bool, error) {
+		output, err := ioutil.ReadFile(fileDir)
+		if err != nil {
+			e2e.Logf("waiting for the cookie file %s: %v", fileDir, err)
+			return false, nil
+		}
+		content = string(output)
+		return strings.Contains(content, expectedString), nil
+	})
+	if waitErr != nil && content == "" {
+		entries, err := ioutil.ReadDir(filepath.Dir(fileDir))
+		if err != nil {
+			e2e.Logf("the cookie directory %s cannot be read: %v", filepath.Dir(fileDir), err)
+		} else {
+			names := make([]string, 0, len(entries))
+			for _, entry := range entries {
+				names = append(names, entry.Name())
+			}
+			e2e.Logf("the cookie directory %s contains: %v", filepath.Dir(fileDir), names)
+		}
+	}
+	e2e.Logf("the cookie file content is: %s", content)
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
+		"the cookie file %s never contained %q; curl reports a jar it cannot write only as a warning, "+
+			"so check the curl output above for \"failed to save cookies\"", fileDir, expectedString))
+}
+
+// WaitForCurlInPodContains runs curlCmd inside podName until the command
+// succeeds and its output contains expected, and returns that output.
+//
+// The command reaches the pod over an exec stream to the API server, and that
+// stream is reset often enough ("error reading from error stream ... connection
+// reset by peer") that a single attempt makes the test report a routing failure
+// when nothing was wrong with the route.  The last output and error are kept so
+// that a genuine failure is still diagnosable.
+func WaitForCurlInPodContains(oc *exutil.CLI, ns, podName, curlCmd, expected string) string {
+	var output string
+	var lastErr error
+	waitErr := wait.PollImmediate(5*time.Second, 90*time.Second, func() (bool, error) {
+		output, lastErr = compat_otp.RemoteShPod(oc, ns, podName, "sh", "-c", curlCmd)
+		if lastErr != nil {
+			e2e.Logf("the curl command in pod %s failed: %v, retrying...", podName, lastErr)
+			return false, nil
+		}
+		if !strings.Contains(output, expected) {
+			e2e.Logf("cannot find %q in the curl output, retrying...", expected)
+			return false, nil
+		}
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
+		"the curl command %q in pod %s never returned %q; last error: %v, last output: %s",
+		curlCmd, podName, expected, lastErr, output))
+	return output
 }
 
 func UpdateFilebySedCmd(file, toBeReplaced, newContent string) {
