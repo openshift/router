@@ -151,6 +151,14 @@ func isTrue(s string) bool {
 	return v
 }
 
+func isTrueOrDefault(s string, defaultValue bool) bool {
+	v, err := strconv.ParseBool(s)
+	if err != nil {
+		return defaultValue
+	}
+	return v
+}
+
 // getIntervalFromEnv returns a interval value based on an environment
 // variable or the default.
 func getIntervalFromEnv(name string, defaultValSecs int) time.Duration {
@@ -828,7 +836,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	if o.UpgradeValidation {
 		plugin = controller.NewUpgradeValidation(plugin, recorder, o.UpgradeValidationForceAddCondition, o.UpgradeValidationForceRemoveCondition)
 	}
-	plugin = controller.NewExtendedValidator(plugin, recorder, o.ExtendedValidation)
+	plugin = controller.NewExtendedValidator(plugin, recorder, o.ExtendedValidation, o.EndpointAddressValidation)
 	if o.AllowExternalCertificates {
 		routeSecretManager := controller.NewRouteSecretManager(plugin, recorder, secretManager, o.RouterName, kc.CoreV1(), routeLister, authorizationClient.SubjectAccessReviews())
 		routeSecretManager.Start(stopCh)
@@ -837,7 +845,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	plugin = controller.NewUniqueHost(plugin, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 	plugin = controller.NewHostAdmitter(plugin, o.RouteAdmissionFunc(), o.AllowWildcardRoutes, o.RouterSelection.DisableNamespaceOwnershipCheck, recorder)
 
-	controller := factory.Create(plugin, false, stopCh)
+	controller := factory.Create(plugin, false, o.EndpointAddressValidation, stopCh)
 	controller.Run()
 
 	if blueprintPlugin != nil {
@@ -847,7 +855,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		f.LabelSelector = o.BlueprintRouteLabelSelector
 		f.Namespace = o.BlueprintRouteNamespace
 		f.ResyncInterval = o.ResyncInterval
-		c := f.Create(blueprintPlugin, false, stopCh)
+		c := f.Create(blueprintPlugin, false, o.EndpointAddressValidation, stopCh)
 		c.Run()
 	}
 
