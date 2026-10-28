@@ -1,5 +1,27 @@
 # OpenShift Router Hacking
 
+## Test extension fixtures
+
+All three HAProxy image variants build `tests-extension/bin/router-tests-ext`
+with `make -C tests-extension build`, compress it with `gzip -n`, and copy it
+into the image. Builds use the committed QE `test/qe/bindata.go` and vendored
+dependencies; they do not install or execute the fixture generator.
+`make -C tests-extension clean` removes only the extension binary.
+
+After changing fixtures under `tests-extension/test/qe/testdata`, run
+`make -C tests-extension update-bindata` and commit the updated `bindata.go`.
+Generation uses go-bindata v3.1.3 without compression or filesystem metadata,
+followed by `gofmt -s`. The explicit generation and verification commands need
+the pinned generator in the Go module cache or network access to download it.
+
+Run `make -C tests-extension verify-bindata` to compare freshly generated output
+without modifying the committed file. This detects stale, missing, or untracked
+output and is also part of root `make verify`, alongside build/clean regression
+tests. In CI (`OPENSHIFT_CI=true`), `make verify` checks `go mod vendor` and
+`go mod tidy` consistency separately for both the root and extension modules.
+To refresh extension dependencies, run those commands inside `tests-extension`;
+QE generation does not regenerate files vendored from dependencies.
+
 This is a living document containing suggestions for testing Router changes on an existing cluster.
 These "hacks" are not officially supported and are subject to change, break, etc.
 

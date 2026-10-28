@@ -16,6 +16,10 @@
 // test/extended/testdata/apiserverauth/deny-network-policy.yaml
 // test/extended/testdata/apiserverauth/endpointslice.yaml
 // test/extended/testdata/apiserverauth/hello-pod.json
+// test/extended/testdata/apiserverauth/microshift-busybox-deployment.yaml
+// test/extended/testdata/apiserverauth/microshift-busybox-kustomization.yaml
+// test/extended/testdata/apiserverauth/microshift-hello-openshift-kustomization.yaml
+// test/extended/testdata/apiserverauth/microshift-hello-openshift.yaml
 // test/extended/testdata/apiserverauth/microshift-pods-security-context.yaml
 // test/extended/testdata/apiserverauth/microshift-pods-security-context2.yaml
 // test/extended/testdata/apiserverauth/ocp-56229-ingress.yaml
@@ -36,15 +40,11 @@
 // test/extended/testdata/apiserverauth/ocp77919-webhook-configuration.yaml
 // test/extended/testdata/apiserverauth/ocp9853-limits.yaml
 // test/extended/testdata/apiserverauth/ocp9853-quota.yaml
-// test/extended/testdata/apiserverauth/pod-for-ping-microshift.json
 // test/extended/testdata/apiserverauth/pod-for-ping.json
 // test/extended/testdata/apiserverauth/pod-scc-runAsUser.yaml
 // test/extended/testdata/apiserverauth/pod-with-msgmax.yaml
 // test/extended/testdata/apiserverauth/pod_with_multi_ports.json
 // test/extended/testdata/apiserverauth/pod_with_sysctls.yaml
-// test/extended/testdata/apiserverauth/rapidast-config.yaml
-// test/extended/testdata/apiserverauth/rapidast-pod.yaml
-// test/extended/testdata/apiserverauth/rapidast-privileged-sa.yaml
 // test/extended/testdata/apiserverauth/sample-pod-ephemeral-container-complex.json
 // test/extended/testdata/apiserverauth/service-monitor.yaml
 // test/extended/testdata/apiserverauth/skopeo-deployment.json
@@ -136,16 +136,11 @@
 // test/extended/testdata/etcd/recurringbackup.yaml
 // test/extended/testdata/etcd/recurringbkpdefault.yaml
 // test/extended/testdata/etcd/testpod.yaml
-// test/extended/testdata/hypershift/azure-wi-test-pod.yaml
-// test/extended/testdata/hypershift/azure-wi-test-sa.yaml
 // test/extended/testdata/hypershift/configmap-machineconfig.yaml
 // test/extended/testdata/hypershift/kubelet-killer.yaml
 // test/extended/testdata/hypershift/mhc.yaml
-// test/extended/testdata/hypershift/ping-for-pod-specific-node-template.yaml
 // test/extended/testdata/hypershift/prestart-job.yaml
-// test/extended/testdata/hypershift/service-generic-template.yaml
 // test/extended/testdata/hypershift/workload.yaml
-// test/extended/testdata/hypershift/workload_nodeselector.yaml
 // test/extended/testdata/image_registry/daemonset-trigger-annoation.yaml
 // test/extended/testdata/image_registry/dc-template.yaml
 // test/extended/testdata/image_registry/icsp-full-mirrors.yaml
@@ -183,49 +178,33 @@
 // test/extended/testdata/kata/cc-feature-gates-cm.yaml
 // test/extended/testdata/kata/containerruntimeconfig_template.yaml
 // test/extended/testdata/kata/initdata.toml
-// test/extended/testdata/kata/initdata_bm.toml
-// test/extended/testdata/kata/kataDeploymentTemplate.go.tmpl
-// test/extended/testdata/kata/kataPodDefaultTemplate.go.tmpl
 // test/extended/testdata/kata/kataconfig.yaml
 // test/extended/testdata/kata/kbs-auth-public-key
 // test/extended/testdata/kata/kbs-client-template.yaml
 // test/extended/testdata/kata/kbs-config-cm-020-template.yaml
-// test/extended/testdata/kata/kbs-config-cm-bm-template.yaml
 // test/extended/testdata/kata/kbs-config-cm-template.yaml
-// test/extended/testdata/kata/kbsconfig-snp-template.yaml
-// test/extended/testdata/kata/kbsconfig-tdx-template.yaml
 // test/extended/testdata/kata/kbsconfig-template.yaml
 // test/extended/testdata/kata/namespace.yaml
-// test/extended/testdata/kata/node-feature-rule-kata-template.yaml
-// test/extended/testdata/kata/node-feature-rule-snp-template.yaml
-// test/extended/testdata/kata/node-feature-rule-tdx-template.yaml
 // test/extended/testdata/kata/operatorgroup.yaml
-// test/extended/testdata/kata/pccs-deployment-template.yaml
-// test/extended/testdata/kata/pccs-service-template.yaml
 // test/extended/testdata/kata/peer-pod-aws-cm-template.yaml
 // test/extended/testdata/kata/peer-pod-azure-cm-template.yaml
 // test/extended/testdata/kata/peer-pod-gcp-cm-template.yaml
 // test/extended/testdata/kata/peer-pod-libvirt-cm-template.yaml
+// test/extended/testdata/kata/peer-pod-secret-aws.yaml
+// test/extended/testdata/kata/peer-pod-secret-azure.yaml
+// test/extended/testdata/kata/peer-pod-secret-libvirt.yaml
 // test/extended/testdata/kata/peer-pods-param-libvirt-cm-template.yaml
-// test/extended/testdata/kata/peerpodCMTemplate.go.tmpl
-// test/extended/testdata/kata/peerpodSecretTemplate.go.tmpl
+// test/extended/testdata/kata/pod-annotations-template.yaml
 // test/extended/testdata/kata/podvm-image-gcp-template.yaml
-// test/extended/testdata/kata/qgs-template.yaml
 // test/extended/testdata/kata/resource-policy-template.yaml
 // test/extended/testdata/kata/rvps-reference-values-template.yaml
 // test/extended/testdata/kata/security-policy-template.json
-// test/extended/testdata/kata/sgx-device-plugin.yaml
 // test/extended/testdata/kata/subscription_template.yaml
-// test/extended/testdata/kata/tdx-config.yaml
-// test/extended/testdata/kata/tdx-machine-config.yaml
 // test/extended/testdata/kata/testrun-cm-template.yaml
 // test/extended/testdata/kata/testrunUpgradeCatalogImage.yaml
 // test/extended/testdata/kata/trustee-cosign-publickey.pem
-// test/extended/testdata/kata/trustee-cosign-publickey2.pem
 // test/extended/testdata/kata/trustee-cosigned-pod.yaml
-// test/extended/testdata/kata/workload-deployment-securityContext-cocobm.yaml
 // test/extended/testdata/kata/workload-deployment-securityContext.yaml
-// test/extended/testdata/kata/workload-pod-securityContext-cocobm.yaml
 // test/extended/testdata/kata/workload-pod-securityContext.yaml
 // test/extended/testdata/ldap/groupsync.sh
 // test/extended/testdata/ldap/ldapserver-config-cm.yaml
@@ -315,7 +294,6 @@
 // test/extended/testdata/logging/generatelog/container_json_log_template.json
 // test/extended/testdata/logging/generatelog/container_json_log_template_unannoted.json
 // test/extended/testdata/logging/generatelog/container_non_json_log_template.json
-// test/extended/testdata/logging/generatelog/logging-performance-app-generator.json
 // test/extended/testdata/logging/generatelog/multi_container_json_log_template.yaml
 // test/extended/testdata/logging/generatelog/multiline-error-log.yaml
 // test/extended/testdata/logging/logfilemetricexporter/lfme.yaml
@@ -326,9 +304,7 @@
 // test/extended/testdata/logging/loki-log-alerts/loki-infra-recording-rule-template.yaml
 // test/extended/testdata/logging/loki-log-alerts/user-workload-monitoring-config.yaml
 // test/extended/testdata/logging/lokistack/fine-grained-access-roles.yaml
-// test/extended/testdata/logging/lokistack/lokistack-simple-ipv6-tls.yaml
 // test/extended/testdata/logging/lokistack/lokistack-simple-ipv6.yaml
-// test/extended/testdata/logging/lokistack/lokistack-simple-tls.yaml
 // test/extended/testdata/logging/lokistack/lokistack-simple.yaml
 // test/extended/testdata/logging/minIO/deploy.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/48593.yaml
@@ -359,7 +335,6 @@
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/elasticsearch.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/google-cloud-logging-multi-logids.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/googleCloudLogging.yaml
-// test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/http-output-85490.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/http-output.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/https-61567.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/https-output-ca.yaml
@@ -375,8 +350,6 @@
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/otlp.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/rsyslog-mtls.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/rsyslog-serverAuth.yaml
-// test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/s3-accessKey.yaml
-// test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/s3-iamRole.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/splunk-mtls-passphrase.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/splunk-mtls.yaml
 // test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/splunk-serveronly.yaml
@@ -412,6 +385,7 @@
 // test/extended/testdata/mco/change-fips.yaml
 // test/extended/testdata/mco/change-maxpods-kubelet-config.yaml
 // test/extended/testdata/mco/change-policy-json.yaml
+// test/extended/testdata/mco/change-worker-all-extensions.yaml
 // test/extended/testdata/mco/change-worker-duplicated-kernel-argument.yaml
 // test/extended/testdata/mco/change-worker-extension-usbguard.yaml
 // test/extended/testdata/mco/change-worker-ign-version.yaml
@@ -421,11 +395,9 @@
 // test/extended/testdata/mco/change-workers-chrony-configuration.yaml
 // test/extended/testdata/mco/create-deployment.yaml
 // test/extended/testdata/mco/create-pod.yaml
-// test/extended/testdata/mco/custom-machine-config-pool-osimagestream.yaml
 // test/extended/testdata/mco/custom-machine-config-pool.yaml
 // test/extended/testdata/mco/custom-tls-profile-kubelet-config.yaml
 // test/extended/testdata/mco/disable-chrony.yaml
-// test/extended/testdata/mco/extra-disks.yaml
 // test/extended/testdata/mco/generic-container-runtime-config-label.yaml
 // test/extended/testdata/mco/generic-container-runtime-config.yaml
 // test/extended/testdata/mco/generic-kubelet-config-label.yaml
@@ -531,17 +503,12 @@
 // test/extended/testdata/netobserv/bpfman/catalog-source.yaml
 // test/extended/testdata/netobserv/bpfman/image-digest-mirror-set.yaml
 // test/extended/testdata/netobserv/bpfman/namespace.yaml
-// test/extended/testdata/netobserv/cert_manager_certificates_template.yaml
 // test/extended/testdata/netobserv/exporters/ipfix-collector.yaml
-// test/extended/testdata/netobserv/exporters/otel-collector-tls.yaml
-// test/extended/testdata/netobserv/flowcollectorSlice_v1alpha1_template.yaml
+// test/extended/testdata/netobserv/exporters/otel-collector.yaml
 // test/extended/testdata/netobserv/flowcollector_v1beta2_template.yaml
-// test/extended/testdata/netobserv/flowlogs_pipeline_hpa_template.yaml
 // test/extended/testdata/netobserv/flowmetrics_v1alpha1_template.yaml
-// test/extended/testdata/netobserv/gateway-api-template.yaml
 // test/extended/testdata/netobserv/kafka/kafka-default.yaml
 // test/extended/testdata/netobserv/kafka/kafka-metrics-config.yaml
-// test/extended/testdata/netobserv/kafka/kafka-node-pool.yaml
 // test/extended/testdata/netobserv/kafka/kafka-tls.yaml
 // test/extended/testdata/netobserv/kafka/kafka-topic.yaml
 // test/extended/testdata/netobserv/kafka/kafka-user.yaml
@@ -566,16 +533,12 @@
 // test/extended/testdata/netobserv/test-SYN-flood-client_template.yaml
 // test/extended/testdata/netobserv/test-nginx-client_template.yaml
 // test/extended/testdata/netobserv/test-nginx-server_template.yaml
-// test/extended/testdata/netobserv/test-ping-pods_template.yaml
-// test/extended/testdata/netobserv/test-tls-client_template.yaml
-// test/extended/testdata/netobserv/test-tls-server_template.yaml
 // test/extended/testdata/netobserv/testuser-client-server_template.yaml
 // test/extended/testdata/netobserv/testuser-template-crb.yaml
 // test/extended/testdata/netobserv/virtualization/kubevirt-hyperconverged.yaml
 // test/extended/testdata/netobserv/virtualization/layer2-nad.yaml
-// test/extended/testdata/netobserv/virtualization/test-vm-UDN_template.yaml
-// test/extended/testdata/netobserv/virtualization/test-vm-localnet_template.yaml
-// test/extended/testdata/netobserv/virtualization/test-vm-static-IP_template.yaml
+// test/extended/testdata/netobserv/virtualization/test-vm1.yaml
+// test/extended/testdata/netobserv/virtualization/test-vm2.yaml
 // test/extended/testdata/networking/adminnetworkpolicy/anp-multi-pod-mixed-rule-template.yaml
 // test/extended/testdata/networking/adminnetworkpolicy/anp-multi-rule-cidr-template.yaml
 // test/extended/testdata/networking/adminnetworkpolicy/anp-multi-rule-template.yaml
@@ -625,8 +588,6 @@
 // test/extended/testdata/networking/hellosdn.yaml
 // test/extended/testdata/networking/hostport-pod.yaml
 // test/extended/testdata/networking/httpserverPod-specific-node-template.yaml
-// test/extended/testdata/networking/ingressnodefirewall/catalogsource-template.yaml
-// test/extended/testdata/networking/ingressnodefirewall/image-digest-mirrorset.yaml
 // test/extended/testdata/networking/ingressnodefirewall/infw-config.yaml
 // test/extended/testdata/networking/ingressnodefirewall/infw-icmp.yaml
 // test/extended/testdata/networking/ingressnodefirewall/infw-icmpv6.yaml
@@ -641,11 +602,10 @@
 // test/extended/testdata/networking/metallb/bfdprofile-template.yaml
 // test/extended/testdata/networking/metallb/bgpadvertisement-template.yaml
 // test/extended/testdata/networking/metallb/bgppeer-template.yaml
-// test/extended/testdata/networking/metallb/catalogsource-template.yaml
 // test/extended/testdata/networking/metallb/community-template.yaml
+// test/extended/testdata/networking/metallb/frr-master-singlestack-configmap-template.yaml
 // test/extended/testdata/networking/metallb/frr-master-singlestack-nad-template.yaml
 // test/extended/testdata/networking/metallb/frr-master-singlestack-router-pod-template.yaml
-// test/extended/testdata/networking/metallb/image-digest-mirrorset.yaml
 // test/extended/testdata/networking/metallb/ipaddresspool-template.yaml
 // test/extended/testdata/networking/metallb/l2advertisement-template.yaml
 // test/extended/testdata/networking/metallb/loadbalancer-svc-annotated-template.yaml
@@ -739,19 +699,16 @@
 // test/extended/testdata/networking/networkpolicy/ipblock/ipBlock-ingress-single-CIDR-template.yaml
 // test/extended/testdata/networking/networkpolicy/ipblock/ipBlock-ingress-single-multiple-CIDRs-template.yaml
 // test/extended/testdata/networking/networkpolicy/netpol-30920-75540.yaml
-// test/extended/testdata/networking/networkpolicy/vap-npprotection-blockdeletion.yaml
 // test/extended/testdata/networking/nmstate/apply-route-template.yaml
 // test/extended/testdata/networking/nmstate/apply-static-ip-route-template.yaml
 // test/extended/testdata/networking/nmstate/bond-policy-template.yaml
 // test/extended/testdata/networking/nmstate/bonding-policy-template.yaml
 // test/extended/testdata/networking/nmstate/bridge-policy-template.yaml
 // test/extended/testdata/networking/nmstate/bridge-with-hostname-policy-template.yaml
-// test/extended/testdata/networking/nmstate/catalogsource-template.yaml
 // test/extended/testdata/networking/nmstate/dhcp-hostname-policy-template.yaml
 // test/extended/testdata/networking/nmstate/global-dns-nncp-recover-template.yaml
 // test/extended/testdata/networking/nmstate/global-dns-nncp-template.yaml
 // test/extended/testdata/networking/nmstate/iface-policy-template.yaml
-// test/extended/testdata/networking/nmstate/image-digest-mirrorset.yaml
 // test/extended/testdata/networking/nmstate/ipsec-host2host-policy-template.yaml
 // test/extended/testdata/networking/nmstate/lldp-policy-template.yaml
 // test/extended/testdata/networking/nmstate/namespace-template.yaml
@@ -771,7 +728,6 @@
 // test/extended/testdata/networking/nmstate/static-hostname-policy-template.yaml
 // test/extended/testdata/networking/nmstate/subscription-template.yaml
 // test/extended/testdata/networking/nmstate/vlan-policy-base-eth-template.yaml
-// test/extended/testdata/networking/nmstate/vlan-policy-dualstack-template.yaml
 // test/extended/testdata/networking/nmstate/vlan-policy-template.yaml
 // test/extended/testdata/networking/nodeservice-template.yaml
 // test/extended/testdata/networking/ocpbug-2827/hostport.yaml
@@ -837,14 +793,11 @@
 // test/extended/testdata/networking/sriov/subscription-template.yaml
 // test/extended/testdata/networking/statefulset-hello.yaml
 // test/extended/testdata/networking/tcpdump-daemonset-template.yaml
-// test/extended/testdata/networking/testpod-with-privilege.yaml
 // test/extended/testdata/networking/testpod-with-special-lifecycle.yaml
 // test/extended/testdata/networking/testpod.yaml
 // test/extended/testdata/networking/udn/cudn_crd_dualstack_template.yaml
 // test/extended/testdata/networking/udn/cudn_crd_layer2_dualstack_template.yaml
 // test/extended/testdata/networking/udn/cudn_crd_layer2_singlestack_template.yaml
-// test/extended/testdata/networking/udn/cudn_crd_localnet_singlestack_template.yaml
-// test/extended/testdata/networking/udn/cudn_crd_localnet_singlestack_with_vlan_template.yaml
 // test/extended/testdata/networking/udn/cudn_crd_matchexp_dualstack_template.yaml
 // test/extended/testdata/networking/udn/cudn_crd_matchexp_layer2_dualstack_template.yaml
 // test/extended/testdata/networking/udn/cudn_crd_matchexp_layer2_singlestack_template.yaml
@@ -855,7 +808,6 @@
 // test/extended/testdata/networking/udn/udn_crd_layer2_singlestack_template.yaml
 // test/extended/testdata/networking/udn/udn_crd_singlestack_template.yaml
 // test/extended/testdata/networking/udn/udn_nad_template.yaml
-// test/extended/testdata/networking/udn/udn_statefulset_template.yaml
 // test/extended/testdata/networking/udn/udn_test_pod_annotation_template.yaml
 // test/extended/testdata/networking/udn/udn_test_pod_annotation_template_node.yaml
 // test/extended/testdata/networking/udn/udn_test_pod_liveness_template.yaml
@@ -874,7 +826,6 @@
 // test/extended/testdata/node/ImageTagMirrorSet.yaml
 // test/extended/testdata/node/amq-operatorgroup-52384.yaml
 // test/extended/testdata/node/amq-sub.yaml
-// test/extended/testdata/node/clusterimagepolicy.yaml
 // test/extended/testdata/node/clusterresource-override.yaml
 // test/extended/testdata/node/cma-keda-controller-template.yaml
 // test/extended/testdata/node/containerRuntimeConfig-crun.yaml
@@ -928,6 +879,7 @@
 // test/extended/testdata/node/pod-sigStore.yaml
 // test/extended/testdata/node/pod-termination.yaml
 // test/extended/testdata/node/pod-user-namespace.yaml
+// test/extended/testdata/node/pod-wasm.yaml
 // test/extended/testdata/node/pod-with-two-containers.yaml
 // test/extended/testdata/node/pod-without-workload-cpu.yaml
 // test/extended/testdata/node/pod-workload-cpu-without-anotation.yaml
@@ -956,6 +908,42 @@
 // test/extended/testdata/node/vpa-subscription.yaml
 // test/extended/testdata/node/vpacontroller-70961.yaml
 // test/extended/testdata/node/vpacontroller-70962.yaml
+// test/extended/testdata/oap/certmanager/cert-generic.yaml
+// test/extended/testdata/oap/certmanager/cert-match-test-1.yaml
+// test/extended/testdata/oap/certmanager/cert-match-test-2.yaml
+// test/extended/testdata/oap/certmanager/cert-match-test-3.yaml
+// test/extended/testdata/oap/certmanager/cert-selfsigned-vault.yaml
+// test/extended/testdata/oap/certmanager/cert-selfsigned.yaml
+// test/extended/testdata/oap/certmanager/cluster-monitoring-config.yaml
+// test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-clouddns-ambient.yaml
+// test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-route53-ambient.yaml
+// test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-route53.yaml
+// test/extended/testdata/oap/certmanager/clusterissuer-acme-multiple-solvers.yaml
+// test/extended/testdata/oap/certmanager/deploy-hello-openshift.yaml
+// test/extended/testdata/oap/certmanager/deploy-pebble-server.yaml
+// test/extended/testdata/oap/certmanager/exec-curl-helper.yaml
+// test/extended/testdata/oap/certmanager/exec-helm-helper.yaml
+// test/extended/testdata/oap/certmanager/helm-vault-tls-config.yaml
+// test/extended/testdata/oap/certmanager/issuer-acme-http01.yaml
+// test/extended/testdata/oap/certmanager/issuer-ca.yaml
+// test/extended/testdata/oap/certmanager/issuer-google-cas.yaml
+// test/extended/testdata/oap/certmanager/issuer-selfsigned.yaml
+// test/extended/testdata/oap/certmanager/issuer-vault-approle.yaml
+// test/extended/testdata/oap/certmanager/issuer-vault-bound-sa.yaml
+// test/extended/testdata/oap/certmanager/issuer-vault-static-sa.yaml
+// test/extended/testdata/oap/certmanager/issuer-vault-token.yaml
+// test/extended/testdata/oap/certmanager/konflux-fbc.yaml
+// test/extended/testdata/oap/certmanager/namespace.yaml
+// test/extended/testdata/oap/certmanager/operatorgroup.yaml
+// test/extended/testdata/oap/certmanager/rapidast-config.yaml
+// test/extended/testdata/oap/certmanager/rapidast-pod.yaml
+// test/extended/testdata/oap/certmanager/rapidast-privileged-sa.yaml
+// test/extended/testdata/oap/certmanager/rapidast-results-sync-helper.yaml
+// test/extended/testdata/oap/certmanager/rbac-secret-reader.yaml
+// test/extended/testdata/oap/certmanager/rbac-vault-bound-sa.yaml
+// test/extended/testdata/oap/certmanager/secret-vault-static-sa-token.yaml
+// test/extended/testdata/oap/certmanager/servicemonitor.yaml
+// test/extended/testdata/oap/certmanager/subscription.yaml
 // test/extended/testdata/oap/eso/clustergenerator-password.yaml
 // test/extended/testdata/oap/eso/externalsecret-awsps.yaml
 // test/extended/testdata/oap/eso/externalsecret-awssm.yaml
@@ -974,34 +962,16 @@
 // test/extended/testdata/oap/eso/secretstore-gcpsm.yaml
 // test/extended/testdata/oap/eso/secretstore-vault.yaml
 // test/extended/testdata/oap/eso/subscription.yaml
-// test/extended/testdata/oap/exec-helm-helper.yaml
-// test/extended/testdata/oap/konflux-fbc.yaml
-// test/extended/testdata/oap/mustgather/mustgather-audit.yaml
-// test/extended/testdata/oap/mustgather/mustgather-noupload.yaml
-// test/extended/testdata/oap/mustgather/mustgather-proxy.yaml
-// test/extended/testdata/oap/mustgather/mustgather-pvc.yaml
-// test/extended/testdata/oap/mustgather/mustgather-retain.yaml
-// test/extended/testdata/oap/mustgather/mustgather-timeout.yaml
-// test/extended/testdata/oap/mustgather/mustgather-upload.yaml
-// test/extended/testdata/oap/mustgather/mustgather.yaml
-// test/extended/testdata/oap/mustgather/namespace.yaml
-// test/extended/testdata/oap/mustgather/operatorgroup.yaml
-// test/extended/testdata/oap/mustgather/pvc.yaml
-// test/extended/testdata/oap/mustgather/reader-pod.yaml
-// test/extended/testdata/oap/mustgather/subscription.yaml
-// test/extended/testdata/oap/operatorgroup.yaml
 // test/extended/testdata/oap/sscsi/73739/spc_vault_pod.yaml
 // test/extended/testdata/oap/sscsi/73739/vault_v1_secretproviderclass.yaml
 // test/extended/testdata/oap/sscsi/73739/vaultproviderplugin.yaml
 // test/extended/testdata/oap/sscsi/75963/gcpproviderplugin.yaml
-// test/extended/testdata/oap/sscsi/75963/invalid_sc_pod.yaml
 // test/extended/testdata/oap/sscsi/75963/sc_pod.yaml
 // test/extended/testdata/oap/sscsi/75970/sc_pod.yaml
 // test/extended/testdata/oap/sscsi/drivers.yaml
 // test/extended/testdata/oap/sscsi/helm-vault-config.yaml
 // test/extended/testdata/oap/sscsi/operatorgroup.yaml
 // test/extended/testdata/oap/sscsi/subscription.yaml
-// test/extended/testdata/oap/subscription.yaml
 // test/extended/testdata/oauthserver/cabundle-cm.yaml
 // test/extended/testdata/oauthserver/oauth-network.yaml
 // test/extended/testdata/oauthserver/oauth-pod.yaml
@@ -1045,6 +1015,10 @@
 // test/extended/testdata/olm/etcd-subscription-manual.yaml
 // test/extended/testdata/olm/etcd-subscription.yaml
 // test/extended/testdata/olm/mc-workload-partition.yaml
+// test/extended/testdata/olm/microshift/catalogsource-image-restricted.yaml
+// test/extended/testdata/olm/microshift/og-all.yaml
+// test/extended/testdata/olm/microshift/og-single.yaml
+// test/extended/testdata/olm/microshift/olm-subscription.yaml
 // test/extended/testdata/olm/og-allns.yaml
 // test/extended/testdata/olm/og-multins.yaml
 // test/extended/testdata/olm/olm-proxy-subscription.yaml
@@ -1081,7 +1055,6 @@
 // test/extended/testdata/olm/v1/clusterextension-withselectorlabel-OwnSingle.yaml
 // test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutChannel.yaml
 // test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutChannelVersion.yaml
-// test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutVersion.yaml
 // test/extended/testdata/olm/v1/clusterextension-withselectorlabel.yaml
 // test/extended/testdata/olm/v1/clusterextension.yaml
 // test/extended/testdata/olm/v1/clusterextensionWithoutChannel.yaml
@@ -1306,8 +1279,6 @@
 // test/extended/testdata/opm/render/validate/configs-wrong-ignore/example-operator/example-operator.json
 // test/extended/testdata/opm/render/validate/configs-wrong-ignore/example-operator/package.json
 // test/extended/testdata/opm/render/validate/configs-wrong-ignore/wrong-etcd.json
-// test/extended/testdata/ota/cvo/70980-pdb.yaml
-// test/extended/testdata/ota/cvo/84027-test-pod.yaml
 // test/extended/testdata/ota/cvo/bad-oauth.yaml
 // test/extended/testdata/ota/cvo/cfg-ocp-66746/featureset.yaml
 // test/extended/testdata/ota/cvo/cfg-ocp-66746/none-basecap.yaml
@@ -1315,9 +1286,6 @@
 // test/extended/testdata/ota/cvo/cfg-ocp-66746/vcurrent-basecap.yaml
 // test/extended/testdata/ota/cvo/cfg-ocp-66747/bad.yaml
 // test/extended/testdata/ota/cvo/cfg-ocp-66747/gcp.yaml
-// test/extended/testdata/ota/cvo/cfg-ocp-84028/client.yaml
-// test/extended/testdata/ota/cvo/cfg-ocp-84028/server.yaml
-// test/extended/testdata/ota/cvo/cfg-ocp-84029/server.yaml
 // test/extended/testdata/ota/cvo/cincy-77520.json
 // test/extended/testdata/ota/cvo/cincy-79981.json
 // test/extended/testdata/ota/cvo/cincy-conditional-edge-invalid-multi-risks.json
@@ -1329,7 +1297,7 @@
 // test/extended/testdata/ota/cvo/co-test.yaml
 // test/extended/testdata/ota/cvo/ocp-66751.yaml
 // test/extended/testdata/ota/osus/Dockerfile
-// test/extended/testdata/ota/osus/imageset-config-v2.yaml
+// test/extended/testdata/ota/osus/imageset-config.yaml
 // test/extended/testdata/ota/osus/ipv6.yaml
 // test/extended/testdata/ota/osus/operatorgroup.yaml
 // test/extended/testdata/ota/osus/subscription.yaml
@@ -1364,7 +1332,6 @@
 // test/extended/testdata/psap/nto/deferred-nto-update-patch.yaml
 // test/extended/testdata/psap/nto/deferred-nto.yaml
 // test/extended/testdata/psap/nto/disable-https-mcp.yaml
-// test/extended/testdata/psap/nto/disable-https-pp-ppc64le.yaml
 // test/extended/testdata/psap/nto/disable-https-pp.yaml
 // test/extended/testdata/psap/nto/hp-performanceprofile-patch.yaml
 // test/extended/testdata/psap/nto/hp-performanceprofile.yaml
@@ -1394,7 +1361,6 @@
 // test/extended/testdata/psap/nto/tuning-maxpid.yaml
 // test/extended/testdata/psap/nto/worker-stack-tuned.yaml
 // test/extended/testdata/psap/pao/pao-baseprofile-mcp.yaml
-// test/extended/testdata/psap/pao/pao-baseprofile-ppc64le.yaml
 // test/extended/testdata/psap/pao/pao-baseprofile.yaml
 // test/extended/testdata/psap/pao/pao-baseqos-pod.yaml
 // test/extended/testdata/psap/pao/pao-include-performance-profile.yaml
@@ -1403,7 +1369,6 @@
 // test/extended/testdata/psap/pao/pao-performance-fixpatch.yaml
 // test/extended/testdata/psap/pao/pao-performance-optimize.yaml
 // test/extended/testdata/psap/pao/pao-performance-patch.yaml
-// test/extended/testdata/psap/pao/pao-performanceprofile-ppc64le.yaml
 // test/extended/testdata/psap/pao/pao-performanceprofile.yaml
 // test/extended/testdata/psap/pao/pao-subscription.yaml
 // test/extended/testdata/psap/pao/pao-workercnf-mcp.yaml
@@ -1420,7 +1385,6 @@
 // test/extended/testdata/psap/sro/sro-sub.yaml
 // test/extended/testdata/router/49802-route.yaml
 // test/extended/testdata/router/awslb/awslbcontroller.yaml
-// test/extended/testdata/router/awslb/catalog-source.yaml
 // test/extended/testdata/router/awslb/ingress-test.yaml
 // test/extended/testdata/router/awslb/namespace.yaml
 // test/extended/testdata/router/awslb/operatorgroup.yaml
@@ -1440,7 +1404,6 @@
 // test/extended/testdata/router/error-page2-404.http
 // test/extended/testdata/router/error-page2-503.http
 // test/extended/testdata/router/extdns/aws-sts-creds-secret.yaml
-// test/extended/testdata/router/extdns/catalog-source.yaml
 // test/extended/testdata/router/extdns/ns-external-dns-operator.yaml
 // test/extended/testdata/router/extdns/operatorgroup.yaml
 // test/extended/testdata/router/extdns/sample-aws-rt.yaml
@@ -1473,6 +1436,7 @@
 // test/extended/testdata/router/ingresscontroller-syslog.yaml
 // test/extended/testdata/router/ingresscontroller-tuning.yaml
 // test/extended/testdata/router/ipfailover.yaml
+// test/extended/testdata/router/microshift-ingress-destca.yaml
 // test/extended/testdata/router/microshift-ingress-http.yaml
 // test/extended/testdata/router/ocp57404-stateful-set.yaml
 // test/extended/testdata/router/ocp73771-role.yaml
@@ -1526,7 +1490,6 @@
 // test/extended/testdata/securityandcompliance/oc-compliance-scansettingbinding.yaml
 // test/extended/testdata/securityandcompliance/operator-group-all-namespaces.yaml
 // test/extended/testdata/securityandcompliance/operator-group.yaml
-// test/extended/testdata/securityandcompliance/pod-with-nginx-seccompprofile.yaml
 // test/extended/testdata/securityandcompliance/pod-with-seccompprofile.yaml
 // test/extended/testdata/securityandcompliance/pod_modify.yaml
 // test/extended/testdata/securityandcompliance/priorityclass.yaml
@@ -1537,9 +1500,6 @@
 // test/extended/testdata/securityandcompliance/rapidast/data_rapidastconfig_compliance_v1alpha1.yaml
 // test/extended/testdata/securityandcompliance/rapidast/data_rapidastconfig_fileintegrity_v1alpha1.yaml
 // test/extended/testdata/securityandcompliance/rapidast/data_rapidastconfig_security-profiles-operator_v1beta1.yaml
-// test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_compliance_v1alpha1.yaml
-// test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_fileintegrity_v1alpha1.yaml
-// test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_security-profiles-operator_v1beta1.yaml
 // test/extended/testdata/securityandcompliance/rapidast/job_rapidast.yaml
 // test/extended/testdata/securityandcompliance/resource-quota.yaml
 // test/extended/testdata/securityandcompliance/scansetting.yaml
@@ -1547,8 +1507,6 @@
 // test/extended/testdata/securityandcompliance/scansettingbinding.yaml
 // test/extended/testdata/securityandcompliance/scansettingsingle.yaml
 // test/extended/testdata/securityandcompliance/scc.yaml
-// test/extended/testdata/securityandcompliance/seccompprofile-auditlogging.yaml
-// test/extended/testdata/securityandcompliance/seccompprofile-log-everything-by-default.yaml
 // test/extended/testdata/securityandcompliance/seccompprofile.yaml
 // test/extended/testdata/securityandcompliance/seccompprofilestack.yaml
 // test/extended/testdata/securityandcompliance/service-unsecure.yaml
@@ -1622,8 +1580,6 @@
 // test/extended/testdata/storage/lvms/lvmcluster-with-multi-thinpool-template.yaml
 // test/extended/testdata/storage/lvms/lvmcluster-with-optional-paths-template.yaml
 // test/extended/testdata/storage/lvms/lvmcluster-with-paths-template.yaml
-// test/extended/testdata/storage/lvms/lvmcluster-with-two-device-classes-template.yaml
-// test/extended/testdata/storage/lvms/lvmcluster-with-two-paths-template.yaml
 // test/extended/testdata/storage/lvms/lvmcluster-without-thinpool-device-template.yaml
 // test/extended/testdata/storage/microshift/dep-template.yaml
 // test/extended/testdata/storage/microshift/dep-without-volume-template.yaml
@@ -1660,19 +1616,34 @@
 // test/extended/testdata/winc/azure_windows_machineset.yaml
 // test/extended/testdata/winc/catalogsource.yaml
 // test/extended/testdata/winc/cluster_autoscaler.yaml
+// test/extended/testdata/winc/config-map-ip-dns.yaml
+// test/extended/testdata/winc/config-map.yaml
 // test/extended/testdata/winc/gcp_byoh_machineset.yaml
 // test/extended/testdata/winc/gcp_windows_machineset.yaml
-// test/extended/testdata/winc/hpa_template.yaml
-// test/extended/testdata/winc/linux_web_server_template.yaml
+// test/extended/testdata/winc/linux_web_server.yaml
+// test/extended/testdata/winc/linux_web_server_disconnected.yaml
 // test/extended/testdata/winc/machine-autoscaler.yaml
+// test/extended/testdata/winc/namespace.yaml
 // test/extended/testdata/winc/nutanix_byoh_machineset.yaml
 // test/extended/testdata/winc/nutanix_windows_machineset.yaml
+// test/extended/testdata/winc/operatorgroup.yaml
+// test/extended/testdata/winc/proxy_vars.yaml
 // test/extended/testdata/winc/pvc.yaml
+// test/extended/testdata/winc/service_change_machineconfig.yaml
+// test/extended/testdata/winc/subscription.yaml
 // test/extended/testdata/winc/vsphere_byoh_machineset.yaml
 // test/extended/testdata/winc/vsphere_storageclass.yaml
 // test/extended/testdata/winc/vsphere_windows_machineset.yaml
-// test/extended/testdata/winc/windows_daemonset_template.yaml
-// test/extended/testdata/winc/windows_web_server_template.yaml
+// test/extended/testdata/winc/wicd_configmap.yaml
+// test/extended/testdata/winc/windows_hpa.yaml
+// test/extended/testdata/winc/windows_web_server.yaml
+// test/extended/testdata/winc/windows_web_server_byoh.yaml
+// test/extended/testdata/winc/windows_web_server_disconnected.yaml
+// test/extended/testdata/winc/windows_web_server_no_taint.yaml
+// test/extended/testdata/winc/windows_web_server_pvc.yaml
+// test/extended/testdata/winc/windows_web_server_scaler.yaml
+// test/extended/testdata/winc/windows_webserver_projected_volume.yaml
+// test/extended/testdata/winc/windows_webserver_secondary_os.yaml
 // test/extended/testdata/workloads/12708358_4.11.0-0.nightly-multi-2022-04-18-120932-release-imagestream.yaml
 // test/extended/testdata/workloads/SecondarySchedulerConfig.yaml
 // test/extended/testdata/workloads/application-template-stibuild-with-mount-secret.json
@@ -1689,14 +1660,6 @@
 // test/extended/testdata/workloads/case72217/crd-cattoy-72217.yaml
 // test/extended/testdata/workloads/case72217/crd-crontab-72217.yaml
 // test/extended/testdata/workloads/case72217/crd-customtask-72217.yaml
-// test/extended/testdata/workloads/case83849/config-83849.yaml
-// test/extended/testdata/workloads/case83849/test-mirror-helm-0.3.0.tgz
-// test/extended/testdata/workloads/case83864/isc_empty.yaml
-// test/extended/testdata/workloads/case83864/isc_err.yaml
-// test/extended/testdata/workloads/case83864/isc_no.yaml
-// test/extended/testdata/workloads/case83864/test-mirror-helm-err.tgz
-// test/extended/testdata/workloads/case84007/config-84007.yaml
-// test/extended/testdata/workloads/case84007/operators.lst
 // test/extended/testdata/workloads/catlog-loggings.yaml
 // test/extended/testdata/workloads/ceFile-79215.yaml
 // test/extended/testdata/workloads/claimParams72005.yaml
@@ -1742,6 +1705,10 @@
 // test/extended/testdata/workloads/config-73124.yaml
 // test/extended/testdata/workloads/config-73359.yaml
 // test/extended/testdata/workloads/config-73377.yaml
+// test/extended/testdata/workloads/config-73419.yaml
+// test/extended/testdata/workloads/config-73420.yaml
+// test/extended/testdata/workloads/config-73421-1.yaml
+// test/extended/testdata/workloads/config-73421.yaml
 // test/extended/testdata/workloads/config-73452.yaml
 // test/extended/testdata/workloads/config-73783.yaml
 // test/extended/testdata/workloads/config-73791.yaml
@@ -1751,6 +1718,8 @@
 // test/extended/testdata/workloads/config-74650-patch-v1.yaml
 // test/extended/testdata/workloads/config-74650-patch-v2.yaml
 // test/extended/testdata/workloads/config-74660.yaml
+// test/extended/testdata/workloads/config-74662.yaml
+// test/extended/testdata/workloads/config-75366.yaml
 // test/extended/testdata/workloads/config-75422-delete.yaml
 // test/extended/testdata/workloads/config-75422.yaml
 // test/extended/testdata/workloads/config-75425.yaml
@@ -1769,17 +1738,6 @@
 // test/extended/testdata/workloads/config-79408.yaml
 // test/extended/testdata/workloads/config-79452-v1.yaml
 // test/extended/testdata/workloads/config-79452-v2.yaml
-// test/extended/testdata/workloads/config-83582.yaml
-// test/extended/testdata/workloads/config-83875.yaml
-// test/extended/testdata/workloads/config-86309.yaml
-// test/extended/testdata/workloads/config-87962-multi-catalog.yaml
-// test/extended/testdata/workloads/config-87962-operators.yaml
-// test/extended/testdata/workloads/config-87992.yaml
-// test/extended/testdata/workloads/config-88132-digest.yaml
-// test/extended/testdata/workloads/config-88132-invalid.yaml
-// test/extended/testdata/workloads/config-88132-target-repo-tag.yaml
-// test/extended/testdata/workloads/config-88132-target-repo.yaml
-// test/extended/testdata/workloads/config-88132-target-tag.yaml
 // test/extended/testdata/workloads/config-images-75997.txt
 // test/extended/testdata/workloads/config-oci-65149.yaml
 // test/extended/testdata/workloads/config-oci-65150.yaml
@@ -1844,19 +1802,6 @@
 // test/extended/testdata/workloads/init.ldif
 // test/extended/testdata/workloads/initContainer.yaml
 // test/extended/testdata/workloads/initContainer66989.yaml
-// test/extended/testdata/workloads/jobset/clusterresource-jobset.yaml
-// test/extended/testdata/workloads/jobset/cs-jobset.yaml
-// test/extended/testdata/workloads/jobset/icsp-jobset.yaml
-// test/extended/testdata/workloads/jobset/jobset-operatorgroup.yaml
-// test/extended/testdata/workloads/jobset/jobset-subscription.yaml
-// test/extended/testdata/workloads/jobset/rapidast_config_jobset.yaml
-// test/extended/testdata/workloads/jobsetoperand/failjobset-action-84913.yaml
-// test/extended/testdata/workloads/jobsetoperand/restartjobset-action-84912.yaml
-// test/extended/testdata/workloads/jobsetoperand/restartjobsetandignoremaxrestarts-action-84911.yaml
-// test/extended/testdata/workloads/jobsetoperand/startuppolicy-82678-anyorder.yaml
-// test/extended/testdata/workloads/jobsetoperand/startuppolicy-82678-inorder.yaml
-// test/extended/testdata/workloads/jobsetoperand/successpolicy-82671-all.yaml
-// test/extended/testdata/workloads/jobsetoperand/successpolicy-82671-any.yaml
 // test/extended/testdata/workloads/kubedescheduler.yaml
 // test/extended/testdata/workloads/kubedescheduler_excludins.yaml
 // test/extended/testdata/workloads/kubedescheduler_includeexcludens.yaml
@@ -1866,13 +1811,6 @@
 // test/extended/testdata/workloads/kubedescheduler_prioritythp.yaml
 // test/extended/testdata/workloads/kubedescheduler_thresholdPriority.yaml
 // test/extended/testdata/workloads/kubejobfailed-73886.yaml
-// test/extended/testdata/workloads/lws/icsp-full-mirrors.yaml
-// test/extended/testdata/workloads/lws/lws-sample.yaml
-// test/extended/testdata/workloads/lws/lwsManager.yaml
-// test/extended/testdata/workloads/lws/lws_catalogsource.yaml
-// test/extended/testdata/workloads/lws/lws_operatorgroup.yaml
-// test/extended/testdata/workloads/lws/lws_subscription.yaml
-// test/extended/testdata/workloads/lws/rapidast_config_lws.yaml
 // test/extended/testdata/workloads/mirror-from-filesystem.txt
 // test/extended/testdata/workloads/node-affinity-required-case14479-edge.yaml
 // test/extended/testdata/workloads/node-affinity-required-case14479-outposts.yaml
@@ -3194,6 +3132,135 @@ func testExtendedTestdataApiserverauthHelloPodJson() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: busybox-NAMESPACEVAR
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-deployment-NAMESPACEVAR
+spec:
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox
+        image: BUSYBOX_IMAGE
+        command:
+          - sleep
+          - "3600"
+`)
+
+func testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYaml, nil
+}
+
+func testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/microshift-busybox-deployment.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYaml = []byte(`apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: busybox-NAMESPACEVAR
+resources:
+  - busybox.yaml
+images:
+  - name: BUSYBOX_IMAGE
+    newName: quay.io/openshifttest/busybox@sha256:c5439d7db88ab5423999530349d327b04279ad3161d7596d2126dfb5b02bfd1f
+`)
+
+func testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYaml, nil
+}
+
+func testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/microshift-busybox-kustomization.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYaml = []byte(`apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: hello-openshift-NAMESPACEVAR
+resources:
+- hello-openshift.yaml
+images:
+  - name: DEV_IMAGE
+    newName: quay.io/openshifttest/hello-openshift@sha256:4200f438cf2e9446f6bcff9d67ceea1f69ed07a2f83363b7fb52529f7ddd8a83
+`)
+
+func testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYaml, nil
+}
+
+func testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/microshift-hello-openshift-kustomization.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello-openshift-NAMESPACEVAR
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-openshift-deployment-NAMESPACEVAR
+spec:
+  selector:
+    matchLabels:
+      app: hello-openshift-deployment
+  template:
+    metadata:
+      labels:
+        app: hello-openshift-deployment
+    spec:
+      containers:
+      - name: hello-openshift-deployment
+        image: DEV_IMAGE
+`)
+
+func testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYaml, nil
+}
+
+func testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/microshift-hello-openshift.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataApiserverauthMicroshiftPodsSecurityContextYaml = []byte(`apiVersion: v1
 kind: Pod
 metadata:
@@ -3446,13 +3513,14 @@ objects:
               type: RuntimeDefault
           containers:
             - resources: {}
-              name: httpd
+              name: tools
+              command: ["/bin/bash", "-c", "sleep infinity"]
               securityContext:
                 capabilities:
                   drop:
                     - ALL
                 allowPrivilegeEscalation: false
-              image: 'image-registry.openshift-image-registry.svc:5000/openshift/httpd:latest'
+              image: 'image-registry.openshift-image-registry.svc:5000/openshift/tools:latest'
 parameters:
   - name: NAMESPACE
   - name: SERVICE_ACCOUNT_NAME
@@ -4002,7 +4070,7 @@ spec:
         # authentication and authorization on the daemon. See the Security page for
         # details: https://www.openpolicyagent.org/docs/security.html.
         - name: opa
-          image: 'quay.io/rhn_support_rgangwar/opa:0.69.0'
+          image: 'openpolicyagent/opa:0.69.0'
           securityContext:
              privileged: true
              runAsUser: 0
@@ -4019,7 +4087,7 @@ spec:
               mountPath: /certs
               name: opa-server
         - name: kube-mgmt
-          image: quay.io/rhn_support_rgangwar/kube-mgmt:0.8
+          image: openpolicyagent/kube-mgmt:0.8
           args:
             - "--replicate-cluster=v1/namespaces"
             - '--replicate=config.openshift.io/v1/ingresses'
@@ -4306,57 +4374,6 @@ func testExtendedTestdataApiserverauthOcp9853QuotaYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataApiserverauthPodForPingMicroshiftJson = []byte(`{
-    "kind": "Pod",
-    "apiVersion": "v1",
-    "metadata": {
-        "name": "pod-for-ping",
-        "annotations": {
-            "openshift.io/required-scc": "restricted-v2"
-        },
-        "labels": {
-            "name": "pod-for-ping"
-        }
-    },
-    "spec": {
-        "containers": [
-            {
-                "name": "pod-for-ping",
-                "image": "quay.io/openshifttest/hello-sdn@sha256:c89445416459e7adea9a5a416b3365ed3d74f2491beb904d61dc8d1eb89a72a4",
-                "resources": {
-                    "limits": {
-                        "memory": "340Mi"
-                    }
-                },
-                "securityContext": {
-                    "allowPrivilegeEscalation": false,
-                    "capabilities": {},
-                    "privileged": false,
-                    "seccompProfile": {
-                        "type": "RuntimeDefault"
-                    }
-                }
-            }
-        ]
-    }
-}
-`)
-
-func testExtendedTestdataApiserverauthPodForPingMicroshiftJsonBytes() ([]byte, error) {
-	return _testExtendedTestdataApiserverauthPodForPingMicroshiftJson, nil
-}
-
-func testExtendedTestdataApiserverauthPodForPingMicroshiftJson() (*asset, error) {
-	bytes, err := testExtendedTestdataApiserverauthPodForPingMicroshiftJsonBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/pod-for-ping-microshift.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataApiserverauthPodForPingJson = []byte(`{
   "kind": "Pod",
   "apiVersion": "v1",
@@ -4551,244 +4568,6 @@ func testExtendedTestdataApiserverauthPod_with_sysctlsYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/pod_with_sysctls.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataApiserverauthRapidastConfigYaml = []byte(`# RapiDAST configuration for OpenShift API Server security scanning
-# This configuration performs comprehensive security vulnerability scanning of:
-# - Core Kubernetes APIs (/api/v1/*)
-# - OpenShift-specific APIs (route.openshift.io, security.openshift.io, etc.)
-# - Apps, Build, and Image APIs
-#
-# Security tests include:
-# - Authentication bypass attempts
-# - Authorization escalation tests  
-# - Input validation vulnerabilities
-# - Information disclosure checks
-# - Injection attack vectors
-config:
-  configVersion: 5
-
-# Application configuration
-application:
-  shortName: "openshift-apiserver"
-  url: "https://kubernetes.default.svc"
-
-# General configuration applied to all scanners
-general:
-  authentication:
-    type: "http_header"
-    parameters:
-      name: "Authorization"
-      value: "Bearer AUTH_TOKEN"
-  container:
-    type: "none"
-  passiveScan:
-    disabledRules: "2,10015,10027,10096,10024"
-  activeScan:
-    policy: "Kubernetes-API-scan"
-    maxScanTimeInMins: 5
-  # Proxy support (if needed for proxy environments)
-  # proxy:
-  #   http: "http://proxy.example.com:3128"
-  #   https: "http://proxy.example.com:3128"
-  #   noProxy: "localhost,127.0.0.1"
-
-# Scanner configurations - Simplified for reliability
-# Single scanner approach to minimize resource usage and improve success rate
-scanners:
-  # Core Kubernetes API v1 - covers ALL requested endpoints:
-  # /api/v1/componentstatuses, /api/v1/persistentvolumes, /api/v1/nodes, /api/v1/namespaces
-  # /api/v1/namespaces/default/events, /api/v1/namespaces/default/endpoints
-  # /api/v1/namespaces/default/configmaps, /api/v1/namespaces/default/pods
-  # /api/v1/namespaces/default/limitranges, /api/v1/namespaces/default/podtemplates
-  # /api/v1/namespaces/default/replicationcontrollers, /api/v1/namespaces/default/persistentvolumeclaims
-  # /api/v1/namespaces/default/resourcequotas, /api/v1/namespaces/default/secrets
-  # /api/v1/namespaces/default/serviceaccounts, /api/v1/namespaces/default/services
-  zap:
-    apiScan:
-      apis:
-        apiUrl: "https://kubernetes.default.svc/openapi/v3/api/v1"
-`)
-
-func testExtendedTestdataApiserverauthRapidastConfigYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataApiserverauthRapidastConfigYaml, nil
-}
-
-func testExtendedTestdataApiserverauthRapidastConfigYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataApiserverauthRapidastConfigYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/rapidast-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataApiserverauthRapidastPodYaml = []byte(`# DO NOT MODIFY DIRECTLY
-apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: rapidast-job-template
-objects:
-  - apiVersion: batch/v1
-    kind: Job
-    metadata:
-      name: "${POD_NAME}"
-    spec:
-      backoffLimit: 0
-      completionMode: NonIndexed
-      completions: 1
-      parallelism: 1
-      selector:
-        matchLabels:
-          job-name: "${POD_NAME}"
-      suspend: false
-      template:
-        metadata:
-          labels:
-            job-name: "${POD_NAME}"
-          name: rapidast-job
-        spec:
-          serviceAccount: "${SA_NAME}"
-          containers:
-          - command: ["/bin/sh"]
-            args:
-            - "-c"
-            - |
-              set -e
-              export HOME=/home/rapidast
-              mkdir -p $HOME/.ZAP/policies
-              
-              echo "Starting RapiDAST scan with enhanced error handling..."
-              echo "Working directory: $(pwd)"
-              echo "Home directory: $HOME"
-              echo "Config file: /opt/rapidast/config/rapidastconfig.yaml"
-              
-              # Check if config file exists
-              if [ ! -f "/opt/rapidast/config/rapidastconfig.yaml" ]; then
-                echo "ERROR: Config file not found!"
-                exit 1
-              fi
-              
-              # Run RapiDAST with timeout and retry logic
-              echo "Running RapiDAST scan..."
-              timeout 300 rapidast.py --config /opt/rapidast/config/rapidastconfig.yaml --log-level critical || {
-                echo "RapiDAST scan completed with exit code: $?"
-                echo "Checking for results..."
-              }
-              
-              echo "--------------- show rapidash result -----------------"
-              if [ -d "$HOME/results" ]; then
-                echo "Results directory found: $HOME/results"
-                find $HOME/results -name "*.json" -exec echo "Found JSON report: {}" \; -exec cat {} \;
-              else
-                echo "No results directory found, checking alternative locations..."
-                find /home/rapidast -name "*.json" -exec echo "Found JSON report: {}" \; -exec cat {} \;
-              fi
-              
-              # Always output a completion marker for successful scans
-              echo "RAPIDAST_SCAN_COMPLETED_SUCCESSFULLY"
-              echo "Scan completion timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              echo "--------------- rapidash result end -----------------"
-            image: quay.io/redhatproductsecurity/rapidast:latest
-            workingDir: "/home/rapidast"
-            imagePullPolicy: Always
-            name: rapidast
-            resources:
-              requests:
-                memory: "2Gi"
-                cpu: "1000m"
-              limits:
-                memory: "4Gi"
-                cpu: "2000m"
-            securityContext: {}
-            terminationMessagePath: /dev/termination-log
-            terminationMessagePolicy: File
-            volumeMounts:
-            - mountPath: /opt/rapidast/config
-              name: config-volume
-            - mountPath: /home/rapidast
-              name: work-volume
-          dnsPolicy: ClusterFirst
-          restartPolicy: Never
-          schedulerName: default-scheduler
-          securityContext: {}
-          terminationGracePeriodSeconds: 30
-          nodeSelector:
-            kubernetes.io/os: linux
-            kubernetes.io/arch: amd64
-          volumes:
-          - configMap:
-              defaultMode: 420
-              name: "${CONFIGMAP_NAME}"
-            name: config-volume
-          - name: work-volume
-            emptyDir:
-              sizeLimit: 10Mi
-parameters:
-  - name: POD_NAME
-  - name: SA_NAME
-  - name: CONFIGMAP_NAME
-  - name: PVC_NAME
-`)
-
-func testExtendedTestdataApiserverauthRapidastPodYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataApiserverauthRapidastPodYaml, nil
-}
-
-func testExtendedTestdataApiserverauthRapidastPodYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataApiserverauthRapidastPodYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/rapidast-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataApiserverauthRapidastPrivilegedSaYaml = []byte(`# DO NOT MODIFY DIRECTLY
-apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: rapidast-rbac-template
-objects:
-  - apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-  - apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    metadata:
-      name: rapidast-rolebinding
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: system:openshift:scc:privileged
-    subjects:
-      - kind: ServiceAccount
-        name: "${NAME}"
-        namespace: "${NAMESPACE}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-`)
-
-func testExtendedTestdataApiserverauthRapidastPrivilegedSaYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataApiserverauthRapidastPrivilegedSaYaml, nil
-}
-
-func testExtendedTestdataApiserverauthRapidastPrivilegedSaYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataApiserverauthRapidastPrivilegedSaYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/apiserverauth/rapidast-privileged-sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -7171,9 +6950,6 @@ objects:
         osDisk: {}
         type: n1-standard-4
         secureBoot: "${SECUREBOOT}"
-        tags:
-        - "hive-qe-gcp-tag1"
-        - "hive-qe-gcp-tag2"
     replicas: 1
     taints: 
     - effect: NoSchedule
@@ -8293,6 +8069,7 @@ objects:
     spec:
       template:
         spec:
+          uncompressedUserData: true
           iamInstanceProfile: ${PROFILE}
           instanceType: ${INSTANCETYPE}
           failureDomain: ${ZONE}
@@ -8351,6 +8128,7 @@ objects:
     spec:
       template:
         spec:
+          uncompressedUserData: true
           iamInstanceProfile: ${PROFILE}
           instanceType: ${INSTANCETYPE}
           failureDomain: ${ZONE}
@@ -9907,75 +9685,6 @@ func testExtendedTestdataEtcdTestpodYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataHypershiftAzureWiTestPodYaml = []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: azure-wi-test-pod
-  namespace: ${NAMESPACE}
-  labels:
-    azure.workload.identity/use: "true"
-spec:
-  serviceAccountName: azure-wi-test-sa
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-  - name: test-container
-    image: registry.k8s.io/pause:3.10
-    command: ["/pause"]
-    securityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-        - ALL
-      runAsNonRoot: true
-      runAsUser: 1000
-      seccompProfile:
-        type: RuntimeDefault
-`)
-
-func testExtendedTestdataHypershiftAzureWiTestPodYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataHypershiftAzureWiTestPodYaml, nil
-}
-
-func testExtendedTestdataHypershiftAzureWiTestPodYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataHypershiftAzureWiTestPodYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/hypershift/azure-wi-test-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataHypershiftAzureWiTestSaYaml = []byte(`apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: azure-wi-test-sa
-  namespace: ${NAMESPACE}
-  annotations:
-    azure.workload.identity/client-id: ${CLIENT_ID}
-    azure.workload.identity/tenant-id: ${TENANT_ID}
-`)
-
-func testExtendedTestdataHypershiftAzureWiTestSaYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataHypershiftAzureWiTestSaYaml, nil
-}
-
-func testExtendedTestdataHypershiftAzureWiTestSaYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataHypershiftAzureWiTestSaYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/hypershift/azure-wi-test-sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataHypershiftConfigmapMachineconfigYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -10130,23 +9839,6 @@ func testExtendedTestdataHypershiftMhcYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYaml = []byte(``)
-
-func testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYaml, nil
-}
-
-func testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/hypershift/ping-for-pod-specific-node-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataHypershiftPrestartJobYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -10198,56 +9890,6 @@ func testExtendedTestdataHypershiftPrestartJobYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataHypershiftServiceGenericTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: test-service-template
-objects:
-- kind: Service
-  apiVersion: v1
-  metadata:
-    name: "${SERVICENAME}"
-    namespace: "${NAMESPACE}"
-    labels:
-      name: test-service
-  spec:
-    internalTrafficPolicy: "${internalTrafficPolicy}"
-    externalTrafficPolicy: "${externalTrafficPolicy}"
-    ipFamilyPolicy: "${ipFamilyPolicy}" 
-    ports:
-    - name: http
-      port: 27017
-      protocol: "${PROTOCOL}"
-      targetPort: 8080
-    selector:
-      name: "${SELECTOR}"
-    type: "${serviceType}"
-parameters:
-- name: SERVICENAME
-- name: NAMESPACE
-- name: internalTrafficPolicy
-- name: externalTrafficPolicy
-- name: ipFamilyPolicy
-- name: PROTOCOL
-- name: SELECTOR
-- name: serviceType
-- name: PORT`)
-
-func testExtendedTestdataHypershiftServiceGenericTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataHypershiftServiceGenericTemplateYaml, nil
-}
-
-func testExtendedTestdataHypershiftServiceGenericTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataHypershiftServiceGenericTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/hypershift/service-generic-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataHypershiftWorkloadYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -10271,8 +9913,8 @@ objects:
               command: ["sleep",  "300"]
               resources:
                 requests:
-                  memory: ${MEMORY}
-                  cpu: ${CPU}
+                  memory: 500Mi
+                  cpu: 500m
               securityContext:
                 runAsUser: 1000
                 allowPrivilegeEscalation: false
@@ -10281,17 +9923,11 @@ objects:
                   - ALL
           restartPolicy: Never
       backoffLimit: 4
-      completions: ${{PARALLELISM}}
-      parallelism: ${{PARALLELISM}}
+      completions: 100
+      parallelism: 100
 parameters:
   - name: NAME
   - name: NAMESPACE
-  - name: MEMORY
-    value: 500Mi
-  - name: CPU
-    value: 500m
-  - name: PARALLELISM
-    value: "100"
 `)
 
 func testExtendedTestdataHypershiftWorkloadYamlBytes() ([]byte, error) {
@@ -10305,75 +9941,6 @@ func testExtendedTestdataHypershiftWorkloadYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/hypershift/workload.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataHypershiftWorkload_nodeselectorYaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: workload-job-template
-objects:
-  - apiVersion: batch/v1
-    kind: Job
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      template:
-        spec:
-          securityContext:
-            runAsNonRoot: true
-            seccompProfile:
-              type: RuntimeDefault
-          containers:
-            - name: work
-              image: quay.io/openshifttest/busybox@sha256:c5439d7db88ab5423999530349d327b04279ad3161d7596d2126dfb5b02bfd1f
-              command: ["sleep",  "300"]
-              resources:
-                requests:
-                  memory: ${MEMORY}
-                  cpu: ${CPU}
-              securityContext:
-                runAsUser: 1000
-                allowPrivilegeEscalation: false
-                capabilities:
-                  drop:
-                  - ALL
-          restartPolicy: Never
-          nodeSelector:
-            ${NODESELECTOR_KEY}: ${NODESELECTOR_VALUE}
-      backoffLimit: 4
-      completions: ${{PARALLELISM}}
-      parallelism: ${{PARALLELISM}}
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: MEMORY
-    value: 500Mi
-  - name: CPU
-    value: 500m
-  - name: PARALLELISM
-    value: "100"
-  - name: NODESELECTOR_KEY
-    description: "Node label key to use for node selection. Default matches all Linux nodes."
-    value: "kubernetes.io/os"
-  - name: NODESELECTOR_VALUE
-    description: "Node label value to use for node selection. Default matches all Linux nodes."
-    value: "linux"
-`)
-
-func testExtendedTestdataHypershiftWorkload_nodeselectorYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataHypershiftWorkload_nodeselectorYaml, nil
-}
-
-func testExtendedTestdataHypershiftWorkload_nodeselectorYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataHypershiftWorkload_nodeselectorYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/hypershift/workload_nodeselector.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -11411,7 +10978,6 @@ metadata:
   name: firmware-download
 data:
   firmware_url: example_url
-  component: example_component
 `)
 
 func testExtendedTestdataInstallerBaremetalFirmwareCmYamlBytes() ([]byte, error) {
@@ -11456,22 +11022,6 @@ func testExtendedTestdataInstallerBaremetalHostUpdatePolicyYaml() (*asset, error
 
 var _testExtendedTestdataInstallerBaremetalNginxFirmwareYaml = []byte(`---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nginx-no-ssl
-data:
-  default.conf: |
-    server {
-        listen 8080;
-        server_name _;
-
-        location / {
-            root /usr/share/nginx/html;
-            autoindex on;
-        }
-    }
----
-apiVersion: v1
 kind: Pod
 metadata:
   name: nginx-pod
@@ -11486,13 +11036,6 @@ spec:
     - name: firmware-config
       configMap:
         name: firmware-download
-    - name: nginx-conf
-      configMap:
-        name: nginx-no-ssl
-    - name: nginx-cache
-      emptyDir: {}
-    - name: nginx-run
-      emptyDir: {}
   initContainers:
     - name: init-download-firmware
       image: ghcr.io/crazy-max/7zip
@@ -11503,41 +11046,22 @@ spec:
             configMapKeyRef:
               name: firmware-download
               key: firmware_url
-        - name: COMPONENT
-          valueFrom:
-            configMapKeyRef:
-              name: firmware-download
-              key: component
       command:
       - /bin/sh
       - -c
       - |
-        set -xe
-        rm -f /fw/*
-        wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36" \
-          --directory-prefix=/fw \
-          "${FIRMWARE_URL}"
-        
-        if [ "${COMPONENT}" != "nic" ]; then
-          7za e /fw/* -o/fw
-        fi
+        rm -f /html/fw/* && wget $FIRMWARE_URL -P /html/fw && 7za e /html/fw/* -o/html/fw
       volumeMounts:
         - name: firmware-config
           mountPath: /config
         - name: firmware-dir
-          mountPath: /fw
+          mountPath: /html/fw
   containers:
     - name: nginx
-      image: quay.io/openshifttest/nginx-alpine:armbm
+      image: quay.io/openshifttest/nginx-alpine:latest
       volumeMounts:
         - name: firmware-dir
-          mountPath: /usr/share/nginx/html
-        - name: nginx-conf
-          mountPath: /etc/nginx/conf.d/ 
-        - name: nginx-cache
-          mountPath: /var/cache/nginx
-        - name: nginx-run
-          mountPath: /var/run
+          mountPath: /data/http
 ---
 apiVersion: v1
 kind: Service
@@ -11937,54 +11461,6 @@ credentials = []
 name = 'cc_kbc'
 url = 'TRUSTEE_URL'
 '''
-
-"policy.rego" = '''
-package agent_policy
-
-#import future.keywords.in
-#import future.keywords.every
-
-#import input
-
-# Default values, returned by OPA when rules cannot be evaluated to true.
-
-default AddARPNeighborsRequest := true
-default AddSwapRequest := true
-default CloseStdinRequest := true
-default CopyFileRequest := true
-default CreateContainerRequest := true
-default CreateSandboxRequest := true
-default DestroySandboxRequest := true
-default GetMetricsRequest := true
-default GetOOMEventRequest := true
-default GuestDetailsRequest := true
-default ListInterfacesRequest := true
-default ListRoutesRequest := true
-default MemHotplugByProbeRequest := true
-default OnlineCPUMemRequest := true
-default PauseContainerRequest := true
-default PullImageRequest := true
-default ReadStreamRequest := true
-default RemoveContainerRequest := true
-default RemoveStaleVirtiofsShareMountsRequest := true
-default ReseedRandomDevRequest := true
-default ResumeContainerRequest := true
-default SetGuestDateTimeRequest := true
-default SetPolicyRequest := true
-default SignalProcessRequest := true
-default StartContainerRequest := true
-default StartTracingRequest := true
-default StatsContainerRequest := true
-default StopTracingRequest := true
-default TtyWinResizeRequest := true
-default UpdateContainerRequest := true
-default UpdateEphemeralMountsRequest := true
-default UpdateInterfaceRequest := true
-default UpdateRoutesRequest := true
-default WaitProcessRequest := true
-default WriteStreamRequest := true
-default ExecProcessRequest := true
-'''
 `)
 
 func testExtendedTestdataKataInitdataTomlBytes() ([]byte, error) {
@@ -12002,312 +11478,6 @@ func testExtendedTestdataKataInitdataToml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataKataInitdata_bmToml = []byte(`algorithm = "sha384"
-version = "0.1.0"
-
-[data]
-"aa.toml" = '''
-[token_configs]
-[token_configs.coco_as]
-
-url = 'TRUSTEE_URL'
-
-[token_configs.kbs]
-url = 'TRUSTEE_URL'
-cert = """
-TRUSTEE_KBS_HTTPS_CERT
-"""
-'''
-
-"cdh.toml" = '''
-socket = 'unix:///run/confidential-containers/cdh.sock'
-credentials = []
-
-[kbc]
-name = 'cc_kbc'
-url = 'TRUSTEE_URL'
-kbs_cert = """
-TRUSTEE_KBS_HTTPS_CERT
-"""
-[image]
-image_security_policy_uri = 'kbs:///default/security-policy/osc'
-
-
-'''
-
-"policy.rego" = '''
-package agent_policy
-
-import future.keywords.in
-import future.keywords.if
-import future.keywords.every
-
-default AddARPNeighborsRequest := true
-default AddSwapRequest := true
-default CloseStdinRequest := true
-default CopyFileRequest := true
-default CreateSandboxRequest := true
-default DestroySandboxRequest := true
-default GetMetricsRequest := true
-default GetOOMEventRequest := true
-default GuestDetailsRequest := true
-default ListInterfacesRequest := true
-default ListRoutesRequest := true
-default MemHotplugByProbeRequest := true
-default OnlineCPUMemRequest := true
-default PauseContainerRequest := true
-default PullImageRequest := true
-default ReadStreamRequest := true
-default RemoveContainerRequest := true
-default RemoveStaleVirtiofsShareMountsRequest := true
-default ReseedRandomDevRequest := true
-default ResumeContainerRequest := true
-default SetGuestDateTimeRequest := true
-default SignalProcessRequest := true
-default StartContainerRequest := true
-default StartTracingRequest := true
-default StatsContainerRequest := true
-default StopTracingRequest := true
-default TtyWinResizeRequest := true
-default UpdateContainerRequest := true
-default UpdateEphemeralMountsRequest := true
-default UpdateInterfaceRequest := true
-default UpdateRoutesRequest := true
-default WaitProcessRequest := true
-default CreateContainerRequest := true
-
-default SetPolicyRequest := true
-default ExecProcessRequest := true
-default WriteStreamRequest := true
-
-ExecProcessRequest if {
-    input_command = concat(" ", input.process.Args)
-    some allowed_command in policy_data.allowed_commands
-    input_command == allowed_command
-}
-
-policy_data := {  
-  "allowed_commands": [         
-        "curl http://127.0.0.1:8006/cdh/resource/default/attestation-status/status"   
-  ] 
-}
-'''
-`)
-
-func testExtendedTestdataKataInitdata_bmTomlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataInitdata_bmToml, nil
-}
-
-func testExtendedTestdataKataInitdata_bmToml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataInitdata_bmTomlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/initdata_bm.toml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataKatadeploymenttemplateGoTmpl = []byte(`apiVersion: apps/v1
-kind: Deployment
-metadata:
-  annotations:
-  {{- range .annotations }}
-    {{.}}
-  {{- end }}
-  name: {{.name}}
-spec:
-  replicas: {{or .replicas 3}}
-  selector:
-    matchLabels:
-      app: {{.name}}
-  template:
-    metadata:
-      labels:
-        app: {{.name}}
-    spec:
-      runtimeClassName: {{or .runtimeClassName "kata"}}
-{{- if .initContainers}}
-      initContainers:
-      {{- range .initContainers}}
-        - name: {{.name}}
-          image: {{.image}}
-          {{- if .restartPolicy}}
-          restartPolicy: {{.restartPolicy}}
-          {{- end}}
-          {{- if .command}}
-          command:
-          {{- range .command}}
-            - {{.}}
-          {{- end}}
-          {{- end}}
-          {{- if .volumeMounts}}
-          volumeMounts:
-          {{- range .volumeMounts}}
-            - name: {{.name}}
-              mountPath: {{.mountPath}}
-          {{- end}}
-          {{- end}}
-      {{- end}}
-{{- end}}
-      containers:
-        - name: {{.name}}
-          image: {{or .image "quay.io/openshift/origin-hello-openshift"}}
-          imagePullPolicy: IfNotPresent
-          {{- if .command}}
-          command:
-          {{- range .command}}
-            - {{.}}
-          {{- end}}
-          {{- end}}
-          ports:
-            - containerPort: {{or .port 8888}}
-          securityContext:
-            privileged: false
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-                - ALL
-            seccompProfile:
-              type: RuntimeDefault
-          {{- if .volumeMounts}}
-          volumeMounts:
-          {{- range .volumeMounts}}
-            - name: {{.name}}
-              mountPath: {{.mountPath}}
-          {{- end}}
-          {{- end}}
-{{- if .volumes}}
-      volumes:
-      {{- range .volumes}}
-        - name: {{.name}}
-          {{.type}}:
-            {{- if .medium}}
-            medium: {{.medium}}
-            {{- end}}
-            {{- if .sizeLimit}}
-            sizeLimit: {{.sizeLimit}}
-            {{- end}}
-      {{- end}}
-{{- end}}
-`)
-
-func testExtendedTestdataKataKatadeploymenttemplateGoTmplBytes() ([]byte, error) {
-	return _testExtendedTestdataKataKatadeploymenttemplateGoTmpl, nil
-}
-
-func testExtendedTestdataKataKatadeploymenttemplateGoTmpl() (*asset, error) {
-	bytes, err := testExtendedTestdataKataKatadeploymenttemplateGoTmplBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/kataDeploymentTemplate.go.tmpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataKatapoddefaulttemplateGoTmpl = []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  annotations:
-  {{- range .annotations }}
-    {{.}}
-  {{- end }}
-  name: {{.name}}
-spec:
-  runtimeClassName: {{or .runtimeClassName "kata"}}
-{{- if .initContainers}}
-  initContainers:
-  {{- range .initContainers}}
-    - name: {{.name}}
-      image: {{.image}}
-      {{- if .command}}
-      command:
-      {{- range .command}}
-        - {{.}}
-      {{- end}}
-      {{- end}}
-      {{- if .volumeMounts}}
-      volumeMounts:
-      {{- range .volumeMounts}}
-        - name: {{.name}}
-          mountPath: {{.mountPath}}
-      {{- end}}
-      {{- end}}
-  {{- end}}
-{{- end}}
-  containers:
-    - name: hello-openshift
-      image: {{or .image "quay.io/openshift/origin-hello-openshift"}}
-      imagePullPolicy: IfNotPresent
-      ports:
-        - containerPort: {{or .port 8080}}
-{{- if .resources}}
-      resources:
-{{- if .resources.requests}}
-        requests:
-{{- if .resources.requests.cpu}}
-          cpu: {{.resources.requests.cpu}}
-{{- end}}
-{{- if .resources.requests.memory}}
-          memory: {{.resources.requests.memory}}
-{{- end}}
-{{- end}}
-{{- if .resources.limits}}
-        limits:
-{{- if .resources.limits.cpu}}
-          cpu: {{.resources.limits.cpu}}
-{{- end}}
-{{- if .resources.limits.memory}}
-          memory: {{.resources.limits.memory}}
-{{- end}}
-{{- end}}
-{{- end}}
-      securityContext:
-        runAsNonRoot: true
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-{{- if .volume}}
-      volumeMounts:
-      {{- range  .volume }}
-        - name: {{or .name "container-storage"}}
-          mountPath: {{or .mountPath "/var/lib/containers"}}
-      {{- end }}
-  volumes:
-  {{- range .volume }}
-    - name: {{or .name "container-storage"}}
-      {{.type}}:
-        {{- if .medium }}
-        medium: {{.medium}}
-        {{- end }}
-        {{- if .sizeLimit }}
-        sizeLimit: {{.sizeLimit}}
-        {{- end }}
-  {{- end }}
-{{- end }}`)
-
-func testExtendedTestdataKataKatapoddefaulttemplateGoTmplBytes() ([]byte, error) {
-	return _testExtendedTestdataKataKatapoddefaulttemplateGoTmpl, nil
-}
-
-func testExtendedTestdataKataKatapoddefaulttemplateGoTmpl() (*asset, error) {
-	bytes, err := testExtendedTestdataKataKatapoddefaulttemplateGoTmplBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/kataPodDefaultTemplate.go.tmpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataKataKataconfigYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -12321,6 +11491,9 @@ objects:
       checkNodeEligibility: ${{ELIGIBILITY}}
       logLevel: "${LOGLEVEL}"
       enablePeerPods: ${{PEERPODS}}
+      kataConfigPoolSelector:
+        matchLabels:
+          custom-label: test
 parameters:
   - name: NAME
     value: "example-kataconfig"
@@ -12376,25 +11549,24 @@ objects:
   - apiVersion: v1
     kind: Pod
     metadata:
-      name: '${NAME}'
+      name: "${NAME}"
     spec:
       containers:
         - name: kbs-client
-          image: '${IMAGE}'
+          image: "${IMAGE}"
           imagePullPolicy: IfNotPresent
           command:
             - sleep
-            - '360000'
+            - "360000"
           env:
             - name: RUST_LOG
               value: none
 
 parameters:
   - name: NAME
-    value: 'kbs-client'
+    value: "kbs-client"
   - name: IMAGE
-    description: 'image to use for kbs-client. v0.11.0 is for 1.9'
-    value: 'quay.io/confidential-containers/kbs-client:v0.13.0'
+    value: "quay.io/confidential-containers/kbs-client:v0.11.0"
 `)
 
 func testExtendedTestdataKataKbsClientTemplateYamlBytes() ([]byte, error) {
@@ -12478,89 +11650,6 @@ func testExtendedTestdataKataKbsConfigCm020TemplateYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataKataKbsConfigCmBmTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: kbs-config-cm-template
-objects:
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: kbs-config-cm
-      namespace: "${NAMESPACE}"
-    data:
-      kbs-config.toml: |
-        [http_server]
-        sockets = ["0.0.0.0:8080"]
-        insecure_http = ${INSECUREHTTP}
-        private_key = "/etc/https-key/tls.key"
-        certificate = "/etc/https-cert/tls.crt"
-        worker_count = 4
-        
-        [admin]
-        insecure_api = false
-        auth_public_key = "/etc/auth-secret/publicKey"
-        
-        [attestation_token]
-        insecure_key = false
-        attestation_token_type = "CoCo"
-        trusted_certs_paths = ["/etc/attestation-cert/token.crt"]
-        
-        [attestation_service]
-        type = "coco_as_builtin"
-        work_dir = "/opt/confidential-containers/attestation-service"
-        policy_engine = "opa"
-        
-        [attestation_service.attestation_token_broker]
-        type = "Ear"
-        policy_dir = "/opt/confidential-containers/attestation-service/policies"
-        
-        [attestation_service.attestation_token_config]
-        duration_min = 5
-        
-        [attestation_service.rvps_config]
-        type = "BuiltIn"
-        
-        [attestation_service.rvps_config.storage]
-        type = "LocalJson"
-        file_path = "/opt/confidential-containers/rvps/reference-values/reference-values.json"
-        
-        [attestation_service.attestation_token_broker.signer]
-        key_path = "/etc/attestation-key/token.key"
-        cert_path = "/etc/attestation-cert/token.crt"
-        
-        [[plugins]]
-        name = "resource"
-        type = "LocalFs"
-        dir_path = "/opt/confidential-containers/kbs/repository"
-        
-        [policy_engine]
-        policy_path = "/opt/confidential-containers/opa/policy.rego"
-
-parameters:
-  - name: INSECUREHTTP
-    description: "Run kbs-service as http instead of https"
-    value: "false"
-  - name: NAMESPACE
-    description: "namespace to place this cm in"
-    value: "trustee-operator-system"
-`)
-
-func testExtendedTestdataKataKbsConfigCmBmTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataKbsConfigCmBmTemplateYaml, nil
-}
-
-func testExtendedTestdataKataKbsConfigCmBmTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataKbsConfigCmBmTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/kbs-config-cm-bm-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataKataKbsConfigCmTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -12632,98 +11721,6 @@ func testExtendedTestdataKataKbsConfigCmTemplateYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/kata/kbs-config-cm-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataKbsconfigSnpTemplateYaml = []byte(`apiVersion: confidentialcontainers.org/v1alpha1
-kind: KbsConfig
-metadata:
-  labels:
-    app.kubernetes.io/name: kbsconfig
-    app.kubernetes.io/instance: kbsconfig
-    app.kubernetes.io/part-of: trustee-operator
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: trustee-operator
-  name: kbs-config
-  namespace: trustee-operator-system
-spec:
-  kbsConfigMapName: kbs-config-cm
-  kbsAuthSecretName: kbs-auth-public-key
-  kbsDeploymentType: AllInOneDeployment
-  kbsRvpsRefValuesConfigMapName: rvps-reference-values
-  kbsSecretResources:
-  - attestation-status
-  - security-policy
-  - cosign-public-key
-  - cosign-public-key2
-  kbsResourcePolicyConfigMapName: resource-policy
-  #kbsAttestationPolicyConfigMapName: attestation-policy
-  kbsHttpsKeySecretName: kbs-https-key
-  kbsHttpsCertSecretName: kbs-https-certificate
-  kbsAttestationCertSecretName: attestation-cert
-  kbsAttestationKeySecretName: attestation-key
-  kbsServiceType: NodePort
-`)
-
-func testExtendedTestdataKataKbsconfigSnpTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataKbsconfigSnpTemplateYaml, nil
-}
-
-func testExtendedTestdataKataKbsconfigSnpTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataKbsconfigSnpTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/kbsconfig-snp-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataKbsconfigTdxTemplateYaml = []byte(`apiVersion: confidentialcontainers.org/v1alpha1
-kind: KbsConfig
-metadata:
-  labels:
-    app.kubernetes.io/name: kbsconfig
-    app.kubernetes.io/instance: kbsconfig
-    app.kubernetes.io/part-of: trustee-operator
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: trustee-operator
-  name: kbs-config
-  namespace: trustee-operator-system
-spec:
-  kbsConfigMapName: kbs-config-cm
-  kbsAuthSecretName: kbs-auth-public-key
-  kbsDeploymentType: AllInOneDeployment
-  kbsRvpsRefValuesConfigMapName: rvps-reference-values
-  kbsSecretResources:
-  - attestation-status
-  - security-policy
-  - cosign-public-key
-  - cosign-public-key2
-  kbsResourcePolicyConfigMapName: resource-policy
-  #kbsAttestationPolicyConfigMapName: attestation-policy
-  kbsHttpsKeySecretName: kbs-https-key
-  kbsHttpsCertSecretName: kbs-https-certificate
-  kbsAttestationCertSecretName: attestation-cert
-  kbsAttestationKeySecretName: attestation-key
-  kbsServiceType: NodePort
-  tdxConfigSpec:
-    kbsTdxConfigMapName: tdx-config
-`)
-
-func testExtendedTestdataKataKbsconfigTdxTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataKbsconfigTdxTemplateYaml, nil
-}
-
-func testExtendedTestdataKataKbsconfigTdxTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataKbsconfigTdxTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/kbsconfig-tdx-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -12804,161 +11801,6 @@ func testExtendedTestdataKataNamespaceYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataKataNodeFeatureRuleKataTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: node-feature-rule-kata-template
-objects:
-  - apiVersion: nfd.openshift.io/v1alpha1
-    kind: NodeFeatureRule
-    metadata:
-      name: osc-rules
-      namespace: "${NAMESPACE}"
-    spec:
-      rules:
-        - name: "runtime.kata"
-          labels:
-            "feature.node.kubernetes.io/runtime.kata": "true"
-          matchAny:
-            - matchFeatures:
-                - feature: cpu.cpuid
-                  matchExpressions:
-                    SSE42: {op: Exists}
-                    VMX: {op: Exists}
-                - feature: kernel.loadedmodule
-                  matchExpressions:
-                    kvm: {op: Exists}
-                    kvm_intel: {op: Exists}
-            - matchFeatures:
-                - feature: cpu.cpuid
-                  matchExpressions:
-                    SSE42: {op: Exists}
-                    SVM: {op: Exists}
-                - feature: kernel.loadedmodule
-                  matchExpressions:
-                    kvm: {op: Exists}
-                    kvm_amd: {op: Exists}
-
-parameters:
-  - name: NAMESPACE
-    value: "openshift-nfd"
-`)
-
-func testExtendedTestdataKataNodeFeatureRuleKataTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataNodeFeatureRuleKataTemplateYaml, nil
-}
-
-func testExtendedTestdataKataNodeFeatureRuleKataTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataNodeFeatureRuleKataTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/node-feature-rule-kata-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataNodeFeatureRuleSnpTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: node-feature-rule-snp-template
-objects:
-  - apiVersion: nfd.openshift.io/v1alpha1
-    kind: NodeFeatureRule
-    metadata:
-      name: amd-sev-snp
-      namespace: "${NAMESPACE}"
-    spec:
-      rules:
-        - name: "amd.sev-snp"
-          labels:
-            "amd.feature.node.kubernetes.io/snp": "true"
-          extendedResources:
-            sev-snp.amd.com/esids: "@cpu.security.sev.encrypted_state_ids"
-          matchFeatures:
-            - feature: cpu.security
-              matchExpressions:
-                sev.snp.enabled: { op: Exists }
-
-parameters:
-  - name: NAMESPACE
-    value: "openshift-nfd"
-`)
-
-func testExtendedTestdataKataNodeFeatureRuleSnpTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataNodeFeatureRuleSnpTemplateYaml, nil
-}
-
-func testExtendedTestdataKataNodeFeatureRuleSnpTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataNodeFeatureRuleSnpTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/node-feature-rule-snp-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataNodeFeatureRuleTdxTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: node-feature-rule-tdx-template
-objects:
-  - apiVersion: nfd.openshift.io/v1alpha1
-    kind: NodeFeatureRule
-    metadata:
-      name: intel-dp-devices
-      namespace: "${NAMESPACE}"
-    spec:
-      rules:
-        - name: "intel.sgx"
-          labels:
-            "intel.feature.node.kubernetes.io/sgx": "true"
-          extendedResources:
-            sgx.intel.com/epc: "@cpu.security.sgx.epc"
-          matchFeatures:
-            - feature: cpu.cpuid
-              matchExpressions:
-                SGX: {op: Exists}
-                SGXLC: {op: Exists}
-            - feature: cpu.security
-              matchExpressions:
-                sgx.enabled: {op: IsTrue}
-            - feature: kernel.config
-              matchExpressions:
-                X86_SGX: {op: Exists}
-        - name: "intel.tdx"
-          labels:
-            "intel.feature.node.kubernetes.io/tdx": "true"
-          extendedResources:
-            tdx.intel.com/keys: "@cpu.security.tdx.total_keys"
-          matchFeatures:
-            - feature: cpu.security
-              matchExpressions:
-                tdx.enabled: {op: Exists}
-
-parameters:
-  - name: NAMESPACE
-    value: "openshift-nfd"
-`)
-
-func testExtendedTestdataKataNodeFeatureRuleTdxTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataNodeFeatureRuleTdxTemplateYaml, nil
-}
-
-func testExtendedTestdataKataNodeFeatureRuleTdxTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataNodeFeatureRuleTdxTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/node-feature-rule-tdx-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataKataOperatorgroupYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -12991,141 +11833,6 @@ func testExtendedTestdataKataOperatorgroupYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/kata/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataPccsDeploymentTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: pccs-deployment-template
-objects:
-  - apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: pccs
-      namespace: "${NAMESPACE}"
-    spec:
-      replicas: 1
-      selector:
-        matchLabels:
-          app: pccs
-      template:
-        metadata:
-          labels:
-            app: pccs
-            trustedservices.intel.com/cache: pccs
-        spec:
-          tolerations:
-            - effect: NoSchedule
-              key: node-role.kubernetes.io/master
-              operator: Exists
-          nodeSelector:
-            kubernetes.io/hostname: "${PCCS_NODE}"
-          initContainers:
-            - name: init-seclabel
-              image: registry.access.redhat.com/ubi9/ubi:9.7-1764578509
-              command: [ "sh", "-c", "chcon -Rt container_file_t /var/cache/pccs" ]
-              volumeMounts:
-                - name: host-database
-                  mountPath: /var/cache/pccs
-              securityContext:
-                runAsUser: 0
-                runAsGroup: 0
-                privileged: true  # Required for chcon to work on host files
-          containers:
-            - name: pccs
-              image: "${PCCS_IMAGE}"
-              envFrom:
-                - secretRef:
-                    name: pccs-secrets
-              env:
-                - name: "PCCS_LOG_LEVEL"
-                  value: "info"
-                - name: "CLUSTER_HTTPS_PROXY"
-                  value: "${CLUSTER_HTTPS_PROXY}"
-                - name: "PCCS_FILL_MODE"
-                  value: "LAZY"
-              ports:
-                - containerPort: 8042
-                  name: pccs-port
-              volumeMounts:
-                - name: pccs-tls
-                  mountPath: /opt/intel/pccs/ssl_key
-                  readOnly: true
-                - name: host-database
-                  mountPath: /var/cache/pccs/
-              securityContext:
-                runAsUser: 0
-          volumes:
-            - name: pccs-tls
-              secret:
-                secretName: pccs-tls
-            - name: host-database
-              hostPath:
-                path: /var/cache/pccs/
-                type: DirectoryOrCreate
-parameters:
-  - name: NAMESPACE
-    value: "intel-dcap"
-  - name: PCCS_NODE
-    value: ""
-  - name: CLUSTER_HTTPS_PROXY
-    value: ""
-  - name: PCCS_IMAGE
-    value: "registry.redhat.io/openshift-sandboxed-containers/osc-pccs@sha256:de64fc7b13aaa7e466e825d62207f77e7c63a4f9da98663c3ab06abc45f2334d"
-`)
-
-func testExtendedTestdataKataPccsDeploymentTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataPccsDeploymentTemplateYaml, nil
-}
-
-func testExtendedTestdataKataPccsDeploymentTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataPccsDeploymentTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/pccs-deployment-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataPccsServiceTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: pccs-service-template
-objects:
-  - apiVersion: v1
-    kind: Service
-    metadata:
-      name: pccs-service
-      namespace: "${NAMESPACE}"
-    spec:
-      selector:
-        trustedservices.intel.com/cache: pccs
-      ports:
-        - name: pccs
-          protocol: TCP
-          port: 8042
-          targetPort: pccs-port
-parameters:
-  - name: NAMESPACE
-    value: "intel-dcap"
-
-`)
-
-func testExtendedTestdataKataPccsServiceTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataPccsServiceTemplateYaml, nil
-}
-
-func testExtendedTestdataKataPccsServiceTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataPccsServiceTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/pccs-service-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -13387,6 +12094,154 @@ func testExtendedTestdataKataPeerPodLibvirtCmTemplateYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataKataPeerPodSecretAwsYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: peer-pod-secret-aws-template
+objects:
+  - apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: "${NAME}"
+      namespace: "${NAMESPACE}"
+    stringData:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+
+# oc process --ignore-unknown-parameters=true -f $L/peer-pod-aws-secret-template.yaml -p AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+parameters:
+  - name: NAME
+    value: "peer-pods-secret"
+  - name: NAMESPACE
+    value: "openshift-sandboxed-containers-operator"
+  - name: AWS_ACCESS_KEY_ID
+    value: ""
+  - name: AWS_SECRET_ACCESS_KEY
+    value: ""
+`)
+
+func testExtendedTestdataKataPeerPodSecretAwsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataKataPeerPodSecretAwsYaml, nil
+}
+
+func testExtendedTestdataKataPeerPodSecretAwsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataKataPeerPodSecretAwsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/kata/peer-pod-secret-aws.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataKataPeerPodSecretAzureYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: peer-pod-secret-aws-template
+objects:
+  - apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: "${NAME}"
+      namespace: "${NAMESPACE}"
+    stringData:
+      AZURE_CLIENT_ID: "${AZURE_CLIENT_ID}"
+      AZURE_CLIENT_SECRET: "${AZURE_CLIENT_SECRET}"
+      AZURE_TENANT_ID: "${AZURE_TENANT_ID}"
+      AZURE_SUBSCRIPTION_ID: "${AZURE_SUBSCRIPTION_ID}"
+
+# oc process --ignore-unknown-parameters=true -f $L/peer-pod-secret-azure.yaml -p AZURE_CLIENT_ID="${AZURE_CLIENT_ID}" AZURE_CLIENT_SECRET="${AZURE_CLIENT_SECRET}" AZURE_TENANT_ID="${AZURE_TENANT_ID}" AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}"
+
+parameters:
+  - name: NAME
+    value: "peer-pods-secret"
+  - name: NAMESPACE
+    value: "openshift-sandboxed-containers-operator"
+  - name: AZURE_CLIENT_ID
+    value: ""
+  - name: AZURE_CLIENT_SECRET
+    value: ""
+  - name: AZURE_TENANT_ID
+    value: ""
+  - name: AZURE_SUBSCRIPTION_ID
+    value: ""
+`)
+
+func testExtendedTestdataKataPeerPodSecretAzureYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataKataPeerPodSecretAzureYaml, nil
+}
+
+func testExtendedTestdataKataPeerPodSecretAzureYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataKataPeerPodSecretAzureYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/kata/peer-pod-secret-azure.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataKataPeerPodSecretLibvirtYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: peer-pod-secret-libvirt-template
+objects:
+  - apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: "${NAME}"
+      namespace: "${NAMESPACE}"
+    stringData:
+      CLOUD_PROVIDER: "${CLOUD_PROVIDER}"
+      LIBVIRT_URI: "${LIBVIRT_URI}"
+      LIBVIRT_POOL: "${LIBVIRT_POOL}"
+      LIBVIRT_VOL_NAME: "${LIBVIRT_VOL_NAME}"
+      REDHAT_OFFLINE_TOKEN: "${REDHAT_OFFLINE_TOKEN}"
+      ACTIVATION_KEY: "${ACTIVATION_KEY}"
+      HOST_KEY_CERTS: "${HOST_KEY_CERTS}"
+
+parameters:
+  - name: NAME
+    value: "peer-pods-secret"
+  - name: NAMESPACE
+    value: "openshift-sandboxed-containers-operator"
+  - name: CLOUD_PROVIDER
+    value: "libvirt"
+  - name: LIBVIRT_URI
+    value: ""
+  - name: LIBVIRT_POOL
+    value: ""
+  - name: LIBVIRT_VOL_NAME
+    value: ""
+  - name: REDHAT_OFFLINE_TOKEN
+    value: ""
+  - name: ACTIVATION_KEY
+    value: ""
+  - name: HOST_KEY_CERTS
+    value: ""
+`)
+
+func testExtendedTestdataKataPeerPodSecretLibvirtYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataKataPeerPodSecretLibvirtYaml, nil
+}
+
+func testExtendedTestdataKataPeerPodSecretLibvirtYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataKataPeerPodSecretLibvirtYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/kata/peer-pod-secret-libvirt.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataKataPeerPodsParamLibvirtCmTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -13462,97 +12317,70 @@ func testExtendedTestdataKataPeerPodsParamLibvirtCmTemplateYaml() (*asset, error
 	return a, nil
 }
 
-var _testExtendedTestdataKataPeerpodcmtemplateGoTmpl = []byte(`
-apiVersion: v1
-kind: ConfigMap
+var _testExtendedTestdataKataPodAnnotationsTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
 metadata:
-  name: "{{or .name "peer-pods-cm"}}"
-  namespace: "{{or .namespace "openshift-sandboxed-containers-operator"}}"
-data:
-  CLOUD_PROVIDER: "{{.cloudProvider}}"
-  PROXY_TIMEOUT: "{{.proxyTimeout}}"
-{{- if .podvmImageURI}}  
-  PODVM_IMAGE_URI: "{{.podvmImageURI}}"
-{{- end}}
-  INITDATA: "{{or .initData ""}}"
-  VXLAN_PORT: "{{.vxlanPort}}"
-  TAGS: "{{.customTags}}"
-  PEERPODS_LIMIT_PER_NODE: "{{.peerPodsLimitPerNode}}"
-{{- if eq .cloudProvider "azure" }}
-  AZURE_INSTANCE_SIZE: "{{.instanceSize}}"
-  AZURE_INSTANCE_SIZES: "{{.instanceSizes}}"
-  AZURE_SUBNET_ID: "{{.subnetID}}"
-  AZURE_NSG_ID: "{{.securityGroupID}}"
-  AZURE_IMAGE_ID: "{{.imageID}}"
-  AZURE_REGION: "{{.region}}"
-  AZURE_RESOURCE_GROUP: "{{.AZURE_RESOURCE_GROUP}}"
-  IMAGE_GALLERY_NAME: "{{or .IMAGE_GALLERY_NAME ""}}"
-  DISABLECVM: "{{or .disableCVM "true"}}"
-{{- else if eq .cloudProvider "aws" }}
-  PODVM_INSTANCE_TYPE: "{{.instanceSize}}"
-  PODVM_INSTANCE_TYPES: "{{.instanceSizes}}"
-  PODVM_AMI_ID: "{{.imageID}}"
-  AWS_REGION: "{{.region}}"
-  AWS_SUBNET_ID: "{{.subnetID}}"
-  AWS_VPC_ID: "{{.AWS_VPC_ID}}"
-  AWS_SG_IDS: "{{.securityGroupID}}"
-{{- else if eq .cloudProvider "gcp" }}
-{{- else if eq .cloudProvider "libvirt" }}
-{{- end}}
+  name: common-pod-template
+objects:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      annotations:
+        io.katacontainers.config.hypervisor.default_memory: "${MEMORY}"
+        io.katacontainers.config.hypervisor.default_vcpus: "${CPU}"
+        io.katacontainers.config.hypervisor.machine_type: "${INSTANCESIZE}"
+        io.katacontainers.config.hypervisor.image: "${PODVM_IMAGE}"
+
+      labels:
+        app: httpd
+      name: "${NAME}"
+    spec:
+      restartPolicy: OnFailure
+      runtimeClassName: "${RUNTIMECLASSNAME}"
+      containers:
+        - image: "${IMAGE}"
+          imagePullPolicy: IfNotPresent
+          name: "${NAME}"
+          ports:
+            - containerPort: ${{PORT}}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+
+parameters:
+  - name: MEMORY
+    value: "256"
+  - name: CPU
+    value: "0"
+  - name: INSTANCESIZE
+    value: ""
+  - name: PODVM_IMAGE
+    value: ""
+  - name: NAME
+  - name: RUNTIMECLASSNAME
+    value: "kata-remote"
+  - name: IMAGE
+    value: "quay.io/openshift/origin-hello-openshift"
+  - name: PORT
+    value: "8080"
 `)
 
-func testExtendedTestdataKataPeerpodcmtemplateGoTmplBytes() ([]byte, error) {
-	return _testExtendedTestdataKataPeerpodcmtemplateGoTmpl, nil
+func testExtendedTestdataKataPodAnnotationsTemplateYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataKataPodAnnotationsTemplateYaml, nil
 }
 
-func testExtendedTestdataKataPeerpodcmtemplateGoTmpl() (*asset, error) {
-	bytes, err := testExtendedTestdataKataPeerpodcmtemplateGoTmplBytes()
+func testExtendedTestdataKataPodAnnotationsTemplateYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataKataPodAnnotationsTemplateYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/kata/peerpodCMTemplate.go.tmpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataPeerpodsecrettemplateGoTmpl = []byte(`apiVersion: v1
-kind: Secret
-type: Opaque
-metadata:
-  name: "{{or .name "peer-pods-secret"}}"
-  namespace: "{{or .namespace "openshift-sandboxed-containers-operator"}}"
-stringData:
-{{if .aws -}}
-  AWS_ACCESS_KEY_ID: "{{.aws.AccessKeyID}}"
-  AWS_SECRET_ACCESS_KEY: "{{.aws.SecretAccessKey}}"
-{{else if .azure -}}
-  AZURE_CLIENT_ID: "{{.azure.ClientID}}"
-  AZURE_CLIENT_SECRET: "{{.azure.ClientSecret}}"
-  AZURE_TENANT_ID: "{{.azure.TenantID}}"
-  AZURE_SUBSCRIPTION_ID: "{{.azure.SubscriptionID}}"
-{{else if .libvirt -}}
-  CLOUD_PROVIDER: "{{.cloudProvider}}"
-  LIBVIRT_URI: "{{.libvirt.URI}}"
-  LIBVIRT_POOL: "{{.libvirt.Pool}}"
-  LIBVIRT_VOL_NAME: "{{.libvirt.VolName}}"
-  REDHAT_OFFLINE_TOKEN: "{{.libvirt.RedhatOfflineToken}}"
-  ACTIVATION_KEY: "{{.libvirt.ActivationKey}}"
-  HOST_KEY_CERTS: "{{.libvirt.HostKeyCerts}}"
-{{end}}
-`)
-
-func testExtendedTestdataKataPeerpodsecrettemplateGoTmplBytes() ([]byte, error) {
-	return _testExtendedTestdataKataPeerpodsecrettemplateGoTmpl, nil
-}
-
-func testExtendedTestdataKataPeerpodsecrettemplateGoTmpl() (*asset, error) {
-	bytes, err := testExtendedTestdataKataPeerpodsecrettemplateGoTmplBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/peerpodSecretTemplate.go.tmpl", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/kata/pod-annotations-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -13613,121 +12441,6 @@ func testExtendedTestdataKataPodvmImageGcpTemplateYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/kata/podvm-image-gcp-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataQgsTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: qgx-template
-objects:
-  - apiVersion: apps/v1
-    kind: DaemonSet
-    metadata:
-      name: tdx-qgs
-      namespace: "${NAMESPACE}"
-    spec:
-      selector:
-        matchLabels:
-          app: tdx-qgs
-      template:
-        metadata:
-          labels:
-            app: tdx-qgs
-          annotations:
-            sgx.intel.com/quote-provider: tdx-qgs
-            qcnl-conf: '{"pccs_url": "https://pccs-service:8042/sgx/certification/v4/", "use_secure_cert": false, "pck_cache_expire_hours": 168}'
-        spec:
-          nodeSelector:
-            intel.feature.node.kubernetes.io/tdx: 'true'
-          hostNetwork: true
-          dnsPolicy: ClusterFirstWithHostNet
-          initContainers:
-            - name: platform-registration
-              image: "${OSC_TDX_QGS_IMAGE}"
-              restartPolicy: Always
-              command: [ '/usr/bin/dcap-registration-flow' ]
-              env:
-                - name: PCCS_URL
-                  value: "https://pccs-service:8042"
-                - name: SECURE_CERT
-                  value: 'false'
-              envFrom:
-                - secretRef:
-                    name: pccs-secrets
-              securityContext:
-                readOnlyRootFilesystem: true
-                allowPrivilegeEscalation: true
-                privileged: true
-                capabilities:
-                  drop:
-                    - ALL
-                  add:
-                    - LINUX_IMMUTABLE
-              volumeMounts:
-                - name: efivars
-                  mountPath: /sys/firmware/efi/efivars
-          containers:
-            - name: tdx-qgs
-              image: "${OSC_TDX_QGS_IMAGE}"
-              args:
-                - -p=4050
-                - -n=4
-              securityContext:
-                readOnlyRootFilesystem: true
-                allowPrivilegeEscalation: false
-                capabilities:
-                  drop:
-                    - ALL
-              resources:
-                limits:
-                  sgx.intel.com/epc: "512Ki"
-                  sgx.intel.com/enclave: 1
-                  sgx.intel.com/provision: 1
-              env:
-                - name: QCNL_CONF_PATH
-                  value: "/run/dcap/qcnl_conf"
-                - name: XDG_CACHE_HOME
-                  value: "/run/dcap/cache"
-              volumeMounts:
-                - name: dcap-qcnl-cache
-                  mountPath: /run/dcap/cache
-                - name: qcnl-config
-                  mountPath: /run/dcap/
-                  readOnly: true
-          volumes:
-            - name: dcap-qcnl-cache
-              emptyDir:
-                sizeLimit: 50Mi
-            - name: qcnl-config
-              downwardAPI:
-                items:
-                  - path: "qcnl_conf"
-                    fieldRef:
-                      fieldPath: metadata.annotations['qcnl-conf']
-            - name: efivars
-              hostPath:
-                path: /sys/firmware/efi/efivars/
-parameters:
-  - name: NAMESPACE
-    value: "intel-dcap"
-  - name: OSC_TDX_QGS_IMAGE
-    value: "registry.redhat.io/openshift-sandboxed-containers/osc-tdx-qgs@sha256:86b23461c4eea073f4535a777374a54e934c37ac8c96c6180030f92ebf970524"
-
-`)
-
-func testExtendedTestdataKataQgsTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataQgsTemplateYaml, nil
-}
-
-func testExtendedTestdataKataQgsTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataQgsTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/qgs-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -13842,34 +12555,6 @@ func testExtendedTestdataKataSecurityPolicyTemplateJson() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataKataSgxDevicePluginYaml = []byte(`apiVersion: deviceplugin.intel.com/v1
-kind: SgxDevicePlugin
-metadata:
-  name: sgxdeviceplugin-sample
-spec:
-  image: registry.connect.redhat.com/intel/intel-sgx-plugin@sha256:4ac8769c4f0a82b3ea04cf1532f15e9935c71fe390ff5a9dc3ee57f970a65f0b
-  enclaveLimit: 110
-  provisionLimit: 110
-  logLevel: 4
-  nodeSelector:
-    intel.feature.node.kubernetes.io/sgx: "true"
-`)
-
-func testExtendedTestdataKataSgxDevicePluginYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataSgxDevicePluginYaml, nil
-}
-
-func testExtendedTestdataKataSgxDevicePluginYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataSgxDevicePluginYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/sgx-device-plugin.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataKataSubscription_templateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -13881,14 +12566,6 @@ objects:
       name: "${SUBNAME}"
       namespace: "${SUBNAMESPACE}"
     spec:
-      config:
-        env:
-        - name: CLIENTID
-          value: "${CLIENTID}"
-        - name: TENANTID 
-          value: ${TENANTID}
-        - name: SUBSCRIPTIONID
-          value: ${SUBSCRIPTIONID}
       channel: "${CHANNEL}"
       installPlanApproval: "${APPROVAL}"
       name: "${OPERATORNAME}"
@@ -13896,26 +12573,20 @@ objects:
       sourceNamespace: "${SOURCENAMESPACE}"
 
 parameters:
-  - name: APPROVAL
-    value: "Automatic"
+  - name: SUBNAME
+    value: "sandboxed-containers-operator"
+  - name: SUBNAMESPACE
+    value: "openshift-sandboxed-containers-operator"
   - name: CHANNEL
     value: "stable"
-  - name: CLIENTID
-    value: ""
+  - name: APPROVAL
+    value: "Automatic"
   - name: OPERATORNAME
     value: "sandboxed-containers-operator"
   - name: SOURCENAME
     value: "redhat-operators"
   - name: SOURCENAMESPACE
     value: "openshift-marketplace"
-  - name: SUBNAME
-    value: "sandboxed-containers-operator"
-  - name: SUBNAMESPACE
-    value: "openshift-sandboxed-containers-operator"
-  - name: SUBSCRIPTIONID
-    value: ""
-  - name: TENANTID
-    value: ""
 `)
 
 func testExtendedTestdataKataSubscription_templateYamlBytes() ([]byte, error) {
@@ -13929,77 +12600,6 @@ func testExtendedTestdataKataSubscription_templateYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/kata/subscription_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataTdxConfigYaml = []byte(`apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: tdx-config
-  namespace: trustee-operator-system
-data:
-  sgx_default_qcnl.conf: |
-    {
-      "collateral_service": "https://api.trustedservices.intel.com/sgx/certification/v4/"
-    }
-`)
-
-func testExtendedTestdataKataTdxConfigYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataTdxConfigYaml, nil
-}
-
-func testExtendedTestdataKataTdxConfigYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataTdxConfigYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/tdx-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataTdxMachineConfigYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: 99-enable-intel-tdx-cm-template
-objects:
-  - apiVersion: machineconfiguration.openshift.io/v1
-    kind: MachineConfig
-    metadata:
-      labels:
-        machineconfiguration.openshift.io/role: "${ROLE}"
-      name: 99-enable-intel-tdx
-    spec:
-      kernelArguments:
-        - nohibernate  
-        - kvm_intel.tdx=1
-      config:
-        ignition:
-          version: 3.2.0
-        storage:
-          files:
-            - path: /etc/modules-load.d/vsock.conf
-              mode: 0644
-              contents:
-                source: data:text/plain;charset=utf-8;base64,dnNvY2stbG9vcGJhY2sK
-parameters:
-  - name: ROLE
-    value: "master"
-`)
-
-func testExtendedTestdataKataTdxMachineConfigYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataTdxMachineConfigYaml, nil
-}
-
-func testExtendedTestdataKataTdxMachineConfigYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataTdxMachineConfigYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/tdx-machine-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -14168,27 +12768,6 @@ func testExtendedTestdataKataTrusteeCosignPublickeyPem() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataKataTrusteeCosignPublickey2Pem = []byte(`-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzzlnST0badefTkH8WSg/bGqgi74V
-N9GE6/PGcRYfqVvIc5GZy7PaZUY66WxSO+n3W1fDaiO+Eh9GBp+VMABEvA==
------END PUBLIC KEY-----
-`)
-
-func testExtendedTestdataKataTrusteeCosignPublickey2PemBytes() ([]byte, error) {
-	return _testExtendedTestdataKataTrusteeCosignPublickey2Pem, nil
-}
-
-func testExtendedTestdataKataTrusteeCosignPublickey2Pem() (*asset, error) {
-	bytes, err := testExtendedTestdataKataTrusteeCosignPublickey2PemBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/trustee-cosign-publickey2.pem", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataKataTrusteeCosignedPodYaml = []byte(`apiVersion: v1
 kind: Pod
 metadata:
@@ -14220,75 +12799,6 @@ func testExtendedTestdataKataTrusteeCosignedPodYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/kata/trustee-cosigned-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYaml = []byte(`` + "\xEF\xBB\xBF" + `apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: deployment-template
-objects:
-  - apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: "${NAME}"
-    spec:
-      replicas: ${{REPLICAS}}
-      selector:
-        matchLabels:
-          app: "${NAME}"
-      template:
-        metadata:
-          labels:
-            app: "${NAME}"
-          annotations:
-        io.katacontainers.config.hypervisor.cc_init_data: "${INITDATA}"
-        spec:
-          replicas: 1
-          runtimeClassName: "${RUNTIMECLASSNAME}"
-          containers:
-            - image: "${IMAGE}"
-              imagePullPolicy: IfNotPresent
-              name: "${NAME}"
-              ports:
-                - containerPort: ${{PORT}}
-              securityContext:
-                privileged: false
-                allowPrivilegeEscalation: false
-                runAsNonRoot: true
-                capabilities:
-                  drop:
-                    - ALL
-                seccompProfile:
-                  type: RuntimeDefault
-
-parameters:
-  - name: NAME
-    value: "hello-openshift"
-  - name: REPLICAS
-    value: "3"
-  - name: RUNTIMECLASSNAME
-    value: "kata-cc"
-  - name: IMAGE
-    value: "quay.io/openshift/origin-hello-openshift"
-  - name: PORT
-    value: "8888"
-  - name: INITDATA
-    value: ""
-`)
-
-func testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYaml, nil
-}
-
-func testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/workload-deployment-securityContext-cocobm.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -14354,63 +12864,6 @@ func testExtendedTestdataKataWorkloadDeploymentSecuritycontextYaml() (*asset, er
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/kata/workload-deployment-securityContext.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: common-pod-template
-objects:
-  - apiVersion: v1
-    kind: Pod
-    metadata:
-      name: "${NAME}"
-      labels:
-        app: "${NAME}"
-      annotations:
-        io.katacontainers.config.hypervisor.cc_init_data: "${INITDATA}"
-    spec:
-      runtimeClassName: "${RUNTIMECLASSNAME}"
-      containers:
-        - name: "${NAME}"
-          image: "${IMAGE}"
-          ports:
-            - containerPort: ${{PORT}}
-          imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: false
-            seccompProfile:
-              type: RuntimeDefault
-
-# oc process --ignore-unknown-parameters=true -f $L/workload-pod-securityContext.yaml -p NAME=$NAME RUNTIMECLASSNAME=$RUNTIMECLASSNAME IMAGE=$IMAGE PORT=$PORT > pod.yaml
-
-parameters:
-  - name: NAME
-    value: "hello-openshift"
-  - name: RUNTIMECLASSNAME
-    value: "kata-cc"
-  - name: IMAGE
-    value: "quay.io/openshift/origin-hello-openshift"
-  - name: PORT
-    value: "8888"
-  - name: INITDATA
-    value: ""
-
-`)
-
-func testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYaml, nil
-}
-
-func testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/kata/workload-pod-securityContext-cocobm.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -15828,22 +14281,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:206dea14c8a2c8a4d408808a08e2b4dc932218b45aae6147ba000fa08cc7251a
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -15987,22 +14428,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:206dea14c8a2c8a4d408808a08e2b4dc932218b45aae6147ba000fa08cc7251a
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -16151,22 +14580,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:206dea14c8a2c8a4d408808a08e2b4dc932218b45aae6147ba000fa08cc7251a
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -16327,22 +14744,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:206dea14c8a2c8a4d408808a08e2b4dc932218b45aae6147ba000fa08cc7251a
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -16491,22 +14896,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:420ab335838747b1d350ed39f4d88cf075479fc915cda8f91373c7e00de65887
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -16517,9 +14910,6 @@ objects:
             subPath: elasticsearch.yml
             name: elasticsearch-config
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -16656,22 +15046,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:420ab335838747b1d350ed39f4d88cf075479fc915cda8f91373c7e00de65887
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -16688,9 +15066,6 @@ objects:
             successThreshold: 1
             timeoutSeconds: 10
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -16832,31 +15207,16 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:420ab335838747b1d350ed39f4d88cf075479fc915cda8f91373c7e00de65887
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
           - containerPort: 9200
             protocol: TCP
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -17012,22 +15372,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:420ab335838747b1d350ed39f4d88cf075479fc915cda8f91373c7e00de65887
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -17044,9 +15392,6 @@ objects:
             successThreshold: 1
             timeoutSeconds: 10
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -17181,22 +15526,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:234e8ecfb6c1bdafffeb190c4a48e8e3c4b74b69d1b541b913dfbca29e952f63
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -17207,9 +15540,6 @@ objects:
             subPath: elasticsearch.yml
             name: elasticsearch-config
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -17345,22 +15675,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:234e8ecfb6c1bdafffeb190c4a48e8e3c4b74b69d1b541b913dfbca29e952f63
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -17377,9 +15695,6 @@ objects:
             successThreshold: 1
             timeoutSeconds: 10
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -17520,31 +15835,16 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:234e8ecfb6c1bdafffeb190c4a48e8e3c4b74b69d1b541b913dfbca29e952f63
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
           - containerPort: 9200
             protocol: TCP
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -17699,22 +15999,10 @@ objects:
         labels:
           app: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - image: quay.io/openshifttest/elasticsearch@sha256:234e8ecfb6c1bdafffeb190c4a48e8e3c4b74b69d1b541b913dfbca29e952f63
           imagePullPolicy: IfNotPresent
           name: ${NAME}
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 9300
             protocol: TCP
@@ -17731,9 +16019,6 @@ objects:
             successThreshold: 1
             timeoutSeconds: 10
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 1
               memory: 2Gi
@@ -17895,22 +16180,10 @@ objects:
           provider: aosqe
           component: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - name: "fluentdserver"
           image: "quay.io/openshifttest/fluentd:1.2.2"
           imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 24224
             name: fluentdserver
@@ -18406,22 +16679,10 @@ objects:
           provider: aosqe
           component: ${NAME}
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - name: "fluentdserver"
           image: "quay.io/openshifttest/fluentd:1.2.2"
           imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 24224
             name: fluentdserver
@@ -19729,10 +17990,6 @@ objects:
           provider: openshift
         name: kafka-consumer
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /bin/bash
@@ -19741,14 +17998,6 @@ objects:
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
           name: kafka-consumer
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -19768,6 +18017,7 @@ objects:
           kubernetes.io/os: linux
         restartPolicy: Always
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
         - emptyDir: {}
@@ -19836,10 +18086,6 @@ objects:
           component: kafka
           provider: openshift
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /opt/kafka/bin/kafka-server-start.sh
@@ -19853,14 +18099,6 @@ objects:
             value: "5555"
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           lifecycle:
             preStop:
               exec:
@@ -19936,14 +18174,6 @@ objects:
           image: quay.io/openshifttest/kafka-initutils@sha256:e73ff7a44b43b85b53849c0459ba32e704540852b885a5c78af9753f86a49d68
           imagePullPolicy: IfNotPresent
           name: init-config
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -19959,6 +18189,7 @@ objects:
           kubernetes.io/arch: amd64
           kubernetes.io/os: linux
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
         - configMap:
@@ -20262,10 +18493,6 @@ objects:
           provider: openshift
         name: kafka-consumer
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /bin/bash
@@ -20274,14 +18501,6 @@ objects:
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
           name: kafka-consumer
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -20299,6 +18518,7 @@ objects:
           kubernetes.io/os: linux
         restartPolicy: Always
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
         - emptyDir: {}
@@ -20361,10 +18581,6 @@ objects:
           component: kafka
           provider: openshift
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /opt/kafka/bin/kafka-server-start.sh
@@ -20380,14 +18596,6 @@ objects:
             value: "5555"
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           lifecycle:
             preStop:
               exec:
@@ -20463,14 +18671,6 @@ objects:
           image: quay.io/openshifttest/kafka-initutils@sha256:e73ff7a44b43b85b53849c0459ba32e704540852b885a5c78af9753f86a49d68
           imagePullPolicy: IfNotPresent
           name: init-config
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -20486,6 +18686,7 @@ objects:
           kubernetes.io/arch: amd64
           kubernetes.io/os: linux
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
         - configMap:
@@ -20793,10 +18994,6 @@ objects:
           provider: openshift
         name: kafka-consumer
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /bin/bash
@@ -20805,14 +19002,6 @@ objects:
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
           name: kafka-consumer
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -20832,6 +19021,7 @@ objects:
           kubernetes.io/os: linux
         restartPolicy: Always
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
         - emptyDir: {}
@@ -20900,10 +19090,6 @@ objects:
           component: kafka
           provider: openshift
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /opt/kafka/bin/kafka-server-start.sh
@@ -20919,14 +19105,6 @@ objects:
             value: "5555"
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           lifecycle:
             preStop:
               exec:
@@ -21005,14 +19183,6 @@ objects:
           nodeSelector:
             kubernetes.io/arch: amd64
             kubernetes.io/os: linux
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -21025,6 +19195,7 @@ objects:
             name: extensions
         restartPolicy: Always
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
         - configMap:
@@ -21214,10 +19385,6 @@ objects:
           component: zookeeper
           provider: openshift
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - command:
           - /opt/kafka/bin/zookeeper-server-start.sh
@@ -21227,14 +19394,6 @@ objects:
             value: -Dlog4j.configuration=file:/etc/kafka/log4j.properties
           image: quay.io/openshifttest/kafka@sha256:2411662d89dd5700e1fe49aa8be1219843948da90cfe51a1c7a49bcef9d22dab
           imagePullPolicy: IfNotPresent
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           lifecycle:
             preStop:
               exec:
@@ -21278,14 +19437,6 @@ objects:
           image: quay.io/openshifttest/kafka-initutils@sha256:e73ff7a44b43b85b53849c0459ba32e704540852b885a5c78af9753f86a49d68
           imagePullPolicy: IfNotPresent
           name: init-config
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -21301,6 +19452,7 @@ objects:
           kubernetes.io/arch: amd64
           kubernetes.io/os: linux
         schedulerName: default-scheduler
+        securityContext: {}
         terminationGracePeriodSeconds: 10
         volumes:
         - configMap:
@@ -21529,22 +19681,10 @@ objects:
           component: "loki"
           appname: loki-server
       spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - name: "loki"
           image: quay.io/openshifttest/grafana-loki@sha256:bbf6dbf3264af939a541b6f3c014cba21a2bdc8f22cb7962eee7e9048b41ea5e
           imagePullPolicy: IfNotPresent
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
           ports:
           - containerPort: 3100
             name: tcp
@@ -21654,8 +19794,8 @@ objects:
       global(processInternalMessages="on")
       module(load="imptcp")
       module(load="imudp" TimeRequery="500")
-      input(type="imptcp" port="10514")
-      input(type="imudp" port="10514")
+      input(type="imptcp" port="514")
+      input(type="imudp" port="514")
       :msg, contains, "\"log_type\":\"application\"" /var/log/clf/app-container.log
       :msg, contains, "\"log_type\":\"infrastructure\""{
         if $msg contains "\"log_source\":\"container\"" then /var/log/clf/infra-container.log
@@ -21719,28 +19859,19 @@ objects:
       spec:
         serviceAccount: ${NAME}
         serviceAccountName: ${NAME}
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - name: "rsyslog"
           command: ["/usr/sbin/rsyslogd", "-f", "/etc/rsyslog/conf/rsyslog.conf", "-n"]
           image: quay.io/openshifttest/rsyslogd-container@sha256:e806eb41f05d7cc6eec96bf09c7bcb692f97562d4a983cb019289bd048d9aee2
           imagePullPolicy: IfNotPresent
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
+            privileged: true
+            procMount: Default
           ports:
-          - containerPort: 10514
+          - containerPort: 514
             name: rsyslog-pod-tcp
             protocol: TCP
-          - containerPort: 10514
+          - containerPort: 514
             name: rsyslog-pod-udp
             protocol: UDP
           volumeMounts:
@@ -21791,11 +19922,11 @@ objects:
     ports:
     - name: rsyslogserver-tcp
       port: 514
-      targetPort: 10514
+      targetPort: 514
       protocol: TCP
     - name: rsyslogserver-udp
       port: 514
-      targetPort: 10514
+      targetPort: 514
       protocol: UDP
     selector:
       component: ${NAME}
@@ -21849,7 +19980,7 @@ objects:
       )
       module(load="imudp" TimeRequery="500")
       input(type="imtcp" port="6514")
-      input(type="imudp" port="10514")
+      input(type="imudp" port="514")
       :msg, contains, "\"log_type\":\"application\"" /var/log/clf/app-container.log
       :msg, contains, "\"log_type\":\"infrastructure\""{
         if $msg contains "\"log_source\":\"container\"" then /var/log/clf/infra-container.log
@@ -21913,28 +20044,19 @@ objects:
       spec:
         serviceAccount: ${NAME}
         serviceAccountName: ${NAME}
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
         containers:
         - name: "rsyslog"
           command: ["/usr/sbin/rsyslogd", "-f", "/etc/rsyslog/conf/rsyslog.conf", "-n"]
           image: quay.io/openshifttest/rsyslogd-container@sha256:e806eb41f05d7cc6eec96bf09c7bcb692f97562d4a983cb019289bd048d9aee2
           imagePullPolicy: IfNotPresent
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
+            privileged: true
+            procMount: Default
           ports:
-          - containerPort: 10514
+          - containerPort: 514
             name: rsyslog-pod-tcp
             protocol: TCP
-          - containerPort: 10514
+          - containerPort: 514
             name: rsyslog-pod-udp
             protocol: UDP
           - containerPort: 6514
@@ -21999,11 +20121,11 @@ objects:
       protocol: TCP
     - name: rsyslogserver-tcp
       port: 514
-      targetPort: 10514
+      targetPort: 514
       protocol: TCP
     - name: rsyslogserver-udp
       port: 514
-      targetPort: 10514
+      targetPort: 514
       protocol: UDP
     selector:
       component: ${NAME}
@@ -22385,12 +20507,6 @@ objects:
             requests:
               cpu: 100m
               memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -22622,12 +20738,6 @@ objects:
             requests:
               cpu: 100m
               memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -23248,150 +21358,6 @@ func testExtendedTestdataLoggingGeneratelogContainer_non_json_log_templateJson()
 	return a, nil
 }
 
-var _testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJson = []byte(`{
-  "apiVersion": "template.openshift.io/v1",
-  "kind": "Template",
-  "metadata": {
-    "name": "centos-logtest-template"
-  },
-  "objects": [
-    {
-      "apiVersion": "v1",
-      "data": {
-        "ocp_logtest.cfg": "--text-type random --line-length ${LINE_LENGTH} --rate ${RATE} --num-lines ${NUM_LINES}",
-        "json.example": "{\"message\": \"MERGE_JSON_LOG=true\", \"level\": \"debug\",\"Layer1\": \"layer1 0\", \"layer2\": {\"name\":\"Layer2 1\", \"tips\":\"Decide by PRESERVE_JSON_LOG\"}, \"StringNumber\":\"10\", \"Number\": 10,\"foo.bar\":\"Dot Item\",\"{foobar}\":\"Brace Item\",\"[foobar]\":\"Bracket Item\", \"foo:bar\":\"Colon Item\",\"foo bar\":\"Space Item\" }"
-      },
-      "kind": "ConfigMap",
-      "metadata": {
-        "name": "${CONFIGMAP}"
-      }
-    },
-    {
-      "apiVersion": "v1",
-      "kind": "ReplicationController",
-      "metadata": {
-        "name": "${REPLICATIONCONTROLLER}",
-        "labels": "${{LABELS}}"
-      },
-      "spec": {
-        "replicas": "${{REPLICAS}}",
-        "template": {
-          "metadata": {
-            "generateName": "centos-logtest-",
-            "annotations": {
-              "containerType.logging.openshift.io/${CONTAINER}": "${CONTAINER}"
-            },
-            "labels": "${{LABELS}}"
-          },
-          "spec": {
-            "nodeSelector": "${{NODE_SELECTOR}}",
-            "containers": [
-              {
-                "env": [],
-                "image": "quay.io/openshifttest/ocp-logtest@sha256:6e2973d7d454ce412ad90e99ce584bf221866953da42858c4629873e53778606",
-                "imagePullPolicy": "IfNotPresent",
-                "name": "${CONTAINER}",
-                "resources": {},
-                "volumeMounts": [
-                  {
-                    "name": "config",
-                    "mountPath": "/var/lib/svt"
-                  }
-                ],
-                "securityContext": {
-                  "allowPrivilegeEscalation": false,
-                  "capabilities": {
-                    "drop": [
-                      "ALL"
-                    ]
-                  }
-                },
-                "terminationMessagePath": "/dev/termination-log"
-              }
-            ],
-            "securityContext": {
-              "runAsNonRoot": true,
-              "seccompProfile": {
-                "type": "RuntimeDefault"
-              }
-            },
-            "volumes": [
-              {
-                "name": "config",
-                "configMap": {
-                  "name": "${CONFIGMAP}"
-                }
-              }
-            ]
-          }
-        }
-      }
-    }
-  ],
-  "parameters": [
-    {
-      "name": "REPLICAS",
-      "displayName": "Replicas",
-      "value": "1"
-    },
-    {
-      "name": "LABELS",
-      "displayName": "labels",
-      "value": "{\"run\": \"centos-logtest\", \"test\": \"centos-logtest\"}"
-    },
-    {
-      "name": "REPLICATIONCONTROLLER",
-      "displayName": "ReplicationController",
-      "value": "logging-centos-logtest"
-    },
-    {
-      "name": "CONFIGMAP",
-      "displayName": "ConfigMap",
-      "value": "logtest-config"
-    },
-    {
-      "name": "CONTAINER",
-      "value": "logging-centos-logtest"
-    },
-    {
-      "name": "RATE",
-      "value": "60.0"
-    },
-    {
-      "name": "NUM_LINES",
-      "value": "1000"
-    },
-    {
-      "name": "LINE_LENGTH",
-      "displayName": "Line Length",
-      "description": "Length of each log line in characters (used with random text type)",
-      "value": "500"
-    },
-    {
-      "name": "NODE_SELECTOR",
-      "displayName": "Node Selector",
-      "description": "Node selector to schedule pods on specific nodes",
-      "value": "{\"node-role.kubernetes.io/worker\": \"\"}"
-    }
-  ]
-}
-`)
-
-func testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJsonBytes() ([]byte, error) {
-	return _testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJson, nil
-}
-
-func testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJson() (*asset, error) {
-	bytes, err := testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJsonBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/logging/generatelog/logging-performance-app-generator.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataLoggingGeneratelogMulti_container_json_log_templateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -23935,120 +21901,6 @@ func testExtendedTestdataLoggingLokistackFineGrainedAccessRolesYaml() (*asset, e
 	return a, nil
 }
 
-var _testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: lokiStack-template
-objects:
-- kind: "LokiStack"
-  apiVersion: "loki.grafana.com/v1"
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    networkPolicies:
-      ruleSet: ${LOKISTACK_NETWORK_POLICIES_RULESET}
-    limits:
-      global:
-        retention:
-          days: 20
-          streams:
-          - days: 4
-            priority: 1
-            selector: '{kubernetes_namespace_name=~"e2e.+"}'
-          - days: 1
-            priority: 1
-            selector: '{kubernetes_namespace_name="kube.+"}'
-          - days: 15
-            priority: 1
-            selector: '{log_type="audit"}'
-      tenants:
-        application:
-          retention:
-            days: 1
-            streams:
-            - days: 4
-              selector: '{kubernetes_namespace_name=~"test.+"}'
-        audit:
-          retention:
-            days: 15
-        infrastructure:
-          retention:
-            days: 5
-            streams:
-            - days: 1
-              selector: '{kubernetes_namespace_name=~"openshift-cluster.+"}'
-    hashRing:
-      memberlist:
-        enableIPv6: true
-      type: memberlist
-    managementState: "Managed"
-    size: ${SIZE}
-    storage:
-      secret:
-        name: ${SECRET_NAME}
-        type: ${STORAGE_TYPE}
-      schemas:
-      - version: ${STORAGE_SCHEMA_VERSION}
-        effectiveDate: ${SCHEMA_EFFECTIVE_DATE}
-      tls:
-        caName: ${CA_NAME}
-        caKey: ${CA_KEY_NAME}
-    storageClassName: ${STORAGE_CLASS}
-    tenants:
-      mode: "openshift-logging"
-      openshift:
-        adminGroups: ${{ADMIN_GROUPS}}
-    rules:
-      enabled: true
-      selector:
-        matchLabels:
-          openshift.io/cluster-monitoring: "true"
-      namespaceSelector:
-        matchLabels:
-          openshift.io/cluster-monitoring: "true"
-parameters:
-- name: NAME
-  value: "my-loki"
-- name: NAMESPACE
-  value: "openshift-logging"
-- name: SIZE
-  value: "1x.demo"
-- name: SECRET_NAME
-  value: "s3-secret"
-- name: STORAGE_TYPE
-  value: "s3"
-- name: STORAGE_CLASS
-  value: "gp2"
-- name: "ADMIN_GROUPS"
-  value: "[]"
-- name: STORAGE_SCHEMA_VERSION
-  value: "v13"
-- name: SCHEMA_EFFECTIVE_DATE
-  value: "2023-10-15"
-- name: CA_NAME
-  value: ""
-- name: CA_KEY_NAME
-  value: "service-ca.crt"
-- name: LOKISTACK_NETWORK_POLICIES_RULESET
-  value: "None"
-`)
-
-func testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYaml, nil
-}
-
-func testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/logging/lokistack/lokistack-simple-ipv6-tls.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataLoggingLokistackLokistackSimpleIpv6Yaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -24060,8 +21912,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    networkPolicies:
-      ruleSet: ${LOKISTACK_NETWORK_POLICIES_RULESET}
     limits:
       global:
         retention:
@@ -24137,8 +21987,6 @@ parameters:
   value: "v13"
 - name: SCHEMA_EFFECTIVE_DATE
   value: "2023-10-15"
-- name: LOKISTACK_NETWORK_POLICIES_RULESET
-  value: "None"
 `)
 
 func testExtendedTestdataLoggingLokistackLokistackSimpleIpv6YamlBytes() ([]byte, error) {
@@ -24156,116 +22004,6 @@ func testExtendedTestdataLoggingLokistackLokistackSimpleIpv6Yaml() (*asset, erro
 	return a, nil
 }
 
-var _testExtendedTestdataLoggingLokistackLokistackSimpleTlsYaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: lokiStack-template
-objects:
-- kind: "LokiStack"
-  apiVersion: "loki.grafana.com/v1"
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    networkPolicies:
-      ruleSet: ${LOKISTACK_NETWORK_POLICIES_RULESET}
-    limits:
-      global:
-        retention:
-          days: 20
-          streams:
-          - days: 4
-            priority: 1
-            selector: '{kubernetes_namespace_name=~"e2e.+"}'
-          - days: 1
-            priority: 1
-            selector: '{kubernetes_namespace_name="kube.+"}'
-          - days: 15
-            priority: 1
-            selector: '{log_type="audit"}'
-      tenants:
-        application:
-          retention:
-            days: 1
-            streams:
-            - days: 4
-              selector: '{kubernetes_namespace_name=~"test.+"}'
-        audit:
-          retention:
-            days: 15
-        infrastructure:
-          retention:
-            days: 5
-            streams:
-            - days: 1
-              selector: '{kubernetes_namespace_name=~"openshift-cluster.+"}'
-    managementState: "Managed"
-    size: ${SIZE}
-    storage:
-      secret:
-        name: ${SECRET_NAME}
-        type: ${STORAGE_TYPE}
-      schemas:
-      - version: ${STORAGE_SCHEMA_VERSION}
-        effectiveDate: ${SCHEMA_EFFECTIVE_DATE}
-      tls:
-        caName: ${CA_NAME}
-        caKey: ${CA_KEY_NAME}
-    storageClassName: ${STORAGE_CLASS}
-    tenants:
-      mode: "openshift-logging"
-      openshift:
-        adminGroups: ${{ADMIN_GROUPS}}
-    rules:
-      enabled: true
-      selector:
-        matchLabels:
-          openshift.io/cluster-monitoring: "true"
-      namespaceSelector:
-        matchLabels:
-          openshift.io/cluster-monitoring: "true"
-parameters:
-- name: NAME
-  value: "my-loki"
-- name: NAMESPACE
-  value: "openshift-logging"
-- name: SIZE
-  value: "1x.demo"
-- name: SECRET_NAME
-  value: "s3-secret"
-- name: STORAGE_TYPE
-  value: "s3"
-- name: STORAGE_CLASS
-  value: "gp2"
-- name: "ADMIN_GROUPS"
-  value: "[]"
-- name: STORAGE_SCHEMA_VERSION
-  value: "v13"
-- name: SCHEMA_EFFECTIVE_DATE
-  value: "2023-10-15"
-- name: CA_NAME
-  value: ""
-- name: CA_KEY_NAME
-  value: "service-ca.crt"
-- name: LOKISTACK_NETWORK_POLICIES_RULESET
-  value: "None"
-`)
-
-func testExtendedTestdataLoggingLokistackLokistackSimpleTlsYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataLoggingLokistackLokistackSimpleTlsYaml, nil
-}
-
-func testExtendedTestdataLoggingLokistackLokistackSimpleTlsYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataLoggingLokistackLokistackSimpleTlsYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/logging/lokistack/lokistack-simple-tls.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataLoggingLokistackLokistackSimpleYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -24277,8 +22015,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    networkPolicies:
-      ruleSet: ${LOKISTACK_NETWORK_POLICIES_RULESET}
     limits:
       global:
         retention:
@@ -24350,8 +22086,6 @@ parameters:
   value: "v13"
 - name: SCHEMA_EFFECTIVE_DATE
   value: "2023-10-15"
-- name: LOKISTACK_NETWORK_POLICIES_RULESET
-  value: "None"
 `)
 
 func testExtendedTestdataLoggingLokistackLokistackSimpleYamlBytes() ([]byte, error) {
@@ -24480,8 +22214,6 @@ objects:
     host: ${MINIO_DOMAIN}
     port:
       targetPort: 9000
-    tls:
-      termination: edge
     to:
       kind: Service
       name: ${NAME}
@@ -24825,7 +22557,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: ${MANAGEMENT_STATE}
     inputs:
     - name: syslog
@@ -24870,8 +22601,6 @@ parameters:
   value: "Managed"
 - name: SECRET_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarder71049YamlBytes() ([]byte, error) {
@@ -25361,7 +23090,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: azure-app
       type: azureMonitor
@@ -25392,21 +23120,21 @@ objects:
             secretName: ${SECRET_NAME}
     pipelines:
     - name: pipe1
-      inputRefs:
+      inputRefs: 
       - application
       outputRefs:
       - azure-app
     - name: pipe2
-      inputRefs:
+      inputRefs: 
       - infrastructure
       outputRefs:
       - azure-infra
     - name: pipe3
-      inputRefs:
+      inputRefs: 
       - audit
       outputRefs:
       - azure-audit
-    serviceAccount:
+    serviceAccount: 
       name: ${SERVICE_ACCOUNT_NAME}
 parameters:
 - name: NAME
@@ -25421,8 +23149,6 @@ parameters:
   value: ""
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderAzuremonitorMinOptsYamlBytes() ([]byte, error) {
@@ -25451,7 +23177,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: azure-app
@@ -25522,8 +23247,6 @@ parameters:
   value: ""
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderAzuremonitorYamlBytes() ([]byte, error) {
@@ -25552,7 +23275,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: loki-server
       type: loki
@@ -25588,8 +23310,6 @@ parameters:
   required: true
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfExternalLokiWithSecretTenantkeyYamlBytes() ([]byte, error) {
@@ -25618,7 +23338,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: ${OUTPUTNAME}
       type: loki
@@ -25657,8 +23376,6 @@ parameters:
   value: ""
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfExternalLokiWithSecretYamlBytes() ([]byte, error) {
@@ -25687,7 +23404,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     inputs:
     - name: selected-app
@@ -25726,8 +23442,6 @@ parameters:
   value: "e2e*"
 - name: NAMESPACE
   value: "openshift-logging"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfKafkaMultiBrokersYamlBytes() ([]byte, error) {
@@ -25756,7 +23470,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     inputs:
     - application:
         includes:
@@ -25797,7 +23510,7 @@ objects:
     - name: kafka-audit
       type: kafka
       kafka:
-        brokers:
+        brokers: 
         - tcp://${BOOTSTRAP_SVC}
         topic: ${AUDIT_TOPIC}
         authentication:
@@ -25846,8 +23559,6 @@ parameters:
   value: "{.log_type||\"none-typed-logs\"}"
 - name: AUDIT_TOPIC
   value: "{.log_type||\"none-typed-logs\"}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfKafkaMultiTopicsYamlBytes() ([]byte, error) {
@@ -25876,7 +23587,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - kafka:
         authentication:
@@ -25922,8 +23632,6 @@ parameters:
   value: "tls.crt"
 - name: TLS_KEY
   value: "tls.key"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfKafkaNoAuthYamlBytes() ([]byte, error) {
@@ -25952,7 +23660,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     inputs:
     - name: selected-app
       application:
@@ -25960,7 +23667,7 @@ objects:
           - namespace: ${NAMESPACE_PATTERN}
       type: application
     outputs:
-    - name: amq-instance
+    - name: amq-instance 
       type: kafka
       kafka:
         authentication:
@@ -25999,8 +23706,6 @@ parameters:
   value: "e2e*"
 - name: NAMESPACE
   value: "openshift-logging"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfKafkaSaslSslYamlBytes() ([]byte, error) {
@@ -26029,7 +23734,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - kafka:
         authentication:
@@ -26093,8 +23797,6 @@ parameters:
   value: "10M"
 - name: DELIVERY
   value: "AtLeastOnce"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderClfKafkaWithAuthYamlBytes() ([]byte, error) {
@@ -26123,7 +23825,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: cloudwatch
@@ -26166,8 +23867,6 @@ parameters:
   value: ""
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderCloudwatchAccesskeyYamlBytes() ([]byte, error) {
@@ -26196,7 +23895,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: cloudwatch
@@ -26237,8 +23935,6 @@ parameters:
   value: ""
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderCloudwatchIamroleYamlBytes() ([]byte, error) {
@@ -26267,7 +23963,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: cloudwatch-application
@@ -26325,8 +24020,6 @@ parameters:
 - name: GROUP_NAME_1
 - name: GROUP_NAME_2
 - name: SERVICE_ACCOUNT_NAME
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderCloudwatchMultipleIamroleYamlBytes() ([]byte, error) {
@@ -26830,7 +24523,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: gcp-app
@@ -26901,8 +24593,6 @@ parameters:
   value: "openshift-qe"
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGoogleCloudLoggingMultiLogidsYamlBytes() ([]byte, error) {
@@ -26931,7 +24621,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: gcp-logging
@@ -26984,8 +24673,6 @@ parameters:
   value: "10"
 - name: MAX_RETRY_DURATION
   value: "20"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGooglecloudloggingYamlBytes() ([]byte, error) {
@@ -27003,110 +24690,6 @@ func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGoog
 	return a, nil
 }
 
-var _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490Yaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: clusterlogforwarder-template
-objects:
-- apiVersion: observability.openshift.io/v1
-  kind: ClusterLogForwarder
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    collector: ${{COLLECTOR}}
-    outputs:
-    - name: httpout-app
-      type: http
-      http:
-        headers:
-          h1: v1
-          h2: v2
-        method: POST
-        url: ${URL_APP}
-      tls:
-        ca:
-          key: ${TLS_CA_KEY}
-          secretName: ${SECRET_APP}
-    - name: httpout-infra
-      type: http
-      http:
-        headers:
-          h1: v1
-          h2: v2
-        method: POST
-        url: ${URL_INFRA}
-      tls:
-        ca:
-          key: ${TLS_CA_KEY}
-          secretName: ${SECRET_INFRA}
-    - name: httpout-audit
-      type: http
-      http:
-        headers:
-          h1: v1
-          h2: v2
-        method: POST
-        url: ${URL_AUDIT}
-      tls:
-        ca:
-          key: ${TLS_CA_KEY}
-          secretName: ${SECRET_AUDIT}
-    pipelines:
-    - inputRefs:
-      - application
-      name: app-logs
-      outputRefs:
-      - httpout-app
-    - inputRefs:
-      - infrastructure
-      name: infra-logs
-      outputRefs:
-      - httpout-infra
-    - inputRefs:
-      - audit
-      name: audit-logs
-      outputRefs:
-      - httpout-audit
-    serviceAccount:
-      name: ${SERVICE_ACCOUNT_NAME}
-parameters:
-- name: NAME
-  value: instance
-- name: NAMESPACE
-  value: openshift-logging
-- name: URL_APP
-  value: https://fluentdserver.openshift-logging.svc:24224
-- name: URL_AUDIT
-  value: https://fluentdserver.openshift-logging.svc:24224
-- name: URL_INFRA
-  value: https://fluentdserver.openshift-logging.svc:24224
-- name: SECRET_APP
-- name: SECRET_AUDIT
-- name: SECRET_INFRA
-- name: SERVICE_ACCOUNT_NAME
-  value: ""
-- name: COLLECTOR
-  value: "{}"
-- name: TLS_CA_KEY
-  value: "ca-bundle.crt"
-`)
-
-func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490Yaml, nil
-}
-
-func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/http-output-85490.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutputYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -27118,7 +24701,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - http:
@@ -27179,8 +24761,6 @@ parameters:
 - name: SERVICE_ACCOUNT_NAME
   value: ""
 - name: TUNING
-  value: "{}"
-- name: COLLECTOR
   value: "{}"
 `)
 
@@ -27270,7 +24850,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: httpout-app
       type: http
@@ -27337,8 +24916,6 @@ parameters:
   value: to-fluentdserver
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpsOutputCaYamlBytes() ([]byte, error) {
@@ -27367,7 +24944,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: httpout-app
       type: http
@@ -27461,8 +25037,6 @@ parameters:
   value: to-fluentdserver
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpsOutputMtlsYamlBytes() ([]byte, error) {
@@ -27491,7 +25065,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: httpout-app
       type: http
@@ -27552,8 +25125,6 @@ parameters:
   value: to-fluentdserver
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpsOutputSkipverifyYamlBytes() ([]byte, error) {
@@ -27582,7 +25153,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     inputs:
     - name: ${HTTPSERVER_NAME}
       receiver:
@@ -27634,8 +25204,6 @@ parameters:
   value: "httpserver"
 - name: SECRET_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpserverToHttpoutputYamlBytes() ([]byte, error) {
@@ -27664,7 +25232,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     inputs:
     - name: httpserver1
@@ -27726,8 +25293,6 @@ parameters:
   value: "main"
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpserverToSplunkYamlBytes() ([]byte, error) {
@@ -27756,7 +25321,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: loki-server
@@ -27790,8 +25354,6 @@ parameters:
   value: "{.log_type||\"none-typed-logs\"}"
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderLokiYamlBytes() ([]byte, error) {
@@ -27820,7 +25382,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: ${MANAGEMENT_STATE}
     outputs:
     - name: lokistack
@@ -27886,8 +25447,6 @@ parameters:
   value: "[]"
 - name: GLOBAL_LABELKEYS
   value: "[\"log_type\",\"kubernetes.container_name\",\"kubernetes.namespace_name\",\"kubernetes.pod_name\"]"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderLokistackWithLabelkeysYamlBytes() ([]byte, error) {
@@ -27918,7 +25477,6 @@ objects:
     annotations:
       observability.openshift.io/tech-preview-otlp-output: "enabled"
   spec:
-    collector: ${{COLLECTOR}}
     managementState: ${MANAGEMENT_STATE}
     outputs:
     - name: lokistack
@@ -27964,8 +25522,6 @@ parameters:
   value: ""
 - name: DATAMODEL
   value: "Viaq"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderLokistackYamlBytes() ([]byte, error) {
@@ -27994,7 +25550,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: loki-app
       type: loki
@@ -28057,8 +25612,6 @@ parameters:
   value: "lokistack-gateway-bearer-token"
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderLokistack_gateway_https_secretYamlBytes() ([]byte, error) {
@@ -28089,7 +25642,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: ${MANAGEMENT_STATE}
     filters:
       - name: detect-multiline-exception
@@ -28165,8 +25717,6 @@ parameters:
   value: "openshift-service-ca.crt"
 - name: URL
   value: "https://logging-loki-gateway-http.openshift-logging.svc.cluster.local:8080"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderOtlpLokistackYamlBytes() ([]byte, error) {
@@ -28197,7 +25747,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: ${MANAGEMENT_STATE}
     outputs:
     - name: otlp
@@ -28211,7 +25760,10 @@ objects:
           minRetryDuration: 5
         url: ${URL}/v1/logs
     pipelines:
-    - inputRefs: ${{INPUT_REFS}}
+    - inputRefs:
+      - application
+      - infrastructure
+      - audit
       name: otlp-logs
       outputRefs:
       - otlp
@@ -28228,10 +25780,6 @@ parameters:
   value: "Managed"
 - name: URL
   value: "http://otel-collector.openshift-opentelemetry-operator.svc:4318"
-- name: COLLECTOR
-  value: "{}"
-- name: INPUT_REFS
-  value: "[\"infrastructure\", \"audit\", \"application\"]"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderOtlpYamlBytes() ([]byte, error) {
@@ -28260,7 +25808,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: external-syslog
       type: syslog
@@ -28302,8 +25849,6 @@ parameters:
   value: ""
 - name: RFC
   value: RFC5424
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsyslogMtlsYamlBytes() ([]byte, error) {
@@ -28332,7 +25877,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     inputs:
     - application:
         includes:
@@ -28375,8 +25919,6 @@ parameters:
   value: "[\"infrastructure\", \"audit\", \"app-input-namespace\"]"
 - name: SERVICE_ACCOUNT_NAME
   value: ""
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsyslogServerauthYamlBytes() ([]byte, error) {
@@ -28394,155 +25936,6 @@ func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsys
 	return a, nil
 }
 
-var _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYaml = []byte(`kind: Template
-apiversion: template.openshift.io/v1
-metadata:
-  name: clusterlogforwarder-template
-objects:
-- apiVersion: "observability.openshift.io/v1"
-  kind: ClusterLogForwarder
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    collector: ${{COLLECTOR}}
-    managementState: Managed
-    outputs:
-    - name: s3-output
-      type: s3
-      s3:
-        authentication:
-          awsAccessKey:
-            keyId:
-              key: aws_access_key_id
-              secretName: ${SECRET_NAME}
-            keySecret:
-              key: aws_secret_access_key
-              secretName: ${SECRET_NAME}
-          type: awsAccessKey
-        bucket: ${BUCKET_NAME}
-        region: ${REGION}
-        keyPrefix: ${KEY_PREFIX}
-        tuning: ${{TUNING}}
-    pipelines:
-    - name: to-cloudwatch
-      inputRefs: ${{INPUT_REFS}}
-      outputRefs:
-      - s3-output
-    serviceAccount:
-      name: ${SERVICE_ACCOUNT_NAME}
-parameters:
-- name: NAME
-  value: "instance"
-- name: NAMESPACE
-  value: "openshift-logging"
-- name: SECRET_NAME
-  value: "s3-secret"
-- name: REGION
-  value: "us-east-2"
-- name: BUCKET_NAME
-  value: ""
-- name: KEY_PREFIX
-  value: "{.log_type||\"none-typed-logs\"}"
-- name: INPUT_REFS
-  value: "[\"infrastructure\", \"audit\", \"application\"]"
-- name: SERVICE_ACCOUNT_NAME
-  value: ""
-- name: TUNING
-  value: "{}"
-- name: COLLECTOR
-  value: "{}"
-`)
-
-func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYaml, nil
-}
-
-func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/s3-accessKey.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYaml = []byte(`kind: Template
-apiversion: template.openshift.io/v1
-metadata:
-  name: clusterlogforwarder-template
-objects:
-- apiVersion: "observability.openshift.io/v1"
-  kind: ClusterLogForwarder
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    collector: ${{COLLECTOR}}
-    managementState: Managed
-    outputs:
-    - name: s3-output
-      type: s3
-      s3:
-        authentication:
-          iamRole:
-            roleARN:
-              key: role_arn
-              secretName: ${SECRET_NAME}
-            token:
-              from: serviceAccount
-          type: iamRole
-        keyPrefix: ${KEY_PREFIX}
-        bucket: ${BUCKET_NAME}
-        region: ${REGION}
-        tuning: ${{TUNING}}
-    pipelines:
-    - name: forward-to-s3-bucket
-      inputRefs: ${{INPUT_REFS}}
-      outputRefs:
-      - s3-output
-    serviceAccount:
-      name: ${SERVICE_ACCOUNT_NAME}
-parameters:
-- name: NAME
-  value: "instance"
-- name: NAMESPACE
-  value: "openshift-logging"
-- name: SECRET_NAME
-  value: "s3-secret"
-- name: REGION
-  value: "us-east-2"
-- name: BUCKET_NAME
-  value: ""
-- name: KEY_PREFIX
-  value: "{.log_type||\"none-typed-logs\"}"
-- name: INPUT_REFS
-  value: "[\"infrastructure\", \"audit\", \"application\"]"
-- name: SERVICE_ACCOUNT_NAME
-  value: ""
-- name: TUNING
-  value: "{}"
-- name: COLLECTOR
-  value: "{}"
-`)
-
-func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYaml, nil
-}
-
-func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/s3-iamRole.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsPassphraseYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -28554,7 +25947,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: splunk-aosqe
@@ -28605,8 +25997,6 @@ parameters:
   value: "main"
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsPassphraseYamlBytes() ([]byte, error) {
@@ -28635,7 +26025,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: splunk-aosqe
@@ -28686,8 +26075,6 @@ parameters:
   value: "{}"
 - name: SKIPVERIFY
   value: "false"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsYamlBytes() ([]byte, error) {
@@ -28716,7 +26103,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: splunk-aosqe
@@ -28761,8 +26147,6 @@ parameters:
   value: "main"
 - name: TUNING
   value: "{}"
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkServeronlyYamlBytes() ([]byte, error) {
@@ -28791,7 +26175,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     managementState: Managed
     outputs:
     - name: splunk-aosqe
@@ -28828,8 +26211,6 @@ parameters:
 - name: INDEX
   value: "main"
 - name: TUNING
-  value: "{}"
-- name: COLLECTOR
   value: "{}"
 `)
 
@@ -28899,17 +26280,17 @@ objects:
         severity: Alert
         url: ${URL}
     pipelines:
-    - inputRefs:
+    - inputRefs: 
         - app-input-namespace
       name: pipe1
       outputRefs:
         - syslog-app
-    - inputRefs:
+    - inputRefs: 
         - infrastructure
       name: pipe2
       outputRefs:
         - syslog-infra
-    - inputRefs:
+    - inputRefs: 
         - audit
       name: pipe3
       outputRefs:
@@ -28975,17 +26356,17 @@ objects:
         rfc: ${RFC}
         url: ${URL}
     pipelines:
-    - inputRefs:
+    - inputRefs: 
         - app-input-namespace
       name: pipe1
       outputRefs:
         - syslog-out
-    - inputRefs:
+    - inputRefs: 
         - infrastructure
       name: pipe2
       outputRefs:
         - syslog-out
-    - inputRefs:
+    - inputRefs: 
         - audit
       name: pipe3
       outputRefs:
@@ -29055,7 +26436,7 @@ objects:
           key: ca-bundle.crt
           secretName: ${SECRET_NAME}
     pipelines:
-    - inputRefs:
+    - inputRefs: 
         - app-input-namespace
       name: pipe1
       outputRefs:
@@ -29171,7 +26552,6 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    collector: ${{COLLECTOR}}
     outputs:
     - name: rsyslog
       type: syslog
@@ -29204,8 +26584,6 @@ parameters:
   value: "[\"infrastructure\", \"audit\", \"application\"]"
 - name: RFC
   value: RFC5424
-- name: COLLECTOR
-  value: "{}"
 `)
 
 func testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSyslogYamlBytes() ([]byte, error) {
@@ -29611,11 +26989,7 @@ func testExtendedTestdataLoggingRapidastCustomscanPolicy() (*asset, error) {
 }
 
 var _testExtendedTestdataLoggingRapidastData_rapidastconfig_logging_v1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file 
-    bucketName: secaut-bucket
-    directory: openshift-logging/6.6
+    configVersion: 4
 application:
   shortName: "ocptest"
   url: "https://kubernetes.default.svc"
@@ -29657,11 +27031,7 @@ func testExtendedTestdataLoggingRapidastData_rapidastconfig_logging_v1Yaml() (*a
 }
 
 var _testExtendedTestdataLoggingRapidastData_rapidastconfig_logging_v1alpha1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file 
-    bucketName: secaut-bucket
-    directory: openshift-logging/6.6
+    configVersion: 4
 application:
   shortName: "ocptest"
   url: "https://kubernetes.default.svc"
@@ -29703,11 +27073,7 @@ func testExtendedTestdataLoggingRapidastData_rapidastconfig_logging_v1alpha1Yaml
 }
 
 var _testExtendedTestdataLoggingRapidastData_rapidastconfig_loki_v1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file 
-    bucketName: secaut-bucket
-    directory: openshift-logging/6.6
+    configVersion: 4
 application:
   shortName: "ocptest"
   url: "https://kubernetes.default.svc"
@@ -29750,11 +27116,7 @@ func testExtendedTestdataLoggingRapidastData_rapidastconfig_loki_v1Yaml() (*asse
 }
 
 var _testExtendedTestdataLoggingRapidastData_rapidastconfig_observability_v1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file 
-    bucketName: secaut-bucket
-    directory: openshift-logging/6.6
+    configVersion: 4
 application:
   shortName: "ocptest"
   url: "https://kubernetes.default.svc"
@@ -29835,14 +27197,9 @@ objects:
           image: quay.io/redhatproductsecurity/rapidast:latest
           workingDir: "/home/rapidast"
           imagePullPolicy: Always
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            runAsNonRoot: true
           name: rapidast
           resources: {}
+          securityContext: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -29853,9 +27210,7 @@ objects:
         dnsPolicy: ClusterFirst
         restartPolicy: Never
         schedulerName: default-scheduler
-        securityContext:
-          seccompProfile:
-            type: RuntimeDefault
+        securityContext: {}
         terminationGracePeriodSeconds: 30
         nodeSelector:
           kubernetes.io/os: linux
@@ -31135,6 +28490,50 @@ func testExtendedTestdataMcoChangePolicyJsonYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataMcoChangeWorkerAllExtensionsYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: usb-extension
+objects:
+  - kind: MachineConfig
+    apiVersion: machineconfiguration.openshift.io/v1
+    metadata:
+      labels:
+        machineconfiguration.openshift.io/role: "${POOL}"
+      name: "${NAME}"
+    spec:
+      config:
+        ignition:
+          version: 3.2.0
+      extensions:
+      - usbguard
+      - kerberos
+      - kernel-devel
+      - sandboxed-containers
+      - ipsec
+      - wasm
+      - sysstat
+parameters:
+  - name: NAME
+  - name: POOL
+
+`)
+
+func testExtendedTestdataMcoChangeWorkerAllExtensionsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataMcoChangeWorkerAllExtensionsYaml, nil
+}
+
+func testExtendedTestdataMcoChangeWorkerAllExtensionsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataMcoChangeWorkerAllExtensionsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/mco/change-worker-all-extensions.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataMcoChangeWorkerDuplicatedKernelArgumentYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -31541,47 +28940,6 @@ func testExtendedTestdataMcoCreatePodYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mcp-osimagestream-template
-objects:
-  - kind: MachineConfigPool
-    apiVersion: machineconfiguration.openshift.io/v1
-    metadata:
-      name: "${NAME}"
-      labels:
-        pools.operator.machineconfiguration.openshift.io/${NAME}: ""
-    spec:
-      machineConfigSelector:
-        matchExpressions:
-          - { key: machineconfiguration.openshift.io/role, operator: In, values: [ worker,"${NAME}" ] }
-      nodeSelector:
-        matchLabels:
-          node-role.kubernetes.io/${NAME}: ""
-      osImageStream:
-        name: ${{OSIMAGESTREAM}}
-parameters:
-  - name: NAME
-  - name: OSIMAGESTREAM
-    description: "osImageStream name. Example: rhel-9"
-`)
-
-func testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYaml, nil
-}
-
-func testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/mco/custom-machine-config-pool-osimagestream.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataMcoCustomMachineConfigPoolYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -31724,70 +29082,6 @@ func testExtendedTestdataMcoDisableChronyYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/mco/disable-chrony.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataMcoExtraDisksYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mc-template
-objects:
-- apiVersion: machineconfiguration.openshift.io/v1
-  kind: MachineConfig
-  metadata:
-    labels:
-      machineconfiguration.openshift.io/role: "${POOL}"
-    name: "${NAME}"
-  spec:
-    config:
-      ignition:
-        version: 3.5.0
-      storage:
-        disks:
-        - device: ${DEVICE1}
-          wipeTable: true
-          partitions:
-          - label: raid.1.1
-            number: 1
-            sizeMiB: 1024
-            startMiB: 0
-        - device: ${DEVICE2}
-          wipeTable: true
-          partitions:
-          - label: raid.1.2
-            number: 1
-            sizeMiB: 1024
-            startMiB: 0
-        raid:
-        - devices:
-          - "/dev/disk/by-partlabel/raid.1.1"
-          - "/dev/disk/by-partlabel/raid.1.2"
-          level: stripe
-          name: data
-        filesystems:
-        - device: "/dev/md/data"
-          path: "/var/lib/data"
-          format: ext4
-          label: DATA
-parameters:
-  - name: NAME
-  - name: POOL
-  - name: DEVICE1
-  - name: DEVICE2
-`)
-
-func testExtendedTestdataMcoExtraDisksYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataMcoExtraDisksYaml, nil
-}
-
-func testExtendedTestdataMcoExtraDisksYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataMcoExtraDisksYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/mco/extra-disks.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -32335,7 +29629,7 @@ if [ "$1" == "rebase" ];
 then
 exit -1
 else
-/tmp/rpm-ostree $@
+/usr/bin/rpm-ostree2 $@
 fi
 exit $?
 
@@ -35797,7 +33091,7 @@ spec:
           \  while : ; do\n
           \  dig www.google.com +tcp ; sleep 5 \n
           \  done"
-      image: registry.k8s.io/e2e-test-images/agnhost:2.39
+      image: massenz/dnsutils:2.4.0
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -35830,7 +33124,7 @@ spec:
           \  while : ; do\n
           \  dig www.google.com ; sleep 5 \n
           \  done"
-      image: registry.k8s.io/e2e-test-images/agnhost:2.39
+      image: massenz/dnsutils:2.4.0
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -35974,7 +33268,7 @@ parameters:
 - name: CATALOG_NAME
   value: "bpfman-konflux-fbc"
 - name: IMAGE
-  value: "quay.io/redhat-user-workloads/ocp-bpfman-tenant/catalog-ystream:latest"
+  value: "quay.io/redhat-user-workloads/ocp-bpfman-tenant/ocp-bpfman-operator-catalog-ocp4-19@sha256:3ae1b1b26411fe32c9ab9b577eb04f5603b5936f43e1b4797a7f0eb1d94e40f5"
 - name: NAMESPACE
   value: openshift-marketplace
 `)
@@ -36001,20 +33295,16 @@ metadata:
 spec:
   imageDigestMirrors:
     - mirrors:
-      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/catalog-ystream
-      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/catalog-zstream
-      source: registry.redhat.io/bpfman/bpfman-operator-catalog
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/bpfman-agent-ystream
+      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/ocp-bpfman-agent
       source: registry.redhat.io/bpfman/bpfman-agent
     - mirrors:
-      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/bpfman-operator-bundle-ystream
+      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/ocp-bpfman-operator-bundle
       source: registry.redhat.io/bpfman/bpfman-operator-bundle
     - mirrors:
-      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/bpfman-operator-ystream
+      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/ocp-bpfman-operator
       source: registry.redhat.io/bpfman/bpfman-rhel9-operator
     - mirrors:
-      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/bpfman-daemon-ystream
+      - quay.io/redhat-user-workloads/ocp-bpfman-tenant/ocp-bpfman
       source: registry.redhat.io/bpfman/bpfman
 `)
 
@@ -36071,141 +33361,77 @@ func testExtendedTestdataNetobservBpfmanNamespaceYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservCert_manager_certificates_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: netobserv-certificates-template
-objects:
-  - apiVersion: cert-manager.io/v1
-    kind: Issuer
-    metadata:
-      name: netobserv-self-signed
-      namespace: "${Namespace}"
-    spec:
-      selfSigned: {}
-  - apiVersion: cert-manager.io/v1
-    kind: Certificate
-    metadata:
-      name: netobserv-ca
-      namespace: "${Namespace}"
-    spec:
-      isCA: true
-      commonName: netobserv-ca
-      secretName: prov-netobserv-ca-secret
-      privateKey:
-        algorithm: ECDSA
-        size: 256
-      issuerRef:
-        name: netobserv-self-signed
-        kind: Issuer
-        group: cert-manager.io
-  - apiVersion: cert-manager.io/v1
-    kind: Issuer
-    metadata:
-      name: netobserv-issuer
-      namespace: "${Namespace}"
-    spec:
-      ca:
-        secretName: prov-netobserv-ca-secret
-  - apiVersion: cert-manager.io/v1
-    kind: Certificate
-    metadata:
-      name: flowlogs-pipeline-cert
-      namespace: "${Namespace}"
-    spec:
-      secretName: prov-flowlogs-pipeline-cert
-      dnsNames:
-      - flowlogs-pipeline.${Namespace}.svc
-      - flowlogs-pipeline.${Namespace}.svc.cluster.local
-      issuerRef:
-        name: netobserv-issuer
-        kind: Issuer
-        group: cert-manager.io
-  - apiVersion: cert-manager.io/v1
-    kind: Certificate
-    metadata:
-      name: ebpf-agent-cert
-      namespace: "${Namespace}"
-    spec:
-      secretName: prov-ebpf-agent-cert
-      commonName: netobserv-ebpf-agent
-      issuerRef:
-        name: netobserv-issuer
-        kind: Issuer
-        group: cert-manager.io
-parameters:
-  - name: Namespace
-    description: "namespace where certificates will be created"
-    value: "netobserv"
-`)
-
-func testExtendedTestdataNetobservCert_manager_certificates_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservCert_manager_certificates_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservCert_manager_certificates_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservCert_manager_certificates_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/cert_manager_certificates_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetobservExportersIpfixCollectorYaml = []byte(`apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ipfix-collector
+  name: flowlogs-pipeline
   labels:
-    app: ipfix-collector
+    app: flowlogs-pipeline
   namespace: ipfix
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ipfix-collector
+      app: flowlogs-pipeline
   template:
     metadata:
       labels:
-        app: ipfix-collector
+        app: flowlogs-pipeline
     spec:
       containers:
-        - name: ipfix-collector
-          image: antrea/ipfix-collector:latest
+        - name: flowlogs-pipeline
+          image: quay.io/netobserv/flowlogs-pipeline:main
           args:
-          - "--ipfix.addr=0.0.0.0"
-          - "--ipfix.port=2055"
-          - "--ipfix.transport=tcp"
+          - "--config=/etc/flowlogs-pipeline/config.yaml"
           ports:
             - containerPort: 2055
-              protocol: TCP
-              name: ipfix
-            - containerPort: 8080
-              protocol: TCP
-              name: http
           imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: configuration
+              mountPath: "/etc/flowlogs-pipeline/"
+      volumes:
+        - name: configuration
+          configMap:
+            name: flp-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ipfix-collector
+  name: flowlogs-pipeline
   labels:
-    app: ipfix-collector
+    app: flowlogs-pipeline
   namespace: ipfix
 spec:
   ports:
     - port: 2055
       targetPort: 2055
-      protocol: TCP
+      protocol: UDP
       name: ipfix
-    - port: 8080
-      targetPort: 8080
-      protocol: TCP
-      name: http
   selector:
-    app: ipfix-collector
+    app: flowlogs-pipeline
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flp-config
+  namespace: ipfix
+data:
+  config.yaml: |
+    log-level: info
+    pipeline:
+      - name: ingest
+      - name: write
+        follows: ingest
+    parameters:
+      - name: ingest
+        ingest:
+          type: collector
+          collector:
+            hostName: 0.0.0.0
+            port: 2055
+      - name: write
+        write:
+          type: stdout
 `)
 
 func testExtendedTestdataNetobservExportersIpfixCollectorYamlBytes() ([]byte, error) {
@@ -36223,43 +33449,11 @@ func testExtendedTestdataNetobservExportersIpfixCollectorYaml() (*asset, error) 
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservExportersOtelCollectorTlsYaml = []byte(`apiVersion: template.openshift.io/v1
+var _testExtendedTestdataNetobservExportersOtelCollectorYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: otel-collector-tls-template
+  name: otel-collector-template
 objects:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: ${NAME}-collector
-    annotations:
-      service.beta.openshift.io/serving-cert-secret-name: ${NAME}-tls
-  spec:
-    selector:
-      app.kubernetes.io/component: opentelemetry-collector
-      app.kubernetes.io/instance: ${NAME}
-    ports:
-    - name: otlp-grpc
-      port: ${{OTLP_GRPC_ENDPOINT}}
-      protocol: TCP
-      targetPort: ${{OTLP_GRPC_ENDPOINT}}
-    - name: otlp-http
-      port: 4318
-      protocol: TCP
-      targetPort: 4318
-    - name: prometheus
-      port: ${{OTLP_PROM_PORT}}
-      protocol: TCP
-      targetPort: ${{OTLP_PROM_PORT}}
-
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: service-ca
-    annotations:
-      service.beta.openshift.io/inject-cabundle: "true"
-  data: {}
-
 - apiVersion: opentelemetry.io/v1beta1
   kind: OpenTelemetryCollector
   metadata:
@@ -36281,15 +33475,19 @@ objects:
           limit_percentage: 50
           spike_limit_percentage: 30
       receivers:
+        jaeger:
+          protocols:
+            grpc: {}
+            thrift_binary: {}
+            thrift_compact: {}
+            thrift_http: {}
         otlp:
           protocols:
             grpc:
               endpoint: 0.0.0.0:${OTLP_GRPC_ENDPOINT}
-              tls:
-                cert_file: /var/run/secrets/tls/tls.crt
-                key_file: /var/run/secrets/tls/tls.key
             http:
               endpoint: 0.0.0.0:4318
+        zipkin: {}
       service:
         pipelines:
           logs:
@@ -36307,14 +33505,16 @@ objects:
               - batch
             receivers:
               - otlp
-    volumeMounts:
-      - name: tls-certs
-        mountPath: /var/run/secrets/tls
-    volumes:
-      - name: tls-certs
-        secret:
-          secretName: ${NAME}-tls
-
+          traces:
+            exporters:
+              - debug
+            processors:
+              - memory_limiter
+              - batch
+            receivers:
+              - otlp
+              - jaeger
+              - zipkin
 parameters:
 - name: NAME
   value: "otel"
@@ -36324,57 +33524,17 @@ parameters:
   value: "8889"
 `)
 
-func testExtendedTestdataNetobservExportersOtelCollectorTlsYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservExportersOtelCollectorTlsYaml, nil
+func testExtendedTestdataNetobservExportersOtelCollectorYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataNetobservExportersOtelCollectorYaml, nil
 }
 
-func testExtendedTestdataNetobservExportersOtelCollectorTlsYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservExportersOtelCollectorTlsYamlBytes()
+func testExtendedTestdataNetobservExportersOtelCollectorYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataNetobservExportersOtelCollectorYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/exporters/otel-collector-tls.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: flowcollectorslice-template
-objects:
-  - apiVersion: flows.netobserv.io/v1alpha1
-    kind: FlowCollectorSlice
-    metadata:
-      name: "${Name}"
-      namespace: "${Namespace}"
-    spec:
-      sampling: ${{Sampling}}
-      subnetLabels: "${{SubnetLabels}}"
-parameters:
-  - name: Name
-    value: "slice-sample"
-  - name: Namespace
-    description: "namespace where you want flowCollectorSlice to be deployed"
-    value: "netobserv"
-  - name: Sampling
-    value: "1"
-  - name: SubnetLabels
-    value: '[]'
-`)
-
-func testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/flowcollectorSlice_v1alpha1_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/netobserv/exporters/otel-collector.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -36415,26 +33575,6 @@ objects:
       processor:
         multiClusterDeployment: "${{MultiClusterDeployment}}"
         addZone: "${{AddZone}}"
-        service:
-          providedCertificates:
-            caFile:
-              file: ca.crt
-              name: "${ServiceCASecretName}"
-              namespace: "${Namespace}"
-              type: secret
-            serverCert:
-              certFile: tls.crt
-              certKey: tls.key
-              name: "${ServiceServerCertSecretName}"
-              namespace: "${Namespace}"
-              type: secret
-            clientCert:
-              certFile: tls.crt
-              certKey: tls.key
-              name: "${ServiceClientCertSecretName}"
-              namespace: "${Namespace}"
-              type: secret
-          tlsType: "${ServiceTLSType}"
         metrics:
           server:
             tls:
@@ -36442,10 +33582,6 @@ objects:
           disableAlerts: []
         logTypes: "${LogType}"
         filters: "${{FLPFilters}}"
-        slicesConfig:
-          collectionMode: "${CollectionMode}"
-          enable: "${{SlicesEnable}}"
-          namespacesAllowList: "${{NamespacesAllow}}"
         advanced:
           dropUnusedFields: true
           conversationTerminatingTimeout: 5s
@@ -36487,7 +33623,6 @@ objects:
               certFile: service-ca.crt
               namespace: "${LokiNamespace}"
             insecureSkipVerify: false
-          tenantID: network
           statusTls:
             enable: "${{LokiStatusTLSEnable}}"
             caCert:
@@ -36539,7 +33674,7 @@ parameters:
   - name: EBPFFilterRules
     value: '[{"action": "Accept","cidr": "0.0.0.0/0"}]'
   - name: CacheMaxFlows
-    value: "120000"
+    value: "100000"
   - name: MultiClusterDeployment
     value: "false"
   - name: AddZone
@@ -36548,12 +33683,6 @@ parameters:
     value: "Flows"
   - name: FLPFilters
     value: '[]'
-  - name: CollectionMode
-    value: "AlwaysCollect"
-  - name: SlicesEnable
-    value: "false"
-  - name: NamespacesAllow
-    value: '["` + "`" + `/netobserv.*/` + "`" + `"]'
   - name: LokiMode
     value: "LokiStack"
   - name: LokiEnable
@@ -36591,25 +33720,13 @@ parameters:
   - name: PluginEnable
     value: "true"
   - name: NetworkPolicyEnable
-    value: "true"
+    value: "false"
   - name: NetworkPolicyAdditionalNamespaces
     value: '[]'
   - name: Exporters
     value: '[]'
   - name: SecondaryNetworks
     value: '[]'
-  - name: ServiceTLSType
-    description: "TLS type for Service deployment model (Auto, Provided, Disabled, Auto-mTLS)"
-    value: "Auto"
-  - name: ServiceCASecretName
-    description: "CA certificate secret name for Service mode with Provided certificates"
-    value: "prov-netobserv-ca-secret"
-  - name: ServiceServerCertSecretName
-    description: "Server certificate secret name for Service mode with Provided certificates"
-    value: "prov-flowlogs-pipeline-cert"
-  - name: ServiceClientCertSecretName
-    description: "Client certificate secret name for Service mode with Provided certificates"
-    value: "prov-ebpf-agent-cert"
 `)
 
 func testExtendedTestdataNetobservFlowcollector_v1beta2_templateYamlBytes() ([]byte, error) {
@@ -36623,54 +33740,6 @@ func testExtendedTestdataNetobservFlowcollector_v1beta2_templateYaml() (*asset, 
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/netobserv/flowcollector_v1beta2_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: flowlogs-pipeline-hpa-template
-  annotations:
-    description: "Template for Horizontal Pod Autoscaler for flowlogs-pipeline."
-objects:
-  - apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: flowlogs-pipeline-hpa
-      namespace: ${NAMESPACE} # Uses the parameter here
-    spec:
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: flowlogs-pipeline
-      minReplicas: 2
-      maxReplicas: 5
-      metrics:
-        - type: Resource
-          resource:
-            name: cpu
-            target:
-              type: Utilization
-              averageUtilization: 1
-parameters:
-  - name: NAMESPACE
-    displayName: Namespace
-    description: The namespace where the flowlogs-pipeline Deployment is located.
-    value: netobserv
-`)
-
-func testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/flowlogs_pipeline_hpa_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -36692,19 +33761,13 @@ objects:
           - legend: '{{DstK8S_Namespace}} / {{DstPort}}'
             promQL: 'sum(rate($METRIC[2m])) by (DstK8S_Namespace, DstPort)'
             top: 7
-        title: Traffic across service ports
+        title: Traffic across servie ports
         type: StackArea
     direction: Egress
     filters:
     - field: DstPort
       matchType: Presence
       value: "\\d+"
-    - field: DstK8S_Namespace
-      matchType: MatchRegex
-      value: "^openshift-monitoring$"
-    - field: DstK8S_Namespace
-      matchType: MatchRegex
-      value: "^openshift-ingress$"
     labels:
     - DstPort
     - DstK8S_Namespace
@@ -36760,133 +33823,16 @@ func testExtendedTestdataNetobservFlowmetrics_v1alpha1_templateYaml() (*asset, e
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservGatewayApiTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: gateway-api-resources
-objects:
-- apiVersion: v1
-  kind: Namespace
-  metadata:
-    name: ${NAMESPACE}
-    labels:
-      app: ${NAMESPACE_LABEL}
-- apiVersion: gateway.networking.k8s.io/v1
-  kind: GatewayClass
-  metadata:
-    name: openshift-default
-  spec:
-    controllerName: openshift.io/gateway-controller/v1
-- apiVersion: gateway.networking.k8s.io/v1
-  kind: Gateway
-  metadata:
-    name: ${GATEWAY_NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    gatewayClassName: openshift-default
-    listeners:
-    - name: demo
-      hostname: ${HOSTNAME}
-      port: 80
-      protocol: HTTP
-      allowedRoutes:
-        namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              app: ${NAMESPACE_LABEL}
-- apiVersion: gateway.networking.k8s.io/v1
-  kind: HTTPRoute
-  metadata:
-    name: ${HTTPROUTE_NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    parentRefs:
-    - name: ${GATEWAY_NAME}
-      namespace: ${NAMESPACE}
-    hostnames: ["${HOSTNAME}"]
-    rules:
-    - backendRefs:
-      - name: service-unsecure
-        port: 27017
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: traffic-generator
-    namespace: ${NAMESPACE}
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        app: traffic-generator
-    template:
-      metadata:
-        labels:
-          app: traffic-generator
-      spec:
-        containers:
-        - name: traffic-gen
-          image: registry.access.redhat.com/ubi8/ubi-minimal
-          command:
-          - /bin/sh
-          - -c
-          - |
-            while true; do
-              curl -s http://${GATEWAY_NAME}-openshift-default.${NAMESPACE}.svc.cluster.local:8080 || true
-              wget -q -O- http://${GATEWAY_NAME}-openshift-default.${NAMESPACE}.svc.cluster.local:8080 || true
-              sleep 5
-            done
-parameters:
-  - name: GATEWAY_NAME
-    description: Name of the Gateway resource
-    value: test-gateway-owner
-    required: true
-  - name: HTTPROUTE_NAME
-    description: Name of the HTTPRoute resource
-    value: test-httproute
-    required: true
-  - name: NAMESPACE
-    description: Namespace for Gateway and HTTPRoute resources
-    value: netobserv-gateway-test
-    required: true
-  - name: HOSTNAME
-    description: Hostname for the Gateway listener and HTTPRoute
-    value: gwapi.example.com
-    required: true
-  - name: NAMESPACE_LABEL
-    description: Label value for namespace app label
-    value: gwapi
-    required: true
-`)
-
-func testExtendedTestdataNetobservGatewayApiTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservGatewayApiTemplateYaml, nil
-}
-
-func testExtendedTestdataNetobservGatewayApiTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservGatewayApiTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/gateway-api-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetobservKafkaKafkaDefaultYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
   name: kafka-template
 objects:
-- apiVersion: kafka.strimzi.io/v1
+- apiVersion: kafka.strimzi.io/v1beta2
   kind: Kafka
   metadata:
     name: "${NAME}"
     namespace: "${NAMESPACE}"
-    annotations:
-      strimzi.io/kraft: enabled
-      strimzi.io/node-pools: enabled
   spec:
     kafka:
       replicas: 3
@@ -36921,13 +33867,28 @@ objects:
         log.retention.ms: 1680000
         log.roll.ms: 7200000
         log.segment.bytes: 1073741824
-      version: 4.1.0
+      storage:
+        type: persistent-claim
+        size: 200Gi
+        class: "${STORAGE_CLASS}"
       metricsConfig:
         type: jmxPrometheusExporter
         valueFrom:
           configMapKeyRef:
             name: kafka-metrics
             key: kafka-metrics-config.yml
+    zookeeper:
+      replicas: 3
+      storage:
+        type: persistent-claim
+        size: 20Gi
+        class: "${STORAGE_CLASS}"
+      metricsConfig:
+        type: jmxPrometheusExporter
+        valueFrom:
+          configMapKeyRef:
+            name: kafka-metrics
+            key: zookeeper-metrics-config.yml
     entityOperator:
       topicOperator: {}
       userOperator: {}
@@ -36936,6 +33897,8 @@ parameters:
   value: "kafka-cluster"
 - name: NAMESPACE
   value: "netobserv"
+- name: STORAGE_CLASS
+  value: "gp2"
 `)
 
 func testExtendedTestdataNetobservKafkaKafkaDefaultYamlBytes() ([]byte, error) {
@@ -37080,6 +34043,35 @@ objects:
         type: GAUGE
         labels:
           quantile: "0.$4"
+    zookeeper-metrics-config.yml: |
+      lowercaseOutputName: true
+      rules:
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+)><>(\\w+)"
+        name: "zookeeper_$2"
+        type: GAUGE
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+)><>(\\w+)"
+        name: "zookeeper_$3"
+        type: GAUGE
+        labels:
+          replicaId: "$2"
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+)><>(Packets\\w+)"
+        name: "zookeeper_$4"
+        type: COUNTER
+        labels:
+          replicaId: "$2"
+          memberType: "$3"
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+)><>(\\w+)"
+        name: "zookeeper_$4"
+        type: GAUGE
+        labels:
+          replicaId: "$2"
+          memberType: "$3"
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+), name3=(\\w+)><>(\\w+)"
+        name: "zookeeper_$4_$5"
+        type: GAUGE
+        labels:
+          replicaId: "$2"
+          memberType: "$3"
 - apiVersion: monitoring.coreos.com/v1
   kind: PodMonitor
   metadata:
@@ -37144,54 +34136,6 @@ func testExtendedTestdataNetobservKafkaKafkaMetricsConfigYaml() (*asset, error) 
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservKafkaKafkaNodePoolYaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: kafka-node-pool-template
-objects:
-- apiVersion: kafka.strimzi.io/v1
-  kind: KafkaNodePool
-  metadata:
-    name: "${NODEPOOL}"
-    labels:
-      strimzi.io/cluster: ${NAME}
-    namespace: "${NAMESPACE}"
-  spec:
-    replicas: 3
-    roles:
-      - broker
-      - controller
-    storage:
-      type: jbod
-      volumes:
-        - deleteClaim: false
-          id: 0
-          size: 100Gi
-          type: persistent-claim
-parameters:
-- name: NODEPOOL
-  value: "kafka-pool"
-- name: NAME
-  value: "kafka-cluster"
-- name: NAMESPACE
-  value: "netobserv"
-`)
-
-func testExtendedTestdataNetobservKafkaKafkaNodePoolYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservKafkaKafkaNodePoolYaml, nil
-}
-
-func testExtendedTestdataNetobservKafkaKafkaNodePoolYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservKafkaKafkaNodePoolYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/kafka/kafka-node-pool.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetobservKafkaKafkaTlsYaml = []byte(`kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -37202,9 +34146,6 @@ objects:
   metadata:
     name: "${NAME}"
     namespace: "${NAMESPACE}"
-    annotations:
-      strimzi.io/kraft: enabled
-      strimzi.io/node-pools: enabled
   spec:
     kafka:
       replicas: 3
@@ -37243,13 +34184,28 @@ objects:
         log.retention.ms: 1680000
         log.roll.ms: 7200000
         log.segment.bytes: 1073741824
-      version: 4.1.0
+      storage:
+        type: persistent-claim
+        size: 200Gi
+        class: "${STORAGE_CLASS}"
       metricsConfig:
         type: jmxPrometheusExporter
         valueFrom:
           configMapKeyRef:
             name: kafka-metrics
             key: kafka-metrics-config.yml
+    zookeeper:
+      replicas: 3
+      storage:
+        type: persistent-claim
+        size: 20Gi
+        class: "${STORAGE_CLASS}"
+      metricsConfig:
+        type: jmxPrometheusExporter
+        valueFrom:
+          configMapKeyRef:
+            name: kafka-metrics
+            key: zookeeper-metrics-config.yml
     entityOperator:
       topicOperator: {}
       userOperator: {}
@@ -37258,6 +34214,8 @@ parameters:
   value: "kafka-cluster"
 - name: NAMESPACE
   value: "netobserv"
+- name: STORAGE_CLASS
+  value: "gp2"
 `)
 
 func testExtendedTestdataNetobservKafkaKafkaTlsYamlBytes() ([]byte, error) {
@@ -37280,7 +34238,7 @@ apiVersion: template.openshift.io/v1
 metadata:
   name: kafka-topic-template
 objects:
-- apiVersion: kafka.strimzi.io/v1
+- apiVersion: kafka.strimzi.io/v1beta2
   kind: KafkaTopic
   metadata:
     name: "${TOPIC}"
@@ -37319,7 +34277,7 @@ apiVersion: template.openshift.io/v1
 metadata:
   name: kafka-user-template
 objects:
-- apiVersion: kafka.strimzi.io/v1
+- apiVersion: kafka.strimzi.io/v1beta2
   kind: KafkaUser
   metadata:
     labels:
@@ -37654,9 +34612,6 @@ objects:
         enableIPv6: "${{EnableIPV6}}"
     tenants:
       mode: ${Tenant}
-    template:
-      ingester:
-        replicas: 2
 parameters:
 - name: Name
   value: "lokistack"
@@ -38137,13 +35092,8 @@ spec:
       - quay.io/redhat-user-workloads/ocp-network-observab-tenant/network-observability-operator-bundle-zstream
       source: registry.redhat.io/network-observability/network-observability-operator-bundle
     - mirrors:
-      - quay.io/redhat-user-workloads/ocp-network-observab-tenant/network-observability-console-plugin-pf5-ystream
-      - quay.io/redhat-user-workloads/ocp-network-observab-tenant/network-observability-console-plugin-pf5-zstream
-      source: registry.redhat.io/network-observability/network-observability-console-plugin-pf5-rhel9
-    - mirrors:
       - quay.io/redhat-user-workloads/ocp-network-observab-tenant/network-observability-console-plugin-pf4-ystream
-      - quay.io/redhat-user-workloads/ocp-network-observab-tenant/network-observability-console-plugin-pf4-zstream
-      source: registry.redhat.io/network-observability/network-observability-console-plugin-pf4-rhel9
+      source: registry.redhat.io/network-observability/network-observability-console-plugin-compat-rhel9
 `)
 
 func testExtendedTestdataNetobservSubscriptionImageDigestMirrorSetYamlBytes() ([]byte, error) {
@@ -38488,303 +35438,6 @@ func testExtendedTestdataNetobservTestNginxServer_templateYaml() (*asset, error)
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservTestPingPods_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: netobserv-test-ping-pods
-objects:
-- apiVersion: v1
-  kind: Namespace
-  metadata:
-    name: ${SERVER_NS}
-    labels:
-      name: ${SERVER_NS}
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    creationTimestamp: null
-    labels:
-      run: ${SERVER_POD_NAME}
-    name: ${SERVER_POD_NAME}
-    namespace: ${SERVER_NS}
-  spec:
-    containers:
-    - command:
-        - sh
-        - -c
-        - |
-          for target in ${PING_TARGETS}; do
-            ping $target &
-          done
-          wait
-      image: quay.io/openshifttest/hello-openshift:1.2.0
-      securityContext:
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop: ["ALL"]
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
-      name: ${SERVER_POD_NAME}
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    creationTimestamp: null
-    labels:
-      run: ${CLIENT_POD_NAME}
-    name: ${CLIENT_POD_NAME}
-    namespace: ${CLIENT_NS}
-  spec:
-    containers:
-    - command:
-        - sh
-        - -c
-        - |
-          for target in ${PING_TARGETS}; do
-            ping $target &
-          done
-          wait
-      image: quay.io/openshifttest/hello-openshift:1.2.0
-      securityContext:
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop: ["ALL"]
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
-      name: ${CLIENT_POD_NAME}
-parameters:
-- name: SERVER_POD_NAME
-  value: ping-server
-- name: CLIENT_POD_NAME
-  value: ping-client
-- name: SERVER_NS
-  value: test-ping-server
-- name: CLIENT_NS
-  value: test-ping-client
-- name: PING_TARGETS
-  value: "8.8.8.8"
-`)
-
-func testExtendedTestdataNetobservTestPingPods_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservTestPingPods_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservTestPingPods_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservTestPingPods_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/test-ping-pods_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetobservTestTlsClient_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: netobserv-test-tls-client
-objects:
-- apiVersion: v1
-  kind: Namespace
-  metadata:
-    name: ${CLIENT_NS}
-    labels:
-      name: ${CLIENT_NS}
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    labels:
-      run: tls-client
-    name: tls-client
-    namespace: ${CLIENT_NS}
-  spec:
-    securityContext:
-      runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
-    containers:
-    - name: client
-      image: quay.io/openshifttest/hello-openshift:1.2.0
-      command:
-        - sh
-        - -c
-        - |
-          while : ; do
-            curl -sk --tlsv1.3 https://tls-server-service.${SERVER_NS}.svc:443/ 2>&1 > /dev/null
-            sleep 5
-            curl -sk --tlsv1.2 --tls-max 1.2 https://tls-server-service.${SERVER_NS}.svc:443/ 2>&1 > /dev/null
-            sleep 5
-            curl -s http://tls-server-service.${SERVER_NS}.svc:80/ 2>&1 > /dev/null
-            sleep 5
-          done
-      securityContext:
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop: ["ALL"]
-parameters:
-- name: SERVER_NS
-  value: test-tls-server
-- name: CLIENT_NS
-  value: test-tls-client
-`)
-
-func testExtendedTestdataNetobservTestTlsClient_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservTestTlsClient_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservTestTlsClient_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservTestTlsClient_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/test-tls-client_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetobservTestTlsServer_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: netobserv-test-tls-server
-objects:
-- apiVersion: v1
-  kind: Namespace
-  metadata:
-    name: ${SERVER_NS}
-    labels:
-      name: ${SERVER_NS}
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    name: nginx-tls-config
-    namespace: ${SERVER_NS}
-  data:
-    nginx.conf: |
-      events {
-          worker_connections 1024;
-      }
-      http {
-          server {
-              listen 8080;
-              location / {
-                  return 200 'HTTP OK - Non-TLS\n';
-                  add_header Content-Type text/plain;
-              }
-          }
-          server {
-              listen 8443 ssl;
-              ssl_certificate /etc/nginx/ssl/tls.crt;
-              ssl_certificate_key /etc/nginx/ssl/tls.key;
-              ssl_protocols TLSv1.2 TLSv1.3;
-              ssl_ecdh_curve X25519:P-256;
-              location / {
-                  return 200 'HTTPS OK - TLS Enabled\n';
-                  add_header Content-Type text/plain;
-              }
-          }
-      }
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: tls-server
-    namespace: ${SERVER_NS}
-    labels:
-      app: tls-server
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        app: tls-server
-    template:
-      metadata:
-        labels:
-          app: tls-server
-      spec:
-        securityContext:
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
-        initContainers:
-        - name: cert-generator
-          image: registry.access.redhat.com/ubi9/ubi:latest
-          command:
-            - /bin/bash
-            - -c
-            - |
-              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout /etc/nginx/ssl/tls.key -out /etc/nginx/ssl/tls.crt \
-                -subj "/CN=tls-server.${SERVER_NS}.svc.cluster.local"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-          volumeMounts:
-          - name: ssl-certs
-            mountPath: /etc/nginx/ssl
-        containers:
-        - name: nginx
-          image: quay.io/openshifttest/nginx-alpine:1.2.3
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-          ports:
-          - containerPort: 8080
-            name: http
-          - containerPort: 8443
-            name: https
-          volumeMounts:
-          - name: nginx-config
-            mountPath: /etc/nginx/nginx.conf
-            subPath: nginx.conf
-          - name: ssl-certs
-            mountPath: /etc/nginx/ssl
-        volumes:
-        - name: nginx-config
-          configMap:
-            name: nginx-tls-config
-        - name: ssl-certs
-          emptyDir: {}
-- apiVersion: v1
-  kind: Service
-  metadata:
-    namespace: ${SERVER_NS}
-    name: tls-server-service
-  spec:
-    selector:
-      app: tls-server
-    ports:
-    - name: http
-      protocol: TCP
-      port: 80
-      targetPort: 8080
-    - name: https
-      protocol: TCP
-      port: 443
-      targetPort: 8443
-parameters:
-- name: SERVER_NS
-  value: test-tls-server
-`)
-
-func testExtendedTestdataNetobservTestTlsServer_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservTestTlsServer_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservTestTlsServer_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservTestTlsServer_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/test-tls-server_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetobservTestuserClientServer_templateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -38963,16 +35616,21 @@ func testExtendedTestdataNetobservTestuserTemplateCrbYaml() (*asset, error) {
 var _testExtendedTestdataNetobservVirtualizationKubevirtHyperconvergedYaml = []byte(`apiVersion: hco.kubevirt.io/v1beta1
 kind: HyperConverged
 metadata:
-  annotations:
-    deployOVS: 'false'
   name: kubevirt-hyperconverged
   namespace: openshift-cnv
-  labels:
-    app: kubevirt-hyperconverged
 spec:
-  applicationAwareConfig:
-    allowApplicationAwareClusterResourceQuota: false
-    vmiCalcConfigName: DedicatedVirtualResources
+  virtualMachineOptions:
+    disableFreePageReporting: false
+    disableSerialConsoleLog: true
+  higherWorkloadDensity:
+    memoryOvercommitPercentage: 100
+  liveMigrationConfig:
+    allowAutoConverge: false
+    allowPostCopy: false
+    completionTimeoutPerGiB: 800
+    parallelMigrationsPerCluster: 5
+    parallelOutboundMigrationsPerNode: 2
+    progressTimeout: 150
   certConfig:
     ca:
       duration: 48h0m0s
@@ -38980,41 +35638,34 @@ spec:
     server:
       duration: 24h0m0s
       renewBefore: 12h0m0s
-  deployVmConsoleProxy: false
-  enableApplicationAwareQuota: false
-  enableCommonBootImageImport: true
+  infra: {}
+  applicationAwareConfig:
+    allowApplicationAwareClusterResourceQuota: false
+    vmiCalcConfigName: DedicatedVirtualResources
   evictionStrategy: LiveMigrate
   featureGates:
-    alignCPUs: false
-    decentralizedLiveMigration: false
-    declarativeHotplugVolumes: false
-    deployKubeSecondaryDNS: false
-    disableMDevConfiguration: false
+    deployTektonTaskResources: false
+    enableCommonBootImageImport: true
+    withHostPassthroughCPU: false
     downwardMetrics: false
-    enableMultiArchBootImageImport: false
+    disableMDevConfiguration: false
+    enableApplicationAwareQuota: false
+    deployKubeSecondaryDNS: false
+    nonRoot: true
+    alignCPUs: false
+    enableManagedTenantQuota: false
+    deployVmConsoleProxy: false
     persistentReservation: false
-  higherWorkloadDensity:
-    memoryOvercommitPercentage: 100
-  infra: {}
-  liveMigrationConfig:
-    allowAutoConverge: false
-    allowPostCopy: false
-    completionTimeoutPerGiB: 150
-    parallelMigrationsPerCluster: 5
-    parallelOutboundMigrationsPerNode: 2
-    progressTimeout: 150
-  resourceRequirements:
-    vmiCPUAllocationRatio: 10
-  uninstallStrategy: BlockUninstallIfWorkloadsExist
-  virtualMachineOptions:
-    disableFreePageReporting: false
-    disableSerialConsoleLog: false
+    autoResourceLimits: false
   workloadUpdateStrategy:
     batchEvictionInterval: 1m0s
     batchEvictionSize: 10
     workloadUpdateMethods:
-    - LiveMigrate
+      - LiveMigrate
+  uninstallStrategy: BlockUninstallIfWorkloadsExist
   workloads: {}
+  resourceRequirements:
+    vmiCPUAllocationRatio: 10
 `)
 
 func testExtendedTestdataNetobservVirtualizationKubevirtHyperconvergedYamlBytes() ([]byte, error) {
@@ -39068,262 +35719,156 @@ func testExtendedTestdataNetobservVirtualizationLayer2NadYaml() (*asset, error) 
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: virtual-machine-udn-template
-objects:
-- apiVersion: kubevirt.io/v1
-  kind: VirtualMachine
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    instancetype:
-      kind: virtualmachineclusterinstancetype
-      name: u1.medium
-    preference:
-      kind: virtualmachineclusterpreference
-      name: rhel.9
-    runStrategy: Always
-    template:
+var _testExtendedTestdataNetobservVirtualizationTestVm1Yaml = []byte(` apiVersion: kubevirt.io/v1
+ kind: VirtualMachine
+ metadata:
+  name: test-vm1
+  namespace: test-76537
+ spec:
+  dataVolumeTemplates:
+    - metadata:
+        name: test-vm1-volume
       spec:
-        architecture: amd64
-        domain:
-          devices:
-            disks:
-              - disk:
-                  bus: virtio
-                name: rootdisk
-              - disk:
-                  bus: virtio
-                name: cloudinitdisk
-            interfaces:
-              - binding:
-                  name: l2bridge
-                name: ${NETWORK_NAME}
-            networkInterfaceMultiqueue: true
-            rng: {}
-          resources: {}
-        hostname: ${NAME}
-        networks:
-          - name: ${NETWORK_NAME}
-            pod: {}
-        terminationGracePeriodSeconds: 180
-        volumes:
-          - containerDisk:
-              image: quay.io/containerdisks/fedora
-            name: rootdisk
-          - cloudInitNoCloud:
-              userData: |-
-                #cloud-config
-                user: cloud-user
-                password: byje-7cd2-i8et
-                chpasswd: { expire: False }
-                runcmd: ${RUN_CMD}
-            name: cloudinitdisk
-parameters:
-- name: NAME
-  value: "test-vm3"
-- name: NAMESPACE
-  value: "netobserv-udn-85887"
-- name: NETWORK_NAME
-  value: "udn-network-85887"
-- name: RUN_CMD
-  value: "[[ping, 8.8.8.8]]"
+        sourceRef:
+          kind: DataSource
+          name: rhel9 
+          namespace: openshift-virtualization-os-images 
+        storage: {}
+  instancetype:
+    name: u1.medium 
+  preference:
+    name: rhel.9 
+  running: true
+  template:
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - name: default  # order matters, default Pod interface should come before secondary
+              masquerade: {}
+            - name: secondary
+              bridge: {}
+      volumes:
+        - dataVolume:
+            name: test-vm1-volume
+          name: rootdisk
+        - cloudInitNoCloud:
+            networkData: |
+              version: 2
+              ethernets:
+                eth1: 
+                  addresses:
+                  - 10.10.10.15/24 #IP CIDR should be non-overlapping
+            userData: |-
+              #cloud-config
+              user: cloud-user
+              password: byje-7cd2-i8et
+              chpasswd: { expire: False }
+          name: cloudinitdisk
+      networks:
+        - name: default
+          pod: {}
+        - multus:
+            networkName: l2-network
+          name: secondary
 `)
 
-func testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYaml, nil
+func testExtendedTestdataNetobservVirtualizationTestVm1YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataNetobservVirtualizationTestVm1Yaml, nil
 }
 
-func testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYamlBytes()
+func testExtendedTestdataNetobservVirtualizationTestVm1Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataNetobservVirtualizationTestVm1YamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/virtualization/test-vm-UDN_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/netobserv/virtualization/test-vm1.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: virtual-machine-localnet-template
-objects:
-- apiVersion: kubevirt.io/v1
-  kind: VirtualMachine
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    instancetype:
-      kind: virtualmachineclusterinstancetype
-      name: u1.medium
-    preference:
-      kind: virtualmachineclusterpreference
-      name: rhel.9
-    runStrategy: Always
-    template:
+var _testExtendedTestdataNetobservVirtualizationTestVm2Yaml = []byte(` apiVersion: kubevirt.io/v1
+ kind: VirtualMachine
+ metadata:
+  name: test-vm2
+  namespace: test-76537
+ spec:
+  dataVolumeTemplates:
+    - metadata:
+        name: test-vm2-volume
       spec:
-        architecture: amd64
-        domain:
-          devices:
-            disks:
-              - disk:
-                  bus: virtio
-                name: rootdisk
-              - disk:
-                  bus: virtio
-                name: cloudinitdisk
-            interfaces:
-              - name: default
-                masquerade: {}
-              - name: secondary
-                bridge: {}
-            networkInterfaceMultiqueue: true
-            rng: {}
-          resources: {}
-        hostname: ${NAME}
-        networks:
-          - name: default
-            pod: {}
-          - multus:
-              networkName: ${NETWORK_NAME}
-            name: secondary
-        terminationGracePeriodSeconds: 180
-        volumes:
-          - containerDisk:
-              image: quay.io/containerdisks/fedora
-            name: rootdisk
-          - cloudInitNoCloud:
-              userData: |-
-                #cloud-config
-                user: cloud-user
-                password: byje-7cd2-i8et
-                chpasswd: { expire: False }
-                runcmd: ${RUN_CMD}
-            name: cloudinitdisk
-parameters:
-- name: NAME
-  value: "test-vm5"
-- name: NAMESPACE
-  value: "netobserv-cudn1-85935"
-- name: NETWORK_NAME
-  value: "secondary-localnet-85935"
-- name: RUN_CMD
-  value: "[[ping, 8.8.8.8]]"
+        sourceRef:
+          kind: DataSource
+          name: rhel9 
+          namespace: openshift-virtualization-os-images 
+        storage: {}
+  instancetype:
+    name: u1.medium 
+  preference:
+    name: rhel.9 
+  running: true
+  template:
+    spec:
+      domain:
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - name: default
+              masquerade: {}
+            - name: secondary
+              bridge: {}
+      volumes:
+        - dataVolume:
+            name: test-vm2-volume
+          name: rootdisk
+        - cloudInitNoCloud:
+            networkData: |
+              version: 2
+              ethernets:
+                eth1:
+                  addresses:
+                  - 10.10.10.14/24
+            userData: |-
+              #cloud-config
+              user: cloud-user
+              password: byje-7cd2-i8et
+              chpasswd: { expire: False }
+              runcmd:
+              - [ping, 10.10.10.15]
+          name: cloudinitdisk
+      networks:
+        - name: default
+          pod: {}
+        - multus:
+            networkName: l2-network
+          name: secondary
 `)
 
-func testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYaml, nil
+func testExtendedTestdataNetobservVirtualizationTestVm2YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataNetobservVirtualizationTestVm2Yaml, nil
 }
 
-func testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYamlBytes()
+func testExtendedTestdataNetobservVirtualizationTestVm2Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataNetobservVirtualizationTestVm2YamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/virtualization/test-vm-localnet_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: virtual-machine-static-ip-template
-objects:
-- apiVersion: kubevirt.io/v1
-  kind: VirtualMachine
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    instancetype:
-      name: u1.medium
-    preference:
-      name: rhel.9
-    runStrategy: Always
-    template:
-      spec:
-        architecture: amd64
-        domain:
-          devices:
-            disks:
-              - disk:
-                  bus: virtio
-                name: rootdisk
-              - disk:
-                  bus: virtio
-                name: cloudinitdisk
-            interfaces:
-              - name: default
-                masquerade: {}
-              - name: secondary
-                bridge: {}
-                macAddress: ${MAC}
-            networkInterfaceMultiqueue: true
-            rng: {}
-          resources: {}
-        hostname: ${NAME}
-        terminationGracePeriodSeconds: 180
-        volumes:
-          - containerDisk:
-              image: quay.io/containerdisks/fedora
-            name: rootdisk
-          - cloudInitNoCloud:
-              networkData: |
-                network:
-                  version: 2
-                  ethernets:
-                    eth1:
-                      match:
-                        macaddress: ${MAC}
-                      addresses:
-                      - ${STATIC_IP}
-              userData: |-
-                #cloud-config
-                user: cloud-user
-                password: byje-7cd2-i8et
-                chpasswd: { expire: False }
-                runcmd: ${RUN_CMD}
-            name: cloudinitdisk
-        networks:
-          - name: default
-            pod: {}
-          - multus:
-              networkName: ${NETWORK_NAME}
-            name: secondary
-parameters:
-- name: NAME
-  value: "test-vm1"
-- name: NAMESPACE
-  value: "test-76537"
-- name: NETWORK_NAME
-  value: "l2-network"
-- name: MAC
-  value: "02:00:00:00:00:01"
-- name: STATIC_IP
-  value: "10.10.10.15/24"
-- name: RUN_CMD
-  value: "[[ping, 8.8.8.8]]"
-`)
-
-func testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYaml, nil
-}
-
-func testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/netobserv/virtualization/test-vm-static-IP_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/netobserv/virtualization/test-vm2.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -41715,79 +38260,6 @@ func testExtendedTestdataNetworkingHttpserverpodSpecificNodeTemplateYaml() (*ass
 	return a, nil
 }
 
-var _testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: catalogsource-template
-objects:
-- apiVersion: operators.coreos.com/v1alpha1
-  kind: CatalogSource
-  metadata:
-    name: "${CATALOGSOURCENAME}"
-    namespace: "${CATALOGNAMESPACE}"
-  spec:
-    displayName: Ingress Node Firewall FBC Operator Catalog
-    image: "${IMAGE}"
-    sourceType: grpc
-    updateStrategy:
-      registryPoll:
-        interval: 10m
-parameters:
-- name: CATALOGSOURCENAME
-- name: CATALOGNAMESPACE
-- name: IMAGE
-`)
-
-func testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYaml, nil
-}
-
-func testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/ingressnodefirewall/catalogsource-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYaml = []byte(`apiVersion: config.openshift.io/v1
-kind: ImageDigestMirrorSet
-metadata:
-  name: ingress-node-firewall-images-mirror-set
-spec:
-  imageDigestMirrors:
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ingress-node-firewall-operator-bundle
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ingress-node-firewall-rhel9-operator
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ingress-node-firewall-rhel9
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ose-kube-rbac-proxy-rhel9
-`)
-
-func testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYaml, nil
-}
-
-func testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/ingressnodefirewall/image-digest-mirrorset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetworkingIngressnodefirewallInfwConfigYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -42476,44 +38948,6 @@ func testExtendedTestdataNetworkingMetallbBgppeerTemplateYaml() (*asset, error) 
 	return a, nil
 }
 
-var _testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: catalogsource-template
-objects:
-- apiVersion: operators.coreos.com/v1alpha1
-  kind: CatalogSource
-  metadata:
-    name: "${CATALOGSOURCENAME}"
-    namespace: "${CATALOGNAMESPACE}"
-  spec:
-    displayName: MetalLB FBC Operator Catalog
-    image: "${IMAGE}"
-    sourceType: grpc
-    updateStrategy:
-      registryPoll:
-        interval: 10m
-parameters:
-- name: CATALOGSOURCENAME
-- name: CATALOGNAMESPACE
-- name: IMAGE
-`)
-
-func testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYaml, nil
-}
-
-func testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/metallb/catalogsource-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetworkingMetallbCommunityTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -42546,6 +38980,182 @@ func testExtendedTestdataNetworkingMetallbCommunityTemplateYaml() (*asset, error
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/networking/metallb/community-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: frr-master-singlestack-configmap-template
+objects:
+- kind: ConfigMap
+  apiVersion: v1
+  data:
+   daemons: |+
+     # This file tells the frr package which daemons to start.
+     #
+     # Sample configurations for these daemons can be found in
+     # /usr/share/doc/frr/examples/.
+     #
+     # ATTENTION:
+     #
+     # When activating a daemon for the first time, a config file, even if it is
+     # empty, has to be present *and* be owned by the user and group "frr", else
+     # the daemon will not be started by /etc/init.d/frr. The permissions should
+     # be u=rw,g=r,o=.
+     # When using "vtysh" such a config file is also needed. It should be owned by
+     # group "frrvty" and set to ug=rw,o= though. Check /etc/pam.d/frr, too.
+     #
+     # The watchfrr, zebra and staticd daemons are always started.
+     #
+     bgpd=${BGPD_ENABLED}
+     ospfd=no
+     ospf6d=no
+     ripd=no
+     ripngd=no
+     isisd=no
+     pimd=no
+     ldpd=no
+     nhrpd=no
+     eigrpd=no
+     babeld=no
+     sharpd=no
+     pbrd=no
+     bfdd=${BFDD_ENABLED}
+     fabricd=no
+     vrrpd=no
+     pathd=no
+     #
+     # If this option is set the /etc/init.d/frr script automatically loads
+     # the config via "vtysh -b" when the servers are started.
+     # Check /etc/pam.d/frr if you intend to use "vtysh"!
+     #
+     vtysh_enable=yes
+     zebra_options="  -A 127.0.0.1 -s 90000000"
+     bgpd_options="   -A 127.0.0.1"
+     ospfd_options="  -A 127.0.0.1"
+     ospf6d_options=" -A ::1"
+     ripd_options="   -A 127.0.0.1"
+     ripngd_options=" -A ::1"
+     isisd_options="  -A 127.0.0.1"
+     pimd_options="   -A 127.0.0.1"
+     ldpd_options="   -A 127.0.0.1"
+     nhrpd_options="  -A 127.0.0.1"
+     eigrpd_options=" -A 127.0.0.1"
+     babeld_options=" -A 127.0.0.1"
+     sharpd_options=" -A 127.0.0.1"
+     pbrd_options="   -A 127.0.0.1"
+     staticd_options="-A 127.0.0.1"
+     bfdd_options="   -A 127.0.0.1"
+     fabricd_options="-A 127.0.0.1"
+     vrrpd_options="  -A 127.0.0.1"
+     pathd_options="  -A 127.0.0.1"
+     # configuration profile
+     #
+     #frr_profile="traditional"
+     #frr_profile="datacenter"
+     #
+     # This is the maximum number of FD's that will be available.
+     # Upon startup this is read by the control files and ulimit
+     # is called.  Uncomment and use a reasonable value for your
+     # setup if you are expecting a large number of peers in
+     # say BGP.
+     MAX_FDS=1024
+     # The list of daemons to watch is automatically generated by the init script.
+     #watchfrr_options=""
+     # To make watchfrr create/join the specified netns, use the following option:
+     #watchfrr_options="--netns"
+     # This only has an effect in /etc/frr/<somename>/daemons, and you need to
+     # start FRR with "/usr/lib/frr/frrinit.sh start <somename>".
+     # for debugging purposes, you can specify a "wrap" command to start instead
+     # of starting the daemon directly, e.g. to use valgrind on ospfd:
+     #   ospfd_wrap="/usr/bin/valgrind"
+     # or you can use "all_wrap" for all daemons, e.g. to use perf record:
+     #   all_wrap="/usr/bin/perf record --call-graph -"
+     # the normal daemon command is added to this at the end.
+
+   frr.conf: |
+      !
+      frr defaults traditional
+      hostname frr-router
+      log file /tmp/frr.log debugging
+      log timestamp precision 3
+      !
+      debug bgp neighbor-events
+      debug bgp nht
+      debug bgp updates in
+      debug bgp updates out
+      debug bfd peer
+      !
+      router bgp 64500
+      ${ROUTER_IP}
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      no bgp network import-check
+      neighbor ${NODE1_IP} remote-as 64500
+      neighbor ${NODE1_IP} password ${PASSWORD}
+      neighbor ${NODE2_IP} remote-as 64500
+      neighbor ${NODE2_IP} password ${PASSWORD}
+      neighbor ${NODE3_IP} remote-as 64500
+      neighbor ${NODE3_IP} password ${PASSWORD}
+      neighbor ${NODE4_IP} remote-as 64500
+      neighbor ${NODE4_IP} password ${PASSWORD}
+      neighbor ${NODE5_IP} remote-as 64500
+      neighbor ${NODE5_IP} password ${PASSWORD}
+      !
+      address-family ipv4 unicast
+        neighbor ${NODE1_IP} activate
+        neighbor ${NODE1_IP} bfd profile ${BFD_PROFILE}
+        neighbor ${NODE2_IP} activate
+        neighbor ${NODE2_IP} bfd profile ${BFD_PROFILE}
+        neighbor ${NODE3_IP} activate
+        neighbor ${NODE3_IP} bfd profile ${BFD_PROFILE}
+        neighbor ${NODE4_IP} activate
+        neighbor ${NODE4_IP} bfd profile ${BFD_PROFILE}
+        neighbor ${NODE5_IP} activate
+        neighbor ${NODE5_IP} bfd profile ${BFD_PROFILE}
+      exit-address-family
+      !
+      route-map RMAP permit 10
+      set ipv6 next-hop prefer-global 
+      !
+      ipv6 nht resolve-via-default
+      !
+      line vty
+      !
+      end
+
+   vtysh.conf: ""
+  metadata:
+   name: "${NAME}"
+   namespace: "${NAMESPACE}"
+parameters:
+- name: BGPD_ENABLED
+- name: BFDD_ENABLED
+- name: ROUTER_IP
+- name: NODE1_IP
+- name: NODE2_IP
+- name: NODE3_IP
+- name: NODE4_IP
+- name: NODE5_IP
+- name: BFD_PROFILE
+- name: NAME
+- name: NAMESPACE
+- name: PASSWORD
+`)
+
+func testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYaml, nil
+}
+
+func testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/networking/metallb/frr-master-singlestack-configmap-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -42665,44 +39275,6 @@ func testExtendedTestdataNetworkingMetallbFrrMasterSinglestackRouterPodTemplateY
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/networking/metallb/frr-master-singlestack-router-pod-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYaml = []byte(`apiVersion: config.openshift.io/v1
-kind: ImageDigestMirrorSet
-metadata:
-  name: metallb-images-mirror-set
-spec:
-  imageDigestMirrors:
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/metallb-rhel9-operator
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/frr-rhel9
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/metallb-rhel9
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ose-kube-rbac-proxy-rhel9
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ose-metallb-operator-bundle
-`)
-
-func testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYaml, nil
-}
-
-func testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/metallb/image-digest-mirrorset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -44338,7 +40910,6 @@ objects:
   apiVersion: v1
   metadata:
     name: "${NAME}"
-    namespace: "${NAMESPACE}"
     labels:
       name: "${PODLABEL}"
   spec:
@@ -46911,50 +43482,6 @@ func testExtendedTestdataNetworkingNetworkpolicyNetpol3092075540Yaml() (*asset, 
 	return a, nil
 }
 
-var _testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYaml = []byte(`kind: ValidatingAdmissionPolicy
-apiVersion: admissionregistration.k8s.io/v1
-metadata:
-  name: fine-grained-network-policy-protection
-spec:
-  matchConstraints:
-    resourceRules:
-      - operations:
-          - DELETE
-        apiGroups:
-          - networking.k8s.io
-        apiVersions:
-          - v1
-        resources:
-          - networkpolicies
-  validations:
-    - expression: '!(has(oldObject.metadata.labels) && oldObject.metadata.labels[''npprotection/blockdeletion''] == "true")'
-      message: "Cannot delete NetworkPolicy with 'npprotection/blockdeletion: true' label. This policy is not allowed for deletion."
----
-kind: ValidatingAdmissionPolicyBinding
-apiVersion: admissionregistration.k8s.io/v1
-metadata:
-  name: fine-grained-network-policy-protection-binding
-spec:
-  policyName: fine-grained-network-policy-protection
-  validationActions:
-    - Deny
-`)
-
-func testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYaml, nil
-}
-
-func testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/networkpolicy/vap-npprotection-blockdeletion.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetworkingNmstateApplyRouteTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -47309,44 +43836,6 @@ func testExtendedTestdataNetworkingNmstateBridgeWithHostnamePolicyTemplateYaml()
 	return a, nil
 }
 
-var _testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: kubenetes-nmstate-catalogsource-template
-objects:
-- apiVersion: operators.coreos.com/v1alpha1
-  kind: CatalogSource
-  metadata:
-    name: "${CATALOGSOURCENAME}"
-    namespace: "${CATALOGNAMESPACE}"
-  spec:
-    displayName: Kubernetes nmstate FBC Operator Catalog
-    image: "${IMAGE}"
-    sourceType: grpc
-    updateStrategy:
-      registryPoll:
-        interval: 10m
-parameters:
-- name: CATALOGSOURCENAME
-- name: CATALOGNAMESPACE
-- name: IMAGE
-`)
-
-func testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYaml, nil
-}
-
-func testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/nmstate/catalogsource-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetworkingNmstateDhcpHostnamePolicyTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -47533,44 +44022,6 @@ func testExtendedTestdataNetworkingNmstateIfacePolicyTemplateYaml() (*asset, err
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/networking/nmstate/iface-policy-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYaml = []byte(`apiVersion: config.openshift.io/v1
-kind: ImageDigestMirrorSet
-metadata:
-  name: kubernetes-nmstate-images-mirror-set
-spec:
-  imageDigestMirrors:
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/kubernetes-nmstate-operator-bundle
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/kubernetes-nmstate-rhel9-operator
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/nmstate-console-plugin-rhel9
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ose-kube-rbac-proxy-rhel9
-  - mirrors:
-    - quay.io/redhat-user-workloads/ocp-art-tenant/art-images-share
-    source: registry.redhat.io/openshift5/ose-kubernetes-nmstate-handler-rhel9
-`)
-
-func testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYaml, nil
-}
-
-func testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/nmstate/image-digest-mirrorset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -48536,10 +44987,6 @@ objects:
       nodeSelector:
         "${NODELABEL}": "${LABELVALUE}"
       desiredState:
-        interfaces:
-        - name: "${BRIDGE1}"
-          type: ovs-bridge
-          state: up
         ovn:
           bridge-mappings:
           - localnet: "${LOCALNET1}"
@@ -48911,83 +45358,6 @@ func testExtendedTestdataNetworkingNmstateVlanPolicyBaseEthTemplateYaml() (*asse
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/networking/nmstate/vlan-policy-base-eth-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: vlan-policy-dualstack-template
-objects:
-- kind: NodeNetworkConfigurationPolicy
-  apiVersion: nmstate.io/v1
-  metadata:
-    name: "${NAME}"
-  spec:
-    nodeSelector:
-      "${NODELABEL}": "${LABELVALUE}"
-    desiredState:
-      interfaces:
-      - name: "${IFACENAME}"
-        description: "${DESCR}"
-        type: vlan
-        state: "${STATE}"
-        vlan:
-          base-iface: "${BASEIFACE}"
-          id: "${{VLANID}}"
-        ipv4:
-          address:
-          - ip: "${IPADDRV4}"
-            prefix-length: 24
-          enabled: true
-          dhcp: false
-        ipv6:
-          address:
-          - ip: "${IPADDRV6}"
-            prefix-length: 64
-          enabled: true
-          dhcp: false
-      routes:
-        config:
-        - destination: 0.0.0.0/0
-          metric: 999
-          next-hop-address: "${IPGATEWAYV4}"
-          next-hop-interface: "${IFACENAME}"
-          table-id: 254
-        - destination: ::/0
-          metric: 999
-          next-hop-address: "${IPGATEWAYV6}"
-          next-hop-interface: "${IFACENAME}"
-          table-id: 254
-parameters:
-- name: NAME
-- name: NODELABEL
-  value: "node-role.kubernetes.io/worker"
-- name: LABELVALUE
-  value: ""
-- name: IFACENAME
-- name: DESCR
-- name: STATE
-- name: BASEIFACE
-- name: VLANID
-- name: IPADDRV4
-- name: IPADDRV6
-- name: IPGATEWAYV4
-- name: IPGATEWAYV6
-`)
-
-func testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYaml, nil
-}
-
-func testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/nmstate/vlan-policy-dualstack-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -52183,39 +48553,6 @@ func testExtendedTestdataNetworkingTcpdumpDaemonsetTemplateYaml() (*asset, error
 	return a, nil
 }
 
-var _testExtendedTestdataNetworkingTestpodWithPrivilegeYaml = []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    app: hello-pod
-  name: hello-pod
-spec:
-  containers:
-    - image: quay.io/openshifttest/hello-sdn@sha256:c89445416459e7adea9a5a416b3365ed3d74f2491beb904d61dc8d1eb89a72a4
-      name: hello-pod
-      securityContext:
-        privileged: true
-      ports:
-        - containerPort: 8080
-        - containerPort: 8443
-
-`)
-
-func testExtendedTestdataNetworkingTestpodWithPrivilegeYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingTestpodWithPrivilegeYaml, nil
-}
-
-func testExtendedTestdataNetworkingTestpodWithPrivilegeYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingTestpodWithPrivilegeYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/testpod-with-privilege.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataNetworkingTestpodWithSpecialLifecycleYaml = []byte(`apiVersion: v1
 kind: ReplicationController
 metadata:
@@ -52381,6 +48718,7 @@ objects:
         topology: Layer3
         layer3:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets:
             - cidr: "${IPv4CIDR}"
               hostSubnet: ${{IPv4PREFIX}}
@@ -52390,6 +48728,7 @@ parameters:
 - name: CRDNAME
 - name: LABELVALUE
 - name: LABELKEY
+- name: MTU
 - name: ROLE
 - name: IPv4CIDR
 - name: IPv4PREFIX
@@ -52430,11 +48769,13 @@ objects:
         topology: Layer2
         layer2:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets: ["${IPv4CIDR}", "${IPv6CIDR}"]
 parameters:
 - name: CRDNAME
 - name: LABELVALUE
 - name: LABELKEY
+- name: MTU
 - name: ROLE
 - name: IPv4CIDR
 - name: IPv6CIDR
@@ -52473,12 +48814,14 @@ objects:
         topology: Layer2
         layer2:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets: ["${CIDR}"]
 parameters:
 - name: CRDNAME
 - name: LABELVALUE
 - name: LABELKEY
 - name: CIDR
+- name: MTU
 - name: ROLE
 
 `)
@@ -52494,104 +48837,6 @@ func testExtendedTestdataNetworkingUdnCudn_crd_layer2_singlestack_templateYaml()
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/networking/udn/cudn_crd_layer2_singlestack_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: cudn-crd-localnet-singlestack-template
-objects:
-  - apiVersion: k8s.ovn.org/v1
-    kind: ClusterUserDefinedNetwork
-    metadata:
-      name: "${CRDNAME}"
-    spec:
-      namespaceSelector:
-        matchLabels:
-          "${LABELKEY}": "${LABELVALUE}"
-      network:
-        topology: Localnet
-        localnet:
-          role: "${ROLE}"
-          physicalNetworkName: "${PHYSICALNETWORK}"
-          subnets:
-          - ${{SUBNET}}
-          excludeSubnets:
-          - ${{EXCLUDESUBNET}}
-parameters:
-- name: CRDNAME
-- name: LABELVALUE
-- name: LABELKEY
-- name: ROLE
-- name: PHYSICALNETWORK
-- name: SUBNET
-- name: EXCLUDESUBNET
-`)
-
-func testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYaml, nil
-}
-
-func testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/udn/cudn_crd_localnet_singlestack_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: cudn-crd-localnet-singlestack-with-vlan-template
-objects:
-  - apiVersion: k8s.ovn.org/v1
-    kind: ClusterUserDefinedNetwork
-    metadata:
-      name: "${CRDNAME}"
-    spec:
-      namespaceSelector:
-        matchLabels:
-          "${LABELKEY}": "${LABELVALUE}"
-      network:
-        topology: Localnet
-        localnet:
-          role: "${ROLE}"
-          physicalNetworkName: "${PHYSICALNETWORK}"
-          vlan:
-            mode: Access
-            access:
-              id: 50
-          subnets:
-          - ${{SUBNET}}
-          excludeSubnets:
-          - ${{EXCLUDESUBNET}}
-parameters:
-- name: CRDNAME
-- name: LABELVALUE
-- name: LABELKEY
-- name: ROLE
-- name: PHYSICALNETWORK
-- name: SUBNET
-- name: EXCLUDESUBNET
-`)
-
-func testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYaml, nil
-}
-
-func testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/udn/cudn_crd_localnet_singlestack_with_vlan_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -52617,6 +48862,7 @@ objects:
         topology: Layer3
         layer3:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets:
             - cidr: "${IPv4CIDR}"
               hostSubnet: ${{IPv4PREFIX}}
@@ -52628,6 +48874,7 @@ parameters:
 - name: VALUE2
 - name: KEY
 - name: OPERATOR
+- name: MTU
 - name: PREFIX
 - name: ROLE
 - name: IPv4CIDR
@@ -52671,6 +48918,7 @@ objects:
         topology: Layer2
         layer2:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets: ["${IPv4CIDR}", "${IPv6CIDR}"]
 parameters:
 - name: CRDNAME
@@ -52678,6 +48926,7 @@ parameters:
 - name: VALUE2
 - name: KEY
 - name: OPERATOR
+- name: MTU
 - name: PREFIX
 - name: ROLE
 - name: IPv4CIDR
@@ -52721,6 +48970,7 @@ objects:
         topology: Layer2
         layer2:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets: ["${CIDR}"]
 parameters:
 - name: CRDNAME
@@ -52729,6 +48979,7 @@ parameters:
 - name: KEY
 - name: OPERATOR
 - name: CIDR
+- name: MTU
 - name: ROLE
 `)
 
@@ -52768,6 +49019,7 @@ objects:
         topology: Layer3
         layer3:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets:
             - cidr: "${CIDR}"
               hostSubnet: ${{PREFIX}}
@@ -52778,6 +49030,7 @@ parameters:
 - name: KEY
 - name: OPERATOR
 - name: CIDR
+- name: MTU
 - name: PREFIX
 - name: ROLE
 
@@ -52817,6 +49070,7 @@ objects:
         topology: Layer3
         layer3:
           role: "${ROLE}"
+          mtu: ${{MTU}}
           subnets:
             - cidr: "${CIDR}"
               hostSubnet: ${{PREFIX}}
@@ -52825,6 +49079,7 @@ parameters:
 - name: LABELVALUE
 - name: LABELKEY
 - name: CIDR
+- name: MTU
 - name: PREFIX
 - name: ROLE
 
@@ -52859,6 +49114,7 @@ objects:
     topology: Layer3
     layer3:
       role: "${ROLE}"
+      mtu: ${{MTU}}
       subnets:
       - cidr: "${IPv4CIDR}"
         hostSubnet: ${{IPv4PREFIX}}
@@ -52867,6 +49123,7 @@ objects:
 parameters:
 - name: CRDNAME
 - name: NAMESPACE
+- name: MTU
 - name: ROLE
 - name: IPv4CIDR
 - name: IPv4PREFIX
@@ -52903,10 +49160,12 @@ objects:
     topology: Layer2
     layer2:
       role: "${ROLE}"
+      mtu: ${{MTU}}
       subnets: ["${IPv4CIDR}","${IPv6CIDR}"]
 parameters:
 - name: CRDNAME
 - name: NAMESPACE
+- name: MTU
 - name: ROLE
 - name: IPv4CIDR
 - name: IPv6CIDR
@@ -52943,11 +49202,13 @@ objects:
     topology: Layer2
     layer2:
       role: "${ROLE}"
+      mtu: ${{MTU}}
       subnets: ["${CIDR}"]
 parameters:
 - name: CRDNAME
 - name: NAMESPACE
 - name: CIDR
+- name: MTU
 - name: ROLE
 `)
 
@@ -52980,6 +49241,7 @@ objects:
     topology: Layer3
     layer3:
       role: "${ROLE}"
+      mtu: ${{MTU}}
       subnets:
       - cidr: "${CIDR}"
         hostSubnet: ${{PREFIX}}
@@ -52987,6 +49249,7 @@ parameters:
 - name: CRDNAME
 - name: NAMESPACE
 - name: CIDR
+- name: MTU
 - name: PREFIX
 - name: ROLE
 `)
@@ -53022,6 +49285,7 @@ objects:
         "type": "ovn-k8s-cni-overlay",
         "topology":"${TOPOLOGY}",
         "subnets": "${SUBNET}",
+        "mtu": ${MTU},
         "netAttachDefName": "${NET_ATTACH_DEF_NAME}",
         "role": "${ROLE}"
       }
@@ -53032,6 +49296,7 @@ parameters:
 - name: NAD_NETWORK_NAME
 - name: TOPOLOGY
 - name: SUBNET
+- name: MTU
 - name: NET_ATTACH_DEF_NAME
 - name: ROLE
 `)
@@ -53047,69 +49312,6 @@ func testExtendedTestdataNetworkingUdnUdn_nad_templateYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/networking/udn/udn_nad_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNetworkingUdnUdn_statefulset_templateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: udn-statefulset-template
-objects:
-- apiVersion: apps/v1
-  kind: StatefulSet
-  metadata:
-    labels:
-      app: ${LABEL}
-      name: ${LABEL}
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    replicas: 5
-    selector:
-      matchLabels:
-        app: ${LABEL}
-    serviceName: hello
-    template:
-      metadata:
-        labels:
-          app: ${LABEL}
-        annotations:
-          k8s.v1.cni.cncf.io/networks: '[{"name": "${NETWORK_NAME}","interface": "${INTERFACE_NAME}"}]'
-      spec:
-        containers:
-        - image: quay.io/openshifttest/hello-sdn@sha256:c89445416459e7adea9a5a416b3365ed3d74f2491beb904d61dc8d1eb89a72a4 
-          name: hello
-          ports:
-          - containerPort: 8080
-            name: web
-            protocol: TCP
-          resources:
-            limits:
-              memory: 340Mi
-        restartPolicy: Always
-parameters:
-- name: NAME
-  value: "hello"
-- name: NAMESPACE
-- name: LABEL
-  value: "hello"
-- name: NETWORK_NAME
-- name: INTERFACE_NAME
-  value: "ovn-udn1"
-`)
-
-func testExtendedTestdataNetworkingUdnUdn_statefulset_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNetworkingUdnUdn_statefulset_templateYaml, nil
-}
-
-func testExtendedTestdataNetworkingUdnUdn_statefulset_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNetworkingUdnUdn_statefulset_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/networking/udn/udn_statefulset_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -53821,36 +50023,6 @@ func testExtendedTestdataNodeAmqSubYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/node/amq-sub.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataNodeClusterimagepolicyYaml = []byte(`apiVersion: config.openshift.io/v1
-kind: ClusterImagePolicy
-metadata:
-  name: myclusterpolicy
-spec:
-  scopes:
-    - quay.io/asahay19/cosigntesting
-  policy:
-    rootOfTrust:
-      policyType: PublicKey
-      publicKey:
-        keyData: LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFV2U3bFRwMUE2UmtiTDdaR080cmhkTUZHMXRtTwpaN01MR1YvWUU3MFhNbHBCZHhaRHFGNTNsbEdPVkNVVnRxN1JWcWlTdXBRcmdLSlYxOVQzNmFUSk5nPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t
-    signedIdentity:
-      matchPolicy: MatchRepository`)
-
-func testExtendedTestdataNodeClusterimagepolicyYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataNodeClusterimagepolicyYaml, nil
-}
-
-func testExtendedTestdataNodeClusterimagepolicyYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataNodeClusterimagepolicyYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/node/clusterimagepolicy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -56030,6 +52202,59 @@ func testExtendedTestdataNodePodUserNamespaceYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataNodePodWasmYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: pod-wasm-template
+objects:
+- kind: Pod
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    namespace: "${NAMESPACE}"
+    labels:
+      name: http-server
+  spec:
+    securityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    containers:
+    - name: http-server
+      image: quay.io/crio/example-wasm-http:latest
+      command: ["/http_server.wasm"]
+      ports:
+        - containerPort: 1234
+          protocol: TCP
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      livenessProbe:
+        tcpSocket:
+          port: 1234
+        initialDelaySeconds: 3
+        periodSeconds: 30
+parameters:
+- name: NAME
+- name: NAMESPACE
+`)
+
+func testExtendedTestdataNodePodWasmYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataNodePodWasmYaml, nil
+}
+
+func testExtendedTestdataNodePodWasmYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataNodePodWasmYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/node/pod-wasm.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataNodePodWithTwoContainersYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -57173,6 +53398,1600 @@ func testExtendedTestdataNodeVpacontroller70962Yaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataOapCertmanagerCertGenericYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: certificate-generic-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: "${CERT_NAME}"
+    spec:
+      commonName: "${COMMON_NAME}"
+      dnsNames:
+        - "${DNS_NAME}"
+      usages:
+        - server auth
+      issuerRef:
+        group: "${ISSUER_GROUP}"
+        kind: "${ISSUER_KIND}"
+        name: "${ISSUER_NAME}"
+      secretName: "${SECRET_NAME}"
+      duration: "${DURATION}" 
+      renewBefore: "${RENEW_BEFORE}"
+parameters:
+  - name: CERT_NAME
+  - name: COMMON_NAME
+  - name: DNS_NAME
+    value: "svc.cluster.local"
+  - name: SECRET_NAME
+  - name: ISSUER_GROUP
+    value: cert-manager.io
+  - name: ISSUER_KIND
+    value: Issuer
+  - name: ISSUER_NAME
+  - name: DURATION
+    value: 1h
+  - name: RENEW_BEFORE
+    value: 58m
+`)
+
+func testExtendedTestdataOapCertmanagerCertGenericYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerCertGenericYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerCertGenericYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerCertGenericYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cert-generic.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerCertMatchTest1Yaml = []byte(`apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-match-test-1
+  labels:
+    use-http01-solver: "true"
+spec:
+  secretName: cert-match-test-1
+  issuerRef:
+    kind: ClusterIssuer
+    name: acme-multiple-solvers
+  dnsNames:
+  - xxia-test-1.test-example.com
+`)
+
+func testExtendedTestdataOapCertmanagerCertMatchTest1YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerCertMatchTest1Yaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerCertMatchTest1Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerCertMatchTest1YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cert-match-test-1.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerCertMatchTest2Yaml = []byte(`apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-match-test-2
+spec:
+  secretName: cert-match-test-2
+  issuerRef:
+    kind: ClusterIssuer
+    name: acme-multiple-solvers
+  dnsNames:
+  - xxia-test-2.test-example.com
+`)
+
+func testExtendedTestdataOapCertmanagerCertMatchTest2YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerCertMatchTest2Yaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerCertMatchTest2Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerCertMatchTest2YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cert-match-test-2.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerCertMatchTest3Yaml = []byte(`apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-match-test-3
+spec:
+  secretName: cert-match-test-3
+  issuerRef:
+    kind: ClusterIssuer
+    name: acme-multiple-solvers
+  dnsNames:
+  - xxia-test-3.test-example.com
+  - '*.xxia-test-3.test-example.com'
+`)
+
+func testExtendedTestdataOapCertmanagerCertMatchTest3YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerCertMatchTest3Yaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerCertMatchTest3Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerCertMatchTest3YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cert-match-test-3.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerCertSelfsignedVaultYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: cert-selfsigned-vault-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: "${CERT_NAME}"
+    spec:
+      isCA: false
+      commonName: "${CERT_NAME}"
+      dnsNames:
+        - ${VAULT_SERVICE}
+        - ${VAULT_SERVICE}.${VAULT_NAMESPACE}
+        - ${VAULT_SERVICE}.${VAULT_NAMESPACE}.svc
+        - ${VAULT_SERVICE}.${VAULT_NAMESPACE}.svc.cluster.local
+      ipAddresses:
+        - 127.0.0.1
+      usages:
+        - key encipherment
+        - digital signature
+        - server auth
+        - client auth
+      privateKey:
+        algorithm: RSA
+        encoding: PKCS1
+        size: 2048
+      issuerRef:
+        name: "${ISSUER_NAME}"
+        kind: Issuer
+      secretName: vault-server-tls
+parameters:
+  - name: CERT_NAME
+  - name: VAULT_SERVICE
+  - name: VAULT_NAMESPACE
+  - name: ISSUER_NAME
+  - name: SECRET_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerCertSelfsignedVaultYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerCertSelfsignedVaultYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerCertSelfsignedVaultYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerCertSelfsignedVaultYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cert-selfsigned-vault.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerCertSelfsignedYaml = []byte(`apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: default-selfsigned-cert
+spec:
+  isCA: true
+  commonName: default-selfsigned-cert
+  subject:
+    organizations:
+      - OpenShift QE
+  issuerRef:
+    kind: Issuer
+    name: default-selfsigned
+  secretName: selfsigned-ca-tls
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+`)
+
+func testExtendedTestdataOapCertmanagerCertSelfsignedYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerCertSelfsignedYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerCertSelfsignedYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerCertSelfsignedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cert-selfsigned.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerClusterMonitoringConfigYaml = []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+`)
+
+func testExtendedTestdataOapCertmanagerClusterMonitoringConfigYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerClusterMonitoringConfigYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerClusterMonitoringConfigYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerClusterMonitoringConfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/cluster-monitoring-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: clusterissuer-acme-dns01-clouddns-ambient-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      acme:
+        server: "${ACME_SERVER}"
+        skipTLSVerify: true
+        privateKeySecretRef:
+          name: acme-account-key
+        solvers:
+          - dns01:
+              cloudDNS:
+                project: "${PROJECT_ID}"
+parameters:
+  - name: ISSUER_NAME
+  - name: ACME_SERVER
+  - name: PROJECT_ID
+`)
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-clouddns-ambient.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: clusterissuer-acme-dns01-route53-ambient-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      acme:
+        server: "${ACME_SERVER}"
+        skipTLSVerify: true
+        privateKeySecretRef:
+          name: acme-account-key
+        solvers:
+        - selector:
+            dnsZones:
+              - "${DNS_ZONE}"
+          dns01:
+            route53:
+              region: "${AWS_REGION}"
+              hostedZoneID: "${ROUTE53_HOSTED_ZONE_ID}"
+parameters:
+  - name: ISSUER_NAME
+  - name: ACME_SERVER
+  - name: DNS_ZONE
+  - name: AWS_REGION
+  - name: ROUTE53_HOSTED_ZONE_ID
+`)
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-route53-ambient.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53Yaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: clusterissuer-acme-dns01-route53-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      acme:
+        server: "${ACME_SERVER}"
+        skipTLSVerify: true
+        privateKeySecretRef:
+          name: acme-account-key
+        solvers:
+        - selector:
+            dnsZones:
+              - "${DNS_ZONE}"
+          dns01:
+            route53:
+              region: "${AWS_REGION}"
+              accessKeyID: "${AWS_ACCESS_KEY_ID}"
+              hostedZoneID: "${ROUTE53_HOSTED_ZONE_ID}"
+              secretAccessKeySecretRef:
+                name: test-secret
+                key: secret-access-key
+parameters:
+  - name: ISSUER_NAME
+  - name: ACME_SERVER
+  - name: DNS_ZONE
+  - name: AWS_REGION
+  - name: AWS_ACCESS_KEY_ID
+  - name: ROUTE53_HOSTED_ZONE_ID
+`)
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53Yaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-route53.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: clusterissuer-acme-multiple-solvers-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      acme:
+        server: "${ACME_SERVER}"
+        skipTLSVerify: true
+        privateKeySecretRef:
+          name: acme-account-key
+        solvers:
+        - http01:
+            ingress:
+              ingressClassName: openshift-default
+          selector:
+            matchLabels:
+              use-http01-solver: "true"
+            dnsZones:
+              - test-example.com
+        - dns01:
+            azureDNS:
+              clientID: aaaa-aaaa-aaaa-aaaa
+              clientSecretSecretRef:
+                name: azuredns-config-dummy
+                key: client-secret
+              subscriptionID: bbbb-bbbb-bbbb-bbbb
+              tenantID: cccc-cccc-cccc-cccc
+              resourceGroupName: rg-dummy
+              hostedZoneName: test-example.com
+              environment: AzurePublicCloud
+          selector:
+            dnsNames:
+            - xxia-test-2.test-example.com
+        - dns01:
+            route53:
+              region: us-east-1
+              accessKeyID: DUMMYKEYID
+              hostedZoneID: DUMMYZONEID
+              secretAccessKeySecretRef:
+                name: test-secret-dummy
+                key: secret-access-key
+          selector:
+            dnsZones:
+              - test-example.com
+parameters:
+  - name: ISSUER_NAME
+  - name: ACME_SERVER
+`)
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/clusterissuer-acme-multiple-solvers.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-openshift
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hello-openshift
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hello-openshift
+    spec:
+      containers:
+        - image: quay.io/openshifttest/hello-openshift:1.2.0
+          imagePullPolicy: IfNotPresent
+          name: hello-openshift
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-openshift
+spec:
+  ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: hello-openshift
+  type: ClusterIP
+`)
+
+func testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/deploy-hello-openshift.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerDeployPebbleServerYaml = []byte(`# xref: https://github.com/letsencrypt/pebble/tree/main/test/config
+# xref: https://github.com/cert-manager/cert-manager/blob/master/make/config/pebble
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pebble
+data:
+  pebble-config.json: |
+    {
+      "pebble": {
+        "listenAddress": "0.0.0.0:14000",
+        "managementListenAddress": "0.0.0.0:15000",
+        "certificate": "test/certs/localhost/cert.pem",
+        "privateKey": "test/certs/localhost/key.pem",
+        "httpPort": 80,
+        "tlsPort": 443,
+        "ocspResponderURL": "",
+        "externalAccountBindingRequired": false
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pebble
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pebble
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pebble
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: pebble
+            items:
+              - key: pebble-config.json
+                path: pebble-config.json
+      containers:
+        - image: quay.io/openshifttest/letsencrypt-pebble:2.7.0
+          imagePullPolicy: IfNotPresent
+          name: pebble
+          ports:
+            - name: http
+              containerPort: 14000
+              protocol: TCP
+          volumeMounts:
+            - name: config-volume
+              mountPath: /test/config/pebble-config.json
+              subPath: pebble-config.json
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pebble
+spec:
+  type: ClusterIP
+  ports:
+    - port: 14000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: pebble
+`)
+
+func testExtendedTestdataOapCertmanagerDeployPebbleServerYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerDeployPebbleServerYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerDeployPebbleServerYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerDeployPebbleServerYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/deploy-pebble-server.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerExecCurlHelperYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: exec-curl-helper-template
+objects:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        name: "${POD_NAME}"
+        pod-name: "${POD_NAME}"
+      name: "${POD_NAME}"
+    spec:
+      volumes:
+        - name: ca-cert
+          secret:
+            secretName: "${SECRET_NAME}"
+      containers:
+        - name: exec-curl
+          image: quay.io/openshifttest/hello-openshift:1.2.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - "sleep"
+            - "600"
+          volumeMounts:
+            - name: ca-cert
+              mountPath: "${SECRET_MOUNT_PATH}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      restartPolicy: Never
+parameters:
+  - name: POD_NAME
+  - name: SECRET_NAME
+  - name: SECRET_MOUNT_PATH
+`)
+
+func testExtendedTestdataOapCertmanagerExecCurlHelperYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerExecCurlHelperYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerExecCurlHelperYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerExecCurlHelperYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/exec-curl-helper.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerExecHelmHelperYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: exec-helm-helper-template
+objects:
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: "${SA_NAME}"
+      namespace: "${NAMESPACE}"
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: "${ROLEBINDING_NAME}"
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+      - kind: ServiceAccount
+        name: "${SA_NAME}"
+        namespace: "${NAMESPACE}"
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        name: "${POD_NAME}"
+      name: "${POD_NAME}"
+      namespace: "${NAMESPACE}"
+    spec:
+      serviceAccount: "${SA_NAME}"
+      containers:
+        - name: helm
+          image: quay.io/openshifttest/helm:3.17.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - "sh"
+            - "-c"
+            - ${HELM_CMD}
+          volumeMounts:
+            - name: values-volume
+              mountPath: /helm
+          securityContext:
+            privileged: true
+      volumes:
+        - name: values-volume
+          configMap:
+            name: "${CONFIGMAP_NAME}"
+      restartPolicy: Never
+parameters:
+  - name: SA_NAME
+  - name: ROLEBINDING_NAME
+  - name: POD_NAME
+  - name: NAMESPACE
+  - name: HELM_CMD
+  - name: CONFIGMAP_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerExecHelmHelperYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerExecHelmHelperYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerExecHelmHelperYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerExecHelmHelperYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/exec-helm-helper.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYaml = []byte(`# xref: https://developer.hashicorp.com/vault/docs/platform/k8s/helm/examples/standalone-tls#3-helm-configuration Configurations to setup a TLS-protected Vault server
+# xref: https://github.com/hashicorp/vault-helm/blob/main/values.yaml All available parameters and default values for the Vault chart.
+# Set 'server.dataStorage.size' to 1Gi as the default 10Gi is too expensive and unnecessary for testing propose in CI.
+global:
+  enabled: true
+  tlsDisable: false
+  openshift: true
+injector:
+  enabled: false
+server:
+  image:
+    repository: "quay.io/openshifttest/vault"
+    tag: "1.19.0"
+  dataStorage:
+    enabled: true
+    size: 1Gi
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-server-tls/ca.crt
+  volumes:
+    - name: userconfig-vault-server-tls
+      secret:
+        defaultMode: 420
+        secretName: vault-server-tls
+  volumeMounts:
+    - mountPath: /vault/userconfig/vault-server-tls
+      name: userconfig-vault-server-tls
+      readOnly: true
+  standalone:
+    enabled: true
+    config: |
+      listener "tcp" {
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+        tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
+        tls_key_file  = "/vault/userconfig/vault-server-tls/tls.key"
+        tls_client_ca_file = "/vault/userconfig/vault-server-tls/ca.crt"
+      }
+      storage "file" {
+        path = "/vault/data"
+      }
+`)
+
+func testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/helm-vault-tls-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerAcmeHttp01Yaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: issuer-acme-http01-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      acme:
+        server: "${ACME_SERVER}"
+        skipTLSVerify: true
+        privateKeySecretRef:
+          name: acme-account-key
+        solvers:
+        - http01:
+            ingress:
+              ingressClassName: openshift-default
+parameters:
+  - name: ISSUER_NAME
+  - name: ACME_SERVER
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerAcmeHttp01YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerAcmeHttp01Yaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerAcmeHttp01Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerAcmeHttp01YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-acme-http01.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerCaYaml = []byte(`apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: default-ca
+spec:
+  ca:
+    secretName: selfsigned-ca-tls
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerCaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerCaYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerCaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerCaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-ca.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerGoogleCasYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: issuer-google-cas-template
+objects:
+  - apiVersion: cas-issuer.jetstack.io/v1beta1
+    kind: GoogleCASIssuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      project: "${PROJECT}"
+      location: "${LOCATION}"
+      caPoolId: "${CAPOOL_ID}"
+      credentials:
+        name: "${SA_SECRET}"
+        key: key.json
+parameters:
+  - name: ISSUER_NAME
+  - name: PROJECT
+  - name: LOCATION
+  - name: CAPOOL_ID
+  - name: SA_SECRET
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerGoogleCasYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerGoogleCasYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerGoogleCasYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerGoogleCasYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-google-cas.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerSelfsignedYaml = []byte(`apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: default-selfsigned
+spec:
+  selfSigned: {}
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerSelfsignedYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerSelfsignedYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerSelfsignedYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerSelfsignedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-selfsigned.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerVaultApproleYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: issuer-vault-approle-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      vault:
+        server: https://${VAULT_SERVICE}.${VAULT_NAMESPACE}.svc:8200
+        caBundleSecretRef:
+          name: vault-server-tls
+          key: ca.crt
+        path: pki_int/sign/cluster-dot-local
+        auth:
+          appRole:
+            path: approle
+            roleId: "${ROLE_ID}"
+            secretRef:
+              name: "${SECRET_NAME}"
+              key: secretId
+parameters:
+  - name: ISSUER_NAME
+  - name: VAULT_SERVICE
+  - name: VAULT_NAMESPACE
+  - name: ROLE_ID
+  - name: SECRET_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerVaultApproleYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerVaultApproleYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerVaultApproleYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerVaultApproleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-vault-approle.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: issuer-vault-bound-sa-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      vault:
+        server: https://${VAULT_SERVICE}.${VAULT_NAMESPACE}.svc:8200
+        caBundleSecretRef:
+          name: vault-server-tls
+          key: ca.crt
+        path: pki_int/sign/cluster-dot-local
+        auth:
+          kubernetes:
+            mountPath: /v1/auth/${VAULT_AUTH_PATH}
+            role: issuer
+            serviceAccountRef:
+              name: "${SA_NAME}"
+parameters:
+  - name: ISSUER_NAME
+  - name: VAULT_SERVICE
+  - name: VAULT_NAMESPACE
+  - name: VAULT_AUTH_PATH
+  - name: SA_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-vault-bound-sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: issuer-vault-static-sa-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      vault:
+        server: https://${VAULT_SERVICE}.${VAULT_NAMESPACE}.svc:8200
+        caBundleSecretRef:
+          name: vault-server-tls
+          key: ca.crt
+        path: pki_int/sign/cluster-dot-local
+        auth:
+          kubernetes:
+            mountPath: /v1/auth/kubernetes
+            role: issuer
+            secretRef:
+              name: "${SECRET_NAME}"
+              key: token
+parameters:
+  - name: ISSUER_NAME
+  - name: VAULT_SERVICE
+  - name: VAULT_NAMESPACE
+  - name: SECRET_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-vault-static-sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerIssuerVaultTokenYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: issuer-vault-token-template
+objects:
+  - apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: "${ISSUER_NAME}"
+    spec:
+      vault:
+        server: https://${VAULT_SERVICE}.${VAULT_NAMESPACE}.svc:8200
+        caBundleSecretRef:
+          name: vault-server-tls
+          key: ca.crt
+        path: pki_int/sign/cluster-dot-local
+        auth:
+          tokenSecretRef:
+            name: "${SECRET_NAME}"
+            key: token
+parameters:
+  - name: ISSUER_NAME
+  - name: VAULT_SERVICE
+  - name: VAULT_NAMESPACE
+  - name: SECRET_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerIssuerVaultTokenYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerIssuerVaultTokenYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerIssuerVaultTokenYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerIssuerVaultTokenYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/issuer-vault-token.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerKonfluxFbcYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: konflux-fbc-template
+objects:
+  - apiVersion: operators.coreos.com/v1alpha1
+    kind: CatalogSource
+    metadata:
+      name: "${NAME}"
+      namespace: "${NAMESPACE}"
+    spec:
+      sourceType: grpc
+      image: "${IMAGE_INDEX}"
+parameters:
+  - name: NAME
+  - name: NAMESPACE
+  - name: IMAGE_INDEX
+`)
+
+func testExtendedTestdataOapCertmanagerKonfluxFbcYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerKonfluxFbcYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerKonfluxFbcYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerKonfluxFbcYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/konflux-fbc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerNamespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager-operator
+`)
+
+func testExtendedTestdataOapCertmanagerNamespaceYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerNamespaceYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerNamespaceYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerNamespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerOperatorgroupYaml = []byte(`apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cert-manager-operator-og
+  namespace: cert-manager-operator
+`)
+
+func testExtendedTestdataOapCertmanagerOperatorgroupYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerOperatorgroupYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerOperatorgroupYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerOperatorgroupYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerRapidastConfigYaml = []byte(`# source: https://docs.engineering.redhat.com/display/PRODSEC/RapiDAST+QuickStart+Guide#RapiDASTQuickStartGuide-SampleConfiguration
+# full configuration options: https://github.com/RedHatProductSecurity/rapidast/blob/development/config/config-template-zap-long.yaml
+config:
+  # WARNING: ` + "`" + `configVersion` + "`" + ` indicates the schema version of the config file.
+  # This value tells RapiDAST what schema should be used to read this configuration.
+  # Therefore you should only change it if you update the configuration to a newer schema
+  # It is intended to keep backward compatibility (newer RapiDAST running an older config)
+  configVersion: 5
+
+# ` + "`" + `application` + "`" + ` contains data related to the application, not to the scans.
+application:
+  shortName: "cert-manager" # should not contain non-printable characters, such as spaces
+  url: "https://kubernetes.default.svc" # to be replaced with your cluster API server URL
+
+# ` + "`" + `general` + "`" + ` is a section that will be applied to all scanners.
+general:
+  authentication:
+    type: "http_header"
+    parameters:
+      name: "Authorization"
+      value: "Bearer AUTH_TOKEN"
+  container:
+    # currently supported: ` + "`" + `podman` + "`" + ` and ` + "`" + `none` + "`" + `. To run a scan using the RapiDAST container image(e.g. using Helm) on the cluster, this must be ` + "`" + `none` + "`" + `
+    type: "none"
+  passiveScan:
+    # optional list of passive rules to disable
+    disabledRules: "2,10015,10027,10096,10024"
+  activeScan:
+    # If no policy is chosen, a default ("API-scan-minimal") will be selected
+    policy: "Kubernetes-API-scan"
+
+# ` + "`" + `scanners' is a section that configures scanning options.
+scanners:
+  zap:
+    # define a scan through the ZAP scanner for API Group 'cert-manager.io/v1'
+    apiScan:
+      apis:
+        apiUrl: "https://kubernetes.default.svc/openapi/v3/apis/cert-manager.io/v1"
+  zap_acme:
+    # define a scan through the ZAP scanner for API Group 'acme.cert-manager.io/v1'
+    apiScan:
+      apis:
+        apiUrl: "https://kubernetes.default.svc/openapi/v3/apis/acme.cert-manager.io/v1"
+`)
+
+func testExtendedTestdataOapCertmanagerRapidastConfigYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerRapidastConfigYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerRapidastConfigYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerRapidastConfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/rapidast-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerRapidastPodYaml = []byte(`# DO NOT MODIFY DIRECTLY
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rapidast-pod-template
+objects:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: "${PVC_NAME}"
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100M
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      name: "${POD_NAME}"
+    spec:
+      serviceAccount: "${SA_NAME}"
+      volumes:
+        - name: config-volume
+          configMap:
+            name: "${CONFIGMAP_NAME}"
+        - name: results-volume
+          persistentVolumeClaim:
+            claimName: "${PVC_NAME}"
+      containers:
+        - name: rapidast
+          image: quay.io/redhatproductsecurity/rapidast:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - "sh"
+            - "-c"
+            - >
+              rapidast.py --config /helm/config/rapidastconfig.yaml &&
+              find /opt/rapidast/results -name zap-report.json -exec cat {} \;
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: config-volume
+              mountPath: "/helm/config"
+            - name: results-volume
+              mountPath: "/opt/rapidast/results"
+      restartPolicy: Never
+parameters:
+  - name: POD_NAME
+  - name: SA_NAME
+  - name: CONFIGMAP_NAME
+  - name: PVC_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerRapidastPodYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerRapidastPodYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerRapidastPodYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerRapidastPodYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/rapidast-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYaml = []byte(`# DO NOT MODIFY DIRECTLY
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rapidast-rbac-template
+objects:
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: "${NAME}"
+      namespace: "${NAMESPACE}"
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: rapidast-rolebinding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: system:openshift:scc:privileged
+    subjects:
+      - kind: ServiceAccount
+        name: "${NAME}"
+        namespace: "${NAMESPACE}"
+parameters:
+  - name: NAME
+  - name: NAMESPACE
+`)
+
+func testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/rapidast-privileged-sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYaml = []byte(`# DO NOT MODIFY DIRECTLY
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rapidast-results-sync-helper-template
+objects:
+  - apiVersion: v1
+    kind: Pod
+    metadata:
+      labels:
+        name: "${POD_NAME}"
+      name: "${POD_NAME}"
+    spec:
+      volumes:
+        - name: results-volume
+          persistentVolumeClaim:
+            claimName: "${PVC_NAME}"
+      containers:
+        - name: busybox
+          image: quay.io/openshifttest/busybox:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - "sleep"
+            - "600"
+          volumeMounts:
+            - name: results-volume
+              mountPath: "${VOLUME_MOUNT_PATH}"
+      restartPolicy: Never
+parameters:
+  - name: POD_NAME
+  - name: VOLUME_MOUNT_PATH
+  - name: PVC_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/rapidast-results-sync-helper.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerRbacSecretReaderYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: route-secret-reader-role-template
+objects:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: secret-reader
+    rules:
+      - apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get", "list", "watch"]
+        resourceNames: ["${SECRET_NAME}"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: secret-reader-binding
+    subjects:
+      - kind: ServiceAccount
+        name: router
+        namespace: openshift-ingress
+    roleRef:
+      kind: Role
+      name: secret-reader
+      apiGroup: rbac.authorization.k8s.io
+parameters:
+  - name: SECRET_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerRbacSecretReaderYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerRbacSecretReaderYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerRbacSecretReaderYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerRbacSecretReaderYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/rbac-secret-reader.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerRbacVaultBoundSaYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rbac-vault-bound-sa-template
+objects:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: ${SA_NAME}-role
+    rules:
+      - apiGroups: [""]
+        resources: ["serviceaccounts/token"]
+        resourceNames: ["${SA_NAME}"]
+        verbs: ["create"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: ${SA_NAME}-rolebinding
+    subjects:
+      - kind: ServiceAccount
+        name: cert-manager
+        namespace: cert-manager
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: ${SA_NAME}-role
+parameters:
+  - name: SA_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerRbacVaultBoundSaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerRbacVaultBoundSaYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerRbacVaultBoundSaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerRbacVaultBoundSaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/rbac-vault-bound-sa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: secret-vault-static-sa-token-template
+objects:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${SA_NAME}
+      annotations:
+        kubernetes.io/service-account.name: ${SA_NAME}
+    type: kubernetes.io/service-account-token
+parameters:
+  - name: SA_NAME
+`)
+
+func testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/secret-vault-static-sa-token.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerServicemonitorYaml = []byte(`apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: cert-manager
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: cert-manager
+    app.kubernetes.io/name: cert-manager
+  name: cert-manager
+spec:
+  endpoints:
+    - interval: 30s
+      port: tcp-prometheus-servicemonitor
+      scheme: http
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/name: cert-manager
+`)
+
+func testExtendedTestdataOapCertmanagerServicemonitorYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerServicemonitorYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerServicemonitorYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerServicemonitorYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/servicemonitor.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOapCertmanagerSubscriptionYaml = []byte(`apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: subscription-template
+objects:
+  - apiVersion: operators.coreos.com/v1alpha1
+    kind: Subscription
+    metadata:
+      name: "${NAME}"
+    spec:
+      channel: "${CHANNEL}"
+      installPlanApproval: Automatic
+      name: "${NAME}"
+      source: "${SOURCE}"
+      sourceNamespace: "${SOURCE_NAMESPACE}"
+parameters:
+  - name: NAME
+  - name: SOURCE
+  - name: SOURCE_NAMESPACE
+  - name: CHANNEL
+`)
+
+func testExtendedTestdataOapCertmanagerSubscriptionYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOapCertmanagerSubscriptionYaml, nil
+}
+
+func testExtendedTestdataOapCertmanagerSubscriptionYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOapCertmanagerSubscriptionYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/oap/certmanager/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataOapEsoClustergeneratorPasswordYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -57186,7 +55005,7 @@ objects:
       kind: Password
       generator:
         passwordSpec:
-          length: 32
+          length: 16
           digits: 5
           symbols: 5
           symbolCharacters: "-_$@"
@@ -57216,7 +55035,7 @@ kind: Template
 metadata:
   name: externalsecret-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: "${NAME}"
@@ -57270,7 +55089,7 @@ kind: Template
 metadata:
   name: externalsecret-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: "${NAME}"
@@ -57332,7 +55151,7 @@ kind: Template
 metadata:
   name: externalsecret-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: "${NAME}"
@@ -57393,7 +55212,7 @@ kind: Template
 metadata:
   name: externalsecret-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: "${NAME}"
@@ -57450,7 +55269,7 @@ kind: Template
 metadata:
   name: externalsecret-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: "${NAME}"
@@ -57497,7 +55316,7 @@ kind: Template
 metadata:
   name: externalsecret-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: "${NAME}"
@@ -57554,7 +55373,7 @@ objects:
     metadata:
       name: "${NAME}"
     spec:
-      length: 32
+      length: 16
       digits: 5
       symbols: 5
       symbolCharacters: "-_$@"
@@ -57648,19 +55467,13 @@ func testExtendedTestdataOapEsoNamespaceYaml() (*asset, error) {
 }
 
 var _testExtendedTestdataOapEsoOperandconfigYaml = []byte(`apiVersion: operator.openshift.io/v1alpha1
-kind: ExternalSecretsConfig
+kind: ExternalSecrets
 metadata:
   labels:
     app.kubernetes.io/name: external-secrets-operator
     app.kubernetes.io/managed-by: kustomize
   name: cluster
-spec:
-  controllerConfig:
-    networkPolicies:
-      - componentName: ExternalSecretsCoreController
-        egress:
-          - {}
-        name: allow-external-secrets-egress
+spec: {}
 `)
 
 func testExtendedTestdataOapEsoOperandconfigYamlBytes() ([]byte, error) {
@@ -57799,7 +55612,7 @@ kind: Template
 metadata:
   name: secretstore-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: SecretStore
     metadata:
       name: "${NAME}"
@@ -57848,7 +55661,7 @@ kind: Template
 metadata:
   name: secretstore-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: SecretStore
     metadata:
       name: "${NAME}"
@@ -57891,7 +55704,7 @@ kind: Template
 metadata:
   name: secretstore-template
 objects:
-  - apiVersion: external-secrets.io/v1
+  - apiVersion: external-secrets.io/v1beta1
     kind: SecretStore
     metadata:
       name: "${NAME}"
@@ -57966,680 +55779,6 @@ func testExtendedTestdataOapEsoSubscriptionYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/oap/eso/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapExecHelmHelperYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: exec-helm-helper-template
-objects:
-  - apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      name: "${SA_NAME}"
-      namespace: "${NAMESPACE}"
-  - apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    metadata:
-      name: "${ROLEBINDING_NAME}"
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: cluster-admin
-    subjects:
-      - kind: ServiceAccount
-        name: "${SA_NAME}"
-        namespace: "${NAMESPACE}"
-  - apiVersion: v1
-    kind: Pod
-    metadata:
-      labels:
-        name: "${POD_NAME}"
-      name: "${POD_NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccount: "${SA_NAME}"
-      containers:
-        - name: helm
-          image: quay.io/openshifttest/helm:3.17.0
-          imagePullPolicy: IfNotPresent
-          command:
-            - "sh"
-            - "-c"
-            - ${HELM_CMD}
-          volumeMounts:
-            - name: values-volume
-              mountPath: /helm
-          securityContext:
-            privileged: true
-      volumes:
-        - name: values-volume
-          configMap:
-            name: "${CONFIGMAP_NAME}"
-      restartPolicy: Never
-parameters:
-  - name: SA_NAME
-  - name: ROLEBINDING_NAME
-  - name: POD_NAME
-  - name: NAMESPACE
-  - name: HELM_CMD
-  - name: CONFIGMAP_NAME
-`)
-
-func testExtendedTestdataOapExecHelmHelperYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapExecHelmHelperYaml, nil
-}
-
-func testExtendedTestdataOapExecHelmHelperYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapExecHelmHelperYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/exec-helm-helper.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapKonfluxFbcYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: konflux-fbc-template
-objects:
-  - apiVersion: operators.coreos.com/v1alpha1
-    kind: CatalogSource
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      sourceType: grpc
-      image: "${IMAGE_INDEX}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: IMAGE_INDEX
-`)
-
-func testExtendedTestdataOapKonfluxFbcYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapKonfluxFbcYaml, nil
-}
-
-func testExtendedTestdataOapKonfluxFbcYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapKonfluxFbcYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/konflux-fbc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherAuditYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-audit-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      retainResourcesOnCompletion: ${{RETAIN_RESOURCES}}
-      audit: ${{AUDIT}}
-      storage:
-        type: PersistentVolume
-        persistentVolume:
-          claim:
-            name: "${PVCNAME}"
-          subPath: "${SUBPATH}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: SA
-    value: "must-gather-operator"
-  - name: RETAIN_RESOURCES
-  - name: AUDIT
-    value: "false"
-  - name: PVCNAME
-  - name: SUBPATH
-    value: "must-gather-bundles/case-04230315"
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherAuditYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherAuditYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherAuditYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherAuditYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-audit.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherNouploadYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-noupload-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      retainResourcesOnCompletion: ${{RETAIN_RESOURCES}}
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: SA
-    value: "must-gather-operator"
-  - name: RETAIN_RESOURCES
-    value: "true"
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherNouploadYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherNouploadYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherNouploadYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherNouploadYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-noupload.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherProxyYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-proxy-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      proxyConfig:
-        httpProxy: "${HTTP_PROXY}"
-        httpsProxy: "${HTTPS_PROXY}"
-        noProxy: "${NO_PROXY}"
-      uploadTarget:
-        type: SFTP
-        sftp:
-          caseID: "${CASEID}"
-          caseManagementAccountSecretRef:
-            name: "${CASESECRET}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: CASEID
-    value: "04230315"
-  - name: CASESECRET
-    value: "mustgather-creds"
-  - name: SA
-    value: "must-gather-operator"
-  - name: HTTP_PROXY
-  - name: HTTPS_PROXY
-  - name: NO_PROXY
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherProxyYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherProxyYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherProxyYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherProxyYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-proxy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherPvcYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-pvc-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      retainResourcesOnCompletion: true
-      uploadTarget:
-        type: SFTP
-        sftp:
-          caseID: "${CASEID}"
-          caseManagementAccountSecretRef:
-            name: "${CASESECRET}"
-          internalUser: true
-      storage:
-        type: PersistentVolume
-        persistentVolume:
-          claim:
-            name: "${PVCNAME}"
-          subPath: "${SUBPATH}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: SA
-    value: "must-gather-operator"
-  - name: CASEID
-    value: "04230315"
-  - name: CASESECRET
-  - name: PVCNAME
-  - name: SUBPATH
-    value: "must-gather-bundles/case-04230315"
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherPvcYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherPvcYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherPvcYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherPvcYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-pvc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherRetainYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-retain-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      retainResourcesOnCompletion: ${{RETAIN_RESOURCES}}
-      uploadTarget:
-        type: SFTP
-        sftp:
-          caseID: "${CASEID}"
-          caseManagementAccountSecretRef:
-            name: "${CASESECRET}"
-          internalUser: true
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: CASEID
-    value: "04230315"
-  - name: CASESECRET
-    value: "mustgather-creds"
-  - name: SA
-    value: "must-gather-operator"
-  - name: RETAIN_RESOURCES
-    value: "false"
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherRetainYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherRetainYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherRetainYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherRetainYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-retain.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherTimeoutYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-timeout-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      mustGatherTimeout: "${TIMEOUT}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: TIMEOUT
-    value: "10s"
-  - name: SA
-    value: "must-gather-operator"
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherTimeoutYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherTimeoutYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherTimeoutYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherTimeoutYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-timeout.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherUploadYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      uploadTarget:
-        type: SFTP
-        sftp:
-          caseID: "${CASEID}"
-          caseManagementAccountSecretRef:
-            name: "${CASESECRET}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: CASEID
-    value: "04230315"
-  - name: CASESECRET
-    value: "mustgather-creds"
-  - name: SA
-    value: "must-gather-operator"
-
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherUploadYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherUploadYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherUploadYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherUploadYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather-upload.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherMustgatherYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-template
-objects:
-  - apiVersion: operator.openshift.io/v1alpha1
-    kind: MustGather
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      serviceAccountName: "${SA}"
-      uploadTarget:
-        type: SFTP
-        sftp:
-          caseID: "${CASEID}"
-          caseManagementAccountSecretRef:
-            name: "${CASESECRET}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: CASEID
-    value: "04230315"
-  - name: CASESECRET
-    value: "mustgather-creds"
-  - name: SA
-    value: "must-gather-operator"
-
-`)
-
-func testExtendedTestdataOapMustgatherMustgatherYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherMustgatherYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherMustgatherYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherMustgatherYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/mustgather.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherNamespaceYaml = []byte(`apiVersion: v1
-kind: Namespace
-metadata:
-  name: must-gather-operator
-`)
-
-func testExtendedTestdataOapMustgatherNamespaceYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherNamespaceYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherNamespaceYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherNamespaceYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherOperatorgroupYaml = []byte(`apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: must-gather-og
-  namespace: must-gather-operator
-`)
-
-func testExtendedTestdataOapMustgatherOperatorgroupYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherOperatorgroupYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherOperatorgroupYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherOperatorgroupYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherPvcYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-pvc-template
-objects:
-  - apiVersion: v1
-    kind: PersistentVolumeClaim
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      accessModes:
-        - ReadWriteOnce
-      resources:
-        requests:
-          storage: "${STORAGE}"
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: STORAGE
-    value: "5Gi"
-`)
-
-func testExtendedTestdataOapMustgatherPvcYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherPvcYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherPvcYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherPvcYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/pvc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherReaderPodYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: mustgather-reader-pod-template
-objects:
-  - apiVersion: v1
-    kind: Pod
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-      - name: reader-container
-        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
-        command: ["sleep", "3600"]
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          runAsNonRoot: true
-          seccompProfile:
-            type: RuntimeDefault
-        volumeMounts:
-        - name: persistent-storage
-          mountPath: /data
-      volumes:
-      - name: persistent-storage
-        persistentVolumeClaim:
-          claimName: "${PVCNAME}"
-      restartPolicy: Never
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: PVCNAME
-`)
-
-func testExtendedTestdataOapMustgatherReaderPodYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherReaderPodYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherReaderPodYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherReaderPodYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/reader-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapMustgatherSubscriptionYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: subscription-template
-objects:
-  - apiVersion: operators.coreos.com/v1alpha1
-    kind: Subscription
-    metadata:
-      name: "${NAME}"
-    spec:
-      channel: "${CHANNEL}"
-      installPlanApproval: Automatic
-      name: "${NAME}"
-      source: "${SOURCE}"
-      sourceNamespace: "${SOURCE_NAMESPACE}"
-parameters:
-  - name: NAME
-  - name: SOURCE
-  - name: SOURCE_NAMESPACE
-  - name: CHANNEL
-`)
-
-func testExtendedTestdataOapMustgatherSubscriptionYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapMustgatherSubscriptionYaml, nil
-}
-
-func testExtendedTestdataOapMustgatherSubscriptionYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapMustgatherSubscriptionYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/mustgather/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapOperatorgroupYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: operatorgroup-template
-objects:
-  - apiVersion: operators.coreos.com/v1
-    kind: OperatorGroup
-    metadata:
-      name: "${NAME}"
-parameters:
-  - name: NAME
-`)
-
-func testExtendedTestdataOapOperatorgroupYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapOperatorgroupYaml, nil
-}
-
-func testExtendedTestdataOapOperatorgroupYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapOperatorgroupYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -59024,64 +56163,6 @@ func testExtendedTestdataOapSscsi75963GcpproviderpluginYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataOapSscsi75963Invalid_sc_podYaml = []byte(`apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: invalid-app-secrets
-spec:
-  provider: gcp
-  parameters:
-    secrets: |
-      - resourceName: "invalid/../secrets/testsecret1/versions/1"
-        path: "testsecret1.txt"
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: invalidmypod
-spec:
-  serviceAccountName: mypodserviceaccount
-  containers:
-  - image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    imagePullPolicy: IfNotPresent
-    name: invalidmypod2
-    resources:
-      requests:
-        cpu: 100m
-    stdin: true
-    stdinOnce: true
-    terminationMessagePath: /dev/termination-log
-    terminationMessagePolicy: File
-    tty: true
-    volumeMounts:
-      - mountPath: "/mnt/secrets-store"
-        name: mysecret
-  volumes:
-  - name: mysecret
-    csi:
-      driver: secrets-store.csi.k8s.io
-      readOnly: true
-      volumeAttributes:
-        secretProviderClass: "invalid-app-secrets"
-      nodePublishSecretRef:
-        name: secret75963
-`)
-
-func testExtendedTestdataOapSscsi75963Invalid_sc_podYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapSscsi75963Invalid_sc_podYaml, nil
-}
-
-func testExtendedTestdataOapSscsi75963Invalid_sc_podYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapSscsi75963Invalid_sc_podYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/sscsi/75963/invalid_sc_pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataOapSscsi75963Sc_podYaml = []byte(`apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
 metadata:
@@ -59353,43 +56434,6 @@ func testExtendedTestdataOapSscsiSubscriptionYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/oap/sscsi/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOapSubscriptionYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: subscription-template
-objects:
-  - apiVersion: operators.coreos.com/v1alpha1
-    kind: Subscription
-    metadata:
-      name: "${NAME}"
-    spec:
-      channel: "${CHANNEL}"
-      installPlanApproval: Automatic
-      name: "${NAME}"
-      source: "${SOURCE}"
-      sourceNamespace: "${SOURCE_NAMESPACE}"
-parameters:
-  - name: NAME
-  - name: SOURCE
-  - name: SOURCE_NAMESPACE
-  - name: CHANNEL
-`)
-
-func testExtendedTestdataOapSubscriptionYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOapSubscriptionYaml, nil
-}
-
-func testExtendedTestdataOapSubscriptionYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOapSubscriptionYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/oap/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -66395,6 +63439,115 @@ func testExtendedTestdataOlmMcWorkloadPartitionYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml = []byte(`
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: ${NAME}
+  namespace: ${NAMESPACE}
+spec:
+  image: ${ADDRESS}
+  displayName: ${DISPLAYNAME}
+  grpcPodConfig:
+    securityContextConfig: restricted
+  icon:
+    base64data: ""
+    mediatype: ""
+  publisher: ${PUBLISHER}
+  sourceType: ${SOURCETYPE}
+`)
+
+func testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml, nil
+}
+
+func testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/olm/microshift/catalogsource-image-restricted.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOlmMicroshiftOgAllYaml = []byte(`kind: OperatorGroup
+apiVersion: operators.coreos.com/v1
+metadata:
+  name: ${NAME}
+  namespace: ${NAMESPACE}
+`)
+
+func testExtendedTestdataOlmMicroshiftOgAllYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOlmMicroshiftOgAllYaml, nil
+}
+
+func testExtendedTestdataOlmMicroshiftOgAllYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOlmMicroshiftOgAllYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/olm/microshift/og-all.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOlmMicroshiftOgSingleYaml = []byte(`kind: OperatorGroup
+apiVersion: operators.coreos.com/v1
+metadata:
+  name: ${NAME}
+  namespace: ${NAMESPACE}
+spec:
+  targetNamespaces:
+  - ${NAMESPACE}
+`)
+
+func testExtendedTestdataOlmMicroshiftOgSingleYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOlmMicroshiftOgSingleYaml, nil
+}
+
+func testExtendedTestdataOlmMicroshiftOgSingleYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOlmMicroshiftOgSingleYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/olm/microshift/og-single.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataOlmMicroshiftOlmSubscriptionYaml = []byte(`apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${SUBNAME}
+  namespace: ${SUBNAMESPACE}
+spec:
+  channel: ${CHANNEL}
+  installPlanApproval: ${APPROVAL}
+  name: ${OPERATORNAME}
+  source: ${SOURCENAME}
+  sourceNamespace: ${SOURCENAMESPACE}
+  startingCSV: ${STARTINGCSV}
+`)
+
+func testExtendedTestdataOlmMicroshiftOlmSubscriptionYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOlmMicroshiftOlmSubscriptionYaml, nil
+}
+
+func testExtendedTestdataOlmMicroshiftOlmSubscriptionYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOlmMicroshiftOlmSubscriptionYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/olm/microshift/olm-subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataOlmOgAllnsYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -67664,7 +64817,7 @@ apiVersion: template.openshift.io/v1
 metadata:
   name: cip-template
 objects:
-- apiVersion: config.openshift.io/v1
+- apiVersion: config.openshift.io/v1alpha1
   kind: ClusterImagePolicy
   metadata:
     name: "${NAME}"
@@ -67881,14 +65034,12 @@ objects:
   kind: ClusterExtension
   metadata:
     name: "${NAME}"
+    annotations:
+      olm.operatorframework.io/watch-namespace: "${WATCHNS}"
   spec:
     namespace: "${INSTALLNAMESPACE}"
     serviceAccount:
       name: "${SANAME}"
-    config:
-      configType: Inline
-      inline:
-        watchNamespace: "${WATCHNS}"
     source:
       sourceType: "${SOURCETYPE}"
       catalog:
@@ -68052,14 +65203,12 @@ objects:
   kind: ClusterExtension
   metadata:
     name: "${NAME}"
+    annotations:
+      olm.operatorframework.io/watch-namespace: "${WATCHNS}"
   spec:
     namespace: "${INSTALLNAMESPACE}"
     serviceAccount:
       name: "${SANAME}"
-    config:
-      configType: Inline
-      inline:
-        watchNamespace: "${WATCHNS}"
     source:
       sourceType: "${SOURCETYPE}"
       catalog:
@@ -68207,61 +65356,6 @@ func testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutchannelver
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutChannelVersion.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: operator-template
-objects:
-- apiVersion: olm.operatorframework.io/v1
-  kind: ClusterExtension
-  metadata:
-    name: "${NAME}"
-  spec:
-    namespace: "${INSTALLNAMESPACE}"
-    serviceAccount:
-      name: "${SANAME}"
-    source:
-      sourceType: "${SOURCETYPE}"
-      catalog:
-        packageName: "${PACKAGE}"
-        channels:
-          - "${CHANNEL}"
-        selector:
-          matchLabels:
-            "${LABELKEY}": "${LABELVALUE}"
-        upgradeConstraintPolicy: "${POLICY}"
-parameters:
-- name: NAME
-- name: INSTALLNAMESPACE
-- name: PACKAGE
-- name: CHANNEL
-- name: SANAME
-- name: POLICY
-  value: "CatalogProvided"
-- name: LABELVALUE
-  # suggest to use case id
-- name: LABELKEY
-  value: "olmv1-test"
-- name: SOURCETYPE
-  value: "Catalog"
-
-`)
-
-func testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYaml, nil
-}
-
-func testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutVersion.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -73194,6 +70288,7 @@ limitations under the License.
 
 package controller
 
+
 import (
 	"reflect"
 	"time"
@@ -73408,6 +70503,7 @@ limitations under the License.
 */
 
 package v1alpha1
+
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74506,6 +71602,7 @@ limitations under the License.
 
 package controller
 
+
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -74735,6 +71832,7 @@ limitations under the License.
 
 package v1
 
+
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -74842,6 +71940,7 @@ limitations under the License.
 */
 
 package controller
+
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
@@ -75075,6 +72174,7 @@ limitations under the License.
 */
 
 package v1
+
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77368,6 +74468,7 @@ limitations under the License.
 
 package controller
 
+
 import (
 	"reflect"
 
@@ -77597,6 +74698,7 @@ limitations under the License.
 */
 
 package v1
+
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87882,77 +84984,6 @@ func testExtendedTestdataOpmRenderValidateConfigsWrongIgnoreWrongEtcdJson() (*as
 	return a, nil
 }
 
-var _testExtendedTestdataOtaCvo70980PdbYaml = []byte(`apiVersion: policy/v1 
-kind: PodDisruptionBudget
-metadata:
-  name: my-pdb
-spec:
-  maxUnavailable: 1
-  selector:  
-    matchLabels: {}`)
-
-func testExtendedTestdataOtaCvo70980PdbYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOtaCvo70980PdbYaml, nil
-}
-
-func testExtendedTestdataOtaCvo70980PdbYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOtaCvo70980PdbYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/ota/cvo/70980-pdb.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOtaCvo84027TestPodYaml = []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: networkpolicy-test-pod
-  namespace: openshift-cluster-version
-spec:
-  restartPolicy: Never
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-    - name: networkpolicy-test-pod
-      image: 'quay.io/curl/curl:latest'
-      command:
-        - "curl"
-        - "-s"
-        - "--connect-timeout"
-        - "10"
-        - "--max-time"
-        - "15"
-        - "https://www.google.com"
-      securityContext:
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-            - ALL
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault`)
-
-func testExtendedTestdataOtaCvo84027TestPodYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOtaCvo84027TestPodYaml, nil
-}
-
-func testExtendedTestdataOtaCvo84027TestPodYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOtaCvo84027TestPodYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/ota/cvo/84027-test-pod.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataOtaCvoBadOauthYaml = []byte(`apiVersion: config.openshift.io/v1
 kind: OAuth
 metadata:
@@ -88129,125 +85160,6 @@ func testExtendedTestdataOtaCvoCfgOcp66747GcpYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/ota/cvo/cfg-ocp-66747/gcp.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOtaCvoCfgOcp84028ClientYaml = []byte(`apiVersion: v1
-kind: Pod
-metadata:
-  name: networkpolicy-client-pod
-  namespace: openshift-cluster-version
-spec:
-  restartPolicy: Never
-  containers:
-  - name: curl-client
-    image: quay.io/curl/curl:latest
-    command: ["sh", "-c", "sleep 5 && curl -s --connect-timeout 10 http://networkpolicy-server-service:8080"]`)
-
-func testExtendedTestdataOtaCvoCfgOcp84028ClientYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOtaCvoCfgOcp84028ClientYaml, nil
-}
-
-func testExtendedTestdataOtaCvoCfgOcp84028ClientYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOtaCvoCfgOcp84028ClientYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/ota/cvo/cfg-ocp-84028/client.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOtaCvoCfgOcp84028ServerYaml = []byte(`---
-apiVersion: v1
-kind: Pod
-metadata:
-  name: networkpolicy-server-pod
-  namespace: openshift-cluster-version
-  labels:
-    app: networkpolicy-server
-spec:
-  restartPolicy: Never
-  containers:
-  - name: http-server
-    image: python:3.12-alpine
-    command: ["python3", "-m", "http.server", "8080"]
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: networkpolicy-server-service
-  namespace: openshift-cluster-version
-spec:
-  selector:
-    app: networkpolicy-server
-  ports:
-  - port: 8080`)
-
-func testExtendedTestdataOtaCvoCfgOcp84028ServerYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOtaCvoCfgOcp84028ServerYaml, nil
-}
-
-func testExtendedTestdataOtaCvoCfgOcp84028ServerYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOtaCvoCfgOcp84028ServerYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/ota/cvo/cfg-ocp-84028/server.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataOtaCvoCfgOcp84029ServerYaml = []byte(`---
-apiVersion: v1
-kind: Pod
-metadata:
-  name: networkpolicy-netcat-server
-  namespace: openshift-cluster-version
-  labels:
-    app: networkpolicy-test
-spec:
-  restartPolicy: Never
-  containers:
-  - name: http-server
-    image: python:3.12-alpine
-    command: ["python3", "-m", "http.server", "8080"]
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: networkpolicy-netcat-service
-  namespace: openshift-cluster-version
-spec:
-  selector:
-    app: networkpolicy-test
-  ports:
-  - port: 8080
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: networkpolicy-netcat-route
-  namespace: openshift-cluster-version
-spec:
-  to:
-    kind: Service
-    name: networkpolicy-netcat-service`)
-
-func testExtendedTestdataOtaCvoCfgOcp84029ServerYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOtaCvoCfgOcp84029ServerYaml, nil
-}
-
-func testExtendedTestdataOtaCvoCfgOcp84029ServerYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOtaCvoCfgOcp84029ServerYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/ota/cvo/cfg-ocp-84029/server.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -88921,26 +85833,31 @@ func testExtendedTestdataOtaOsusDockerfile() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataOtaOsusImagesetConfigV2Yaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
+var _testExtendedTestdataOtaOsusImagesetConfigYaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v1alpha2
+storageConfig:
+  registry:
+    imageURL: REGISTRY 
+    skipTLS: True 
 mirror:
   platform:
     channels:
     - name: candidate-4.14
+      type: ocp 
     graph: true
 `)
 
-func testExtendedTestdataOtaOsusImagesetConfigV2YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataOtaOsusImagesetConfigV2Yaml, nil
+func testExtendedTestdataOtaOsusImagesetConfigYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataOtaOsusImagesetConfigYaml, nil
 }
 
-func testExtendedTestdataOtaOsusImagesetConfigV2Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataOtaOsusImagesetConfigV2YamlBytes()
+func testExtendedTestdataOtaOsusImagesetConfigYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataOtaOsusImagesetConfigYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/ota/osus/imageset-config-v2.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/ota/osus/imageset-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -90458,39 +87375,6 @@ func testExtendedTestdataPsapNtoDisableHttpsMcpYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYaml = []byte(`apiVersion: performance.openshift.io/v2
-kind: PerformanceProfile
-metadata:
-  name: performance
-spec:
-  cpu:
-    isolated: "2-3"
-    reserved: "0-1"
-  globallyDisableIrqLoadBalancing: false
-  net:
-    userLevelNetworking: true
-    devices: []
-  nodeSelector:
-    node-role.kubernetes.io/worker-nohttps: ""
-  realTimeKernel:
-    enabled: false
-`)
-
-func testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYaml, nil
-}
-
-func testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/psap/nto/disable-https-pp-ppc64le.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataPsapNtoDisableHttpsPpYaml = []byte(`apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
@@ -91721,53 +88605,6 @@ func testExtendedTestdataPsapPaoPaoBaseprofileMcpYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: pao-template
-objects:
-  - apiVersion: performance.openshift.io/v2
-    kind: PerformanceProfile
-    metadata:
-      name: pao-baseprofile
-    spec:
-      additionalKernelArgs:        
-      - smt=4            # known to work with Power
-      cpu:              #but manually renabled when have enough cpu cores
-       isolated: "1"
-       reserved: "0"
-      net:
-        userLevelNetworking: true
-      hugepages:
-        defaultHugepagesSize: 1G
-        pages:
-        - count: 1
-          size: 1G
-      realTimeKernel:
-       enabled: ${{ISENABLED}}
-      numa:
-       topologyPolicy: "best-effort"
-      nodeSelector:
-       node-role.kubernetes.io/worker-pao: ""
-parameters:
-  - name: ISENABLED
-`)
-
-func testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYaml, nil
-}
-
-func testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/psap/pao/pao-baseprofile-ppc64le.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataPsapPaoPaoBaseprofileYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -92068,48 +88905,6 @@ func testExtendedTestdataPsapPaoPaoPerformancePatchYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/psap/pao/pao-performance-patch.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: pao-template
-objects:
-  - apiVersion: performance.openshift.io/v2
-    kind: PerformanceProfile
-    metadata:
-      name: performance
-    spec:
-      cpu:
-        isolated: "1"
-        reserved: "0"
-      hugepages:
-        defaultHugepagesSize: "16M"
-        pages:
-        - size: "1G"
-          node: 0
-          count: 1
-      realTimeKernel:
-        enabled: ${{ISENABLED}}
-      nodeSelector:
-        node-role.kubernetes.io/worker-cnf: ""
-parameters:
-  - name: ISENABLED
-`)
-
-func testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYaml, nil
-}
-
-func testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/psap/pao/pao-performanceprofile-ppc64le.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -92681,44 +89476,6 @@ func testExtendedTestdataRouterAwslbAwslbcontrollerYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataRouterAwslbCatalogSourceYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-objects:
-- apiVersion: operators.coreos.com/v1alpha1
-  kind: CatalogSource
-  metadata:
-    name: "${CATALOG_NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    displayName: Konflux ALBO
-    image: "${IMAGE}"
-    sourceType: grpc
-    grpcPodConfig:
-      securityContextConfig: legacy
-parameters:
-- name: CATALOG_NAME
-  value: "albo-konflux-fbc"
-- name: IMAGE
-  value: "quay.io/redhat-user-workloads/aws-load-balancer-operator-tenant/aws-lb-optr-fbc-v4-22/aws-lb-fbc-container-aws-lb-optr-fbc-v4-22:candidate"
-- name: NAMESPACE
-  value: aws-load-balancer-operator
-`)
-
-func testExtendedTestdataRouterAwslbCatalogSourceYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataRouterAwslbCatalogSourceYaml, nil
-}
-
-func testExtendedTestdataRouterAwslbCatalogSourceYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataRouterAwslbCatalogSourceYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/router/awslb/catalog-source.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataRouterAwslbIngressTestYaml = []byte(`apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -93162,8 +89919,8 @@ spec:
       value: fakeARN-for-albo
   installPlanApproval: Automatic
   name: aws-load-balancer-operator
-  source:  albo-konflux-fbc
-  sourceNamespace: aws-load-balancer-operator
+  source: qe-app-registry
+  sourceNamespace: openshift-marketplace
 `)
 
 func testExtendedTestdataRouterAwslbSubscriptionSrcQeStsYamlBytes() ([]byte, error) {
@@ -93190,8 +89947,8 @@ spec:
   channel: stable-v1
   installPlanApproval: Automatic
   name: aws-load-balancer-operator
-  source: albo-konflux-fbc
-  sourceNamespace: aws-load-balancer-operator
+  source: qe-app-registry
+  sourceNamespace: openshift-marketplace
 `)
 
 func testExtendedTestdataRouterAwslbSubscriptionSrcQeYamlBytes() ([]byte, error) {
@@ -93655,44 +90412,6 @@ func testExtendedTestdataRouterExtdnsAwsStsCredsSecretYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataRouterExtdnsCatalogSourceYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-objects:
-- apiVersion: operators.coreos.com/v1alpha1
-  kind: CatalogSource
-  metadata:
-    name: "${CATALOG_NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    displayName: Konflux ExtDNS
-    image: "${IMAGE}"
-    sourceType: grpc
-    grpcPodConfig:
-      securityContextConfig: legacy
-parameters:
-- name: CATALOG_NAME
-  value: "extdns-konflux-fbc"
-- name: IMAGE
-  value: "quay.io/redhat-user-workloads/external-dns-operator-tenant/ext-dns-optr-fbc-v4-22/external-dns-fbc-container-ext-dns-optr-fbc-v4-22:candidate"
-- name: NAMESPACE
-  value: external-dns-operator
-`)
-
-func testExtendedTestdataRouterExtdnsCatalogSourceYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataRouterExtdnsCatalogSourceYaml, nil
-}
-
-func testExtendedTestdataRouterExtdnsCatalogSourceYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataRouterExtdnsCatalogSourceYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/router/extdns/catalog-source.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataRouterExtdnsNsExternalDnsOperatorYaml = []byte(`apiVersion: v1
 kind: Namespace
 metadata:
@@ -93973,8 +90692,8 @@ spec:
   channel: stable-v1
   installPlanApproval: Automatic
   name: external-dns-operator
-  source: extdns-konflux-fbc
-  sourceNamespace: external-dns-operator
+  source: qe-app-registry
+  sourceNamespace: openshift-marketplace
 `)
 
 func testExtendedTestdataRouterExtdnsSubscriptionYamlBytes() ([]byte, error) {
@@ -94001,7 +90720,7 @@ objects:
     name: ${NAME}
     namespace: ${NAMESPACE}
   spec:
-    gatewayClassName: ${GATEWAYCLASSNAME}
+    gatewayClassName: openshift-default
     listeners:
     - name: demo
       hostname: ${HOSTNAME}
@@ -94018,8 +90737,6 @@ parameters:
   value: gateway-default
 - name: NAMESPACE
   value: openshift-ingress
-- name: GATEWAYCLASSNAME
-  value: openshift-default
 - name: HOSTNAME
   value: gwapi.example.com`)
 
@@ -94038,18 +90755,12 @@ func testExtendedTestdataRouterGatewayYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataRouterGatewayclassYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-objects:
-- apiVersion: gateway.networking.k8s.io/v1
-  kind: GatewayClass
-  metadata:
-    name: ${NAME}
-  spec:
-    controllerName: openshift.io/gateway-controller/v1
-parameters:
-- name: NAME
-  value: openshift-default
+var _testExtendedTestdataRouterGatewayclassYaml = []byte(`apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: openshift-default
+spec:
+  controllerName: openshift.io/gateway-controller/v1
 `)
 
 func testExtendedTestdataRouterGatewayclassYamlBytes() ([]byte, error) {
@@ -94152,7 +90863,7 @@ var _testExtendedTestdataRouterHttpbinPodWithprivilegeJson = []byte(`{
   "spec": {
       "containers": [{
         "name": "httpbin-http",
-        "image": "quay.io/openshifttest/httpbin@sha256:cc44fbd857f4148d8aad8359acc03efa719517e01d390b152e4f3830ad871c9f",
+        "image": "quay.io/openshifttest/httpbin@sha256:ffed23268de41390b8b9417c8835fd125f80d07b19dd9ba5b2273c0145e8f479",
         "ports": [
           {
             "containerPort": 8080,
@@ -94164,7 +90875,7 @@ var _testExtendedTestdataRouterHttpbinPodWithprivilegeJson = []byte(`{
       },
       {
         "name": "httpbin-https",
-        "image": "quay.io/openshifttest/httpbin@sha256:f57f4e682e05bcdadb103c93ae5ab9be166f79bcbbccaf45d92a2cad18da8d64",
+        "image": "quay.io/openshifttest/httpbin@sha256:b6239cf4c31274db9cb87a9f6216a36d9d6ded5694c71eac3c9b13c17c4f98c5",
         "ports": [
           {
             "containerPort": 8443,
@@ -99033,7 +95744,7 @@ objects:
             value: ${VRRP_ID_OFFSET}
           - name: OPENSHIFT_HA_REPLICA_COUNT
             value: "2"
-          - name: OPENSHIFT_HA_NFTABLES_RULE
+          - name: OPENSHIFT_HA_IPTABLES_CHAIN
             value: "INPUT"
           - name: OPENSHIFT_HA_PREEMPTION
             value: "nopreempt"
@@ -99079,6 +95790,42 @@ func testExtendedTestdataRouterIpfailoverYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/router/ipfailover.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataRouterMicroshiftIngressDestcaYaml = []byte(`apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-ms-reen
+  annotations:
+    route.openshift.io/destination-ca-certificate-secret: service-secret
+    route.openshift.io/termination: reencrypt
+spec:
+  rules:
+  - host: service-secure-test.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: service-secure
+            port:
+              number: 27443
+        path: "/"
+        pathType: Prefix
+`)
+
+func testExtendedTestdataRouterMicroshiftIngressDestcaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataRouterMicroshiftIngressDestcaYaml, nil
+}
+
+func testExtendedTestdataRouterMicroshiftIngressDestcaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataRouterMicroshiftIngressDestcaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/router/microshift-ingress-destca.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -101694,37 +98441,7 @@ objects:
     - mirrors:
       - quay.io/redhat-user-workloads/ocp-isc-tenant/file-integrity-operator-release
       source: registry.redhat.io/compliance/openshift-file-integrity-rhel8-operator
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/compliance-operator-bundle-release
-      source: registry.redhat.io/compliance/openshift-compliance-operator-bundle
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/compliance-operator-release
-      source: registry.redhat.io/compliance/openshift-compliance-rhel8-operator
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/compliance-operator-content-release
-      source: registry.redhat.io/compliance/openshift-compliance-content-rhel8
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/compliance-operator-openscap-release
-      source: registry.redhat.io/compliance/openshift-compliance-openscap-rhel8
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/compliance-operator-must-gather-release
-      source: registry.redhat.io/compliance/openshift-compliance-must-gather-rhel8
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/security-profiles-operator-bundle-release
-      source: registry.redhat.io/compliance/openshift-security-profiles-operator-bundle
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/security-profiles-operator-release
-      source: registry.redhat.io/compliance/openshift-security-profiles-rhel8-operator
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/openshift-selinuxd-rhel8-container-release
-      source: registry.redhat.io/compliance/openshift-selinuxd-rhel8
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/openshift-selinuxd-rhel9-container-release
-      source: registry.redhat.io/compliance/openshift-selinuxd-rhel9
-    - mirrors:
-      - quay.io/redhat-user-workloads/ocp-isc-tenant/openshift-selinuxd-rhel10-container-release
-      source: registry.redhat.io/compliance/openshift-selinuxd-rhel10
-      
+
 parameters:
 - name: ICSPNAME
 `)
@@ -102227,49 +98944,6 @@ func testExtendedTestdataSecurityandcomplianceOperatorGroupYaml() (*asset, error
 	return a, nil
 }
 
-var _testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: pod-modify-template
-objects:
-- kind: Pod
-  apiVersion: v1
-  metadata:
-    name: "${NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    containers:
-    - name: nginx
-      image: registry.access.redhat.com/ubi8/ubi:latest
-      command: ["sleep", "infinity"]
-      securityContext:
-        seccompProfile:
-          type: Localhost
-          localhostProfile: "${LOCALHOSTPROFILE}"
-parameters:
-- name: NAME
-- name: NAMESPACE
-- name: LOCALHOSTPROFILE
-
-
-
-`)
-
-func testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYaml, nil
-}
-
-func testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/pod-with-nginx-seccompprofile.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataSecurityandcompliancePodWithSeccompprofileYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -102498,13 +99172,6 @@ objects:
       - name: workers-scan-vol
         persistentVolumeClaim:
           claimName: "${SCANNAME}"
-    tolerations:
-      - key: node-role.kubernetes.io/master
-        operator: Exists
-        effect: NoSchedule
-      - key: node-role.kubernetes.io/control-plane
-        operator: Exists
-        effect: NoSchedule
 
 parameters:
 - name: NAME
@@ -102828,7 +99495,11 @@ func testExtendedTestdataSecurityandcomplianceRapidastCustomscanPolicy() (*asset
 }
 
 var _testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_compliance_v1alpha1Yaml = []byte(`config:
-  configVersion: 4
+    # WARNING: ` + "`" + `configVersion` + "`" + ` indicates the schema version of the config file.
+    # This value tells RapiDAST what schema should be used to read this configuration.
+    # Therefore you should only change it if you update the configuration to a newer schema
+    # It is intended to keep backward compatibility (newer RapiDAST running an older config)
+    configVersion: 4
 
    # ` + "`" + `application` + "`" + ` contains data related to the application, not to the scans.
 application:
@@ -102886,7 +99557,11 @@ func testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_compli
 }
 
 var _testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_fileintegrity_v1alpha1Yaml = []byte(`config:
-  configVersion: 4
+    # WARNING: ` + "`" + `configVersion` + "`" + ` indicates the schema version of the config file.
+    # This value tells RapiDAST what schema should be used to read this configuration.
+    # Therefore you should only change it if you update the configuration to a newer schema
+    # It is intended to keep backward compatibility (newer RapiDAST running an older config)
+    configVersion: 4
 
    # ` + "`" + `application` + "`" + ` contains data related to the application, not to the scans.
 application:
@@ -102944,7 +99619,11 @@ func testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_filein
 }
 
 var _testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_securityProfilesOperator_v1beta1Yaml = []byte(`config:
-  configVersion: 4
+    # WARNING: ` + "`" + `configVersion` + "`" + ` indicates the schema version of the config file.
+    # This value tells RapiDAST what schema should be used to read this configuration.
+    # Therefore you should only change it if you update the configuration to a newer schema
+    # It is intended to keep backward compatibility (newer RapiDAST running an older config)
+    configVersion: 4
 
    # ` + "`" + `application` + "`" + ` contains data related to the application, not to the scans.
 application:
@@ -103001,144 +99680,6 @@ func testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_securi
 	return a, nil
 }
 
-var _testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file
-    bucketName: secaut-bucket
-    directory: isc/compliance-operator/OPERATOR_VERSION
-application:
-  shortName: "ocptest"
-  url: "https://kubernetes.default.svc"
-general:
-    authentication:
-        type: "http_header"
-        parameters:
-            name: "Authorization"
-            value: "Bearer sha256~xxxxxxxx"
-    container:
-        type: "none"
-scanners:
-    zap:
-        apiScan:
-            apis:
-                apiUrl: "https://kubernetes.default.svc/openapi/v3/apis/compliance.openshift.io/v1alpha1"
-        passiveScan:
-            disabledRules: "2,10015,10027,10096,10024,10054"
-        activeScan:
-            policy: "Operator-scan"
-        miscOptions:
-          enableUI: False
-          updateAddons: False
-`)
-
-func testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1Yaml, nil
-}
-
-func testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_compliance_v1alpha1.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file
-    bucketName: secaut-bucket
-    directory: isc/file-integrity-operator/OPERATOR_VERSION
-application:
-  shortName: "ocptest"
-  url: "https://kubernetes.default.svc"
-general:
-    authentication:
-        type: "http_header"
-        parameters:
-            name: "Authorization"
-            value: "Bearer sha256~xxxxxxxx"
-    container:
-        type: "none"
-scanners:
-    zap:
-        apiScan:
-            apis:
-                apiUrl: "https://kubernetes.default.svc/openapi/v3/apis/fileintegrity.openshift.io/v1alpha1"
-        passiveScan:
-            disabledRules: "2,10015,10027,10096,10024,10054"
-        activeScan:
-            policy: "Operator-scan"
-        miscOptions:
-          enableUI: False
-          updateAddons: False
-`)
-
-func testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1Yaml, nil
-}
-
-func testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_fileintegrity_v1alpha1.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1Yaml = []byte(`config:
-  configVersion: 4
-  googleCloudStorage:
-    keyFile: "/opt/rapidast/config/dast-gcs-secret.json" # Path to the GCS key file
-    bucketName: secaut-bucket
-    directory: isc/security-profiles-operator/OPERATOR_VERSION
-application:
-  shortName: "ocptest"
-  url: "https://kubernetes.default.svc"
-general:
-    authentication:
-        type: "http_header"
-        parameters:
-            name: "Authorization"
-            value: "Bearer sha256~xxxxxxxx"
-    container:
-        type: "none"
-scanners:
-    zap:
-        apiScan:
-            apis:
-                apiUrl: "https://kubernetes.default.svc/openapi/v3/apis/security-profiles-operator.x-k8s.io/v1beta1"
-        passiveScan:
-            disabledRules: "2,10015,10027,10096,10024,10054"
-        activeScan:
-            policy: "Operator-scan"
-        miscOptions:
-          enableUI: False
-          updateAddons: False
-`)
-
-func testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1Yaml, nil
-}
-
-func testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_security-profiles-operator_v1beta1.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataSecurityandcomplianceRapidastJob_rapidastYaml = []byte(`---
 apiVersion: batch/v1
 kind: Job
@@ -103168,7 +99709,7 @@ spec:
           export HOME=/home/rapidast 
           mkdir -p $HOME/.ZAP/policies 
           cp /opt/rapidast/config/customscan.policy $HOME/.ZAP/policies/custom-scan.policy 
-          rapidast.py --config /opt/rapidast/config/rapidastconfig.yaml --log-level critical
+          rapidast.py --config /opt/rapidast/config/rapidastconfig.yaml --log-level debug
           echo "--------------- show rapidash result -----------------"  
           find $HOME/results/ocptest -name zap-report.json -exec cat {} \;
           echo "--------------- rapidash result end -----------------"  
@@ -103520,95 +100061,6 @@ func testExtendedTestdataSecurityandcomplianceSccYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/scc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: seccompprofile-auditlogging-template
-objects:
-- apiVersion: security-profiles-operator.x-k8s.io/v1beta1
-  kind: SeccompProfile
-  metadata:
-    name: "${NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    defaultAction: SCMP_ACT_ALLOW
-    syscalls:
-    - action: SCMP_ACT_LOG
-      names:
-      - read
-      - write
-      - openat
-      - close
-      - futex
-      - brk
-      - mmap
-      - mprotect
-      - munmap
-      - rt_sigaction
-      - rt_sigprocmask
-      - nanosleep
-      - clock_gettime
-      - getpid
-      - gettid
-      - socket
-      - connect
-      - recvfrom
-      - sendto
-      - execve
-      - clone
-parameters:
-- name: NAME
-- name: NAMESPACE
-`)
-
-func testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYaml, nil
-}
-
-func testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/seccompprofile-auditlogging.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: seccompprofile-log-everything-by-default-template
-objects:
-- apiVersion: security-profiles-operator.x-k8s.io/v1beta1
-  kind: SeccompProfile
-  metadata:
-    name: "${NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    # Log almost everything by default
-    defaultAction: SCMP_ACT_LOG
-parameters:
-- name: NAME
-- name: NAMESPACE
-`)
-
-func testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYaml, nil
-}
-
-func testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/securityandcompliance/seccompprofile-log-everything-by-default.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -103976,7 +100428,7 @@ objects:
     serviceAccountName: "${SERVICEACCOUNTNAME}"
     containers:
     - name: busybox
-      image: quay.io/openshifttest/busybox:multiarch
+      image: quay.io/openshifttest/busybox:latest
       command: [ "/bin/sh", "-c", "while true ; do date; sleep 1; done;" ]
 
 parameters:
@@ -104013,7 +100465,7 @@ objects:
   spec:
     containers:
     - name: busybox
-      image: quay.io/openshifttest/busybox:multiarch
+      image: quay.io/openshifttest/busybox:latest
       command: [ "/bin/sh", "-c", "while true ; do date; sleep 1; done;" ]
 
 parameters:
@@ -104099,14 +100551,14 @@ objects:
   spec:
     initContainers:
     - name: errorlogger
-      image: quay.io/openshifttest/busybox:multiarch
+      image: quay.io/openshifttest/busybox
       command: ['sh', '-c', 'echo "Time: Thu May 12 22:13:13 CST 2022. Some error info." >> /var/log/test.log || /bin/true']
       volumeMounts:
       - name: varlog
         mountPath: /var/log
     containers:
     - name: pauser
-      image: "registry.redhat.io/ubi8/pause:latest"
+      image: "gcr.io/google_containers/pause:latest"
     restartPolicy: Never
     volumes:
     - name: varlog
@@ -104150,7 +100602,7 @@ objects:
       seccomp.security.alpha.kubernetes.io/pod: "${SECCOMPPATH}"
   spec:
     containers:
-      - image: "quay.io/openshifttest/hello-openshift:1.2.0"
+      - image: "quay.io/openshifttest/hello-openshift:multiarch"
         imagePullPolicy: IfNotPresent
         name: hello-pod
         ports:
@@ -104461,6 +100913,7 @@ objects:
 
 parameters:
 - name: NAME
+- name: NAMESPACE
 - name: USER
 `)
 
@@ -104488,6 +100941,7 @@ objects:
   kind: SeccompProfile
   metadata:
     name: "${NAME}"
+    namespace: "${NAMESPACE}"
   spec:
     defaultAction: SCMP_ACT_ERRNO
     architectures:
@@ -104550,6 +101004,7 @@ objects:
 
 parameters:
 - name: NAME
+- name: NAMESPACE
 `)
 
 func testExtendedTestdataSecurityandcomplianceSpoSeccompProfileSleepWithMkdirYamlBytes() ([]byte, error) {
@@ -104576,6 +101031,7 @@ objects:
   kind: SelinuxProfile
   metadata:
     name: "${NAME}"
+    namespace: "${NAMESPACE}"
   spec:
     permissive: ${{PERMISSIVE}}
     inherit:
@@ -104607,6 +101063,7 @@ objects:
 
 parameters:
 - name: NAME
+- name: NAMESPACE
 - name: PERMISSIVE
 `)
 
@@ -104634,6 +101091,7 @@ objects:
   kind: SelinuxProfile
   metadata:
     name: "${NAME}"
+    namespace: "${NAMESPACE}"
   spec:
     inherit:
       - name: container
@@ -104668,6 +101126,7 @@ objects:
 
 parameters:
 - name: NAME
+- name: NAMESPACE
 `)
 
 func testExtendedTestdataSecurityandcomplianceSpoSelinuxProfileErrorloggerYamlBytes() ([]byte, error) {
@@ -104694,6 +101153,7 @@ objects:
   kind: SelinuxProfile
   metadata:
     name: "${NAME}"
+    namespace: "${NAMESPACE}"
   spec:
     allow:
       '@self':
@@ -104711,6 +101171,7 @@ objects:
 
 parameters:
 - name: NAME
+- name: NAMESPACE
 `)
 
 func testExtendedTestdataSecurityandcomplianceSpoSelinuxProfileNginxYamlBytes() ([]byte, error) {
@@ -104737,6 +101198,7 @@ objects:
   kind: SelinuxProfile
   metadata:
     name: "${NAME}"
+    namespace: "${NAMESPACE}"
   spec:
     inherit:
       - name: "${INHERITNAME}"
@@ -104748,6 +101210,7 @@ objects:
 
 parameters:
 - name: NAME
+- name: NAMESPACE
 - name: INHERITNAME
 - name: INHERITKIND
 `)
@@ -104901,7 +101364,7 @@ objects:
         serviceAccountName: "${SANAME}"
         containers:
         - name: openshift
-          image: quay.io/openshifttest/hello-openshift:1.2.0
+          image: quay.io/openshifttest/hello-openshift:multiarch
           ports:
           - containerPort: 80
 
@@ -107504,115 +103967,6 @@ func testExtendedTestdataStorageLvmsLvmclusterWithPathsTemplateYaml() (*asset, e
 	return a, nil
 }
 
-var _testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: lvmcluster-with-two-device-classes-template
-objects:
-# LVMCluster
-- kind: LVMCluster
-  apiVersion: lvm.topolvm.io/v1alpha1
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    storage:
-      deviceClasses:
-      - name: ${DEVICECLASSNAME1}
-        fstype: ${FSTYPE}
-        deviceSelector:
-          paths:
-          - ${PATH1}
-        thinPoolConfig:
-          name: thin-pool-1
-          sizePercent: 90
-          overprovisionRatio: 10
-          chunkSizeCalculationPolicy: Static
-          metadataSizeCalculationPolicy: Host
-      - name: ${DEVICECLASSNAME2}
-        fstype: ${FSTYPE}
-        deviceSelector:
-          paths:
-          - ${PATH2}
-        thinPoolConfig:
-          name: thin-pool-1
-          sizePercent: 90
-          overprovisionRatio: 10
-          chunkSizeCalculationPolicy: Static
-          metadataSizeCalculationPolicy: Host
-parameters:
-- name: NAME
-- name: NAMESPACE
-- name: DEVICECLASSNAME1
-- name: DEVICECLASSNAME2
-- name: FSTYPE
-- name: PATH1
-- name: PATH2
-`)
-
-func testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYaml, nil
-}
-
-func testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/storage/lvms/lvmcluster-with-two-device-classes-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: lvmcluster-with-two-paths-template
-objects:
-# LVMCluster
-- kind: LVMCluster
-  apiVersion: lvm.topolvm.io/v1alpha1
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    storage:
-      deviceClasses:
-      - name: ${DEVICECLASSNAME}
-        fsType: ${FSTYPE}
-        thinPoolConfig:
-          name: thin-pool-1
-          sizePercent: 30
-          overprovisionRatio: 10
-        deviceSelector:
-          paths:
-          - ${PATH1}
-          - ${PATH2}
-parameters:
-- name: NAME
-- name: NAMESPACE
-- name: DEVICECLASSNAME
-- name: FSTYPE
-- name: PATH1
-- name: PATH2
-`)
-
-func testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYaml, nil
-}
-
-func testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/storage/lvms/lvmcluster-with-two-paths-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataStorageLvmsLvmclusterWithoutThinpoolDeviceTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -108715,7 +105069,7 @@ metadata:
 objects:
   # VolumeAttributesClass
 - kind: VolumeAttributesClass
-  apiVersion: storage.k8s.io/v1
+  apiVersion: storage.k8s.io/v1beta1
   metadata:
     name: "${VACNAME}"
   driverName: ${DRIVERNAME} # default: ebs.csi.aws.com
@@ -109198,36 +105552,15 @@ func testExtendedTestdataWincAzure_windows_machinesetYaml() (*asset, error) {
 var _testExtendedTestdataWincCatalogsourceYaml = []byte(`apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: <catalog_source_name>
+  name: wmco
   namespace: openshift-marketplace
 spec:
-  sourceType: grpc
-  grpcPodConfig:
-    extractContent:
-      cacheDir: /tmp/cache
-      catalogDir: /configs
-    memoryTarget: 30Mi
-    nodeSelector:
-      kubernetes.io/os: linux
-      node-role.kubernetes.io/master: ""
-    priorityClassName: system-cluster-critical
-    securityContextConfig: restricted
-    tolerations:
-    - effect: NoSchedule
-      key: node-role.kubernetes.io/master
-      operator: Exists
-    - effect: NoExecute
-      key: node.kubernetes.io/unreachable
-      operator: Exists
-      tolerationSeconds: 120
-    - effect: NoExecute
-      key: node.kubernetes.io/not-ready
-      operator: Exists
-      tolerationSeconds: 120
-  image: "<index_image>"
   displayName: Windows Machine Config operators
-  publisher: Red Hat
-
+  image: <index_image>
+  sourceType: grpc
+  updateStrategy:
+    registryPoll:
+      interval: 5m
 `)
 
 func testExtendedTestdataWincCatalogsourceYamlBytes() ([]byte, error) {
@@ -109285,6 +105618,55 @@ func testExtendedTestdataWincCluster_autoscalerYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/winc/cluster_autoscaler.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincConfigMapIpDnsYaml = []byte(`apiVersion: v1
+data:
+  <ip-address>: username=<ip-username>
+  <dns-address>: username=<dns-username>
+kind: ConfigMap
+metadata:
+  name: windows-instances
+  namespace: openshift-windows-machine-config-operator
+`)
+
+func testExtendedTestdataWincConfigMapIpDnsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincConfigMapIpDnsYaml, nil
+}
+
+func testExtendedTestdataWincConfigMapIpDnsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincConfigMapIpDnsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/config-map-ip-dns.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincConfigMapYaml = []byte(`apiVersion: v1
+data:
+  <address>: username=<username>
+kind: ConfigMap
+metadata:
+  name: windows-instances
+  namespace: openshift-windows-machine-config-operator
+`)
+
+func testExtendedTestdataWincConfigMapYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincConfigMapYaml, nil
+}
+
+func testExtendedTestdataWincConfigMapYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincConfigMapYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/config-map.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -109347,12 +105729,6 @@ spec:
             - https://www.googleapis.com/auth/cloud-platform
           userDataSecret:
             name: windows-user-data
-          # Add SSH key configuration for GCP
-          sshKeys:
-            - name: "gcp-ssh-key"  # Key name
-              publicKey: |
-                ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDKyo2CxXHRP3Q5Ay0ZOlxCNSuH3xCSB68exLwE9b1fbvnzHQLfczM2oMySmEKmAN/l+mDSbrXVqx5Aa+Q76nmPK31ALbwCw94dd6A5IeM6t9PguWiodosXXccm7CgAh61+CIM6FkbrSw8mEFlUd/5LqQoi5xe3Y4ioYinXgDRIcN2aNaKr/BDGyMsnn4l9w/gOf+pMRQdqOa/cctKEt7SzMtnONN
-
 `)
 
 func testExtendedTestdataWincGcp_byoh_machinesetYamlBytes() ([]byte, error) {
@@ -109442,100 +105818,112 @@ func testExtendedTestdataWincGcp_windows_machinesetYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataWincHpa_templateYaml = []byte(`apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: {{ .ResourceName }}
-  namespace: {{ .Namespace }}
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: {{ .DeploymentName }}
-  minReplicas: {{ .MinReplicas }}
-  maxReplicas: {{ .MaxReplicas }}
-  {{- if .Metrics }}
-  metrics:
-  {{- range .Metrics }}
-  - type: Resource
-    resource:
-      name: {{ .Name }}
-      target:
-        type: AverageValue
-        averageValue: {{ .AverageValue }}
-  {{- end }}
-  {{- end }}
-  {{- if .StabilizationWindowSeconds }}
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: {{ .StabilizationWindowSeconds }}
-  {{- end }}
-`)
-
-func testExtendedTestdataWincHpa_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWincHpa_templateYaml, nil
-}
-
-func testExtendedTestdataWincHpa_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWincHpa_templateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/winc/hpa_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWincLinux_web_server_templateYaml = []byte(`apiVersion: v1
+var _testExtendedTestdataWincLinux_web_serverYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
-  name: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+  name: linux-webserver
   labels:
-    app: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+    app: linux-webserver
 spec:
   ports:
+  # the port that this service should serve on
   - port: 8080
     targetPort: 8080
   selector:
-    app: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+    app: linux-webserver
   type: LoadBalancer
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
-  name: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+    app: linux-webserver
+  name: linux-webserver
 spec:
   selector:
     matchLabels:
-      app: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
-  replicas: {{ .Replicas }}
+      app: linux-webserver
+  replicas: 1
   template:
     metadata:
       labels:
-        app: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
-      name: linux-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+        app: linux-webserver
+      name: linux-webserver
     spec:
       containers:
       - name: linux-webserver
-        image: {{ .ImageName }}
+        image: quay.io/openshifttest/hello-openshift@sha256:2a3edeadd7aa12a6156e9a27de1daae73d0569cbb0a761a7885944738245f11e
         ports:
         - containerPort: 8080
 `)
 
-func testExtendedTestdataWincLinux_web_server_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWincLinux_web_server_templateYaml, nil
+func testExtendedTestdataWincLinux_web_serverYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincLinux_web_serverYaml, nil
 }
 
-func testExtendedTestdataWincLinux_web_server_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWincLinux_web_server_templateYamlBytes()
+func testExtendedTestdataWincLinux_web_serverYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincLinux_web_serverYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/winc/linux_web_server_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/winc/linux_web_server.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincLinux_web_server_disconnectedYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: linux-webserver
+  labels:
+    app: linux-webserver
+spec:
+  ports:
+  # the port that this service should serve on
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: linux-webserver
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: linux-webserver
+  name: linux-webserver
+spec:
+  selector:
+    matchLabels:
+      app: linux-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: linux-webserver
+      name: linux-webserver
+    spec:
+      containers:
+      - name: linux-webserver
+        image: <linux_webserver_image>
+        ports:
+        - containerPort: 8080
+`)
+
+func testExtendedTestdataWincLinux_web_server_disconnectedYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincLinux_web_server_disconnectedYaml, nil
+}
+
+func testExtendedTestdataWincLinux_web_server_disconnectedYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincLinux_web_server_disconnectedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/linux_web_server_disconnected.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -109565,6 +105953,33 @@ func testExtendedTestdataWincMachineAutoscalerYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/winc/machine-autoscaler.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincNamespaceYaml = []byte(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: <namespace>
+  labels:
+    # turn on the automatic label synchronization required for PodSecurity admission
+    security.openshift.io/scc.podSecurityLabelSync: "true"
+    # set pods security profile to privileged. See https://kubernetes.io/docs/concepts/security/pod-security-admission/#pod-security-levels
+    pod-security.kubernetes.io/enforce: "privileged"
+    openshift.io/cluster-monitoring: "True"
+`)
+
+func testExtendedTestdataWincNamespaceYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincNamespaceYaml, nil
+}
+
+func testExtendedTestdataWincNamespaceYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincNamespaceYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/namespace.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -109712,6 +106127,60 @@ func testExtendedTestdataWincNutanix_windows_machinesetYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataWincOperatorgroupYaml = []byte(`apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  annotations:
+    olm.providedAPIs: WindowsMachineConfig.v1alpha1.wmc.openshift.io
+  name: windows-machine-config-operator
+  namespace: <namespace>
+spec:
+  targetNamespaces:
+  - <namespace>
+`)
+
+func testExtendedTestdataWincOperatorgroupYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincOperatorgroupYaml, nil
+}
+
+func testExtendedTestdataWincOperatorgroupYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincOperatorgroupYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincProxy_varsYaml = []byte(`apiVersion: config.openshift.io/v1
+kind: Proxy
+metadata:
+  name: cluster
+spec:
+  httpProxy: <http_proxy>
+  httpsProxy: <https_proxy>
+  noProxy: <no_proxy> 
+  trustedCA:
+    name: user-ca-bundle
+`)
+
+func testExtendedTestdataWincProxy_varsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincProxy_varsYaml, nil
+}
+
+func testExtendedTestdataWincProxy_varsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincProxy_varsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/proxy_vars.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataWincPvcYaml = []byte(`kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -109737,6 +106206,68 @@ func testExtendedTestdataWincPvcYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/winc/pvc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincService_change_machineconfigYaml = []byte(`apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: test-service-change
+  labels:
+    machineconfiguration.openshift.io/role: worker
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+        - name: kubelet.service
+          enabled: true
+          contents: |
+            [Service]
+            ExecStart=/usr/bin/kubelet --expected-parameter=new-value
+`)
+
+func testExtendedTestdataWincService_change_machineconfigYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincService_change_machineconfigYaml, nil
+}
+
+func testExtendedTestdataWincService_change_machineconfigYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincService_change_machineconfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/service_change_machineconfig.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincSubscriptionYaml = []byte(`apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: windows-machine-config-operator
+  namespace: <namespace>
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: windows-machine-config-operator
+  source: <source>
+  sourceNamespace: openshift-marketplace
+`)
+
+func testExtendedTestdataWincSubscriptionYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincSubscriptionYaml, nil
+}
+
+func testExtendedTestdataWincSubscriptionYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincSubscriptionYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -109779,7 +106310,7 @@ spec:
             creationTimestamp: null
           network:
             devices:
-            - networkName: <network_name>
+            - networkName: devqe-segment-221
           numCPUs: 4
           numCoresPerSocket: 1
           snapshot: ""
@@ -109787,11 +106318,10 @@ spec:
           userDataSecret:
             name: windows-user-data
           workspace:
-            datacenter: <datacenter>
-            datastore: <datastore>
-            folder: <folder>
-            resourcePool: <resource_pool>
-            server: <vcenter_server>
+            datacenter: DEVQEdatacenter
+            datastore: /DEVQEdatacenter/datastore/vsanDatastore
+            folder: /DEVQEdatacenter/vm/<infrastructureID>
+            server: vcenter.devqe.ibmc.devcluster.openshift.com
 `)
 
 func testExtendedTestdataWincVsphere_byoh_machinesetYamlBytes() ([]byte, error) {
@@ -109863,7 +106393,7 @@ spec:
           type: "winc"
       providerSpec:
         value:
-          apiVersion: machine.openshift.io/v1beta1
+          apiVersion: vsphereprovider.openshift.io/v1beta1
           credentialsSecret:
             name: vsphere-cloud-credentials
           diskGiB: 128
@@ -109881,12 +106411,10 @@ spec:
           userDataSecret:
             name: windows-user-data
           workspace:
-            datacenter: DEVQEdatacenter-2
-            datastore: /DEVQEdatacenter-2/datastore/vsanDatastore
-            folder: /DEVQEdatacenter-2/vm/<infrastructureID>  # Updated folder path
-            resourcePool: /DEVQEdatacenter-2/host/DEVQEcluster-2/Resources/ipi-ci-clusters
-            server: vcenter-2.devqe.ibmc.devcluster.openshift.com
-
+            datacenter: DEVQEdatacenter
+            datastore: /DEVQEdatacenter/datastore/vsanDatastore
+            folder: /DEVQEdatacenter/vm/<infrastructureID>
+            server: vcenter.devqe.ibmc.devcluster.openshift.com
 `)
 
 func testExtendedTestdataWincVsphere_windows_machinesetYamlBytes() ([]byte, error) {
@@ -109904,106 +106432,556 @@ func testExtendedTestdataWincVsphere_windows_machinesetYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataWincWindows_daemonset_templateYaml = []byte(`apiVersion: apps/v1
-kind: DaemonSet
+var _testExtendedTestdataWincWicd_configmapYaml = []byte(`kind: ConfigMap
+apiVersion: v1
+immutable: false
+data:
+  files: '[]'
+  services: '[{"name":"windows_dummy","path":"C:\\k\\windows_dummy.exe --collectors.enabled
+    cpu,cs,logical_disk,net,os,service,system,textfile,container,memory,cpu_info","bootstrap":false,"priority":1},{"name":"hybrid-dummy-node","path":"C:\\k\\hybrid-dummy-node.exe
+    --node NODE_NAME --k8s-kubeconfig C:\\k\\kubeconfig --windows-service --logfile
+    C:\\var\\log\\hybrid-dummy\\hybrid-dummy.log --loglevel 5","nodeVariablesInCommand":[{"name":"NODE_NAME","nodeObjectJsonPath":"{.metadata.name}"}],"dependencies":["minesweeper"],"bootstrap":false,"priority":1}]'
 metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
-spec:
-  selector:
-    matchLabels:
-      app: {{ .AppLabel }}
-  template:
-    metadata:
-      labels:
-        app: {{ .AppLabel }}
-    spec:
-      nodeSelector:
-        kubernetes.io/os: windows
-      tolerations:
-      - key: "os"
-        operator: "Equal"
-        value: "Windows"
-        effect: "NoSchedule"
-      containers:
-      - name: {{ .ContainerName }}
-        image: {{ .ImageName }}
-        command:
-        - pwsh.exe
-        - -Command
-        - "while ($true) { Start-Sleep -Seconds 30 }"
+  name: windows-services-<version>
+  namespace: openshift-windows-machine-config-operator
 `)
 
-func testExtendedTestdataWincWindows_daemonset_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWincWindows_daemonset_templateYaml, nil
+func testExtendedTestdataWincWicd_configmapYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWicd_configmapYaml, nil
 }
 
-func testExtendedTestdataWincWindows_daemonset_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWincWindows_daemonset_templateYamlBytes()
+func testExtendedTestdataWincWicd_configmapYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWicd_configmapYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_daemonset_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/winc/wicd_configmap.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var _testExtendedTestdataWincWindows_web_server_templateYaml = []byte(`{{- if .IncludeService }}
-apiVersion: v1
+var _testExtendedTestdataWincWindows_hpaYaml = []byte(`apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: <resourceName>
+  namespace: <namespace>
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: win-webserver
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: <resource>
+      target:
+        type: AverageValue
+        averageValue: <averageValue>
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 20  # Add stabilization window for scale down
+`)
+
+func testExtendedTestdataWincWindows_hpaYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_hpaYaml, nil
+}
+
+func testExtendedTestdataWincWindows_hpaYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_hpaYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_hpa.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_web_serverYaml = []byte(`apiVersion: v1
 kind: Service
 metadata:
-  name: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+  name: win-webserver
   labels:
-    app: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+    app: win-webserver
 spec:
   ports:
+    # the port that this service should serve on
   - port: 80
     targetPort: 80
   selector:
-    app: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+    app: win-webserver
   type: LoadBalancer
 ---
-{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
-  name: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+    app: win-webserver
+  name: win-webserver
 spec:
   selector:
     matchLabels:
-      app: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
-  replicas: {{ .Replicas }}
+      app: win-webserver
+  replicas: 1
   template:
     metadata:
       labels:
-        app: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
-      name: win-webserver{{- if .NameSuffix }}-{{ .NameSuffix }}{{- end }}
+        app: win-webserver
+      name: win-webserver
     spec:
-      {{- if .RuntimeClassName }}
-      runtimeClassName: {{ .RuntimeClassName }}
-      {{- end }}
-      {{- if .IncludeTolerations }}
       tolerations:
       - key: "os"
         value: "Windows"
-        operator: Equal
-        effect: "NoSchedule"
+        Effect: "NoSchedule"
+      containers:
+        - name: win-webserver
+          image: <windows_container_image>
+          imagePullPolicy: IfNotPresent
+          command:
+            - pwsh.exe
+            - -command
+            - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+          securityContext:
+            runAsNonRoot: false
+            windowsOptions:
+              runAsUserName: "ContainerAdministrator"
+      nodeSelector:
+        beta.kubernetes.io/os: windows
+      os:
+        name: windows
+`)
+
+func testExtendedTestdataWincWindows_web_serverYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_web_serverYaml, nil
+}
+
+func testExtendedTestdataWincWindows_web_serverYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_web_serverYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_web_server_byohYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: win-webserver
+  labels:
+    app: win-webserver
+spec:
+  ports:
+  # the port that this service should serve on
+  - port: 80
+    targetPort: 80
+  selector:
+    app: win-webserver
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver
+  name: win-webserver
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      tolerations:
       - key: "os"
-        value: "windows"
-        operator: Equal
-        effect: "NoSchedule"
-      {{- end }}
-      {{- if or .PVCName .ProjectedVolume }}
+        value: "Windows"
+        Effect: "NoSchedule"
+      containers:
+      - name: win-webserver
+        image: <windows_container_image>
+        imagePullPolicy: IfNotPresent
+        command:
+        - pwsh.exe
+        - -command
+        - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+        securityContext:
+          runAsNonRoot: false
+          windowsOptions:
+            runAsUserName: "ContainerAdministrator"
+      nodeSelector:
+        kubernetes.io/os: windows
+        type: byoh-node
+      os:
+        name: windows
+
+
+`)
+
+func testExtendedTestdataWincWindows_web_server_byohYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_web_server_byohYaml, nil
+}
+
+func testExtendedTestdataWincWindows_web_server_byohYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_web_server_byohYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server_byoh.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_web_server_disconnectedYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: win-webserver
+  labels:
+    app: win-webserver
+spec:
+  ports:
+    # the port that this service should serve on
+    - port: 80
+      targetPort: 80
+  selector:
+    app: win-webserver
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver
+  name: win-webserver
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      tolerations:
+        - key: "os"
+          value: "Windows"
+          effect: "NoSchedule"
+      containers:
+        - name: win-webserver
+          image: <windows_container_image>
+          imagePullPolicy: IfNotPresent
+          command:
+            - pwsh.exe
+            - -command
+            - |
+              $listener = New-Object System.Net.HttpListener
+              $listener.Prefixes.Add('http://*:80/')
+              $listener.Start()
+              Write-Host('Listening at http://*:80/')
+              while ($listener.IsListening) {
+                $context = $listener.GetContext()
+                $response = $context.Response
+                $content = '<html><body><H1>Windows Container Web Server</H1></body></html>'
+                $buffer = [System.Text.Encoding]::UTF8.GetBytes($content)
+                $response.ContentLength64 = $buffer.Length
+                $response.OutputStream.Write($buffer, 0, $buffer.Length)
+                $response.Close()
+              }
+          securityContext:
+            runAsNonRoot: false
+            windowsOptions:
+              runAsUserName: "ContainerAdministrator"
+      nodeSelector:
+        beta.kubernetes.io/os: windows
+      os:
+        name: windows
+      imagePullSecrets:
+        - name: pull-secret
+`)
+
+func testExtendedTestdataWincWindows_web_server_disconnectedYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_web_server_disconnectedYaml, nil
+}
+
+func testExtendedTestdataWincWindows_web_server_disconnectedYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_web_server_disconnectedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server_disconnected.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_web_server_no_taintYaml = []byte(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver
+  name: win-webserver
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      containers:
+        - name: win-webserver
+          image: <windows_container_image>
+          imagePullPolicy: IfNotPresent
+          command:
+            - pwsh.exe
+            - -command
+            - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+          securityContext:
+            runAsNonRoot: false
+            windowsOptions:
+              runAsUserName: "ContainerAdministrator"
+      nodeSelector:
+        beta.kubernetes.io/os: windows
+      os:
+        name: windows
+
+`)
+
+func testExtendedTestdataWincWindows_web_server_no_taintYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_web_server_no_taintYaml, nil
+}
+
+func testExtendedTestdataWincWindows_web_server_no_taintYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_web_server_no_taintYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server_no_taint.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_web_server_pvcYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: win-webserver-<id>
+  labels:
+    app: win-webserver-<id>
+spec:
+  ports:
+  # the port that this service should serve on
+  - port: 80
+    targetPort: 80
+  selector:
+    app: win-webserver-<id>
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver-<id>
+  name: win-webserver-<id>
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver-<id>
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: win-webserver-<id>
+      name: win-webserver-<id>
+    spec:
+      tolerations:
+      - key: "os"
+        value: "Windows"
+        Effect: "NoSchedule"
       volumes:
-      {{- if .PVCName }}
       - name: test-volume
         persistentVolumeClaim:
-          claimName: {{ .PVCName }}
-      {{- end }}
-      {{- if .ProjectedVolume }}
+          claimName: <pvc-name>
+      containers:
+      - name: windowswebserver
+        image: <windows_container_image>
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: C:/html/
+          name: test-volume
+        securityContext:
+          runAsNonRoot: false
+          windowsOptions:
+            runAsUserName: "ContainerAdministrator"
+        command:
+        - pwsh.exe
+        - -command
+        - echo "<html><body><H1>Windows Container Web Server</H1></body></html>" > C:/html/index.html;$listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content=Get-Content C:/html/index.html -Raw; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+      nodeSelector:
+        beta.kubernetes.io/os: windows
+        <node-selector>
+
+`)
+
+func testExtendedTestdataWincWindows_web_server_pvcYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_web_server_pvcYaml, nil
+}
+
+func testExtendedTestdataWincWindows_web_server_pvcYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_web_server_pvcYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server_pvc.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_web_server_scalerYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: win-webserver
+  labels:
+    app: win-webserver
+spec:
+  ports:
+  # the port that this service should serve on
+  - port: 80
+    targetPort: 80
+  selector:
+    app: win-webserver
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver
+  name: win-webserver
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      tolerations:
+      - key: "os"
+        value: "Windows"
+        Effect: "NoSchedule"
+      containers:
+        - name: win-webserver
+          image: <windows_container_image>
+          imagePullPolicy: IfNotPresent
+          command:
+            - pwsh.exe
+            - -command
+            - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+          securityContext:
+            runAsNonRoot: false
+            windowsOptions:
+              runAsUserName: "ContainerAdministrator"
+          resources:
+            requests:
+              cpu: 1
+            limits:
+              cpu: 1
+      nodeSelector:
+        beta.kubernetes.io/os: windows
+        type: "winc"
+      os:
+        name: windows
+
+`)
+
+func testExtendedTestdataWincWindows_web_server_scalerYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_web_server_scalerYaml, nil
+}
+
+func testExtendedTestdataWincWindows_web_server_scalerYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_web_server_scalerYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server_scaler.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_webserver_projected_volumeYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: win-webserver
+  labels:
+    app: win-webserver
+spec:
+  ports:
+  # the port that this service should serve on
+  - port: 80
+    targetPort: 80
+  selector:
+    app: win-webserver
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver
+  name: win-webserver
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      tolerations:
+      - key: "os"
+        value: "Windows"
+        Effect: "NoSchedule"
+      containers:
+      - name: windowswebserver
+        # TODO replace to nano server image as soon as it supported
+        image: <windows_container_image>
+        imagePullPolicy: IfNotPresent
+        command:
+        - powershell.exe
+        - -command
+        - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+        volumeMounts:
+        - name: all-in-one
+          mountPath: "/projected-volume"
+          readOnly: true
+      volumes:
       - name: all-in-one
         projected:
           sources:
@@ -110011,116 +106989,96 @@ spec:
               name: user
           - secret:
               name: pass
-      {{- end }}
-      {{- end }}
-      containers:
-      - name: {{ .ContainerName }}
-        image: {{ .ImageName }}
-        imagePullPolicy: IfNotPresent
-        {{- if or .PVCName .ProjectedVolume }}
-        volumeMounts:
-        {{- if .PVCName }}
-        - mountPath: C:/html/
-          name: test-volume
-        {{- end }}
-        {{- if .ProjectedVolume }}
-        - name: all-in-one
-          mountPath: "/projected-volume"
-          readOnly: true
-        {{- end }}
-        {{- end }}
-        {{- if .IncludeSecurityContext }}
-        securityContext:
-          runAsNonRoot: false
-          windowsOptions:
-            runAsUserName: "ContainerAdministrator"
-        {{- end }}
-        {{- if .ResourceLimits }}
-        resources:
-          limits:
-            cpu: {{ .ResourceLimits }}
-            memory: 1Gi
-          requests:
-            cpu: {{ .ResourceLimits }}
-            memory: 512Mi
-        {{- end }}
-        command:
-        {{- if .MultilineCommand }}
-        - {{ .PowerShellExe }}
-        - -command
-        - |
-          {{- if .PVCName }}
-          echo '<html><body><H1>Windows Container Web Server</H1></body></html>' > C:/html/index.html;
-          $listener = New-Object System.Net.HttpListener;
-          $listener.Prefixes.Add('http://*:80/');
-          $listener.Start();
-          Write-Host('Listening at http://*:80/');
-          while ($listener.IsListening) {
-            $context = $listener.GetContext();
-            $response = $context.Response;
-            $content=Get-Content C:/html/index.html -Raw;
-            $buffer = [System.Text.Encoding]::UTF8.GetBytes($content);
-            $response.ContentLength64 = $buffer.Length;
-            $response.OutputStream.Write($buffer, 0, $buffer.Length);
-            $response.Close();
-          };
-          {{- else }}
-          $listener = New-Object System.Net.HttpListener;
-          $listener.Prefixes.Add('http://*:80/');
-          $listener.Start();
-          Write-Host('Listening at http://*:80/');
-          while ($listener.IsListening) {
-            $context = $listener.GetContext();
-            $response = $context.Response;
-            $content='<html><body><H1>Windows Container Web Server</H1></body></html>';
-            $buffer = [System.Text.Encoding]::UTF8.GetBytes($content);
-            $response.ContentLength64 = $buffer.Length;
-            $response.OutputStream.Write($buffer, 0, $buffer.Length);
-            $response.Close();
-          };
-          {{- end }}
-        {{- else }}
-        - {{ .PowerShellExe }}
-        - -command
-        {{- if .PVCName }}
-        - echo "<html><body><H1>Windows Container Web Server</H1></body></html>" > C:/html/index.html;$listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content=Get-Content C:/html/index.html -Raw; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
-        {{- else }}
-        - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
-        {{- end }}
-        {{- end }}
-        {{- if .ImagePullSecrets }}
-      imagePullSecrets:
-      - name: {{ .ImagePullSecrets }}
-        {{- end }}
       nodeSelector:
-        {{- if .UseNewOSLabels }}
-        kubernetes.io/os: windows
-        {{- else }}
         beta.kubernetes.io/os: windows
-        {{- end }}
-        {{- if .AdditionalNodeSelector }}
-        {{ .AdditionalNodeSelector }}
-        {{- end }}
-        {{- if .KernelID }}
-        node.kubernetes.io/windows-build: {{ .KernelID }}
-        {{- end }}
-      {{- if .UseNewOSLabels }}
       os:
         name: windows
-      {{- end }}
+
 `)
 
-func testExtendedTestdataWincWindows_web_server_templateYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWincWindows_web_server_templateYaml, nil
+func testExtendedTestdataWincWindows_webserver_projected_volumeYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_webserver_projected_volumeYaml, nil
 }
 
-func testExtendedTestdataWincWindows_web_server_templateYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWincWindows_web_server_templateYamlBytes()
+func testExtendedTestdataWincWindows_webserver_projected_volumeYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_webserver_projected_volumeYamlBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_web_server_template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_webserver_projected_volume.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWincWindows_webserver_secondary_osYaml = []byte(`apiVersion: v1
+kind: Service
+metadata:
+  name: win-webserver
+  labels:
+    app: win-webserver
+spec:
+  ports:
+    # the port that this service should serve on
+  - port: 80
+    targetPort: 80
+  selector:
+    app: win-webserver
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: win-webserver
+  name: win-webserver
+spec:
+  selector:
+    matchLabels:
+      app: win-webserver
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: win-webserver
+      name: win-webserver
+    spec:
+      tolerations:
+      - key: "os"
+        value: "Windows"
+        Effect: "NoSchedule"
+      containers:
+        - name: win-webserver
+          image: <windows_container_image>
+          imagePullPolicy: IfNotPresent
+          command:
+            - pwsh.exe
+            - -command
+            - $listener = New-Object System.Net.HttpListener; $listener.Prefixes.Add('http://*:80/'); $listener.Start();Write-Host('Listening at http://*:80/'); while ($listener.IsListening) { $context = $listener.GetContext(); $response = $context.Response; $content='<html><body><H1>Windows Container Web Server</H1></body></html>'; $buffer = [System.Text.Encoding]::UTF8.GetBytes($content); $response.ContentLength64 = $buffer.Length; $response.OutputStream.Write($buffer, 0, $buffer.Length); $response.Close(); };
+          securityContext:
+            runAsNonRoot: false
+            windowsOptions:
+              runAsUserName: "ContainerAdministrator"
+      nodeSelector:
+        kubernetes.io/os: 'windows'
+        kubernetes.io/arch: 'amd64'
+        node.kubernetes.io/windows-build: '<kernelID>'
+      os:
+        name: windows
+
+`)
+
+func testExtendedTestdataWincWindows_webserver_secondary_osYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWincWindows_webserver_secondary_osYaml, nil
+}
+
+func testExtendedTestdataWincWindows_webserver_secondary_osYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWincWindows_webserver_secondary_osYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/winc/windows_webserver_secondary_os.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -111924,202 +108882,6 @@ func testExtendedTestdataWorkloadsCase72217CrdCustomtask72217Yaml() (*asset, err
 	return a, nil
 }
 
-var _testExtendedTestdataWorkloadsCase83849Config83849Yaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  helm:
-    local:
-     - name: test-mirror-helm
-       path: test-mirror-helm-0.3.0.tgz
-       imagePaths:
-        - "{.spec.template.spec.containers[*].env[*].value}"
-`)
-
-func testExtendedTestdataWorkloadsCase83849Config83849YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase83849Config83849Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsCase83849Config83849Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase83849Config83849YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case83849/config-83849.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase83849TestMirrorHelm030Tgz = []byte("\x1f\x8b\b\x14\x00\x00\x00\x00\x00\xff)\x00+aHR0cHM6Ly95b3V0dS5iZS96OVV6MWljandyTQo=Helm\x00\xec|mo$7r\xbf\xfe\x7f \b2\xefs\xaf+:\x04+\x01=\xa3\x91V+\xfbd\xe7\x00y%\xdb\xca\xedJ\x82\xa4\xbd=\xe3p08\xdd53\x8c\xba\xc96\u025e\xd9>\xe4\x83\xe4S\xe43\x06U$\xbb9\x0f\xda\xf5\xf9\xf66\xbeX|\xb1\xab\xe9\xe9.\x16\xeb\xf1WEN;\xb4nXIc\xb4\x19\u03b1\xac\x0e^\u0385q\xa3VT\xe5\xce\xc7\x1a\xe3\xf1x|r|\xcc\xff\x8f\xc7\xe3\xf5\xff\xc7\u03cf\x8fw\x0e_\x8c\x8f\x0e_\x9c\x1c\x1d\xd1}\x87\xc7\xc7\xe3\x17;0\xfeh\x1c\xbcg4\xd6\t\xb33\xfe\xab\xe7Z_\xdc\xdf\xc9\x10\xb5\xfc=\x1a+\xb5:\x85\xc5\xd1@\xd4u\xf7\xf1xt<\x1a\x0f\n\xb4\xb9\x91\xb5\xe3K\u03fe\u0172\x026\x11\x98j\x03d=R\xcd`!\x8c\u050d\x05Y\x89\x19\x827'\xba\xee\xb4.-<\x1b<`\xbb\u0526\xb0\xa7\x83!\x9cI3\x13\xf5`\b\xd7\xd3i)\x15\xd2_n\x8ef\xf0\xd0L\xb0\x9b\xfc\xd9o\xff\xedptx2\x1a\x0f\xc7\xcf\x06\x95\x90\xca\t\xa9\xd00\x05%*<\x85\u02ef^\x0f\xfc_\xeb6<XD*\xe3\xd1\xf3\xd1x\xf0\xbf-\xe3\x9f\xf3\xd8\xf0\xff\x85(\x1b\xb4\x1f5\x00|\xc8\xff\x8f\x8f>[\xf7\xff\x93\xe3'\xff\xff$c8\x1c\x0e~\r\xf7siAZ\x10\xf0\xdd\xd9\xebW\u00e96\x95p\x0e\v\x98\xca\x12G\x83_\xc39\xe6\xa50\u020e.&%Zp\x1a&\b\xb5\xb0\x16\v\x90\xcaihuC\x11\xa1\xaaK\xe1\u040e\x06\x03\x83u)s\xf1R7\u029d\xc2\xe1`\xc0\xe1\xe1t\x00`\xb0\xd6V:m\xdaS(t\xfe\x80f$\xf5\x81\x9cT\xb9\xae\xe8\xbf!*\x87\xa66\xd2\xe2\xb0\xd2j\xa6\x8b\u0270\xae\xf3\x93\xe3\x12\a\x00uS\x967\xba\x94y{\ng\xe5R\xb4v\x00\xf0k\xb8^\xa01\xb2 \xde\xe6\x18B\x91\x133X\u03b5E(p*\x9a\xd2\xd1*\xe9\xeb\x9ccX\x1f\xeeF\x03\xa0\x9bOa\xf7xt\xbc\xfb\xcb\t\x19\x1b\xfe\xdf)\xf0\xa0\xc0\xba\xd4m\x85\xca\r\u9b9f\x1e\x12>\xe0\xff\x87G\xc7'\xab\xfe\x7f4~1>|\xf2\xffO1\xd2\xfc/\xea\xda\x1e,\x0e\a\x0fR\x15\xa7p\u07a9\x7fP\xa1\x13\x85p\x82\\\x17B\xfaU3\xa9\xde\r\xa5\x9a\x19\xb4v`k\xcc\xfd\xb7\xc1\xe9-9<}\xb6Xb\xee\xb49\x05\xfeH\xa3\x12.\x9f\xbf\x12\x13,\xediw\x91\x86\xa8\xebH\x98,\x8e\xbf\x8b\xf6\xd8\u07f9\xcaM\x1c\xe5\x16z\x8f\xd1d\xbe:\x8e\xe3\xc8u\x0f2\u05a9\f\xd3Uo|\v>\u069c\xc2\x0f\x8dh)\x92\xf1m\a+\":e\xa7r[\x9eE\xb5\u061c0\x9d\xf4\xfc\xcd\xeb\xd7\xdf}\x7f\xf9\xfa\uc6cb\xad\xf7\x01p\xd2>\x85\xdd8\x7fmt\x85n\x8e\x8dM\xfe\f\x1c\xec\xbew\xaeW\xd7\xdf|\xff\xea\xe2\xf7\x17\xaf>0S\x81\x93f\xb6\x8dT\xad\x8d\xdb\"@?G'\xe2\x1bm\xdc)|>\xfe|\xfc\xc8<\xb5\xd1N\xe7\xba<\x85\xfb\x977\xbf\x9cp\xfc\xc9\xc7F\xfc\x1f}\xff\xd1+\xc0\x0f\u1fe3\x17'\x1b\xf8\xef\xe8\xf8)\xfe\x7f\x92\xf1\x0f\xbf\xfa\u01dd\xff\xbf\xb3\xf3Z\xe4p}\a\x7f\x88\xfeG\xd7v\xfeigg\xe7hgg\xe7?wv\xf8\xf3\x7f\xff8\x92g\xf7\xf7\xb7\xe1Oz\xe2\xbfvvv~\xb5v\xcb\xff\xeb\xaf\xffs\xae\xab\x91\xa8\xeb\x12G?4\xc2\b\xe5\xa4\u009d\x1f\x0e\xc6\xe3\u03cf\xbe8\xf9\xecs<<:\x99|\xf1;|\x10_|\xec\xb5?\x8dm\xfe\xff\xea\xf2\xe5\xc5\xd5\xdd\xc5\u01db\xe3/\xf7\xff\u77cd\x9f\xfc\xff\u04cc'\xff\xffE\x8f-\xfe_\x1b\x1c\x1a\xfc\xe1\xe3\xcd\xf1\x13\xf2\xff\xe1gO\xfd\x9fO3~\xde\xfe\x1fM\xe4\xc9\xff\xffFc\x8b\xffw\x1d\xa0\x8f5\xc7O\xc2\xff\xe3'\xff\xff$\xe3\xc9\xff\x7f\xd1c\x8b\xff\x7f\xf4\x1d\xa0\xbf\xdc\xff_\x8cO\x8e\x9e\xfc\xff\x93\x8c\x9f\xb7\xff?\xe1\xff\xbf\xf1\xd8\xf0\xff\x8f^\xfd\x7f\xc8\xff\x8fN\x0e\x9f\xbfX\xaf\xff\x8f?{\xfe\xe4\xff\x9fbl\xef\xbe'\xe3\xac\x16\xf9\x1c\xe1\x95\xccQY|\xa4[\xcf#\xec#\xc1\xd1h\x9c\xc1\xbf\v\xd5\b\xd3\xc2\xd1x|\xfc\xe8Cs\xe7\xea\u04c3\x83\xe5r9\x12<\xcdH\x9b\xd9A\u99f2\a\x03z\xf0\xfe\xe2\xf6\xf5\x1d\x9c]\x9d\xc3\xcb\xeb\xab\xf3\xcb\xfb\xcb\xeb\xab;\xf8\xfa\xfa\x16\xde\xdc]dp{qs{}\xfe\xe6%]\xce\xf8\xae\xf3\u02fb\xfb\xdb\u02ef\xde\xd0\x15&p8\x82s\x9cJ%\x9d\xd4\u028e\x06\x81\x9b\u0770\xa2]\xb0sQ\x96P\xa1P\xbc3\xec\xd0T\x16\x84* \u05ea\xf0O\xf1a\x97\xc6b\x06\x06k\xa3\x8b&\xa7\xcbY E\xf7\x16\xd2:#'\r]\aa\xa1\xa0)\xb1\x80I\vw\x98{\"\x87\xe0\xe6F7\xb39\xfc\x06\xf4\x14\xdc\\Z(t\xdeT\xa8\xdc:_\xdal0\x96\xeb\xba5r6w\xa0\x97\n\rh\x03\xa8\x9ct-\x88\xc6\u0375\x91\x7f\xe6\xf9\x02\x9dmO\xb8\xb9\xe0\r\U000193f23\xbe)\xc8!a\x00g\xa2\x84\v&\xbd\xc1D\xa3h\x81\xcc=\x82\u0219J\xe4B\x15 \xca2\x90\xd1n\x8e\x81A\xc9[\xf2\xc2\xf1\xf6\x8f\xd1e\x06\xc2`\xfcP2\xd3\x19\xad\x86\xae6\xaa@\x03\xb9\xae*\xad\x02\xa5p#,\xa5\x9b{:~\xc2\x11|\xad\r\xf3Q7\xa6\xd6\x16m/\xd5N\xe1QG\xbb\x81\xca./\xc5\u009e\xdc\xf7\x8f\xea%\x9a\f\ni0w\u0104T\xfe\xef\f\x9c\x86\\4\x16\xe9\xbe@\xc5\x7f\xc5\x120P\t%fH\u02a3ym\x93\xcf\x03c\x19,\xe7\xc8\u02df\xb4\x9e{\xc1\xb4S\xc9,%Y\x936\xb0'\xe5\xbeW\x8f\x9d\u02da(M\xe5\u0535P\xa3\u0249\xf4\u078b\xf1\xbf\xee\xf3t\xda`\x10|$\xd48\xeb\x84*H\av.\f\xdaHQ\xee\xc3\x04\x15Ne.E\xb9J=\xe1\xb3W\xf9w\xba\u0645=m\xf8/\xb3\xbb\x9fj](\x96\xc9B\x16\r\xd12\x90\xdaG \x80\xef\xd0\xe4\xd2\x12#5\x9aJZ\xcb\x06\xcfv\u6740\u0572ajw\xba19\xee\x92{U\xeb\x96V\x1b\x9c\xa21X\xf8o\xa7,\xf1\a\x9a\xa2\u0485\x9c\xca\\\xb0WE\x05K\x95\x97\r\x8bb\xd28P\xdaA)+I\xb3;\rVO\u0752\xcc\xcb\xf2\x84\x90\xeb\x02\xb3\xce\xf7\x98P \xe3o\u0222\xffO\xe5\xac1\xfc=\x1f\x85I\xc2\xc7\xf5\xe4?0w\x9b\xac\v\xd5\xfak\x06mS\xb2\x7fL\x8d\xae\xa0\xc2|.\x94\xccEt\x10g\x84\xb2\xfe\xa4M0(\xbeR\x86\x8fS\x10\xe0\xc5\xc3\xe4\xb2\xd5\x05\x06\x1ak\xcb\xccuUKr(\xcd\u0305e\xceP\xa1\x11t\xcb\u0282\xd3\xe8\x95k\x15\xce\xcc\xf1\xc1\x1e\xef\xbb\x15\x16R\x80k\xebt\xd9o\xb5y\xd8\b\nKm\x1e\x98c\x8eCdi\xbd\vH\x15\x97\xd19\x80\x17]XV%\n\x04\xb1\x10\xb2\x14\x932\xfa\x7f\x12\x972\x8a\xa6d\x80\xb9\b\xa6$\xba\xb8\x10\xa3\x9b\xd2N\xe6\u06057/)>\x96\xc4a\xc59\xca-,\xa1\xc8m \xb1'\x14\xe0;Q\xd5%\u0483\xb5\xd1\v\x19\x1e\xa4;\xcf\xea\x1aU!\xdf\xc1\x04K\xbd\xdc\xef\xa5p\x8eF.\x84\x93\v\x04\x12\x88\xdd]\xb7\x00\x9ac\xbb\f\xc2\xea\x03%/\x83\xc8\xf8DXR\x9ebW,h\x0e\xb2~\xa3+\x1f\xabh*V\x17\xf9\xc2r.\xf3y\x12\f\xb0\x90N\x1brw\x83\v\u026a$+V\xda\x05?\x01,\xc5D\x9b\xf8I\x9b\xa8\xe6\u051b\x021\xcarhQ9\x96\xbe\x80\xe5\\\x97\xec\x14\xa0\x8d\x9cI%\xca-:\u07cc\xc71NMW\xdc?\x83u\xf1\x05\xe9\x915\a\xdd1\xf9\x905\fVBv\xfe\x89\xb50l)$\x17^F\x85\x06\xcb\x16J\xa9\x1eXp\x13\xa9\xd8N\x94\xa8p?*]*\x87f*rN\x12Y\x92#;\xa1n0E\xd2A=\xed\xb5\xfe\x92By\xc8\xf1[5\xbe\xee\x03\x9d\xcb&\xf3u\x02\f\x0e\x17si\xc7\a\x11[\xd1\t\xdbp\x11\x90H\xa4\xa4\xbdl\xf8)m\x1ee>K\x9c\xc2Q\xd4\xd7J\x94e\f\u06f6\x99T\u0485\xe0\x11q\a[\x17s\xce\xec\x05W\xe0\x898\x8eo\xc0\x8a\xa8eNw\xef\xcd\x16)P\xa1\xa8\xcc\u04d3\xbdOp.\xca)\xe8\xe9\xe3\xe0\xe5\xc7e{\xd8\xed\xd6\x14\x0f\xa7\xf8|\u07c5e=\x05>\x91d\xb4\x92yFZ\x98\x88\x92\xedhi\xe89\xc5\xe0\xa3QA\xfa@^\x90\n\x1d{A\x91\x9c\x9c\ud745\xe5o\xb3\xf7\xa6\xa2.v\xa5sh\x95\xf0\x04\x95\x90%=\\J\xebl\x96\xa6\xac\x0e\n\xd9\xd6:\xacl\x1a\u00a5\xb5\rR\n\xc99G\x86;\xbc\xfa)\xf3y\xb4\xd2a\xadT\xe8Y\x12FV\xac \x916\u026d\x906o,gy\x9e\xb1\xe2x\x19`\xe4[\x8ex}j\xc2wQ\b\xabk\x8d\xf6\x98kek\x997\xba\xb1e\v\x950\x0f\x14\xfaL\x8f\x8e\"\xe4B+g\x8ac\xbfT\xac#\x16\xecVK\xa4`\xb5{\xa5\x1d\bH}u\xb4\xbb\xe9\xc2k\xf8\xba[v\xf4\xc0\x0fB\x9eT\x80\x14\x1f\xab\xb5Ia.,L\x10\x15\x18\u0311#\xf9\xa4]\x99\xa7wB\x8b?4\xa8\\I\xd3\xe6\xda\xd4\u06a7k\x02\xbc\x89\xfb\xf9@t4\x82o\bV\u0474/\xbb\xe5Gd\x05w\x8dO\xae\xc1V\xb7\x163\x89\x9b\xa5Q\x19E>\x87D@@!d\xd2z\x14\u01f8\xe0;\u0740 \x84W\xa3kD\x19\xcdo\xa9MY,%a\r\xa5\u05505o\xe5\x82?\x0e\xf3\xb903*\x9ct+J\xd7\x0e\xa7\x061\x03i\f.tN\x81|#\x9b\x87\xfa\x8f&\x8c\xd5\x16f\x04\ak\xb2\xe3\x8dH\u05c7\U000fa6542/[2\u053a\x14m\xd6_\xa9\xd1\xf8Tk\xf9J\x00\x16i\u0756\xc2\xfc.\x163X\u0798qK:\xe7\xd8\xe2\x15\xf4<Q\u040d\xa0\xa0\xfb\x7f@;{\xf8.\xc7\u0691\x83Y\x17\x9d\x91\x19\xb4\xbe \u0687\u06af5\xd1^%\x1e0\x83\xb9X \xa3\xbc\xc8\x10\xd7\xd1z:%\x9c\xa7\xc1bYf\xe1_Y\xd5\xda8\xaf\x98.\x0e\x04\xa0\x1cP!\x87\x99\xb82\x12\x81\xd7Q\x9cU\xd4uI\xe5\xa6Ve\xeb\xa5L\xb1+\xb0\x96\x97BV6\u071b,n\xd2z\"\xa9t\xbb\xb8\xa90Gk\x85\x91\xec\x9dS#\xd5,V4(c\xeeK\x1d\x7f\xcf\xee\x83(\xb5\u0090\x11s]M\xa4\xeaP=?\xb6\xfe@\\\x90\xafpC\xb6u:\x80\xbcU\xe6\xc2\x14KRE\xccu#\xb8\x9c\x92\xfe\xbbZ\xc8:\xe9\u0226;\xa589\xf3,\x88\x99\xa0\xaf9\u0205\xc2}\xafOX\x1d\xb66\xda\xda!\v\x8c\x96\x91\xeb\x86\xf0\x93\xff,\x15\b(\xc5\xd26\xd2\xd1RK\x9c\xf9$ \\\xc7|\x8f\t\u05a2\xe2\xfb\x02\x1c\xe7\x04\u03f8\r\xa5vO'\xef\x95\xd3\xc6eE}T\x8cT\xdd\x1c=\x14[\xb5\xc4\b\x99b1\x1a<%\x16\x1a\xbd\x8f\x85\x94\x17Q\x95\xcf\x0e\u48a4\xbdh+\xc2F\xc0V\b\xd7\x19_']i\xb9N,|(8\x1e\xc1-\xa6\x9d\xa1\x11O]\x89\xb6\x8fl\xebQ(\u05f5\x8c\xd8f%\x1e\xbd\a\xe5\xb1J\b6b!\x9b*\xf3vD\x88F\xba\xb9\xee2\xf2j\xd9\xecS\xf8#\x91,\xebK!\x16HoZ\x15\xa2\xd7\xf2T\x97\xa5^\xfa\xfc\x1ec\xd7\u982b\xab\xf6\xfdJ\x1b\xeb`F\xfc\x12{\xbe\xde0\x98\xcbZ\"\x05\xad\x14\xfav\xd5!\x8d\x8d\x85\n\xce\x0f\xeb\x95\xc4\x17\x9cF\u3713dN\u07f8\xe9\xa1t\xf8)\x8b\xf5M\x1dC&dt%\x15\u0649\xaf\x1em2=\x85\xb8\u03a4\x89&\x95\xee3\x16\x06z:\xab3\xe7\xc9\xcc\x06\x9d\x90*\x8b\xb89)\xe1\xb9:P\xed\xc6\u2489\xbb\t{\x83\xc8\xc8\xc3\xfa\xec\x98\x05\xeb\xce(,\x16H\xb8)K\xc0\x04\x9b\xa8\xeb\xdd-\xac\u0377 \xb6\xf0\xb3\x1eRW\x91\x9b\x8f\x9e\x91\x063Wh\x06\xb45\x1aZ&\x89\xd3{\x9cq}\u2080\xe0\xd7\x17\xba*\xb4b\x9f\x82V\xa7\xffP\xf8\x91\xaaw\xaf\xae\xef/_^\xec\x82\xc3w\x8e\xe5Mn\x17\xe6 \u021d\u0313zW\x12\x02\xb6x\u0286dY_\t\xa9Xz\n0(\n\xae1{\xa3\u00edb\x8d\xe7\xd9S\xf1\x87\xa0\u0191\xc1/\x84\x97\x90\xfd\x18\xb9&d\xb6Kx\xab\\\xd9\u0604\x83\x12\x85\xa5r*\xed\u0487Gzo\xadK*\x82O#\x9b\"\xf2\xd8\u02fa\x97\u040aU\xd9\xf7\xf2\xf0E\x1a\xccW\x8c,\xf5\xeb\xd5\x06\x14\xc8i\x1fg(e\xce\xfa\f\xb8I_\x9blS\xca\"b\xbd\xa4\xcb\x15j\x83-R\x9a\xaey\n\x03\x88\x05\x1a\xaf,7\x97\xa6\x18\xd2\"\xdbN7J\x9b\x8a\nf\x02\x16(\xcc\b\xee\xe7\xbe\n\xa3\xf8\xb5)\xe6D\xdf\f\x1e|)\xdd5\xf9D\x99\x14\xaf\x84PV\xd9\t\xbe\xc5\x11\xab]\xe9\xcdwiC\x14\x05\xfdm\xa8\xdeI-2\xa1\x12Y\x0f\x12\xfa1\x9e\x90y\xe9[Y\xac\x98\x0e\xd7SB\u0464\xa8\x8a\xa6\x8a\xb0u\xc5bb`\xf1\xf5_T\xe7zLc\x01\xc7&\x86(\xb7;\x13w\xab`\x82\x1e\a\x98f\xdd\xfe\xbc`\x1e\u06f7\xd8*\xa2\xbe\xaa`\xd8\xca\xcdz\x0f\x00\xd6\x1a_\x89*\x88HXG\u02b26PHB\xad+(w\v\x82\xef[{[\xb6\x8c<\x99d\xafHO\xb7p\x93\xf5n3\xe5b\xb1}\xa4\x14I\xbbs\x9d+1=\x9a:\xe9\xe6\xf5\fl\xecV\xadd\xe1\x0eu\xe7\xba\xf2P\x9a\xech\xa5-\xd3U*k\x95\xc0\x8aB^p\xb1\x13v\x02|\xad\u06a3@;\x827\xaaDkYi\xf8\xae.e.\xa9\xfce\x8a\xc9\x06I\xd7\xdfh\xd7Qd\xd2\xccJ\xdaX\x8f\xb6\xaez\xa4O3\xae7r<\u051b\xa4\xdd\u7fe44\v0\x8b\xd9L\f\u0193\xf0\u0435\x88\xbb\x8f\xfe\xf9+\xed\xe8\xa1n\xf7\x86\xf3\xcbD\xfb\xa2\x8c\xdcv\xc6\xe5\x1d\xa5\x11f\xcd65\x1a\x8b\x05\xfa\x8d r\x83D%a\"\x8f.|\x83\xd4a_\x12\xcd\fz\xc3o\x83\x87pE\x86\xef0OB<\a\xdeN \x06g\xc2\xf8}\xa5\xf5\xda#\xec\x05\x9c\x8c\xe0>\x02\x10;\xf2? \x8e8\xba\xd0\x1c9\x9d\x87\xdc\u024e\x10\t>l\xa8y\xf8\x12\xb71D\x856A4\x96\nB\xb3\x909B\xf8\xa8\r\x04\x1b\xf67G\xa3\x8d\x1cg}\xd7)\x94\xa9\x06\x7fhd\xd8=\xa2\x84n\xb5\xe2\x94\xce*m\xac\u04d50-s#\x15\xf8\x97\x1cL\x82*\xba\xa2C\xce\xe4f\x7f6zS\xd4[\xc8\x06[R\x80\x97\xd4g#8\x97\x96K'4t\xd7[aH.m\xe7\x04\x1d\xab\x93\xd6\x17\xb0\\yS\x89\u0547\x01\xd6\"\x17/}\x17,\xeb\x15\x16|\xdf\xf6\xac\xee\x11\xaf(\xf2\xf9z\x89\x9a\xde-\x9d]U\xee>h\xde\xf1\xdb=\xbb\x83\u02fb]\xf8\xea\xec\xee\xf2.\n\xf7\xed\xe5\xfd\xb7\xd7o\xee\xe1\xed\xd9\xed\xed\xd9\xd5\xfd\xe5\xc5\x1d\\\u07e6\xdb\xf2\xd7_\xc3\xd9\xd5w\xf0\xbb\u02eb\xf3\fP\xfa\x1d\xe0w\xb5\xa1Ev+\x91\x1cW\x8a\xa4M\xda{\x10\xf7IE\x8cS-,\xbd\xa8\xb8 2\x9b!VO\xe1\xfe\xf2\xfe\xd5E\x06W\xd7W\xc3\u02eb\xafo/\xaf\xbe\xb9x}qu\x9f\xc1\xeb\x8b\u06d7\u07de]\u075f}u\xf9\xea\xf2\xfe;6\xa1\xaf/\xef\xaf.\xee\xfc\xf1\x81\xb3@\xe3\xe6\xec\xf6\xfe\xf2\xe5\x9bWg\xb7p\xf3\xe6\xf6\xe6\xfa\xee\xc2g[\xbf[XbI\xb5\x9a\xad\xb5\xb2\x92w\x1dxg\xc6W\x85\xab\xe6\"\xea\xda\xe8\xdaH\x82\xe7\xbc\xe0)4\xdc+e\xfb\xeb#n\xd2/\xf5\xddFk\x9b\x8ak\x95\x18\xae\xa5\xe5\xc8nu.\xbb2\xd9\a\xf5\xb0\xcf\xca\xdd\xd8t\xa3u\xb3\x98\xf5\xb6\xf7\xf9\b^u\"\xa5\x87^I1\x91%o\x9e_R\xe6\x05\\\x90\xed\x12\x1f\x9e\x86\xd2Pr\xb3\xd3\xcdQ\x9b6i\xb5\u011d,\xa7\x8dK[\x06\ng\xa5\x9c\xa1\xcaq?\xebv\xbb\xb3\x95Vn\xd7\xf9\xf9\xa0\xbd\xefy\xa0`\xa1\xc0RN\x18\xd01s3\xa3\xad\xed\xf6-\xe2\x94\x0eD\xee,\xef\x8eo\xf7\x0f\x1f=W\u048760\x89*+\xf9]\x06\xb1#\xc0\xaa\x15\x95\x98\xad\xf6\xf0\xe9\xe9x$\xa0?\x1c`k\xcce\xdfd\x93*\x97\x05\x01[\xbf\x95@\x00\xc6\xf7t\xa5(#\xd1\x18\xa1\xf3\xb9 \x11\xa1\x01a\xfc\x9e9e\xf1.W\u06e6t\xeb\x85.K\xb3\xe9bL\xe3\xafH\x15\x94\x99\xc4\u0574c\xb0\xf7\xde=\xf1\xc8\x15-\xbb\xd4\xde`gZ\x17KY\xa6\xbd\xc3\a\xb0N\u05f5\x98a\u0198\xa0!\u01a7B\x96\x8d\xf1\xd9H\x94\xd3F\xf5\xe0\x86\x93\xe0\x96\x93 \xb9\xae*2\xdeT\x1e~b\xb4\xfb\x19\xdb!\x01\xf4\xf5F\\\xa0\xd15\xd3E\xb1\x90\xbcI:\r\xc77\xac\x95A\b\xf1pC \xef=\xe07#8\xcb)'\x90\x14b\u4959\xcf\xfaD\x9d8\xc5\xdb9A\xf7Uw]\xdf,|\xefv[D\xa1\xf9\\k\xdf\x05\xe5N\xe7\xcaf;\xf7\\A\xc0\x149\x9ed \x98C\xa1r\xf4\x8b\xa8}\x1b4D\xbf\x96\xed\x0e+%]\xe7\x8f\xdd\xeem\x19y\a=)C\x17\x8aq\xcb\x01\x85\x1dB\xbe~\xabEZNR\xa1\xbe\x92ve\xbb\aG\xf0\xad^R%\xe4K\xc9N`,\u03c4p\xbf>>\u0462\xcad7\xa4\xc3\xdca[\x84\x9b\xb8\xe12\x05\xd2>\x8c2\xbf\x8ct\xfa]\x94>\xa2\xf7\x9d\xa2\xc4\fBO\x98j&9\xf5\xf1\x99\x1c\xde\xfb;\xcbf\xda\u0266\xc0)\xaa\xc2?1\xd7e\xb1\xa5u.L\u0151(\x82\xebN\x8a\xbd;7\xc6\xf4\xbbe\xa1s,\xacEC\xee\x13\x9a\xa8\xd9f\xdfx\xd2\x06\xb0\xd1/\x88\u07cb\xd2\u02f4\x03\xf3\xcb\xc4\x1a\x13\xd8\xd8\xf1\xe2\r\xf8\xe2\xea\x9c\xf2\xea\xb6cp\xfc\xfd\xd9\xcd\xcd\xc5\xd5\xf9\xe5\x1fNI\x85\xdc-\xa8\xeb\xb2\r\xc7\x17\u04a3{\x10_\u0472\xec\xf6\x92\x00\xe0\xfeG>\x90\x85c\x14\xab\u0744\b\xab\xb5,\xd1\xf0\x8fFB5\x97\xf5\x95\xfcTbYX@\x95\x97\xda\xfa\xa0?1\"\x7f@ga\xf7\x8f\x7f\xda\ud2d4R\xe41\u06f5\u04588\xaa\x86\xaa/\xa9\xa4G\xb0w\xae\u0573\xee\xbc@\u28d1\xf8\xbf\xec\x03W\xeb\\\xa6\u06b9n\u0282 ~\xc7G\xa8\x0e\x92\xb4\x9d\xec\u0352\xaf\xd8V9\xf1\xae\xdb\b\xe5\xa2\xde30\x82\xb7\b\xa2\xb4\x1a\f\xfa\xbbC\x9f4Fq\xbe\xd7\u06cd\xb5\x8cX}\xd9\u057fK\x8b3x\xd8Z\x9d`\x7fd\x85wH#'\x96\x1e\u072d\x8d\xe4\xc65\xc5\xe0]\xca\x15\xab;\x9f\xe1\xf0\v\xb1\x89\xc2\xcan?>H.\xee\xbbv\ud67e\xc9!L>\x97\x8b\x18)\xfb\xcd\xc4?\xb6m\xdb\xfe\t\xfe\xc8|\xeb\xe9\xfa.\xeb\x9f\xf8\xf6`$ER3\xad\x9aO\x96\x1e\b\x85=\xba\xa1;s\xb9\xff\x05\x91\x88\xf5\b\x05\x02\x9f\xbeB\xfb<\xc2x\xa9B\x19\u02a1\xb1\xb3\xa8\x0e\xe2$U\xbf\x9ep\xb7L\xac\xb4\xec\xa2!\v\x17\xcd\xfdCGN\xc3\xe9\xe7\xe1\xd1h\u030f\xfc\x18\x84\xfe\x18\xf6\bg\xce\x06i\x97rE^\x91=iWnx\f\x81\xff\x95\xf0;\x02o\x16\xdb\x1d\xe2\n\v\xd1\xc8\x19\xd6Le\x0e\xa5P\xb3F\xcc\x10fz\x81F\xad\x9f\xec\v\u0752\x1e\xaf\xdb\xcdu\x8d\x9e^\xdb\xf1\xf3\x1f\x1b\xe7\xff\u00ef\x7f\x0fF\xdf\u05cb\x8f\xf4\x1b\xa0\x9f\xf0\xfb\x9f\x17'O\xe7\xff?\xcdx\xfa\xfd\xcf/z<\xea\xff\x1f\xcd\xfb?\xec\xff/\x0e\xd7\xdf\xff\xf8\xe2\xf9\xf1\u0253\xff\x7f\x8a\xe1\xdf\xf5vCH\x8d+\xc4\xdf\ubca9p\xb0\xf2Z\xd8\u00d5\x17\xc0\xf9\xf7\x84}\xf9\xe6\xe6\xfc\xec\xfe\xe2\xb7\x03H\x0f\x19\xfb\xf7~\u054b\xd1C3A\xa3\u0421\x1dI}0\u044d*\x86\x93v\xd8\xfd\xe6\u00dc\u00b3\x16\xed\xb3\x01ae%J\xf9\xe7\xee\xb5kCX}\xb8^\fk\xa3\x9d?f\u053dh\xce:m\xc4\f_\x12\xc0\xbeZ\xe7('h']\xeb\t\x86[O\xe1\xcb;\xf9gn\xf7\x1e\x8e\xbf\x91t\x9f\x9a\x869-\x9a\x05\xf1\xf4\xe5\xe5\xcd\xf7g\xe7\xe7\xb7\x17ww\xbf\xf5K\x11n~\n_\u079c\xdd\x7f\xcbK\xcds\xb4\xf6\xb5.\xb0c\xf6\x16E\xf1\xd6H\x87\xaf\x85j\x9f\x10\xcf\xd3x\x1aO\xe3\xefg\xfcO\x00\x00\x00\xff\xff\xb7.\xbe\x91\x00^\x00\x00")
-
-func testExtendedTestdataWorkloadsCase83849TestMirrorHelm030TgzBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase83849TestMirrorHelm030Tgz, nil
-}
-
-func testExtendedTestdataWorkloadsCase83849TestMirrorHelm030Tgz() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase83849TestMirrorHelm030TgzBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case83849/test-mirror-helm-0.3.0.tgz", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase83864Isc_emptyYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  helm:
-    local:
-     - name: test-mirror-helm
-       path: test_mirror-helm-empty.tgz
-       imagePaths:
-        - "{.spec.template.spec.containers[*].env[*].value}"
-`)
-
-func testExtendedTestdataWorkloadsCase83864Isc_emptyYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase83864Isc_emptyYaml, nil
-}
-
-func testExtendedTestdataWorkloadsCase83864Isc_emptyYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase83864Isc_emptyYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case83864/isc_empty.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase83864Isc_errYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  helm:
-    local:
-     - name: test-mirror-helm
-       path: test-mirror-helm-err.tgz
-       imagePaths:
-        - "{.spec.template.spec.containers[*].env[*].value}"
-`)
-
-func testExtendedTestdataWorkloadsCase83864Isc_errYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase83864Isc_errYaml, nil
-}
-
-func testExtendedTestdataWorkloadsCase83864Isc_errYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase83864Isc_errYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case83864/isc_err.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase83864Isc_noYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  helm:
-    local:
-     - name: test-mirror-helm
-       path: test_mirror-helm-no.tgz
-       imagePaths:
-        - "{.spec.template.spec.containers[*].env[*].value}"
-`)
-
-func testExtendedTestdataWorkloadsCase83864Isc_noYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase83864Isc_noYaml, nil
-}
-
-func testExtendedTestdataWorkloadsCase83864Isc_noYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase83864Isc_noYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case83864/isc_no.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgz = []byte("\x1f\x8b\b\x14\x00\x00\x00\x00\x00\xff)\x00+aHR0cHM6Ly95b3V0dS5iZS96OVV6MWljandyTQo=Helm\x00\xec|oo$\xb7\x91\xb7\x9e\ax\xf0\xe0\xe6\xfd\xe5u\x9d\x82\xc3J@\xcfh$k\xb5\x8e\xec\v \xafd[\x97]I\x90\xb4\xd9\x18A`p\xbakfx\xea&\xdb${f;\xb8\x0fr\x9f\xe2>\u384ad7\xe7\x8fv\x1dg\xb3q\xce\xe2\x8b]MOw\xb1X\x7f\x7fU\xe4\xb4C\ub1954F\x9b\xe1\x1c\xcb\xea\xe0\xe5\\\x187jEU\xee|\xac1\x1e\x8f\xc7'\xc7\xc7\xfc\xffx<^\xff\x7f\xfc\xd9\xf1\xf1\xce\xe1\xf3\xf1\xf1\xd1\xc9\xe1g''\xe3\x9d\xf1\xe1\xf1\xf1\xf8\xc5\x0e\x8c?\x1a\a\xef\x19\x8du\xc2\xec\x8c\xff\xea\xb9\xd6\x17\xf7\x0f2D-\x7f\x8f\xc6J\xadNaq4\x10u\xdd}<\x1e\x1d\x8f\u0183\x02mnd\xed\xf8\u04b3o\xb1\xac\x80M\x04\xa6\xda\x00Y\x8fT3X\b#ucAVb\x86\xe0\u0349\xae;\xadK\v\xcf\x06\x0f\xd8.\xb5)\xec\xe9`\bg\xd2\xccD=\x18\xc2\xf5tZJ\x85\xf4\x97\x9b\xa3\x19<4\x13\xec&\x7f\xf6\xdb\x7f;\x1c\x1d\x9e\x8c\xc6\xc3\xf1\xb3A%\xa4rB*4LA\x89\nO\xe1\xf2\xab\xd7\x03\xff\u05fa\r\x0f\x16\x91\xcax\xf4\xd9h<\xf8{\xcb\xf8\xe7<6\xfc\x7f!\xca\x06\xedG\r\x00\x1f\xf2\xff\xe3\xa3\x17\xeb\xfe\x7fr\xfc\xe4\xff\x9fd\f\x87\xc3\xc1\xaf\xe1~.-H\v\x02\xbe;{\xfdj8\u0566\x12\xcea\x01SY\xe2h\xf0k8\u01fc\x14\x06\xd9\xd1\u0164D\vN\xc3\x04\xa1\x16\xd6b\x01R9\r\xadn(\"Tu)\x1c\xda\xd1``\xb0.e.^\xeaF\xb9S8\x1c\f8<\x9c\x0e\x00\f\xd6\xdaJ\xa7M{\n\x85\xce\x1f\u040c\xa4>\x90\x93*\xd7\x15\xfd7D\xe5\xd0\xd4FZ\x1cVZ\xcdt1\x19\xd6u~r\\\xe2\x00\xa0n\xca\xf2F\x972oO\xe1\xac\\\x8a\xd6\x0e\x00~\r\xd7\v4F\x16\xc4\xdb\x1cC(rb\x06\u02f9\xb6\b\x05NES:Z%}\x9ds\f\xeb\xc3\xddh\x00t\xf3)\xec\x1e\x8f\x8ew\x7f9!c\xc3\xff;\x05\x1e\x14X\x97\xba\xadP\xb9!\xdd\xf5\xd3C\xc2\a\xfc\xff\xf0h=\xff\x1f\x8d\x9f\x8f\x0f\x9f\xfc\xffS\x8c4\xff\x8b\xba\xb6\a\x8b\xc3\xc1\x83T\xc5)\x9cw\xea\x1fT\xe8D!\x9c \u05c5\x90~\xd5L\xaawC\xa9f\x06\xad\x1d\xd8\x1as\xffmpzK\x0eO\x9f-\x96\x98;mN\x81?\u04a8\x84\xcb\xe7\xaf\xc4\x04K{\xda]\xa4!\xea:\x12&\x8b\xe3\xef\xa2=\xf6w\xaer\x13G\xb9\x85\xdec4\x99\xaf\x8e\xe38r\u0743\x8cu*\xc3t\xd5\x1b\u07c2\x8f6\xa7\xf0C#Z\x8ad|\xdbA*\xa2S\xf6)\xb7\xe5QT\x8b\xcd\xf9\xd29\xcf\u07fc~\xfd\xdd\xf7\x97\xaf\u03fe\xb9\xd8z\x1f\x00\xe7\xecS\u060d\xd3\xd7FW\xe8\xe6\xd8\xd8\xfe\xcf\xc0\xc0\xee{\xa7zu\xfd\xcd\xf7\xaf.~\x7f\xf1\xea\x03\x13\x158if\xdbH\xd5\u06b8-\xe2\xf3st\x02\xbe\xd1\u019d\xc2\xe7\xe3\xcf\u01cf\xccS\x1b\xedt\xae\xcbS\xb8\x7fy\xf3\xcb\t\xc6\x7f\x87\xb1\x11\xffG\xdf\x7f\xf4\n\xf0C\xf8\xef\xe8\xf9\xc9\x06\xfe;:y\x8a\xff\x9fd\xfc\xbf_\xfd\xff\x9d\xff\xbb\xb3\xf3Z\xe4p}\a\x7f\x88\x1eH\xd7v\xfeigg\xe7hgg\xe7?wv\xf8\xf3\x7f\xff8\x92g\xf7\xf7\xb7\xe1Oz\xe2\xbfvvv~\xb5v\xcb\xff\xe9\xaf\xffs\xae\xab\x91\xa8\xeb\x12G?4\xc2\b\xe5\xa4\u009d\x1f\x0e\xc6\xe3\u03cf\xbe8y\xf19\x1e\x1e\x9dL\xbe\xf8\x1d>\x88/>\xf6\u069f\xc66\xff\x7fu\xf9\xf2\xe2\xea\xee\xe2\xe3\xcd\xf1\x97\xfb\xffg/\xc6O\xfe\xffi\u0193\xff\xff\xa2\xc7\x16\xff\xaf\r\x0e\r\xfe\xf0\xf1\xe6\xf8\t\xf9\xff\xf0\xc5S\xff\xe7\u04cc\x9f\xb7\xffG\x13y\xf2\xff\xbf\xd1\xd8\xe2\xff]\a\xe8c\xcd\xf1\x93\xf0\xff\u0453\xff\x7f\x92\xf1\xe4\xff\xbf\xe8\xb1\xc5\xff?\xfa\x0e\xd0_\xee\xff\xcf\xc7'\xc7O\xfe\xffI\xc6\xcf\xdb\xff\x9f\xf0\xff\xdfxl\xf8\xffG\xaf\xfe?\xe4\xff\xe4\xf5\xcf\xd7\xeb\xff\xe3\x17\u03df\xfc\xffS\x8c\xed\xfd\xf7d\x9c\xd5\"\x9f#\xbc\x929*\x8b\x8f\xf4\xeby\x84}$8\x1a\x8d3\xf8w\xa1\x1aaZ8\x1a\x8f\x8f\x1f}h\xee\\}zp\xb0\\.G\x82\xa7\x19i3;(\xfdT\xf6`@\x0f\xde_\u073e\xbe\x83\xb3\xabsxy}u~y\x7fy}u\a__\xdf\u009b\xbb\x8b\fn/nn\xaf\xcf\u07fc\xa4\xcb\x19\xdfu~yw\x7f{\xf9\xd5\x1b\xba\xc2\x04\x0eGp\x8eS\xa9\xa4\x93Z\xd9\xd1 p\xb3\x1bV\xb4\vv.\xca\x12*\x14\x8aw\x86\x1d\x9a\u0282P\x05\xe4Z\x15\xfe)>\xec\xd2X\xcc\xc0`mt\xd1\xe4t9\v\xa4\xe8\xdeBZg\u4921\xeb ,\x144%\x160i\xe1\x0esO\xe4\x10\xdc\xdc\xe8f6\x87\u07c0\x9e\x82\x9bK\v\x85\u039b\n\x95[\xe7K\x9b\r\xc6r]\xb7F\xce\xe6\x0e\xf4R\xa1\x01m\x00\x95\x93\xae\x05\u0478\xb96\xf2\xcf<_\xa0\xb3\xed\t7\x17\xbc\x01>\xf3Qv\xc67\x059$\f\xe0L\x94p\xc1\xa47\x98h\x14-\x90\xb9G\x109S\x89\\\xa8\x02DY\x062\xda\xcd10(yK^8\xde\x002\xba\xcc@\x18\x8c\x1fJf:\xa3\xd5\xd0\xd5F\x15h \xd7U\xa5U\xa0\x14n\x84\xa5tsO\xc7O8\x82\xaf\xb5a>\xea\xc6\xd4\u06a2\xed\xa5\xda)<\xeah7P\xd9\xe5\xa5X\u0613\xfb\xfeQ\xbdD\x93A!\r\u6398\x90\xca\xff\x9d\x81\u04d0\x8b\xc6\"\xdd\x17\xa8\xf8\xafX\x02\x06*\xa1\xc4\fIy4\xafm\xf2y`,\x83\xe5\x1cy\xf9\x93\xd6s/\x98v*\x99\xa5$k\xd2\x06\xf6\xa4\xdc\xf7\xea\xb1sY\x13\xa5\xa9\x9c\xba\x16j49\x91\xde{>\xfe\xd7}\x9eN\x1b\f\x82\x8f\x84\x1ag\x9dP\x05\xe9\xc0\u0385A\x1b)\xca}\x98\xa0\u00a9\u0325(W\xa9'|\xf6*\xffN7\xbb\xb0\xa7\r\xffev\xf7S\xad\v\xc52Y\u0222!Z\x06R\xfb\b\x04\xf0\x1d\x9a\\Zb\xa4FSIk\xd9\xe0\xd9\u03bc\x13\xb0Z6L\xedN7&\xc7]r\xafj\xdd\xd2j\x83S4\x06\v\xff\xed\x94%\xfe@ST\xba\x90S\x99\v\xf6\xaa\xa8`\xa9\xf2\xb2aQL\x1a\aJ;(e%iv\xa7\xc1\xea\xa9[\x92yY\x9e\x10r]`\xd6\xf9\x1e\x13\nd\xfc\rY\xf4\xff\xa9\x9c5\x86\xbf\xe7\xa30I\xf8\xb8\x9e\xfc\a\xe6n\x93u\xa1Z\x7f\u0360mJ\xf6\x8f\xa9\xd1\x15T\x98\u03c5\x92\xb9\x88\x0e\xe2\x8cP\u059f\xb4\t\x06\xc5W\xca\xf0q\n\x02\xbcx\x98\\\xb6\xba\xc0@cm\x99\xb9\xaejI\x0e\xa5\x99\xb9\xb0\xcc\x19*4\x82nYYp\x1a\xbdr\xad\u00999>\xd8\xe3}\xb7\xc2B\npm\x9d.\xfb\xad6\x0f\x1bAa\xa9\xcd\x03s\xccq\x88,\xadw\x01\xa9\xe22:\a\xf0\xa2\v\u02eaD\x81 \x16B\x96bRF\xffO\xe2RF\u0454\f0\x17\xc1\x94D\x17\x17btS\xda\xc9\x1c\xbb\xf0\xe6%\xc5\u01d28\xac8G\xb9\x85%\x14\xb9\r$\xf6\x84\x02|'\xaa\xbaDz\xb06z!\u00c3t\xe7Y]\xa3*\xe4;\x98`\xa9\x97\xfb\xbd\x14\xce\xd1\u0205pr\x81@\x02\xb1\xbb\xeb\x16@sl\x97AX}\xa0\xe4e\x10\x19\x9f\bK\xcaS\xec\x8a\x05\xcdA\xd6ot\xe5c\x15M\xc5\xea\"_X\xcee>O\x82\x01\x16\xd2iC\xeenp!Y\x95d\xc5J\xbb\xe0'\x80\xa5\x98h\x13?i\x13\u055czS FY\x0e-*\xc7\xd2\x17\xb0\x9c\ub49d\x02\xb4\x913\xa9D\xb9E\xe7\x9b\xf18\u01a9\xe9\x8a\xfbg\xb0.\xbe =\xb2\xe6\xa0;&\x1f\xb2\x86\xc1J\xc8\xce?\xb1\x16\x86-\x85\xe4\xc2\u02e8\xd0`\xd9B)\xd5\x03\vn\"\x15\u06c9\x12\x15\xeeG\xa5K\xe5\xd0LE\xceI\"Krd'\xd4\r\xa6H:\xa8\xa7\xbd\xd6_R(\x0f9~\xab\xc6\xd7}\xa0s\xd9d\xbeN\x80\xc1\xe1b.\xed\xf8 b+:a\x1b.\x02\x12\x89\x94\xb4\x97\r?\xa5\u0363\xccg\x89S8\x8a\xfaZ\x89\xb2\x8ca\xdb6\x93J\xba\x10<\"\xee`\xebb\u0399\xbd\xe0\n<\x11\xc7\xf1\rX\x11\xb5\xcc\xe9\xee\xbd\xd9\"\x05*\x14\x95yz\xb2\xf7\t\xceE9\x05=}\x1c\xbc\xfc\xb8l\x0f\xbb\u075a\xe2\xf1\x14\x9f\ufef0\xac\xa7\xc0'\x92\x8cV2\xcfH\v\x13Q\xb2\x1d-\r=\xa7\x18|4*H\x1f\xc8\vR\xa1c/(\x92\x93\xb3\xbd\xb3\xb0\xfcm\xf6\xdeT\xd4\u016et\x0e\xad\x12\x9e\xa0\x12\xb2\xa4\x87Ki\x9d\xcd\u0494\xd5A!\xdbZ\x87\x95MC\xb8\xb4\xb6AJ!9\xe7\xc8p\x87W?e>\x8fV:\xac\x95\n=K\xc2\u020a\x15$\xd2&\xb9\x15\xd2\xe6\x8d\xe5,\xcf3V\x1c/\x03\x8c|\xcb\x11\xafOM\xf8.\nau\xad\xd1\x1es\xadl-\xf3F7\xb6l\xa1\x12\xe6\x81B\x9f\xe9\xd1Q\x84\\h\xe5Lq\uc5cau\u0102\xddj\x89\x14\xacv\xaf\xb4\x03\x01\xa9\xaf\x8ev7]x\r_w\u02ce\x1e\xf8A\u0213\n\x90\xe2c\xb56)\u0305\x85\t\xa2\x02\x839r$\x9f\xb4+\xf3\xf4Nh\xf1\x87\x06\x95+i\xda\\\x9bZ\xfbtM\x807q?\x1f\x88\x8eF\xf0\r\xc1*\x9a\xf6e\xb7\xfc\x88\xac\xe0\xae\xf1\xc95\xd8\xea\xd6b&q\xb34*\xa3\xc8\xe7\x90\b\b(\x84LZ\x8f\xe2\x18\x17|\xa7\x1b\x10\x84\xf0jt\x8d(\xa3\xf9-\xb5)\x8b\xa5$\xac\xa1\xb4\x1a\xb2\xe6\xad\\\xf0\xc7a>\x17fF\x85\x93nE\xe9\xda\xe1\xd4 f \x8d\xc1\x85\xce)\x90od\xf3P\xff\u0444\xb1\xda\u008c\xe0`Mv\xbc\x11\xe9\xfap^7\x93R\xe6eK\x86Z\x97\xa2\xcd\xfa+5\x1a\x9fj-_\t\xc0\"\xad\xdbR\x98\xdf\xc5b\x06\xcb\x1b3nI\xe7\x1c[\xbc\x82>K\x14t#(\xe8\xfe/\xd0\xce\x1e\xbe\u02f1v\xe4`\xd6Egd\x06\xad/\x88\xf6\xa1\xf6kM\xb4W\x89\a\xcc`.\x16\xc8(/2\xc4u\xb4\x9eN\t\xe7i\xb0X\x96Y\xf8WV\xb56\xce+\xa6\x8b\x03\x01(\aT\xc8a&\xae\x8cD\xe0u\x14g\x15u]R\xb9\xa9U\xd9z)S\xec\n\xac\u5950\x95\r\xf7&\x8b\x9b\xb4\x9eH*\xdd.n*\xcc\xd1Za${\xe7\xd4H5\x8b\x15\r\u0298\xfbR\xc7\u07f3\xfb J\xad0d\xc4\\W\x13\xa9:T\u03cf\xad?\x10\x17\xe4+\u0710m\x9d\x0e o\x95\xb90\u0152T\x11s\xdd\b.\xa7\xa4\xff\xae\x16\xb2N:\xb2\xe9N)N\xce<\vb&\xe8k\x0er\xa1p\xdf\xeb\x13V\x87\xad\x8d\xb6v\xc8\x02\xa3e\xe4\xba!\xfc\xe4?K\x05\x02J\xb1\xb4\x8dt\xb4\xd4\x12g>\t\b\xd71\xdfc\x82\xb5\xa8\xf8\xbe\x00\xc79\xc13nC\xa9\xdd\xd3\xc9{\xe5\xb4qYQ\x1f\x15#U7G\x0f\xc5V-1B\xa6X\x8c\x06O\x89\x85F\xefc!\xe5ET\xe5\xb3\x03\xb9(i/\u068a\xb0\x11\xb0\x15\xc2u\xc6\xd7IWZ\xae\x13\v\x1f\n\x8eGp\x8bigh\xc4SW\xa2\xed#\xdbz\x14\xcau-#\xb6Y\x89G\xefAy\xac\x12\x82\x8dX\u0226\u02bc\x1d\x11\xa2\x91n\xae\xbb\x8c\xbcZ6\xfb\x14\xfeH$\xcb\xfaR\x88\x05\u049bV\x85\xe8\xb5<\xd5e\xa9\x97>\xbf\xc7\xd8u:\xe8\xea\xaa}\xbf\xd2\xc6:\x98\x11\xbf\u011e\xaf7\f\u6c96HA+\x85\xbe]uHcc\xa1\x82\xf3\xc3z%\xf1\x05\xa7\xd18\xe7$\x99\xd37nz(\x1d~\xcab}S\u01d0\t\x19]IEv\xe2\xabG\x9bLO!\xae3i\xa2I\xa5\xfb\x8c\x85\x81\x9e\xce\xea\xccy2\xb3A'\xa4\xca\"nNJx\xae\x0eT\xbb\xb1\xb8d\xe2n\xc2\xde 2\xf2\xb0>;f\xc1\xba3\n\x8b\x05\x12n\xca\x120\xc1&\xeazw\vk\xf3-\x88-\xfc\xac\x87\xd4U\xe4\xe6\xa3g\xa4\xc1\xcc\x15\x9a\x01m\x8d\x86\x96I\xe2\xf4\x1eg\\\x9f\xb8  \xf8\xf5\x85\xae\n\xad\u0627\xa0\xd5\xe9?\x14~\xa4\xea\u076b\xeb\xfb\u02d7\x17\xbb\xe0\xf0\x9dcy\x93\u06c59\br'\xf3\xa4\u0795\x84\x80-\x9e\xb2!Y\xd6WB*\x96\x9e\x02\f\x8a\x82k\xcc\xde\xe8p\xabX\xe3\x89\xf6T\xfc!\xa8qd\xf0\v\xe1%d?F\xae\t\x99\xed\x12\xde*W66\xe1\xa0Da\xa9\x9cJ\xbb\xf4\xe1\x91\xde[\ub48a\xe0\xd3\u0226\x88<\xf6\xb2\xee%\xb4bU\xf6\xbd<|\x91\x06\xf3\x15#K\xfdz\xb5\x01\x05r\xda\xc7\x19J\x99\xb3>\x03n\xd2\xd7&\u06d4\xb2\x88X/\xe9r\x85\xda`\x8b\x94\xa6k\x9e\xc2\x00b\x81\xc6+\xcb\u0365)\x86\xb4\u0236\u04cd\u04a6\xa2\x82\x99\x80\x05\n3\x82\xfb\xb9\xaf\xc2(~m\x8a9\xd17\x83\a_JwM>Q&\xc5+!\x94Uv\x82oq\xc4jWz\xf3]\xda\x10EA\x7f\x1b\xaawR\x8bL\xa8D\u0583\x84~\x8c'd^\xfaV\x16+\xa6\xc3\xf5\x94P4)\xaa\xa2\xa9\"l]\xb1\x98\x18X|\xfd\x17\u0579\x1e\xd3X\xc0\xb1\x89!\xca\xed\xce\xc4\xdd*\x98\xa0\xc7\x01\xa6Y\xb7?/\x98\xc7\xf6-\xb6\x8a\xa8\xaf*\x18\xb6r\xb3\xde\x03\x80\xb5\xc6W\xa2\n\"\x12\u0591\xb2\xac\r\x14\x92P\xeb\n\xca\u0742\xe0\xfb\xd6\u0796-#O&\xd9+\xd2\xd3-\xdcd\xbd\xdbL\xb9Xl\x1f)E\xd2\xee\\\xe7JL\x8f\xa6N\xbay=\x03\x1b\xbbU+Y\xb8C\u0779\xae<\x94&;Zi\xcbt\x95\xcaZ%\xb0\xa2\x90\xe7\\\uc11d\x00_\xab\xf6(\u040e\xe0\x8d*\xd1ZV\x1a\xbe\xabK\x99K*\x7f\x99b\xb2A\xd2\xf57\xdau\x14\x994\xb3\x926\u05a3\xad\xab\x1e\xe9\u04cc\xeb\x8d\x1c\x0f\xf5&i\xf7\xf9/)\xcd\x02\xccb6\x13\x83\xf1$<t-\xe2\xee\xa3\x7f\xfeJ;z\xa8\u06fd\xe1\xfc2\u047e(#\xb7\x9dqyGi\x84Y\xb3M\x8d\xc6b\x81~#\x88\xdc QI\x98\u0223\v\xdf u\u0617D3\x83\xde\xf0\xdb\xe0!\\\x91\xe1;\u0313\x10\u03c1\xb7\x13\x88\xc1\x990~_i\xbd\xf6\b{\x01'#\xb8\x8f\x00\u010e\xfc\x0f\x88#\x8e.4GN\xe7!w\xb2#D\x82\x0f\x1bj\x1e\xbe\xc4m\fQ\xa1M\x10\x8d\xa5\x82\xd0,d\x8e\x10>j\x03\xc1\x86\xfd\xcd\xd1h#\xc7Y\xdfu\ne\xaa\xc1\x1f\x1a\x19v\x8f(\xa1[\xad8\xa5\xb3J\x1b\xebt%L\xcb\xdcH\x05\xfe%\a\x93\xa0\x8a\xae\xe8\x903\xb9\u065f\x8d\xde\x14\xf5\x16\xb2\xc1\x96\x14\xe0%\xf5b\x04\xe7\xd2r\u9106\xeez+\f\u0265\ud720cu\xd2\xfa\x02\x96+o*\xb1\xfa0\xc0Z\xe4\xe2\xa5\xef\x82e\xbd\u0082\xef\u06de\xd5=\xe2\x15E>_/Q\u04fb\xa5\xb3\xab\xca\xdd\a\xcd;~\xbbgwpy\xb7\v_\x9d\xdd]\xdeE\u1fbd\xbc\xff\xf6\xfa\xcd=\xbc=\xbb\xbd=\xbb\xba\xbf\xbc\xb8\x83\xeb\xdbt[\xfe\xfak8\xbb\xfa\x0e~wyu\x9e\x01J\xbf\x03\xfc\xae6\xb4\xc8n%\x92\xe3J\x91\xb4I{\x0f\xe2>\xa9\x88q\xaa\x85\xa5\x17\x15\x17Df3\xc4\xea)\xdc_\u07bf\xba\xc8\xe0\xea\xfajxy\xf5\xf5\xed\xe5\xd57\x17\xaf/\xae\xee3x}q\xfb\xf2\u06f3\xab\xfb\xb3\xaf._]\xde\x7f\xc7&\xf4\xf5\xe5\xfd\xd5\u015d?>p\x16h\u071c\xdd\xde_\xbe|\xf3\xea\xec\x16n\xde\xdc\xde\\\xdf]\xf8l\xebw\vK,\xa9V\xb3\xb5VV\xf2\xae\x03\xef\xcc\xf8\xaap\xd5\\D]\x1b]\x1bI\xf0\x9c\x17<\x85\x86{\xa5l\x7f}\xc4M\xfa\xa5\xbe\xdbhmSq\xad\x12\u00f5\xb4\x1c\u066d\xceeW&\xfb\xa0\x1e\xf6Y\xb9\x1b\x9bn\xb4n\x16\xb3\xde\xf6>\x1f\xc1\xabN\xa4\xf4\xd0+)&\xb2\xe4\xcd\xf3K\u02bc\x80\v\xb2]\xe2\xc3\xd3P\x1aJnv\xba9j\xd3&\xad\x96\xb8\x93\xe5\xb4qi\xcb@\u1b143T9\xeeg\xddnw\xb6\xd2\xca\xed:?\x1f\xb4\xf7=\x0f\x14,\x14X\xca\t\x03:fnf\xb4\xb5\u077eE\x9c\u0481\u021d\xe5\xdd\xf1\xed\xfe\xe1\xa3\xe7J\xfa\xd0\x06&Qe%\xbf\xcb v\x04X\xb5\xa2\x12\xb3\xd5\x1e>=\x1d\x8f\x04\xf4\x87\x03l\x8d\xb9\xec\x9blR\xe5\xb2 `\xeb\xb7\x12\b\xc0\xf8\x9e\xae\x14e$\x1a#t>\x17$\"4 \x8c\xdf3\xa7,\xde\xe5j\u06d4n\xbd\xd0ei6]\x8ci\xfc\x15\xa9\x822\x93\xb8\x9av\f\xf6\u07bb'\x1e\xb9\xa2e\x97\xda\x1b\xecL\xebb)\u02f4w\xf8\x00\xd6\xe9\xba\x163\xcc\x18\x134\xc4\xf8T\u02321>\x1b\x89r\u06a8\x1e\xdcp\x12\xdcr\x12$\xd7UE\u019b\xca\xc3O\x8cv?c;$\x80\xbe\u0788\v4\xbaf\xba(\x16\x927I\xa7\xe1\xf8\x86\xb52\b!\x1en\b\xe4\xbd\a\xfcf\x04g9\xe5\x04\x92B\x8c\xbc4\xf3Y\x9f\xa8\x13\xa7x;'\xe8\xbe\xea\xae\ub6c5\xef\xddn\x8b(4\x9fk\xed\xbb\xa0\xdc\xe9\\\xd9l\xe7\x9e+\b\x98\"\u01d3\f\x04s(T\x8e~\x11\xb5o\x83\x86\xe8\u05f2\xdda\xa5\xa4\xeb\xfc\xb1\u06fd-#\xef\xa0'e\xe8B1n9\xa0\xb0C\xc8\xd7o\xb5H\xcbI*\xd4W\u04ael\xf7\xe0\b\xbe\xd5K\xaa\x84|)\xd9\t\x8c\xe5\x99\x10\xee\xd7\xc7'ZT\x99\xec\x86t\x98;l\x8bp\x137\\\xa6@\u0687Q\u65d1N\xbf\x8b\xd2G\xf4\xbeS\x94\x98A\xe8\tS\xcd$\xa7>>\x93\xc3{\x7fg\xd9L;\xd9\x148EU\xf8'\xe6\xba,\xb6\xb4\u0385\xa98\x12Ep\xddI\xb1w\xe7\u0198~\xb7,t\x8e\x85\xb5h\xc8}B\x135\xdb\xec\x1bO\xda\x006\xfa\x05\xf1{Qz\x99v`~\x99Xc\x02\x1b;^\xbc\x01_\\\x9dS^\xddv\f\x8e\xbf?\xbb\xb9\xb9\xb8:\xbf\xfc\xc3)\xa9\x90\xbb\x05u]\xb6\xe1\xf8Bzt\x0f\xe2+Z\x96\xdd^\x12\x00\xdc\xff\xc8\a\xb2p\x8cb\xb5\x9b\x10a\xb5\x96%\x1a\xfe\xd1H\xa8\u6cbe\x92\x9fJ,\v\v\xa8\xf2R[\x1f\xf4'F\xe4\x0f\xe8,\xec\xfe\xf1O\xbb}\x91R\x8a<f\xbb6\x1a\x13G\xd5P\xf5%\x95\xf4\b\xf6\u03b5z\u059d\x17H|4\x12\xff\x97}\xe0j\x9d\xcbT;\xd7MY\x10\xc4\xef\xf8\b\xd5A\x92\xb6\x93\xbdY\xf2\x15\xdb*'\xdeu\x1b\xa1\\\xd4{\x06F\xf0\x16A\x94V\x83A\x7fw\xe8\x93\xc6(\xce\xf7z\xbb\xb1\x96\x11\xab/\xbb\xfawiq\x06\x0f[\xab\x13\uc3ec\xf0\x0ei\xe4\xc4\u0483\xbb\xb5\x91\u0738\xa6\x18\xbcK\xb9bu\xe73\x1c~!6QX\xd9\xed\xc7\a\xc9\xc5}\u05ee=\xd379\x84\xc9\xe7r\x11#e\xbf\x99\xf8\u01f6m\xdb?\xc1\x1f\x99o=]\xdfe\xfd\x13\xdf\x1e\x8c\xa4Hj\xa6U\xf3\xc9\xd2\x03\xa1\xb0G7tg.\xf7\xbf \x12\xb1\x1e\xa1@\xe0\xd3Wh\x9fG\x18/U(C94v\x16\xd5A\x9c\xa4\xea\xd7\x13\ue589\x95\x96]4d\u18b9\x7f\xe8\xc8i8\xfd<<\x1a\x8d\xf9\x91\x1f\x83\xd0\x1f\xc3\x1e\xe1\xcc\xd9 \xedR\xae\xc8+\xb2'\xed\xca\r\x8f!\xf0\xbf\x12~G\xe0\xcdb\xbbC\\a!\x1a9\u00da\xa9\u0321\x14j\u0588\x19\xc2L/\u0428\xf5\x93}\xa1[\xd2\xe3u\xbb\xb9\xae\xd1\u04cb;~\xfec\xe3\xfc\x7f\xf8\xf5\xef\xc1\xe8\xfbz\xf1\x91~\x03\xf4\x13~\xff\xf3\xfc\xe4\xe9\xfc\xff\xa7\x19O\xbf\xff\xf9E\x8fG\xfd\xff\xa3y\xff\x87\xfd\xff\xf9\xe1\xfa\xfb\x1f\x9f\x7f\xf6|\xfc\xe4\xff\x9fb\xf8w\xbd\xdd\x10R\xe3\n\xf1\xf7\xbal*\x1c\xac\xbc\x16\xf6p\xe5\x05p\xfeMa_\xbe\xb99?\xbb\xbf\xf8\xed\x00\xd2C\xc6\xfe\xcd_\xf5b\xf4\xd0L\xd0(thGR\x1fLt\xa3\x8a\xe1\xa4\x1dv\xbf\xf90\xa7\xf0\xacE\xfbl@XY\x89R\xfe\xb9{\xed\xda\x10V\x1f\xae\x17\xc3\xdah\xe7\x8f\x19u/\x9a\xb3N\x1b1\u00d7\x04\xb0\xaf\xd69\xca\t\xdaI\xd7z\x82\xe1\xd6S\xf8\xf2N\xfe\x99\u06fd\x87\xe3o$\u0767\xa6aN\x8bfA<}yy\xf3\xfd\xd9\xf9\xf9\xed\xc5\xdd\xddo\xfdR\x84\x9b\x9f\u00977g\xf7\xdf\xf2R\xf3\x1c\xad}\xad\v\uc63dEQ\xbc5\xd2\xe1k\xa1\xda'\xc4\xf34\x9e\xc6\xd3\xf8\xc7\x19\xff\x13\x00\x00\xff\xff\xdd4\x05\xc5\x00^\x00\x00")
-
-func testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgzBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgz, nil
-}
-
-func testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgz() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgzBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case83864/test-mirror-helm-err.tgz", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase84007Config84007Yaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
-    packages: 
-    - name: ${package}
-`)
-
-func testExtendedTestdataWorkloadsCase84007Config84007YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase84007Config84007Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsCase84007Config84007Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase84007Config84007YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case84007/config-84007.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsCase84007OperatorsLst = []byte(`apicurio-registry-3
-dns-operator
-dpu-operator
-eap
-jws-operator
-kueue-operator
-limitador-operator
-odf-csi-addons-operator
-odr-cluster-operator
-odr-hub-operator
-openshift-cert-manager-operator
-rhpam-kogito-operator
-security-profiles-operator
-service-registry-operator
-smb-csi-driver-operator
-tang-operator
-topology-aware-lifecycle-manager
-volsync-product`)
-
-func testExtendedTestdataWorkloadsCase84007OperatorsLstBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsCase84007OperatorsLst, nil
-}
-
-func testExtendedTestdataWorkloadsCase84007OperatorsLst() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsCase84007OperatorsLstBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/case84007/operators.lst", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataWorkloadsCatlogLoggingsYaml = []byte(`apiVersion: mirror.openshift.io/v1alpha2
 kind: ImageSetConfiguration
 mirror:
@@ -112157,9 +108919,9 @@ spec:
     catalog:
       selector:
         matchLabels:
-          olm.operatorframework.io/metadata.name: cc-redhat-operator-index-v4-19
-      packageName: "volsync-product"
-      version: "v0.14.0"
+          olm.operatorframework.io/metadata.name: cc-redhat-operator-index-v4-17
+      packageName: "security-profiles-operator"
+      version: "v0.8.6"
       upgradeConstraintPolicy: "CatalogProvided"
 `)
 
@@ -112762,9 +109524,9 @@ apiVersion: mirror.openshift.io/v1alpha2
 archiveSize: 1
 mirror:
   operators:
-  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.16
     packages:
-      - name: nginx-ingress-operator
+      - name: portworx-certified
 `)
 
 func testExtendedTestdataWorkloadsConfig66986YamlBytes() ([]byte, error) {
@@ -112958,34 +109720,33 @@ var _testExtendedTestdataWorkloadsConfig72917Yaml = []byte(`kind: ImageSetConfig
 apiVersion: mirror.openshift.io/v2alpha1
 mirror:
   operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
     packages:
     - name: devworkspace-operator
       minVersion: "0.31.2"
     - name: nfd
-      maxVersion: "4.19.0-202509300824"
+      maxVersion: "4.15.0-202402210006"
     - name: cluster-logging
-      defaultChannel: stable-6.3
-      channels:
-      - name: stable-6.3
-        minVersion: 6.3.0
-        maxVersion: 6.3.1
+      defaultChannel: stable-6.0
+      minVersion: 6.0.1
+      maxVersion: 6.0.2
     - name: quay-bridge-operator
-      defaultChannel: stable-3.15
+      defaultChannel: stable-3.12
       channels:
-      - name: stable-3.15
-        minVersion: 3.15.1
+      - name: stable-3.12
+        minVersion: 3.12.5
     - name: quay-operator
       defaultChannel: stable-3.12
       channels:
       - name: stable-3.12
         maxVersion: "3.12.1"
     - name: odf-operator
-      defaultChannel: stable-4.19
+      defaultChannel: stable-4.14
       channels:
-      - name: stable-4.19
-        minVersion: "4.19.5-rhodf"
-        maxVersion: "4.19.5-rhodf"`)
+      - name: stable-4.14
+        minVersion: "4.14.10-rhodf"
+        maxVersion: "4.14.10-rhodf"
+`)
 
 func testExtendedTestdataWorkloadsConfig72917YamlBytes() ([]byte, error) {
 	return _testExtendedTestdataWorkloadsConfig72917Yaml, nil
@@ -113120,7 +109881,7 @@ var _testExtendedTestdataWorkloadsConfig72948Yaml = []byte(`apiVersion: mirror.o
 kind: ImageSetConfiguration
 mirror:
   operators:
-  - catalog: oci:///tmp/case72947/redhat-operator-index
+  - catalog: oci:////tmp/case72947/redhat-operator-index
     packages:
     - name: ocs-operator
       channels:
@@ -113218,13 +109979,16 @@ mirror:
   operators:
     - catalog: oci:///tmp/case72971/redhat-operator-index
       packages:
-        - name: dns-operator
-    - catalog: registry.redhat.io/redhat/redhat-marketplace-index:v4.19
+        - name: aws-load-balancer-operator
+    - catalog: registry.redhat.io/redhat/redhat-marketplace-index:v4.16
       packages:
       - name: aerospike-kubernetes-operator-rhmp
-    - catalog: registry.redhat.io/redhat/certified-operator-index:v4.19
+    - catalog: registry.redhat.io/redhat/certified-operator-index:v4.16
       packages:
       - name: nginx-ingress-operator
+    - catalog: registry.redhat.io/redhat/community-operator-index:v4.16
+      packages:
+      - name: seldon-operator
 `)
 
 func testExtendedTestdataWorkloadsConfig72971YamlBytes() ([]byte, error) {
@@ -113309,7 +110073,7 @@ var _testExtendedTestdataWorkloadsConfig72982Yaml = []byte(`kind: ImageSetConfig
 apiVersion: mirror.openshift.io/v2alpha1
 mirror:
   operators:
-  - catalog: oci:///tmp/case72982/redhat-operator-index
+  - catalog: oci:///test/redhat-operator-index
     packages:
     - name: aws-load-balancer-operator
 `)
@@ -113433,6 +110197,147 @@ func testExtendedTestdataWorkloadsConfig73377Yaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataWorkloadsConfig73419Yaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.14
+    packages:
+    - name: aws-load-balancer-operator
+      bundles:
+      - name: aws-load-balancer-operator.v1.1.1
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.16
+    packages:
+    - name: cluster-kube-descheduler-operator
+      bundles:
+      - name: clusterkubedescheduleroperator.v5.0.2
+`)
+
+func testExtendedTestdataWorkloadsConfig73419YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWorkloadsConfig73419Yaml, nil
+}
+
+func testExtendedTestdataWorkloadsConfig73419Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWorkloadsConfig73419YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-73419.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWorkloadsConfig73420Yaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.16
+    packages:
+    - name: cluster-kube-descheduler-operator
+      bundles:
+      - name: clusterkubedescheduleroperator.v5.0.2
+      - name: clusterkubedescheduleroperator.v3.0
+  - catalog: registry.redhat.io/redhat/community-operator-index:v4.14
+    packages:
+    - name: 3scale-community-operator
+      bundles:
+      - name: 3scale-community-operator.v0.9.1
+  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.14
+    packages:
+    - name: cockroachdb-certified
+      bundles:
+      - name: cockroach-operator.v2.13.1
+    - name: redhat-marketplace-operator
+      bundles:
+      - name: redhat-marketplace-operator.v2.14.2
+`)
+
+func testExtendedTestdataWorkloadsConfig73420YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWorkloadsConfig73420Yaml, nil
+}
+
+func testExtendedTestdataWorkloadsConfig73420Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWorkloadsConfig73420YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-73420.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWorkloadsConfig734211Yaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.14
+    full: true
+    packages:
+    - name: aws-load-balancer-operator
+      bundles:
+      - name: aws-load-balancer-operator.v1.1.0
+      - name: aws-load-balancer-operator.v1.1.1
+      - name: aws-load-balancer-operator.v0.2.0
+    - name: 3scale-operator
+      bundles:
+      - name: 3scale-operator.v0.10.0-mas
+      - name: 3scale-operator.v0.11.12
+`)
+
+func testExtendedTestdataWorkloadsConfig734211YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWorkloadsConfig734211Yaml, nil
+}
+
+func testExtendedTestdataWorkloadsConfig734211Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWorkloadsConfig734211YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-73421-1.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWorkloadsConfig73421Yaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.14
+    full: true
+    packages:
+    - name: aws-load-balancer-operator
+      channels:
+      - name: stable
+        minVersion: 5.6.0
+        maxVersion: 6.0.0
+      bundles:
+      - name: aws-load-balancer-operator.v1.1.0
+      - name: aws-load-balancer-operator.v1.1.1
+      - name: aws-load-balancer-operator.v0.2.0
+    - name: 3scale-operator
+      bundles:
+      - name: 3scale-operator.v0.10.0-mas
+      - name: 3scale-operator.v0.11.12
+`)
+
+func testExtendedTestdataWorkloadsConfig73421YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWorkloadsConfig73421Yaml, nil
+}
+
+func testExtendedTestdataWorkloadsConfig73421Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWorkloadsConfig73421YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-73421.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataWorkloadsConfig73452Yaml = []byte(`kind: ImageSetConfiguration
 apiVersion: mirror.openshift.io/v2alpha1
 mirror:
@@ -113467,7 +110372,7 @@ apiVersion: mirror.openshift.io/v2alpha1
 mirror:
    additionalImages:
    - name: quay.io/cilium/cilium-etcd-operator:v2.0.7@sha256:04b8327f7f992693c2cb483b999041ed8f92efc8e14f2a5f3ab95574a65ea2dc
-   - name: quay.io/coreos/etcd:v3.5.4@sha256:a67fb152d4c53223e96e818420c37f11d05c2d92cf62c05ca5604066c37295e9ab
+   - name: quay.io/coreos/etcd:v3.5.4@sha256:a67fb152d4c53223e96e818420c37f11d05c2d92cf62c05ca5604066c37295e9asss
 `)
 
 func testExtendedTestdataWorkloadsConfig73783YamlBytes() ([]byte, error) {
@@ -113518,9 +110423,9 @@ mirror:
     architectures:
     - amd64
     channels:
-    - name: eus-4.20
-      minVersion: '4.18.30'
-      maxVersion: '4.20.1'
+    - name: eus-4.14
+      minVersion: '4.12.59'
+      maxVersion: '4.14.0'
       shortestPath: true
       type: ocp
 `)
@@ -113684,9 +110589,9 @@ mirror:
     architectures:
     - amd64
     channels:
-    - name: eus-4.20
-      minVersion: '4.18.30'
-      maxVersion: '4.20.1'
+    - name: eus-4.14
+      minVersion: '4.12.59'
+      maxVersion: '4.14.0'
       shortestPath: true
       type: ocp
 `)
@@ -113706,20 +110611,91 @@ func testExtendedTestdataWorkloadsConfig74660Yaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataWorkloadsConfig74662Yaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  platform:
+    architectures:
+      - "amd64"
+    channels:
+      - name: stable
+        minVersion: 4.17.0
+        maxVersion: 4.17.3
+  operators:
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.17
+    packages:
+    - name: cluster-kube-descheduler-operator
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
+    packages:
+    - name: windows-machine-config-operator
+  - catalog: registry.redhat.io/redhat/redhat-kasturi-index:4
+    packages:
+    - name: cluster-kube-descheduler-operator
+  - catalog: icr.io/cpopen/noi-operator-catalog@sha256:ae39015ec2161a982c85d66456f23883dc19f85c00d5f3b2058f385fc5eacd50
+    packages:
+    - name: noi
+  - catalog: icr.io/cpopen/ibm-netcool-integrations-operator-catalog@sha256:f913349f3c05f02fb48b2faaa9959927266947b64be5884e49e64f8d1e0788a5
+    packages:
+    - name: netcool-integrations-operator
+  - catalog: icr.io/cpopen/tncp-catalog@sha256:dcf3a021269f7900cac8e2e8dd51cd32e087c35b68cf956d8d14565a4b9e7c55
+    packages:
+    - name: ibm-tncp-bundle
+  - catalog: icr.io/cpopen/ibm-cpd-cloud-native-postgresql-operator-catalog@sha256:b5debd3c4b129a67f30ffdd774a385c96b8d33fd9ced8baad4835dd8913eb177
+    packages:
+    - name: cloud-native-postgresql
+`)
+
+func testExtendedTestdataWorkloadsConfig74662YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWorkloadsConfig74662Yaml, nil
+}
+
+func testExtendedTestdataWorkloadsConfig74662Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWorkloadsConfig74662YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-74662.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataWorkloadsConfig75366Yaml = []byte(`kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  operators:
+  - catalog: quay.io/openshifttest/nginxolm-operator-index:mirrortest2
+`)
+
+func testExtendedTestdataWorkloadsConfig75366YamlBytes() ([]byte, error) {
+	return _testExtendedTestdataWorkloadsConfig75366Yaml, nil
+}
+
+func testExtendedTestdataWorkloadsConfig75366Yaml() (*asset, error) {
+	bytes, err := testExtendedTestdataWorkloadsConfig75366YamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-75366.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataWorkloadsConfig75422DeleteYaml = []byte(`apiVersion: mirror.openshift.io/v2alpha1
 kind: DeleteImageSetConfiguration
 delete:
   operators:
   - catalog: oci:///tmp/case75422/ibm-catalog
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
     packages:
     - name: windows-machine-config-operator
-  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.20
+  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.15
     packages:
     - name: nvidia-network-operator
-  - catalog: registry.redhat.io/redhat/community-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/community-operator-index:v4.15
     packages:
-    - name: reportportal-operator
+    - name: skupper-operator
 `)
 
 func testExtendedTestdataWorkloadsConfig75422DeleteYamlBytes() ([]byte, error) {
@@ -113742,15 +110718,15 @@ kind: ImageSetConfiguration
 mirror:
   operators:
   - catalog: oci:///tmp/case75422/ibm-catalog
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.15
     packages:
     - name: windows-machine-config-operator
-  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.20
+  - catalog: registry.redhat.io/redhat/certified-operator-index:v4.15
     packages:
     - name: nvidia-network-operator
-  - catalog: registry.redhat.io/redhat/community-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/community-operator-index:v4.15
     packages:
-    - name: reportportal-operator
+    - name: skupper-operator
 `)
 
 func testExtendedTestdataWorkloadsConfig75422YamlBytes() ([]byte, error) {
@@ -113825,9 +110801,9 @@ kind: ImageSetConfiguration
 mirror:
    platform:
     channels:
-    - name: stable-4.19
-      minVersion: 4.19.17
-      maxVersion: 4.19.17
+    - name: stable-4.12
+      minVersion: 4.12.61
+      maxVersion: 4.12.61
     kubeVirtContainer: true
 `)
 
@@ -113927,11 +110903,11 @@ var _testExtendedTestdataWorkloadsConfig76596Yaml = []byte(`kind: ImageSetConfig
 apiVersion: mirror.openshift.io/v2alpha1
 mirror:
   operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.16
     packages:
     - name: multiarch-tuning-operator
-      minVersion: 1.2.0
-      maxVersion: 1.2.0
+      minVersion: 0.9.0
+      maxVersion: 0.9.0
 `)
 
 func testExtendedTestdataWorkloadsConfig76596YamlBytes() ([]byte, error) {
@@ -114030,9 +111006,9 @@ var _testExtendedTestdataWorkloadsConfig79215Yaml = []byte(`kind: ImageSetConfig
 apiVersion: mirror.openshift.io/v2alpha1
 mirror:
   operators:
-  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
+  - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.17
     packages:
-    - name: volsync-product
+    - name: security-profiles-operator
 `)
 
 func testExtendedTestdataWorkloadsConfig79215YamlBytes() ([]byte, error) {
@@ -114184,284 +111160,6 @@ func testExtendedTestdataWorkloadsConfig79452V2Yaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-79452-v2.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig83582Yaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  platform:
-    channels:
-    - name: stable-4.18
-  blockedImages:
-  - name: "(aws|gcp|azure|ibm|openstack)"
-`)
-
-func testExtendedTestdataWorkloadsConfig83582YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig83582Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig83582Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig83582YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-83582.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig83875Yaml = []byte(`apiVersion: mirror.openshift.io/v2alpha1
-kind: ImageSetConfiguration
-mirror:
-  operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.18
-      packages:
-       - name: recipe
-`)
-
-func testExtendedTestdataWorkloadsConfig83875YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig83875Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig83875Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig83875YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-83875.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig86309Yaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.19
-      packages:
-      - name: rhbk-operator
-        defaultChannel: stable-v26.4
-        channels:
-        - name: 'stable-v26.4'
-          maxVersion: '26.4.6-opr.1'
-          minVersion: '26.4.6-opr.1'`)
-
-func testExtendedTestdataWorkloadsConfig86309YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig86309Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig86309Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig86309YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-86309.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig87962MultiCatalogYaml = []byte(`apiVersion: mirror.openshift.io/v2alpha1
-kind: ImageSetConfiguration
-mirror:
-  operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
-      packages:
-        - name: aws-load-balancer-operator
-    - catalog: registry.redhat.io/redhat/certified-operator-index:v4.20
-      packages:
-        - name: netscaler-operator
-`)
-
-func testExtendedTestdataWorkloadsConfig87962MultiCatalogYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig87962MultiCatalogYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig87962MultiCatalogYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig87962MultiCatalogYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-87962-multi-catalog.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig87962OperatorsYaml = []byte(`apiVersion: mirror.openshift.io/v2alpha1
-kind: ImageSetConfiguration
-mirror:
-  operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
-      packages:
-        - name: aws-load-balancer-operator
-        - name: file-integrity-operator
-`)
-
-func testExtendedTestdataWorkloadsConfig87962OperatorsYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig87962OperatorsYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig87962OperatorsYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig87962OperatorsYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-87962-operators.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig87992Yaml = []byte(`apiVersion: mirror.openshift.io/v2alpha1
-kind: ImageSetConfiguration
-mirror:
-  operators:
-    - catalog: registry.redhat.io/redhat/redhat-operator-index:v4.20
-      packages:
-        - name: aws-load-balancer-operator
-`)
-
-func testExtendedTestdataWorkloadsConfig87992YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig87992Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig87992Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig87992YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-87992.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig88132DigestYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  additionalImages:
-    - name: quay.io/openshifttest/hello-openshift@sha256:4200f438cf2e9446f6bcff9d67ceea1f69ed07a2f83363b7fb52529f7ddd8a83
-      targetTag: tag-1
-    - name: quay.io/openshifttest/hello-openshift@sha256:61b8f5e1a3b5dbd9e2c35fd448dc5106337d7a299873dd3a6f0cd8d4891ecc27
-      targetTag: tag-2
-`)
-
-func testExtendedTestdataWorkloadsConfig88132DigestYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig88132DigestYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig88132DigestYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig88132DigestYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-88132-digest.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig88132InvalidYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  additionalImages:
-    - name: registry.redhat.io/ubi8/ubi:latest
-      targetRepo: "invalid:@tag"
-    - name: registry.redhat.io/ubi9/ubi:latest
-`)
-
-func testExtendedTestdataWorkloadsConfig88132InvalidYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig88132InvalidYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig88132InvalidYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig88132InvalidYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-88132-invalid.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig88132TargetRepoTagYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  additionalImages:
-    - name: docker://registry.redhat.io/ubi9/ubi-minimal:latest
-      targetRepo: ubi-repo
-      targetTag: ubi-v9
-    - name: registry.access.redhat.com/ubi8/nginx-120:latest
-      targetRepo: nginx-repo
-      targetTag: stable-v1
-    - name: docker://quay.io/fedora/fedora:latest
-      targetRepo: fedora-repo
-      targetTag: fedora-test
-`)
-
-func testExtendedTestdataWorkloadsConfig88132TargetRepoTagYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig88132TargetRepoTagYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig88132TargetRepoTagYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig88132TargetRepoTagYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-88132-target-repo-tag.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig88132TargetRepoYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  additionalImages:
-    - name: docker://registry.redhat.io/ubi8/ubi:latest
-      targetRepo: custom-ns/my-ubi8
-`)
-
-func testExtendedTestdataWorkloadsConfig88132TargetRepoYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig88132TargetRepoYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig88132TargetRepoYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig88132TargetRepoYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-88132-target-repo.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsConfig88132TargetTagYaml = []byte(`kind: ImageSetConfiguration
-apiVersion: mirror.openshift.io/v2alpha1
-mirror:
-  additionalImages:
-    - name: registry.redhat.io/ubi8/ubi:latest
-      targetTag: v8
-`)
-
-func testExtendedTestdataWorkloadsConfig88132TargetTagYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsConfig88132TargetTagYaml, nil
-}
-
-func testExtendedTestdataWorkloadsConfig88132TargetTagYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsConfig88132TargetTagYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/config-88132-target-tag.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -115774,7 +112472,7 @@ objects:
   spec:
     containers:
     - name: defaultscheduler
-      image: quay.io/openshifttest/pause@sha256:b53f99c3b7fe37b6e0fd977c3a8b5991ef8d386a00ffa9aa892cfda99a657d55
+      image: quay.io/openshifttest/pause@sha256:e481caec2eb984ce023673a3ec280bf57dea8c0305009e246b019b3eef044f9e
 
 parameters:
 - name: DNAME
@@ -115811,7 +112509,7 @@ objects:
   spec:
     containers:
     - name: customscheduler
-      image: quay.io/openshifttest/pause@sha256:b53f99c3b7fe37b6e0fd977c3a8b5991ef8d386a00ffa9aa892cfda99a657d55
+      image: quay.io/openshifttest/pause@sha256:e481caec2eb984ce023673a3ec280bf57dea8c0305009e246b019b3eef044f9e
     schedulerName: "${SCHEDULERNAME}"
 
 parameters:
@@ -115852,7 +112550,7 @@ objects:
   spec:
     containers:
     - name: pause
-      image: quay.io/openshifttest/pause@sha256:b53f99c3b7fe37b6e0fd977c3a8b5991ef8d386a00ffa9aa892cfda99a657d55
+      image: quay.io/openshifttest/pause@sha256:e481caec2eb984ce023673a3ec280bf57dea8c0305009e246b019b3eef044f9e
 
 
 parameters:
@@ -116466,7 +113164,7 @@ objects:
   spec:
     containers:
     - name: pause
-      image: quay.io/openshifttest/pause@sha256:b53f99c3b7fe37b6e0fd977c3a8b5991ef8d386a00ffa9aa892cfda99a657d55
+      image: quay.io/openshifttest/pause@sha256:e481caec2eb984ce023673a3ec280bf57dea8c0305009e246b019b3eef044f9e
 
 
 parameters:
@@ -116689,7 +113387,7 @@ spec:
           matchLabels:
             foo: bar
       containers:
-      - image: quay.io/openshifttest/pause@sha256:b53f99c3b7fe37b6e0fd977c3a8b5991ef8d386a00ffa9aa892cfda99a657d55
+      - image: quay.io/openshifttest/pause@sha256:e481caec2eb984ce023673a3ec280bf57dea8c0305009e246b019b3eef044f9e
         name: pause
 `)
 
@@ -117011,9 +113709,9 @@ mirror:
     architectures:
       - "multi"
     channels:
-    - name: stable-4.19
-      minVersion: 4.19.16
-      maxVersion: 4.19.16
+    - name: stable-4.13
+      minVersion: 4.13.5
+      maxVersion: 4.13.6
 `)
 
 func testExtendedTestdataWorkloadsImagesetconfig65202YamlBytes() ([]byte, error) {
@@ -117046,9 +113744,9 @@ mirror:
       - "s390x"
       - "ppc64le"
     channels:
-    - name: stable-4.19
-      minVersion: 4.19.16
-      maxVersion: 4.19.16
+    - name: stable-4.13
+      minVersion: 4.13.5
+      maxVersion: 4.13.6
 `)
 
 func testExtendedTestdataWorkloadsImagesetconfig65203YamlBytes() ([]byte, error) {
@@ -117477,715 +114175,6 @@ func testExtendedTestdataWorkloadsInitcontainer66989Yaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYaml = []byte(`apiVersion: operator.openshift.io/v1
-kind: JobSetOperator
-metadata:
-  name: cluster
-spec:
-  logLevel: Normal
-  operatorLogLevel: Normal
-  managementState: Managed
-`)
-
-func testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobset/clusterresource-jobset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetCsJobsetYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: jobset-catalogsource-template
-objects:
-  - apiVersion: operators.coreos.com/v1alpha1
-    kind: CatalogSource
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      grpcPodConfig:
-        extractContent:
-          cacheDir: /tmp/cache
-          catalogDir: /configs
-        memoryTarget: 30Mi
-      publisher: "${PUBLISHER}"
-      sourceType: grpc
-      updateStrategy:
-        registryPoll:
-          interval: 15m
-      image: ${IMAGEINDEX}
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: IMAGEINDEX
-  - name: PUBLISHER
-`)
-
-func testExtendedTestdataWorkloadsJobsetCsJobsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetCsJobsetYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetCsJobsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetCsJobsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobset/cs-jobset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetIcspJobsetYaml = []byte(`apiVersion: operator.openshift.io/v1alpha1
-kind: ImageContentSourcePolicy
-metadata:
-  name: brew-jobset
-spec:
-  repositoryDigestMirrors:
-    - mirrors:
-        - registry.stage.redhat.io/job-set/jobset-operator-bundle
-      source: registry.redhat.io/job-set/jobset-operator-bundle
-    - mirrors:
-        - registry.stage.redhat.io/job-set/jobset-rhel9
-      source: registry.redhat.io/job-set/jobset-rhel9
-    - mirrors:
-        - registry.stage.redhat.io/job-set/jobset-rhel9-operator
-      source: registry.redhat.io/job-set/jobset-rhel9-operator
-`)
-
-func testExtendedTestdataWorkloadsJobsetIcspJobsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetIcspJobsetYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetIcspJobsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetIcspJobsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobset/icsp-jobset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYaml = []byte(`apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  annotations:
-    olm.providedAPIs: JobSetOperator.v1.operator.openshift.io
-  generateName: openshift-jobset-operator-
-  namespace: openshift-jobset-operator
-spec:
-  targetNamespaces:
-  - openshift-jobset-operator
-  upgradeStrategy: Default
-`)
-
-func testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobset/jobset-operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: subscription-template
-objects:
-- kind: Subscription
-  apiVersion: operators.coreos.com/v1alpha1
-  kind: Subscription
-  metadata:
-    name: "${NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    channel: "${CHANNELNAME}"
-    installPlanApproval: Automatic
-    name: "${NAME}"
-    source: "${OPSRCNAME}"
-    sourceNamespace: "${SOURCENAME}"
-    startingCSV: "${STARTINGCSV}"
-parameters:
-- name: NAME
-- name: NAMESPACE
-- name: CHANNELNAME
-- name: OPSRCNAME
-- name: SOURCENAME
-- name: STARTINGCSV
-`)
-
-func testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobset/jobset-subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYaml = []byte(`application:
-    shortName: oobttest
-config:
-    configVersion: 5
-general:
-    base_results_dir: "/tmp"
-    results_dir: "/tmp"
-    container:
-        type: none
-scanners:
-    generic_oobt:
-        toolDir: "/opt/rapidast/scanners/generic/tools"
-        results_dir: "/tmp"
-        inline: python3 /opt/rapidast/scanners/generic/tools/oobtkube.py -d 120 -p 12345 -i NodeIp -f /opt/rapidast/config/clusterresouce.yaml -o /tmp/oobtkube.sarif.json
-    generic_trivy:
-        toolDir: "/opt/rapidast/scanners/generic/tools"
-        results_dir: "/tmp"
-        container:
-            parameters:
-                validReturns:
-                    - 0
-        inline: trivy k8s --kubeconfig=/opt/rapidast/config/kubeconfig -n openshift-jobset-operator pod --severity=HIGH,CRITICAL --scanners=misconfig --report all --format json
-`)
-
-func testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobset/rapidast_config_jobset.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913Yaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  name: failjobset-action-84913
-spec:
-  failurePolicy:
-    maxRestarts: 3
-    rules:
-      # The JobSet will fail immediately when the leader job fails.
-      - action: FailJobSet
-        targetReplicatedJobs:
-        - leader
-  replicatedJobs:
-  - name: leader
-    replicas: 1
-    template:
-      spec:
-        # Set backoff limit to 0 so job will immediately fail if any pod fails.
-        backoffLimit: 0
-        completions: 2
-        parallelism: 2
-        template:
-          spec:
-            containers:
-            - name: leader
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                echo "JOB_COMPLETION_INDEX=$JOB_COMPLETION_INDEX"
-                if [[ "$JOB_COMPLETION_INDEX" == "0" ]]; then
-                  for i in $(seq 10 -1 1)
-                  do
-                    echo "Sleeping in $i"
-                    sleep 1
-                  done
-                  exit 1
-                fi
-                for i in $(seq 1 100)
-                do
-                  echo "$i"
-                  sleep 1
-                done
-  - name: workers
-    replicas: 1
-    template:
-      spec:
-        backoffLimit: 0
-        completions: 2
-        parallelism: 2
-        template:
-          spec:
-            containers:
-            - name: worker
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                sleep 100
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/failjobset-action-84913.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912Yaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  name: restartjobset-action-84912
-spec:
-  failurePolicy:
-    maxRestarts: 3
-    rules:
-      # The JobSet will restart when the leader job fails.
-      - action: RestartJobSet
-        targetReplicatedJobs:
-        - leader
-  replicatedJobs:
-  - name: leader
-    replicas: 1
-    template:
-      spec:
-        # Set backoff limit to 0 so job will immediately fail if any pod fails.
-        backoffLimit: 0
-        completions: 2
-        parallelism: 2
-        template:
-          spec:
-            containers:
-            - name: leader
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                echo "JOB_COMPLETION_INDEX=$JOB_COMPLETION_INDEX"
-                if [[ "$JOB_COMPLETION_INDEX" == "0" ]]; then
-                  for i in $(seq 10 -1 1)
-                  do
-                    echo "Sleeping in $i"
-                    sleep 1
-                  done
-                  exit 1
-                fi
-                for i in $(seq 1 100)
-                do
-                  echo "$i"
-                  sleep 1
-                done
-  - name: workers
-    replicas: 1
-    template:
-      spec:
-        backoffLimit: 0
-        completions: 2
-        parallelism: 2
-        template:
-          spec:
-            containers:
-            - name: worker
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                sleep 100
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/restartjobset-action-84912.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911Yaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  # rjimr stands for "restartjobsetandignoremaxrestarts"
-  name: rjimr-action-84911
-spec:
-  failurePolicy:
-    maxRestarts: 3
-    rules:
-      # The JobSet will restart an unlimited number of times
-      # when the leader job fails.
-      - action: RestartJobSetAndIgnoreMaxRestarts
-        targetReplicatedJobs:
-        - leader
-  replicatedJobs:
-  - name: leader
-    replicas: 1
-    template:
-      spec:
-        # Set backoff limit to 0 so job will immediately fail if any pod fails.
-        backoffLimit: 0
-        completions: 2
-        parallelism: 2
-        template:
-          spec:
-            containers:
-            - name: leader
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                echo "JOB_COMPLETION_INDEX=$JOB_COMPLETION_INDEX"
-                if [[ "$JOB_COMPLETION_INDEX" == "0" ]]; then
-                  for i in $(seq 10 -1 1)
-                  do
-                    echo "Sleeping in $i"
-                    sleep 1
-                  done
-                  exit 1
-                fi
-                for i in $(seq 1 1000)
-                do
-                  echo "$i"
-                  sleep 1
-                done
-  - name: workers
-    replicas: 1
-    template:
-      spec:
-        backoffLimit: 0
-        completions: 2
-        parallelism: 2
-        template:
-          spec:
-            containers:
-            - name: worker
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                sleep 1000
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911YamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911Yaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911Yaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911YamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/restartjobsetandignoremaxrestarts-action-84911.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  name: jobset-anyorder-82678
-spec:
-  startupPolicy:
-    startupPolicyOrder: AnyOrder
-  replicatedJobs:
-  - name: driver
-    template:
-      spec:
-        parallelism: 1
-        completions: 1
-        backoffLimit: 0
-        template:
-          spec:
-            containers:
-            - name: sleep
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command: 
-                - sleep
-              args:
-                - 300s
-              readinessProbe:
-                exec:
-                  command:
-                  - echo
-                  - "ready"
-                initialDelaySeconds: 100
-  - name: workers
-    template:
-      spec:
-        parallelism: 4
-        completions: 4
-        backoffLimit: 0
-        template:
-          spec:
-            containers:
-            - name: sleep
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command: 
-                - sleep
-              args:
-                - 100s
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/startuppolicy-82678-anyorder.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  name: jobset-inorder-82678
-spec:
-  startupPolicy:
-    startupPolicyOrder: InOrder
-  replicatedJobs:
-  - name: driver
-    template:
-      spec:
-        parallelism: 1
-        completions: 1
-        backoffLimit: 0
-        template:
-          spec:
-            containers:
-            - name: sleep
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command: 
-                - sleep
-              args:
-                - 600s
-              readinessProbe:
-                exec:
-                  command:
-                  - echo
-                  - "ready"
-                initialDelaySeconds: 120
-  - name: workers
-    template:
-      spec:
-        parallelism: 4
-        completions: 4
-        backoffLimit: 0
-        template:
-          spec:
-            containers:
-            - name: sleep
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command: 
-                - sleep
-              args:
-                - 200s
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/startuppolicy-82678-inorder.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  name: success-policy-all
-spec:
-# We want to declare our JobSet successful if workers finish.
-# If workers finish we should clean up the remaining replicatedJobs.
-  successPolicy:
-    operator: All
-    targetReplicatedJobs:
-    - workers
-  replicatedJobs:
-  - name: leader
-    replicas: 1
-    template:
-      spec:
-        # Set backoff limit to 0 so job will immediately fail if any pod fails.
-        backoffLimit: 0 
-        completions: 1
-        parallelism: 1
-        template:
-          spec:
-            containers:
-            - name: leader
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                sleep 100
-  - name: workers
-    replicas: 1
-    template:
-      spec:
-        backoffLimit: 0 
-        completions: 5
-        parallelism: 5
-        template:
-          spec:
-            containers:
-            - name: worker
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                if [[ "$JOB_COMPLETION_INDEX" == "0" ]]; then
-                  for i in $(seq 10 -1 1)
-                  do
-                    echo "Sleeping in $i"
-                    sleep 1
-                  done
-                  exit 1
-                fi
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/successpolicy-82671-all.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYaml = []byte(`apiVersion: jobset.x-k8s.io/v1alpha2
-kind: JobSet
-metadata:
-  name: success-policy-any
-spec:
-# We want to declare our JobSet successful if workers finish.
-# If workers finish we should clean up the remaining replicatedJobs.
-  successPolicy:
-    operator: Any
-    targetReplicatedJobs:
-    - workers
-  replicatedJobs:
-  - name: leader
-    replicas: 1
-    template:
-      spec:
-        # Set backoff limit to 0 so job will immediately fail if any pod fails.
-        backoffLimit: 0 
-        completions: 1
-        parallelism: 1
-        template:
-          spec:
-            containers:
-            - name: leader
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                sleep 100
-  - name: workers
-    replicas: 1
-    template:
-      spec:
-        completions: 5
-        parallelism: 5
-        successPolicy:
-          rules:
-            - succeededIndexes: 0,2-3
-              succeededCount: 1
-        template:
-          spec:
-            containers:
-            - name: worker
-              image: quay.io/openshifttest/hello-openshift:1.2.0
-              command:
-              - bash
-              - -xc
-              - |
-                if [[ "$JOB_COMPLETION_INDEX" == "0" ]]; then
-                    sleep 1; exit 0
-                else sleep 2; exit 1
-                fi
-`)
-
-func testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYaml, nil
-}
-
-func testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/jobsetoperand/successpolicy-82671-any.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataWorkloadsKubedeschedulerYaml = []byte(`apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
@@ -118609,286 +114598,6 @@ func testExtendedTestdataWorkloadsKubejobfailed73886Yaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/workloads/kubejobfailed-73886.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsIcspFullMirrorsYaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: icsp-template
-objects:
-- apiVersion: operator.openshift.io/v1alpha1
-  kind: ImageContentSourcePolicy
-  metadata:
-    name: "${NAME}"
-  spec:
-    repositoryDigestMirrors:
-    - mirrors:
-      - "${MIRRORS_1}" 
-      source: "${SOURCE_1}" 
-    - mirrors:
-      - "${MIRRORS_2}" 
-      source: "${SOURCE_2}"
-    - mirrors:
-      - "${MIRRORS_3}" 
-      source: "${SOURCE_3}"
-    - mirrors:
-      - "${MIRRORS_4}" 
-      source: "${SOURCE_4}"    
-parameters:
-- name: NAME
-- name: MIRRORS_1
-- name: SOURCE_1
-- name: MIRRORS_2
-- name: SOURCE_2
-- name: MIRRORS_3
-- name: SOURCE_3
-- name: MIRRORS_4
-- name: SOURCE_4`)
-
-func testExtendedTestdataWorkloadsLwsIcspFullMirrorsYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsIcspFullMirrorsYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsIcspFullMirrorsYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsIcspFullMirrorsYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/icsp-full-mirrors.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsLwsSampleYaml = []byte(`kind: Template
-apiVersion: template.openshift.io/v1
-metadata:
-  name: lws-template
-objects:
-- apiVersion: leaderworkerset.x-k8s.io/v1
-  kind: LeaderWorkerSet
-  metadata:
-    name: ${NAME}
-    namespace: ${NAMESPACE}
-  spec:
-    replicas: 4
-    leaderWorkerTemplate:
-      size: 3
-      workerTemplate:
-        spec:
-          containers:
-          - name: nginx
-            image: ${IMAGE}
-            resources:
-              limits:
-                cpu: "100m"
-              requests:
-                cpu: "50m"
-            ports:
-            - containerPort: 8080
-parameters:
-- name: NAME
-- name: NAMESPACE
-- name: IMAGE`)
-
-func testExtendedTestdataWorkloadsLwsLwsSampleYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsLwsSampleYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsLwsSampleYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsLwsSampleYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/lws-sample.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsLwsmanagerYaml = []byte(`apiVersion: operator.openshift.io/v1
-kind: LeaderWorkerSetOperator
-metadata:
-  name: cluster
-  namespace: openshift-lws-operator
-spec:
-  managementState: Managed
-  logLevel: Normal
-  operatorLogLevel: Normal`)
-
-func testExtendedTestdataWorkloadsLwsLwsmanagerYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsLwsmanagerYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsLwsmanagerYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsLwsmanagerYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/lwsManager.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsLws_catalogsourceYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: lws-catalogsource-template
-objects:
-  - apiVersion: operators.coreos.com/v1alpha1
-    kind: CatalogSource
-    metadata:
-      name: "${NAME}"
-      namespace: "${NAMESPACE}"
-    spec:
-      grpcPodConfig:
-        extractContent:
-          cacheDir: /tmp/cache
-          catalogDir: /configs
-        memoryTarget: 30Mi
-      publisher: "${PUBLISHER}"
-      sourceType: grpc
-      updateStrategy:
-        registryPoll:
-          interval: 15m
-      image: ${IMAGEINDEX}
-parameters:
-  - name: NAME
-  - name: NAMESPACE
-  - name: IMAGEINDEX
-  - name: PUBLISHER
-`)
-
-func testExtendedTestdataWorkloadsLwsLws_catalogsourceYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsLws_catalogsourceYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsLws_catalogsourceYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsLws_catalogsourceYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/lws_catalogsource.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsLws_operatorgroupYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: operatorgroup-template
-objects:
-- kind: OperatorGroup
-  apiVersion: operators.coreos.com/v1
-  metadata:
-    name: "${NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    targetNamespaces:
-    - "${NAMESPACE}"
-    upgradeStrategy: Default
-
-parameters:
-- name: NAME
-- name: NAMESPACE
-`)
-
-func testExtendedTestdataWorkloadsLwsLws_operatorgroupYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsLws_operatorgroupYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsLws_operatorgroupYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsLws_operatorgroupYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/lws_operatorgroup.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsLws_subscriptionYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: subscription-template
-objects:
-- kind: Subscription
-  apiVersion: operators.coreos.com/v1alpha1
-  kind: Subscription
-  metadata:
-    name: "${NAME}"
-    namespace: "${NAMESPACE}"
-  spec:
-    channel: "${CHANNELNAME}"
-    installPlanApproval: Automatic
-    name: "${NAME}"
-    source: "${OPSRCNAME}"
-    sourceNamespace: "${SOURCENAME}"
-    startingCSV: "${STARTINGCSV}"
-parameters:
-- name: NAME
-- name: NAMESPACE
-- name: CHANNELNAME
-- name: OPSRCNAME
-- name: SOURCENAME
-- name: STARTINGCSV
-`)
-
-func testExtendedTestdataWorkloadsLwsLws_subscriptionYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsLws_subscriptionYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsLws_subscriptionYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsLws_subscriptionYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/lws_subscription.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataWorkloadsLwsRapidast_config_lwsYaml = []byte(`application:
-    shortName: oobttest
-config:
-    configVersion: 5
-general:
-    base_results_dir: "/tmp"
-    results_dir: "/tmp"
-    container:
-        type: none
-scanners:
-    generic_oobt:
-        toolDir: "/opt/rapidast/scanners/generic/tools"
-        results_dir: "/tmp"
-        inline: python3 /opt/rapidast/scanners/generic/tools/oobtkube.py -d 120 -p 12345 -i NodeIp -f /opt/rapidast/config/clusterresouce.yaml -o /tmp/oobtkube.sarif.json
-    generic_trivy:
-        toolDir: "/opt/rapidast/scanners/generic/tools"
-        results_dir: "/tmp"
-        container:
-            parameters:
-                validReturns:
-                    - 0
-        inline: trivy k8s --kubeconfig=/opt/rapidast/config/kubeconfig -n openshift-lws-operator pod --severity=HIGH,CRITICAL --scanners=misconfig --report all --format json
-`)
-
-func testExtendedTestdataWorkloadsLwsRapidast_config_lwsYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataWorkloadsLwsRapidast_config_lwsYaml, nil
-}
-
-func testExtendedTestdataWorkloadsLwsRapidast_config_lwsYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataWorkloadsLwsRapidast_config_lwsYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/workloads/lws/rapidast_config_lws.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -120571,7 +116280,7 @@ objects:
             echo "--------------- show rapidash result -----------------"  
             
             echo "--------------- rapidash result end -----------------" 
-          image: quay.io/redhatproductsecurity/rapidast:2.9.1
+          image: quay.io/redhatproductsecurity/rapidast:2.7.0
           workingDir: "/tmp"
           imagePullPolicy: Always
           name: rapidast
@@ -121560,6 +117269,10 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/apiserverauth/deny-network-policy.yaml":                                                                                     testExtendedTestdataApiserverauthDenyNetworkPolicyYaml,
 	"test/extended/testdata/apiserverauth/endpointslice.yaml":                                                                                           testExtendedTestdataApiserverauthEndpointsliceYaml,
 	"test/extended/testdata/apiserverauth/hello-pod.json":                                                                                               testExtendedTestdataApiserverauthHelloPodJson,
+	"test/extended/testdata/apiserverauth/microshift-busybox-deployment.yaml":                                                                           testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYaml,
+	"test/extended/testdata/apiserverauth/microshift-busybox-kustomization.yaml":                                                                        testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYaml,
+	"test/extended/testdata/apiserverauth/microshift-hello-openshift-kustomization.yaml":                                                                testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYaml,
+	"test/extended/testdata/apiserverauth/microshift-hello-openshift.yaml":                                                                              testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYaml,
 	"test/extended/testdata/apiserverauth/microshift-pods-security-context.yaml":                                                                        testExtendedTestdataApiserverauthMicroshiftPodsSecurityContextYaml,
 	"test/extended/testdata/apiserverauth/microshift-pods-security-context2.yaml":                                                                       testExtendedTestdataApiserverauthMicroshiftPodsSecurityContext2Yaml,
 	"test/extended/testdata/apiserverauth/ocp-56229-ingress.yaml":                                                                                       testExtendedTestdataApiserverauthOcp56229IngressYaml,
@@ -121580,15 +117293,11 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/apiserverauth/ocp77919-webhook-configuration.yaml":                                                                          testExtendedTestdataApiserverauthOcp77919WebhookConfigurationYaml,
 	"test/extended/testdata/apiserverauth/ocp9853-limits.yaml":                                                                                          testExtendedTestdataApiserverauthOcp9853LimitsYaml,
 	"test/extended/testdata/apiserverauth/ocp9853-quota.yaml":                                                                                           testExtendedTestdataApiserverauthOcp9853QuotaYaml,
-	"test/extended/testdata/apiserverauth/pod-for-ping-microshift.json":                                                                                 testExtendedTestdataApiserverauthPodForPingMicroshiftJson,
 	"test/extended/testdata/apiserverauth/pod-for-ping.json":                                                                                            testExtendedTestdataApiserverauthPodForPingJson,
 	"test/extended/testdata/apiserverauth/pod-scc-runAsUser.yaml":                                                                                       testExtendedTestdataApiserverauthPodSccRunasuserYaml,
 	"test/extended/testdata/apiserverauth/pod-with-msgmax.yaml":                                                                                         testExtendedTestdataApiserverauthPodWithMsgmaxYaml,
 	"test/extended/testdata/apiserverauth/pod_with_multi_ports.json":                                                                                    testExtendedTestdataApiserverauthPod_with_multi_portsJson,
 	"test/extended/testdata/apiserverauth/pod_with_sysctls.yaml":                                                                                        testExtendedTestdataApiserverauthPod_with_sysctlsYaml,
-	"test/extended/testdata/apiserverauth/rapidast-config.yaml":                                                                                         testExtendedTestdataApiserverauthRapidastConfigYaml,
-	"test/extended/testdata/apiserverauth/rapidast-pod.yaml":                                                                                            testExtendedTestdataApiserverauthRapidastPodYaml,
-	"test/extended/testdata/apiserverauth/rapidast-privileged-sa.yaml":                                                                                  testExtendedTestdataApiserverauthRapidastPrivilegedSaYaml,
 	"test/extended/testdata/apiserverauth/sample-pod-ephemeral-container-complex.json":                                                                  testExtendedTestdataApiserverauthSamplePodEphemeralContainerComplexJson,
 	"test/extended/testdata/apiserverauth/service-monitor.yaml":                                                                                         testExtendedTestdataApiserverauthServiceMonitorYaml,
 	"test/extended/testdata/apiserverauth/skopeo-deployment.json":                                                                                       testExtendedTestdataApiserverauthSkopeoDeploymentJson,
@@ -121680,16 +117389,11 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/etcd/recurringbackup.yaml":                                                                                                  testExtendedTestdataEtcdRecurringbackupYaml,
 	"test/extended/testdata/etcd/recurringbkpdefault.yaml":                                                                                              testExtendedTestdataEtcdRecurringbkpdefaultYaml,
 	"test/extended/testdata/etcd/testpod.yaml":                                                                                                          testExtendedTestdataEtcdTestpodYaml,
-	"test/extended/testdata/hypershift/azure-wi-test-pod.yaml":                                                                                          testExtendedTestdataHypershiftAzureWiTestPodYaml,
-	"test/extended/testdata/hypershift/azure-wi-test-sa.yaml":                                                                                           testExtendedTestdataHypershiftAzureWiTestSaYaml,
 	"test/extended/testdata/hypershift/configmap-machineconfig.yaml":                                                                                    testExtendedTestdataHypershiftConfigmapMachineconfigYaml,
 	"test/extended/testdata/hypershift/kubelet-killer.yaml":                                                                                             testExtendedTestdataHypershiftKubeletKillerYaml,
 	"test/extended/testdata/hypershift/mhc.yaml":                                                                                                        testExtendedTestdataHypershiftMhcYaml,
-	"test/extended/testdata/hypershift/ping-for-pod-specific-node-template.yaml":                                                                        testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYaml,
 	"test/extended/testdata/hypershift/prestart-job.yaml":                                                                                               testExtendedTestdataHypershiftPrestartJobYaml,
-	"test/extended/testdata/hypershift/service-generic-template.yaml":                                                                                   testExtendedTestdataHypershiftServiceGenericTemplateYaml,
 	"test/extended/testdata/hypershift/workload.yaml":                                                                                                   testExtendedTestdataHypershiftWorkloadYaml,
-	"test/extended/testdata/hypershift/workload_nodeselector.yaml":                                                                                      testExtendedTestdataHypershiftWorkload_nodeselectorYaml,
 	"test/extended/testdata/image_registry/daemonset-trigger-annoation.yaml":                                                                            testExtendedTestdataImage_registryDaemonsetTriggerAnnoationYaml,
 	"test/extended/testdata/image_registry/dc-template.yaml":                                                                                            testExtendedTestdataImage_registryDcTemplateYaml,
 	"test/extended/testdata/image_registry/icsp-full-mirrors.yaml":                                                                                      testExtendedTestdataImage_registryIcspFullMirrorsYaml,
@@ -121727,49 +117431,33 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/kata/cc-feature-gates-cm.yaml":                                                                                              testExtendedTestdataKataCcFeatureGatesCmYaml,
 	"test/extended/testdata/kata/containerruntimeconfig_template.yaml":                                                                                  testExtendedTestdataKataContainerruntimeconfig_templateYaml,
 	"test/extended/testdata/kata/initdata.toml":                                                                                                         testExtendedTestdataKataInitdataToml,
-	"test/extended/testdata/kata/initdata_bm.toml":                                                                                                      testExtendedTestdataKataInitdata_bmToml,
-	"test/extended/testdata/kata/kataDeploymentTemplate.go.tmpl":                                                                                        testExtendedTestdataKataKatadeploymenttemplateGoTmpl,
-	"test/extended/testdata/kata/kataPodDefaultTemplate.go.tmpl":                                                                                        testExtendedTestdataKataKatapoddefaulttemplateGoTmpl,
 	"test/extended/testdata/kata/kataconfig.yaml":                                                                                                       testExtendedTestdataKataKataconfigYaml,
 	"test/extended/testdata/kata/kbs-auth-public-key":                                                                                                   testExtendedTestdataKataKbsAuthPublicKey,
 	"test/extended/testdata/kata/kbs-client-template.yaml":                                                                                              testExtendedTestdataKataKbsClientTemplateYaml,
 	"test/extended/testdata/kata/kbs-config-cm-020-template.yaml":                                                                                       testExtendedTestdataKataKbsConfigCm020TemplateYaml,
-	"test/extended/testdata/kata/kbs-config-cm-bm-template.yaml":                                                                                        testExtendedTestdataKataKbsConfigCmBmTemplateYaml,
 	"test/extended/testdata/kata/kbs-config-cm-template.yaml":                                                                                           testExtendedTestdataKataKbsConfigCmTemplateYaml,
-	"test/extended/testdata/kata/kbsconfig-snp-template.yaml":                                                                                           testExtendedTestdataKataKbsconfigSnpTemplateYaml,
-	"test/extended/testdata/kata/kbsconfig-tdx-template.yaml":                                                                                           testExtendedTestdataKataKbsconfigTdxTemplateYaml,
 	"test/extended/testdata/kata/kbsconfig-template.yaml":                                                                                               testExtendedTestdataKataKbsconfigTemplateYaml,
 	"test/extended/testdata/kata/namespace.yaml":                                                                                                        testExtendedTestdataKataNamespaceYaml,
-	"test/extended/testdata/kata/node-feature-rule-kata-template.yaml":                                                                                  testExtendedTestdataKataNodeFeatureRuleKataTemplateYaml,
-	"test/extended/testdata/kata/node-feature-rule-snp-template.yaml":                                                                                   testExtendedTestdataKataNodeFeatureRuleSnpTemplateYaml,
-	"test/extended/testdata/kata/node-feature-rule-tdx-template.yaml":                                                                                   testExtendedTestdataKataNodeFeatureRuleTdxTemplateYaml,
 	"test/extended/testdata/kata/operatorgroup.yaml":                                                                                                    testExtendedTestdataKataOperatorgroupYaml,
-	"test/extended/testdata/kata/pccs-deployment-template.yaml":                                                                                         testExtendedTestdataKataPccsDeploymentTemplateYaml,
-	"test/extended/testdata/kata/pccs-service-template.yaml":                                                                                            testExtendedTestdataKataPccsServiceTemplateYaml,
 	"test/extended/testdata/kata/peer-pod-aws-cm-template.yaml":                                                                                         testExtendedTestdataKataPeerPodAwsCmTemplateYaml,
 	"test/extended/testdata/kata/peer-pod-azure-cm-template.yaml":                                                                                       testExtendedTestdataKataPeerPodAzureCmTemplateYaml,
 	"test/extended/testdata/kata/peer-pod-gcp-cm-template.yaml":                                                                                         testExtendedTestdataKataPeerPodGcpCmTemplateYaml,
 	"test/extended/testdata/kata/peer-pod-libvirt-cm-template.yaml":                                                                                     testExtendedTestdataKataPeerPodLibvirtCmTemplateYaml,
+	"test/extended/testdata/kata/peer-pod-secret-aws.yaml":                                                                                              testExtendedTestdataKataPeerPodSecretAwsYaml,
+	"test/extended/testdata/kata/peer-pod-secret-azure.yaml":                                                                                            testExtendedTestdataKataPeerPodSecretAzureYaml,
+	"test/extended/testdata/kata/peer-pod-secret-libvirt.yaml":                                                                                          testExtendedTestdataKataPeerPodSecretLibvirtYaml,
 	"test/extended/testdata/kata/peer-pods-param-libvirt-cm-template.yaml":                                                                              testExtendedTestdataKataPeerPodsParamLibvirtCmTemplateYaml,
-	"test/extended/testdata/kata/peerpodCMTemplate.go.tmpl":                                                                                             testExtendedTestdataKataPeerpodcmtemplateGoTmpl,
-	"test/extended/testdata/kata/peerpodSecretTemplate.go.tmpl":                                                                                         testExtendedTestdataKataPeerpodsecrettemplateGoTmpl,
+	"test/extended/testdata/kata/pod-annotations-template.yaml":                                                                                         testExtendedTestdataKataPodAnnotationsTemplateYaml,
 	"test/extended/testdata/kata/podvm-image-gcp-template.yaml":                                                                                         testExtendedTestdataKataPodvmImageGcpTemplateYaml,
-	"test/extended/testdata/kata/qgs-template.yaml":                                                                                                     testExtendedTestdataKataQgsTemplateYaml,
 	"test/extended/testdata/kata/resource-policy-template.yaml":                                                                                         testExtendedTestdataKataResourcePolicyTemplateYaml,
 	"test/extended/testdata/kata/rvps-reference-values-template.yaml":                                                                                   testExtendedTestdataKataRvpsReferenceValuesTemplateYaml,
 	"test/extended/testdata/kata/security-policy-template.json":                                                                                         testExtendedTestdataKataSecurityPolicyTemplateJson,
-	"test/extended/testdata/kata/sgx-device-plugin.yaml":                                                                                                testExtendedTestdataKataSgxDevicePluginYaml,
 	"test/extended/testdata/kata/subscription_template.yaml":                                                                                            testExtendedTestdataKataSubscription_templateYaml,
-	"test/extended/testdata/kata/tdx-config.yaml":                                                                                                       testExtendedTestdataKataTdxConfigYaml,
-	"test/extended/testdata/kata/tdx-machine-config.yaml":                                                                                               testExtendedTestdataKataTdxMachineConfigYaml,
 	"test/extended/testdata/kata/testrun-cm-template.yaml":                                                                                              testExtendedTestdataKataTestrunCmTemplateYaml,
 	"test/extended/testdata/kata/testrunUpgradeCatalogImage.yaml":                                                                                       testExtendedTestdataKataTestrunupgradecatalogimageYaml,
 	"test/extended/testdata/kata/trustee-cosign-publickey.pem":                                                                                          testExtendedTestdataKataTrusteeCosignPublickeyPem,
-	"test/extended/testdata/kata/trustee-cosign-publickey2.pem":                                                                                         testExtendedTestdataKataTrusteeCosignPublickey2Pem,
 	"test/extended/testdata/kata/trustee-cosigned-pod.yaml":                                                                                             testExtendedTestdataKataTrusteeCosignedPodYaml,
-	"test/extended/testdata/kata/workload-deployment-securityContext-cocobm.yaml":                                                                       testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYaml,
 	"test/extended/testdata/kata/workload-deployment-securityContext.yaml":                                                                              testExtendedTestdataKataWorkloadDeploymentSecuritycontextYaml,
-	"test/extended/testdata/kata/workload-pod-securityContext-cocobm.yaml":                                                                              testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYaml,
 	"test/extended/testdata/kata/workload-pod-securityContext.yaml":                                                                                     testExtendedTestdataKataWorkloadPodSecuritycontextYaml,
 	"test/extended/testdata/ldap/groupsync.sh":                                                                                                          testExtendedTestdataLdapGroupsyncSh,
 	"test/extended/testdata/ldap/ldapserver-config-cm.yaml":                                                                                             testExtendedTestdataLdapLdapserverConfigCmYaml,
@@ -121859,7 +117547,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/logging/generatelog/container_json_log_template.json":                                                                       testExtendedTestdataLoggingGeneratelogContainer_json_log_templateJson,
 	"test/extended/testdata/logging/generatelog/container_json_log_template_unannoted.json":                                                             testExtendedTestdataLoggingGeneratelogContainer_json_log_template_unannotedJson,
 	"test/extended/testdata/logging/generatelog/container_non_json_log_template.json":                                                                   testExtendedTestdataLoggingGeneratelogContainer_non_json_log_templateJson,
-	"test/extended/testdata/logging/generatelog/logging-performance-app-generator.json":                                                                 testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJson,
 	"test/extended/testdata/logging/generatelog/multi_container_json_log_template.yaml":                                                                 testExtendedTestdataLoggingGeneratelogMulti_container_json_log_templateYaml,
 	"test/extended/testdata/logging/generatelog/multiline-error-log.yaml":                                                                               testExtendedTestdataLoggingGeneratelogMultilineErrorLogYaml,
 	"test/extended/testdata/logging/logfilemetricexporter/lfme.yaml":                                                                                    testExtendedTestdataLoggingLogfilemetricexporterLfmeYaml,
@@ -121870,9 +117557,7 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/logging/loki-log-alerts/loki-infra-recording-rule-template.yaml":                                                            testExtendedTestdataLoggingLokiLogAlertsLokiInfraRecordingRuleTemplateYaml,
 	"test/extended/testdata/logging/loki-log-alerts/user-workload-monitoring-config.yaml":                                                               testExtendedTestdataLoggingLokiLogAlertsUserWorkloadMonitoringConfigYaml,
 	"test/extended/testdata/logging/lokistack/fine-grained-access-roles.yaml":                                                                           testExtendedTestdataLoggingLokistackFineGrainedAccessRolesYaml,
-	"test/extended/testdata/logging/lokistack/lokistack-simple-ipv6-tls.yaml":                                                                           testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYaml,
 	"test/extended/testdata/logging/lokistack/lokistack-simple-ipv6.yaml":                                                                               testExtendedTestdataLoggingLokistackLokistackSimpleIpv6Yaml,
-	"test/extended/testdata/logging/lokistack/lokistack-simple-tls.yaml":                                                                                testExtendedTestdataLoggingLokistackLokistackSimpleTlsYaml,
 	"test/extended/testdata/logging/lokistack/lokistack-simple.yaml":                                                                                    testExtendedTestdataLoggingLokistackLokistackSimpleYaml,
 	"test/extended/testdata/logging/minIO/deploy.yaml":                                                                                                  testExtendedTestdataLoggingMinioDeployYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/48593.yaml":                                                          testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarder48593Yaml,
@@ -121903,7 +117588,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/elasticsearch.yaml":                                                  testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderElasticsearchYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/google-cloud-logging-multi-logids.yaml":                              testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGoogleCloudLoggingMultiLogidsYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/googleCloudLogging.yaml":                                             testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGooglecloudloggingYaml,
-	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/http-output-85490.yaml":                                              testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490Yaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/http-output.yaml":                                                    testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutputYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/https-61567.yaml":                                                    testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttps61567Yaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/https-output-ca.yaml":                                                testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpsOutputCaYaml,
@@ -121919,8 +117603,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/otlp.yaml":                                                           testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderOtlpYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/rsyslog-mtls.yaml":                                                   testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsyslogMtlsYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/rsyslog-serverAuth.yaml":                                             testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsyslogServerauthYaml,
-	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/s3-accessKey.yaml":                                                   testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYaml,
-	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/s3-iamRole.yaml":                                                     testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/splunk-mtls-passphrase.yaml":                                         testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsPassphraseYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/splunk-mtls.yaml":                                                    testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsYaml,
 	"test/extended/testdata/logging/observability.openshift.io_clusterlogforwarder/splunk-serveronly.yaml":                                              testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkServeronlyYaml,
@@ -121956,6 +117638,7 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/mco/change-fips.yaml":                                                                                                       testExtendedTestdataMcoChangeFipsYaml,
 	"test/extended/testdata/mco/change-maxpods-kubelet-config.yaml":                                                                                     testExtendedTestdataMcoChangeMaxpodsKubeletConfigYaml,
 	"test/extended/testdata/mco/change-policy-json.yaml":                                                                                                testExtendedTestdataMcoChangePolicyJsonYaml,
+	"test/extended/testdata/mco/change-worker-all-extensions.yaml":                                                                                      testExtendedTestdataMcoChangeWorkerAllExtensionsYaml,
 	"test/extended/testdata/mco/change-worker-duplicated-kernel-argument.yaml":                                                                          testExtendedTestdataMcoChangeWorkerDuplicatedKernelArgumentYaml,
 	"test/extended/testdata/mco/change-worker-extension-usbguard.yaml":                                                                                  testExtendedTestdataMcoChangeWorkerExtensionUsbguardYaml,
 	"test/extended/testdata/mco/change-worker-ign-version.yaml":                                                                                         testExtendedTestdataMcoChangeWorkerIgnVersionYaml,
@@ -121965,11 +117648,9 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/mco/change-workers-chrony-configuration.yaml":                                                                               testExtendedTestdataMcoChangeWorkersChronyConfigurationYaml,
 	"test/extended/testdata/mco/create-deployment.yaml":                                                                                                 testExtendedTestdataMcoCreateDeploymentYaml,
 	"test/extended/testdata/mco/create-pod.yaml":                                                                                                        testExtendedTestdataMcoCreatePodYaml,
-	"test/extended/testdata/mco/custom-machine-config-pool-osimagestream.yaml":                                                                          testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYaml,
 	"test/extended/testdata/mco/custom-machine-config-pool.yaml":                                                                                        testExtendedTestdataMcoCustomMachineConfigPoolYaml,
 	"test/extended/testdata/mco/custom-tls-profile-kubelet-config.yaml":                                                                                 testExtendedTestdataMcoCustomTlsProfileKubeletConfigYaml,
 	"test/extended/testdata/mco/disable-chrony.yaml":                                                                                                    testExtendedTestdataMcoDisableChronyYaml,
-	"test/extended/testdata/mco/extra-disks.yaml":                                                                                                       testExtendedTestdataMcoExtraDisksYaml,
 	"test/extended/testdata/mco/generic-container-runtime-config-label.yaml":                                                                            testExtendedTestdataMcoGenericContainerRuntimeConfigLabelYaml,
 	"test/extended/testdata/mco/generic-container-runtime-config.yaml":                                                                                  testExtendedTestdataMcoGenericContainerRuntimeConfigYaml,
 	"test/extended/testdata/mco/generic-kubelet-config-label.yaml":                                                                                      testExtendedTestdataMcoGenericKubeletConfigLabelYaml,
@@ -122075,17 +117756,12 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/netobserv/bpfman/catalog-source.yaml":                                                                                       testExtendedTestdataNetobservBpfmanCatalogSourceYaml,
 	"test/extended/testdata/netobserv/bpfman/image-digest-mirror-set.yaml":                                                                              testExtendedTestdataNetobservBpfmanImageDigestMirrorSetYaml,
 	"test/extended/testdata/netobserv/bpfman/namespace.yaml":                                                                                            testExtendedTestdataNetobservBpfmanNamespaceYaml,
-	"test/extended/testdata/netobserv/cert_manager_certificates_template.yaml":                                                                          testExtendedTestdataNetobservCert_manager_certificates_templateYaml,
 	"test/extended/testdata/netobserv/exporters/ipfix-collector.yaml":                                                                                   testExtendedTestdataNetobservExportersIpfixCollectorYaml,
-	"test/extended/testdata/netobserv/exporters/otel-collector-tls.yaml":                                                                                testExtendedTestdataNetobservExportersOtelCollectorTlsYaml,
-	"test/extended/testdata/netobserv/flowcollectorSlice_v1alpha1_template.yaml":                                                                        testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYaml,
+	"test/extended/testdata/netobserv/exporters/otel-collector.yaml":                                                                                    testExtendedTestdataNetobservExportersOtelCollectorYaml,
 	"test/extended/testdata/netobserv/flowcollector_v1beta2_template.yaml":                                                                              testExtendedTestdataNetobservFlowcollector_v1beta2_templateYaml,
-	"test/extended/testdata/netobserv/flowlogs_pipeline_hpa_template.yaml":                                                                              testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYaml,
 	"test/extended/testdata/netobserv/flowmetrics_v1alpha1_template.yaml":                                                                               testExtendedTestdataNetobservFlowmetrics_v1alpha1_templateYaml,
-	"test/extended/testdata/netobserv/gateway-api-template.yaml":                                                                                        testExtendedTestdataNetobservGatewayApiTemplateYaml,
 	"test/extended/testdata/netobserv/kafka/kafka-default.yaml":                                                                                         testExtendedTestdataNetobservKafkaKafkaDefaultYaml,
 	"test/extended/testdata/netobserv/kafka/kafka-metrics-config.yaml":                                                                                  testExtendedTestdataNetobservKafkaKafkaMetricsConfigYaml,
-	"test/extended/testdata/netobserv/kafka/kafka-node-pool.yaml":                                                                                       testExtendedTestdataNetobservKafkaKafkaNodePoolYaml,
 	"test/extended/testdata/netobserv/kafka/kafka-tls.yaml":                                                                                             testExtendedTestdataNetobservKafkaKafkaTlsYaml,
 	"test/extended/testdata/netobserv/kafka/kafka-topic.yaml":                                                                                           testExtendedTestdataNetobservKafkaKafkaTopicYaml,
 	"test/extended/testdata/netobserv/kafka/kafka-user.yaml":                                                                                            testExtendedTestdataNetobservKafkaKafkaUserYaml,
@@ -122110,16 +117786,12 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/netobserv/test-SYN-flood-client_template.yaml":                                                                              testExtendedTestdataNetobservTestSynFloodClient_templateYaml,
 	"test/extended/testdata/netobserv/test-nginx-client_template.yaml":                                                                                  testExtendedTestdataNetobservTestNginxClient_templateYaml,
 	"test/extended/testdata/netobserv/test-nginx-server_template.yaml":                                                                                  testExtendedTestdataNetobservTestNginxServer_templateYaml,
-	"test/extended/testdata/netobserv/test-ping-pods_template.yaml":                                                                                     testExtendedTestdataNetobservTestPingPods_templateYaml,
-	"test/extended/testdata/netobserv/test-tls-client_template.yaml":                                                                                    testExtendedTestdataNetobservTestTlsClient_templateYaml,
-	"test/extended/testdata/netobserv/test-tls-server_template.yaml":                                                                                    testExtendedTestdataNetobservTestTlsServer_templateYaml,
 	"test/extended/testdata/netobserv/testuser-client-server_template.yaml":                                                                             testExtendedTestdataNetobservTestuserClientServer_templateYaml,
 	"test/extended/testdata/netobserv/testuser-template-crb.yaml":                                                                                       testExtendedTestdataNetobservTestuserTemplateCrbYaml,
 	"test/extended/testdata/netobserv/virtualization/kubevirt-hyperconverged.yaml":                                                                      testExtendedTestdataNetobservVirtualizationKubevirtHyperconvergedYaml,
 	"test/extended/testdata/netobserv/virtualization/layer2-nad.yaml":                                                                                   testExtendedTestdataNetobservVirtualizationLayer2NadYaml,
-	"test/extended/testdata/netobserv/virtualization/test-vm-UDN_template.yaml":                                                                         testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYaml,
-	"test/extended/testdata/netobserv/virtualization/test-vm-localnet_template.yaml":                                                                    testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYaml,
-	"test/extended/testdata/netobserv/virtualization/test-vm-static-IP_template.yaml":                                                                   testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYaml,
+	"test/extended/testdata/netobserv/virtualization/test-vm1.yaml":                                                                                     testExtendedTestdataNetobservVirtualizationTestVm1Yaml,
+	"test/extended/testdata/netobserv/virtualization/test-vm2.yaml":                                                                                     testExtendedTestdataNetobservVirtualizationTestVm2Yaml,
 	"test/extended/testdata/networking/adminnetworkpolicy/anp-multi-pod-mixed-rule-template.yaml":                                                       testExtendedTestdataNetworkingAdminnetworkpolicyAnpMultiPodMixedRuleTemplateYaml,
 	"test/extended/testdata/networking/adminnetworkpolicy/anp-multi-rule-cidr-template.yaml":                                                            testExtendedTestdataNetworkingAdminnetworkpolicyAnpMultiRuleCidrTemplateYaml,
 	"test/extended/testdata/networking/adminnetworkpolicy/anp-multi-rule-template.yaml":                                                                 testExtendedTestdataNetworkingAdminnetworkpolicyAnpMultiRuleTemplateYaml,
@@ -122169,8 +117841,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/networking/hellosdn.yaml":                                                                                                   testExtendedTestdataNetworkingHellosdnYaml,
 	"test/extended/testdata/networking/hostport-pod.yaml":                                                                                               testExtendedTestdataNetworkingHostportPodYaml,
 	"test/extended/testdata/networking/httpserverPod-specific-node-template.yaml":                                                                       testExtendedTestdataNetworkingHttpserverpodSpecificNodeTemplateYaml,
-	"test/extended/testdata/networking/ingressnodefirewall/catalogsource-template.yaml":                                                                 testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYaml,
-	"test/extended/testdata/networking/ingressnodefirewall/image-digest-mirrorset.yaml":                                                                 testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYaml,
 	"test/extended/testdata/networking/ingressnodefirewall/infw-config.yaml":                                                                            testExtendedTestdataNetworkingIngressnodefirewallInfwConfigYaml,
 	"test/extended/testdata/networking/ingressnodefirewall/infw-icmp.yaml":                                                                              testExtendedTestdataNetworkingIngressnodefirewallInfwIcmpYaml,
 	"test/extended/testdata/networking/ingressnodefirewall/infw-icmpv6.yaml":                                                                            testExtendedTestdataNetworkingIngressnodefirewallInfwIcmpv6Yaml,
@@ -122185,11 +117855,10 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/networking/metallb/bfdprofile-template.yaml":                                                                                testExtendedTestdataNetworkingMetallbBfdprofileTemplateYaml,
 	"test/extended/testdata/networking/metallb/bgpadvertisement-template.yaml":                                                                          testExtendedTestdataNetworkingMetallbBgpadvertisementTemplateYaml,
 	"test/extended/testdata/networking/metallb/bgppeer-template.yaml":                                                                                   testExtendedTestdataNetworkingMetallbBgppeerTemplateYaml,
-	"test/extended/testdata/networking/metallb/catalogsource-template.yaml":                                                                             testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYaml,
 	"test/extended/testdata/networking/metallb/community-template.yaml":                                                                                 testExtendedTestdataNetworkingMetallbCommunityTemplateYaml,
+	"test/extended/testdata/networking/metallb/frr-master-singlestack-configmap-template.yaml":                                                          testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYaml,
 	"test/extended/testdata/networking/metallb/frr-master-singlestack-nad-template.yaml":                                                                testExtendedTestdataNetworkingMetallbFrrMasterSinglestackNadTemplateYaml,
 	"test/extended/testdata/networking/metallb/frr-master-singlestack-router-pod-template.yaml":                                                         testExtendedTestdataNetworkingMetallbFrrMasterSinglestackRouterPodTemplateYaml,
-	"test/extended/testdata/networking/metallb/image-digest-mirrorset.yaml":                                                                             testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYaml,
 	"test/extended/testdata/networking/metallb/ipaddresspool-template.yaml":                                                                             testExtendedTestdataNetworkingMetallbIpaddresspoolTemplateYaml,
 	"test/extended/testdata/networking/metallb/l2advertisement-template.yaml":                                                                           testExtendedTestdataNetworkingMetallbL2advertisementTemplateYaml,
 	"test/extended/testdata/networking/metallb/loadbalancer-svc-annotated-template.yaml":                                                                testExtendedTestdataNetworkingMetallbLoadbalancerSvcAnnotatedTemplateYaml,
@@ -122283,19 +117952,16 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/networking/networkpolicy/ipblock/ipBlock-ingress-single-CIDR-template.yaml":                                                 testExtendedTestdataNetworkingNetworkpolicyIpblockIpblockIngressSingleCidrTemplateYaml,
 	"test/extended/testdata/networking/networkpolicy/ipblock/ipBlock-ingress-single-multiple-CIDRs-template.yaml":                                       testExtendedTestdataNetworkingNetworkpolicyIpblockIpblockIngressSingleMultipleCidrsTemplateYaml,
 	"test/extended/testdata/networking/networkpolicy/netpol-30920-75540.yaml":                                                                           testExtendedTestdataNetworkingNetworkpolicyNetpol3092075540Yaml,
-	"test/extended/testdata/networking/networkpolicy/vap-npprotection-blockdeletion.yaml":                                                               testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYaml,
 	"test/extended/testdata/networking/nmstate/apply-route-template.yaml":                                                                               testExtendedTestdataNetworkingNmstateApplyRouteTemplateYaml,
 	"test/extended/testdata/networking/nmstate/apply-static-ip-route-template.yaml":                                                                     testExtendedTestdataNetworkingNmstateApplyStaticIpRouteTemplateYaml,
 	"test/extended/testdata/networking/nmstate/bond-policy-template.yaml":                                                                               testExtendedTestdataNetworkingNmstateBondPolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/bonding-policy-template.yaml":                                                                            testExtendedTestdataNetworkingNmstateBondingPolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/bridge-policy-template.yaml":                                                                             testExtendedTestdataNetworkingNmstateBridgePolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/bridge-with-hostname-policy-template.yaml":                                                               testExtendedTestdataNetworkingNmstateBridgeWithHostnamePolicyTemplateYaml,
-	"test/extended/testdata/networking/nmstate/catalogsource-template.yaml":                                                                             testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYaml,
 	"test/extended/testdata/networking/nmstate/dhcp-hostname-policy-template.yaml":                                                                      testExtendedTestdataNetworkingNmstateDhcpHostnamePolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/global-dns-nncp-recover-template.yaml":                                                                   testExtendedTestdataNetworkingNmstateGlobalDnsNncpRecoverTemplateYaml,
 	"test/extended/testdata/networking/nmstate/global-dns-nncp-template.yaml":                                                                           testExtendedTestdataNetworkingNmstateGlobalDnsNncpTemplateYaml,
 	"test/extended/testdata/networking/nmstate/iface-policy-template.yaml":                                                                              testExtendedTestdataNetworkingNmstateIfacePolicyTemplateYaml,
-	"test/extended/testdata/networking/nmstate/image-digest-mirrorset.yaml":                                                                             testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYaml,
 	"test/extended/testdata/networking/nmstate/ipsec-host2host-policy-template.yaml":                                                                    testExtendedTestdataNetworkingNmstateIpsecHost2hostPolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/lldp-policy-template.yaml":                                                                               testExtendedTestdataNetworkingNmstateLldpPolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/namespace-template.yaml":                                                                                 testExtendedTestdataNetworkingNmstateNamespaceTemplateYaml,
@@ -122315,7 +117981,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/networking/nmstate/static-hostname-policy-template.yaml":                                                                    testExtendedTestdataNetworkingNmstateStaticHostnamePolicyTemplateYaml,
 	"test/extended/testdata/networking/nmstate/subscription-template.yaml":                                                                              testExtendedTestdataNetworkingNmstateSubscriptionTemplateYaml,
 	"test/extended/testdata/networking/nmstate/vlan-policy-base-eth-template.yaml":                                                                      testExtendedTestdataNetworkingNmstateVlanPolicyBaseEthTemplateYaml,
-	"test/extended/testdata/networking/nmstate/vlan-policy-dualstack-template.yaml":                                                                     testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYaml,
 	"test/extended/testdata/networking/nmstate/vlan-policy-template.yaml":                                                                               testExtendedTestdataNetworkingNmstateVlanPolicyTemplateYaml,
 	"test/extended/testdata/networking/nodeservice-template.yaml":                                                                                       testExtendedTestdataNetworkingNodeserviceTemplateYaml,
 	"test/extended/testdata/networking/ocpbug-2827/hostport.yaml":                                                                                       testExtendedTestdataNetworkingOcpbug2827HostportYaml,
@@ -122381,14 +118046,11 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/networking/sriov/subscription-template.yaml":                                                                                testExtendedTestdataNetworkingSriovSubscriptionTemplateYaml,
 	"test/extended/testdata/networking/statefulset-hello.yaml":                                                                                          testExtendedTestdataNetworkingStatefulsetHelloYaml,
 	"test/extended/testdata/networking/tcpdump-daemonset-template.yaml":                                                                                 testExtendedTestdataNetworkingTcpdumpDaemonsetTemplateYaml,
-	"test/extended/testdata/networking/testpod-with-privilege.yaml":                                                                                     testExtendedTestdataNetworkingTestpodWithPrivilegeYaml,
 	"test/extended/testdata/networking/testpod-with-special-lifecycle.yaml":                                                                             testExtendedTestdataNetworkingTestpodWithSpecialLifecycleYaml,
 	"test/extended/testdata/networking/testpod.yaml":                                                                                                    testExtendedTestdataNetworkingTestpodYaml,
 	"test/extended/testdata/networking/udn/cudn_crd_dualstack_template.yaml":                                                                            testExtendedTestdataNetworkingUdnCudn_crd_dualstack_templateYaml,
 	"test/extended/testdata/networking/udn/cudn_crd_layer2_dualstack_template.yaml":                                                                     testExtendedTestdataNetworkingUdnCudn_crd_layer2_dualstack_templateYaml,
 	"test/extended/testdata/networking/udn/cudn_crd_layer2_singlestack_template.yaml":                                                                   testExtendedTestdataNetworkingUdnCudn_crd_layer2_singlestack_templateYaml,
-	"test/extended/testdata/networking/udn/cudn_crd_localnet_singlestack_template.yaml":                                                                 testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYaml,
-	"test/extended/testdata/networking/udn/cudn_crd_localnet_singlestack_with_vlan_template.yaml":                                                       testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYaml,
 	"test/extended/testdata/networking/udn/cudn_crd_matchexp_dualstack_template.yaml":                                                                   testExtendedTestdataNetworkingUdnCudn_crd_matchexp_dualstack_templateYaml,
 	"test/extended/testdata/networking/udn/cudn_crd_matchexp_layer2_dualstack_template.yaml":                                                            testExtendedTestdataNetworkingUdnCudn_crd_matchexp_layer2_dualstack_templateYaml,
 	"test/extended/testdata/networking/udn/cudn_crd_matchexp_layer2_singlestack_template.yaml":                                                          testExtendedTestdataNetworkingUdnCudn_crd_matchexp_layer2_singlestack_templateYaml,
@@ -122399,7 +118061,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/networking/udn/udn_crd_layer2_singlestack_template.yaml":                                                                    testExtendedTestdataNetworkingUdnUdn_crd_layer2_singlestack_templateYaml,
 	"test/extended/testdata/networking/udn/udn_crd_singlestack_template.yaml":                                                                           testExtendedTestdataNetworkingUdnUdn_crd_singlestack_templateYaml,
 	"test/extended/testdata/networking/udn/udn_nad_template.yaml":                                                                                       testExtendedTestdataNetworkingUdnUdn_nad_templateYaml,
-	"test/extended/testdata/networking/udn/udn_statefulset_template.yaml":                                                                               testExtendedTestdataNetworkingUdnUdn_statefulset_templateYaml,
 	"test/extended/testdata/networking/udn/udn_test_pod_annotation_template.yaml":                                                                       testExtendedTestdataNetworkingUdnUdn_test_pod_annotation_templateYaml,
 	"test/extended/testdata/networking/udn/udn_test_pod_annotation_template_node.yaml":                                                                  testExtendedTestdataNetworkingUdnUdn_test_pod_annotation_template_nodeYaml,
 	"test/extended/testdata/networking/udn/udn_test_pod_liveness_template.yaml":                                                                         testExtendedTestdataNetworkingUdnUdn_test_pod_liveness_templateYaml,
@@ -122418,7 +118079,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/node/ImageTagMirrorSet.yaml":                                                                                                testExtendedTestdataNodeImagetagmirrorsetYaml,
 	"test/extended/testdata/node/amq-operatorgroup-52384.yaml":                                                                                          testExtendedTestdataNodeAmqOperatorgroup52384Yaml,
 	"test/extended/testdata/node/amq-sub.yaml":                                                                                                          testExtendedTestdataNodeAmqSubYaml,
-	"test/extended/testdata/node/clusterimagepolicy.yaml":                                                                                               testExtendedTestdataNodeClusterimagepolicyYaml,
 	"test/extended/testdata/node/clusterresource-override.yaml":                                                                                         testExtendedTestdataNodeClusterresourceOverrideYaml,
 	"test/extended/testdata/node/cma-keda-controller-template.yaml":                                                                                     testExtendedTestdataNodeCmaKedaControllerTemplateYaml,
 	"test/extended/testdata/node/containerRuntimeConfig-crun.yaml":                                                                                      testExtendedTestdataNodeContainerruntimeconfigCrunYaml,
@@ -122472,6 +118132,7 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/node/pod-sigStore.yaml":                                                                                                     testExtendedTestdataNodePodSigstoreYaml,
 	"test/extended/testdata/node/pod-termination.yaml":                                                                                                  testExtendedTestdataNodePodTerminationYaml,
 	"test/extended/testdata/node/pod-user-namespace.yaml":                                                                                               testExtendedTestdataNodePodUserNamespaceYaml,
+	"test/extended/testdata/node/pod-wasm.yaml":                                                                                                         testExtendedTestdataNodePodWasmYaml,
 	"test/extended/testdata/node/pod-with-two-containers.yaml":                                                                                          testExtendedTestdataNodePodWithTwoContainersYaml,
 	"test/extended/testdata/node/pod-without-workload-cpu.yaml":                                                                                         testExtendedTestdataNodePodWithoutWorkloadCpuYaml,
 	"test/extended/testdata/node/pod-workload-cpu-without-anotation.yaml":                                                                               testExtendedTestdataNodePodWorkloadCpuWithoutAnotationYaml,
@@ -122500,6 +118161,42 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/node/vpa-subscription.yaml":                                                                                                 testExtendedTestdataNodeVpaSubscriptionYaml,
 	"test/extended/testdata/node/vpacontroller-70961.yaml":                                                                                              testExtendedTestdataNodeVpacontroller70961Yaml,
 	"test/extended/testdata/node/vpacontroller-70962.yaml":                                                                                              testExtendedTestdataNodeVpacontroller70962Yaml,
+	"test/extended/testdata/oap/certmanager/cert-generic.yaml":                                                                                          testExtendedTestdataOapCertmanagerCertGenericYaml,
+	"test/extended/testdata/oap/certmanager/cert-match-test-1.yaml":                                                                                     testExtendedTestdataOapCertmanagerCertMatchTest1Yaml,
+	"test/extended/testdata/oap/certmanager/cert-match-test-2.yaml":                                                                                     testExtendedTestdataOapCertmanagerCertMatchTest2Yaml,
+	"test/extended/testdata/oap/certmanager/cert-match-test-3.yaml":                                                                                     testExtendedTestdataOapCertmanagerCertMatchTest3Yaml,
+	"test/extended/testdata/oap/certmanager/cert-selfsigned-vault.yaml":                                                                                 testExtendedTestdataOapCertmanagerCertSelfsignedVaultYaml,
+	"test/extended/testdata/oap/certmanager/cert-selfsigned.yaml":                                                                                       testExtendedTestdataOapCertmanagerCertSelfsignedYaml,
+	"test/extended/testdata/oap/certmanager/cluster-monitoring-config.yaml":                                                                             testExtendedTestdataOapCertmanagerClusterMonitoringConfigYaml,
+	"test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-clouddns-ambient.yaml":                                                             testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYaml,
+	"test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-route53-ambient.yaml":                                                              testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYaml,
+	"test/extended/testdata/oap/certmanager/clusterissuer-acme-dns01-route53.yaml":                                                                      testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53Yaml,
+	"test/extended/testdata/oap/certmanager/clusterissuer-acme-multiple-solvers.yaml":                                                                   testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYaml,
+	"test/extended/testdata/oap/certmanager/deploy-hello-openshift.yaml":                                                                                testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYaml,
+	"test/extended/testdata/oap/certmanager/deploy-pebble-server.yaml":                                                                                  testExtendedTestdataOapCertmanagerDeployPebbleServerYaml,
+	"test/extended/testdata/oap/certmanager/exec-curl-helper.yaml":                                                                                      testExtendedTestdataOapCertmanagerExecCurlHelperYaml,
+	"test/extended/testdata/oap/certmanager/exec-helm-helper.yaml":                                                                                      testExtendedTestdataOapCertmanagerExecHelmHelperYaml,
+	"test/extended/testdata/oap/certmanager/helm-vault-tls-config.yaml":                                                                                 testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYaml,
+	"test/extended/testdata/oap/certmanager/issuer-acme-http01.yaml":                                                                                    testExtendedTestdataOapCertmanagerIssuerAcmeHttp01Yaml,
+	"test/extended/testdata/oap/certmanager/issuer-ca.yaml":                                                                                             testExtendedTestdataOapCertmanagerIssuerCaYaml,
+	"test/extended/testdata/oap/certmanager/issuer-google-cas.yaml":                                                                                     testExtendedTestdataOapCertmanagerIssuerGoogleCasYaml,
+	"test/extended/testdata/oap/certmanager/issuer-selfsigned.yaml":                                                                                     testExtendedTestdataOapCertmanagerIssuerSelfsignedYaml,
+	"test/extended/testdata/oap/certmanager/issuer-vault-approle.yaml":                                                                                  testExtendedTestdataOapCertmanagerIssuerVaultApproleYaml,
+	"test/extended/testdata/oap/certmanager/issuer-vault-bound-sa.yaml":                                                                                 testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYaml,
+	"test/extended/testdata/oap/certmanager/issuer-vault-static-sa.yaml":                                                                                testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYaml,
+	"test/extended/testdata/oap/certmanager/issuer-vault-token.yaml":                                                                                    testExtendedTestdataOapCertmanagerIssuerVaultTokenYaml,
+	"test/extended/testdata/oap/certmanager/konflux-fbc.yaml":                                                                                           testExtendedTestdataOapCertmanagerKonfluxFbcYaml,
+	"test/extended/testdata/oap/certmanager/namespace.yaml":                                                                                             testExtendedTestdataOapCertmanagerNamespaceYaml,
+	"test/extended/testdata/oap/certmanager/operatorgroup.yaml":                                                                                         testExtendedTestdataOapCertmanagerOperatorgroupYaml,
+	"test/extended/testdata/oap/certmanager/rapidast-config.yaml":                                                                                       testExtendedTestdataOapCertmanagerRapidastConfigYaml,
+	"test/extended/testdata/oap/certmanager/rapidast-pod.yaml":                                                                                          testExtendedTestdataOapCertmanagerRapidastPodYaml,
+	"test/extended/testdata/oap/certmanager/rapidast-privileged-sa.yaml":                                                                                testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYaml,
+	"test/extended/testdata/oap/certmanager/rapidast-results-sync-helper.yaml":                                                                          testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYaml,
+	"test/extended/testdata/oap/certmanager/rbac-secret-reader.yaml":                                                                                    testExtendedTestdataOapCertmanagerRbacSecretReaderYaml,
+	"test/extended/testdata/oap/certmanager/rbac-vault-bound-sa.yaml":                                                                                   testExtendedTestdataOapCertmanagerRbacVaultBoundSaYaml,
+	"test/extended/testdata/oap/certmanager/secret-vault-static-sa-token.yaml":                                                                          testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYaml,
+	"test/extended/testdata/oap/certmanager/servicemonitor.yaml":                                                                                        testExtendedTestdataOapCertmanagerServicemonitorYaml,
+	"test/extended/testdata/oap/certmanager/subscription.yaml":                                                                                          testExtendedTestdataOapCertmanagerSubscriptionYaml,
 	"test/extended/testdata/oap/eso/clustergenerator-password.yaml":                                                                                     testExtendedTestdataOapEsoClustergeneratorPasswordYaml,
 	"test/extended/testdata/oap/eso/externalsecret-awsps.yaml":                                                                                          testExtendedTestdataOapEsoExternalsecretAwspsYaml,
 	"test/extended/testdata/oap/eso/externalsecret-awssm.yaml":                                                                                          testExtendedTestdataOapEsoExternalsecretAwssmYaml,
@@ -122518,34 +118215,16 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/oap/eso/secretstore-gcpsm.yaml":                                                                                             testExtendedTestdataOapEsoSecretstoreGcpsmYaml,
 	"test/extended/testdata/oap/eso/secretstore-vault.yaml":                                                                                             testExtendedTestdataOapEsoSecretstoreVaultYaml,
 	"test/extended/testdata/oap/eso/subscription.yaml":                                                                                                  testExtendedTestdataOapEsoSubscriptionYaml,
-	"test/extended/testdata/oap/exec-helm-helper.yaml":                                                                                                  testExtendedTestdataOapExecHelmHelperYaml,
-	"test/extended/testdata/oap/konflux-fbc.yaml":                                                                                                       testExtendedTestdataOapKonfluxFbcYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-audit.yaml":                                                                                       testExtendedTestdataOapMustgatherMustgatherAuditYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-noupload.yaml":                                                                                    testExtendedTestdataOapMustgatherMustgatherNouploadYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-proxy.yaml":                                                                                       testExtendedTestdataOapMustgatherMustgatherProxyYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-pvc.yaml":                                                                                         testExtendedTestdataOapMustgatherMustgatherPvcYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-retain.yaml":                                                                                      testExtendedTestdataOapMustgatherMustgatherRetainYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-timeout.yaml":                                                                                     testExtendedTestdataOapMustgatherMustgatherTimeoutYaml,
-	"test/extended/testdata/oap/mustgather/mustgather-upload.yaml":                                                                                      testExtendedTestdataOapMustgatherMustgatherUploadYaml,
-	"test/extended/testdata/oap/mustgather/mustgather.yaml":                                                                                             testExtendedTestdataOapMustgatherMustgatherYaml,
-	"test/extended/testdata/oap/mustgather/namespace.yaml":                                                                                              testExtendedTestdataOapMustgatherNamespaceYaml,
-	"test/extended/testdata/oap/mustgather/operatorgroup.yaml":                                                                                          testExtendedTestdataOapMustgatherOperatorgroupYaml,
-	"test/extended/testdata/oap/mustgather/pvc.yaml":                                                                                                    testExtendedTestdataOapMustgatherPvcYaml,
-	"test/extended/testdata/oap/mustgather/reader-pod.yaml":                                                                                             testExtendedTestdataOapMustgatherReaderPodYaml,
-	"test/extended/testdata/oap/mustgather/subscription.yaml":                                                                                           testExtendedTestdataOapMustgatherSubscriptionYaml,
-	"test/extended/testdata/oap/operatorgroup.yaml":                                                                                                     testExtendedTestdataOapOperatorgroupYaml,
 	"test/extended/testdata/oap/sscsi/73739/spc_vault_pod.yaml":                                                                                         testExtendedTestdataOapSscsi73739Spc_vault_podYaml,
 	"test/extended/testdata/oap/sscsi/73739/vault_v1_secretproviderclass.yaml":                                                                          testExtendedTestdataOapSscsi73739Vault_v1_secretproviderclassYaml,
 	"test/extended/testdata/oap/sscsi/73739/vaultproviderplugin.yaml":                                                                                   testExtendedTestdataOapSscsi73739VaultproviderpluginYaml,
 	"test/extended/testdata/oap/sscsi/75963/gcpproviderplugin.yaml":                                                                                     testExtendedTestdataOapSscsi75963GcpproviderpluginYaml,
-	"test/extended/testdata/oap/sscsi/75963/invalid_sc_pod.yaml":                                                                                        testExtendedTestdataOapSscsi75963Invalid_sc_podYaml,
 	"test/extended/testdata/oap/sscsi/75963/sc_pod.yaml":                                                                                                testExtendedTestdataOapSscsi75963Sc_podYaml,
 	"test/extended/testdata/oap/sscsi/75970/sc_pod.yaml":                                                                                                testExtendedTestdataOapSscsi75970Sc_podYaml,
 	"test/extended/testdata/oap/sscsi/drivers.yaml":                                                                                                     testExtendedTestdataOapSscsiDriversYaml,
 	"test/extended/testdata/oap/sscsi/helm-vault-config.yaml":                                                                                           testExtendedTestdataOapSscsiHelmVaultConfigYaml,
 	"test/extended/testdata/oap/sscsi/operatorgroup.yaml":                                                                                               testExtendedTestdataOapSscsiOperatorgroupYaml,
 	"test/extended/testdata/oap/sscsi/subscription.yaml":                                                                                                testExtendedTestdataOapSscsiSubscriptionYaml,
-	"test/extended/testdata/oap/subscription.yaml":                                                                                                      testExtendedTestdataOapSubscriptionYaml,
 	"test/extended/testdata/oauthserver/cabundle-cm.yaml":                                                                                               testExtendedTestdataOauthserverCabundleCmYaml,
 	"test/extended/testdata/oauthserver/oauth-network.yaml":                                                                                             testExtendedTestdataOauthserverOauthNetworkYaml,
 	"test/extended/testdata/oauthserver/oauth-pod.yaml":                                                                                                 testExtendedTestdataOauthserverOauthPodYaml,
@@ -122589,6 +118268,10 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/olm/etcd-subscription-manual.yaml":                                                                                          testExtendedTestdataOlmEtcdSubscriptionManualYaml,
 	"test/extended/testdata/olm/etcd-subscription.yaml":                                                                                                 testExtendedTestdataOlmEtcdSubscriptionYaml,
 	"test/extended/testdata/olm/mc-workload-partition.yaml":                                                                                             testExtendedTestdataOlmMcWorkloadPartitionYaml,
+	"test/extended/testdata/olm/microshift/catalogsource-image-restricted.yaml":                                                                         testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml,
+	"test/extended/testdata/olm/microshift/og-all.yaml":                                                                                                 testExtendedTestdataOlmMicroshiftOgAllYaml,
+	"test/extended/testdata/olm/microshift/og-single.yaml":                                                                                              testExtendedTestdataOlmMicroshiftOgSingleYaml,
+	"test/extended/testdata/olm/microshift/olm-subscription.yaml":                                                                                       testExtendedTestdataOlmMicroshiftOlmSubscriptionYaml,
 	"test/extended/testdata/olm/og-allns.yaml":                                                                                                          testExtendedTestdataOlmOgAllnsYaml,
 	"test/extended/testdata/olm/og-multins.yaml":                                                                                                        testExtendedTestdataOlmOgMultinsYaml,
 	"test/extended/testdata/olm/olm-proxy-subscription.yaml":                                                                                            testExtendedTestdataOlmOlmProxySubscriptionYaml,
@@ -122625,7 +118308,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/olm/v1/clusterextension-withselectorlabel-OwnSingle.yaml":                                                                   testExtendedTestdataOlmV1ClusterextensionWithselectorlabelOwnsingleYaml,
 	"test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutChannel.yaml":                                                              testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutchannelYaml,
 	"test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutChannelVersion.yaml":                                                       testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutchannelversionYaml,
-	"test/extended/testdata/olm/v1/clusterextension-withselectorlabel-WithoutVersion.yaml":                                                              testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYaml,
 	"test/extended/testdata/olm/v1/clusterextension-withselectorlabel.yaml":                                                                             testExtendedTestdataOlmV1ClusterextensionWithselectorlabelYaml,
 	"test/extended/testdata/olm/v1/clusterextension.yaml":                                                                                               testExtendedTestdataOlmV1ClusterextensionYaml,
 	"test/extended/testdata/olm/v1/clusterextensionWithoutChannel.yaml":                                                                                 testExtendedTestdataOlmV1ClusterextensionwithoutchannelYaml,
@@ -122850,8 +118532,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/opm/render/validate/configs-wrong-ignore/example-operator/example-operator.json":                                            testExtendedTestdataOpmRenderValidateConfigsWrongIgnoreExampleOperatorExampleOperatorJson,
 	"test/extended/testdata/opm/render/validate/configs-wrong-ignore/example-operator/package.json":                                                     testExtendedTestdataOpmRenderValidateConfigsWrongIgnoreExampleOperatorPackageJson,
 	"test/extended/testdata/opm/render/validate/configs-wrong-ignore/wrong-etcd.json":                                                                   testExtendedTestdataOpmRenderValidateConfigsWrongIgnoreWrongEtcdJson,
-	"test/extended/testdata/ota/cvo/70980-pdb.yaml":                                                                                                     testExtendedTestdataOtaCvo70980PdbYaml,
-	"test/extended/testdata/ota/cvo/84027-test-pod.yaml":                                                                                                testExtendedTestdataOtaCvo84027TestPodYaml,
 	"test/extended/testdata/ota/cvo/bad-oauth.yaml":                                                                                                     testExtendedTestdataOtaCvoBadOauthYaml,
 	"test/extended/testdata/ota/cvo/cfg-ocp-66746/featureset.yaml":                                                                                      testExtendedTestdataOtaCvoCfgOcp66746FeaturesetYaml,
 	"test/extended/testdata/ota/cvo/cfg-ocp-66746/none-basecap.yaml":                                                                                    testExtendedTestdataOtaCvoCfgOcp66746NoneBasecapYaml,
@@ -122859,9 +118539,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/ota/cvo/cfg-ocp-66746/vcurrent-basecap.yaml":                                                                                testExtendedTestdataOtaCvoCfgOcp66746VcurrentBasecapYaml,
 	"test/extended/testdata/ota/cvo/cfg-ocp-66747/bad.yaml":                                                                                             testExtendedTestdataOtaCvoCfgOcp66747BadYaml,
 	"test/extended/testdata/ota/cvo/cfg-ocp-66747/gcp.yaml":                                                                                             testExtendedTestdataOtaCvoCfgOcp66747GcpYaml,
-	"test/extended/testdata/ota/cvo/cfg-ocp-84028/client.yaml":                                                                                          testExtendedTestdataOtaCvoCfgOcp84028ClientYaml,
-	"test/extended/testdata/ota/cvo/cfg-ocp-84028/server.yaml":                                                                                          testExtendedTestdataOtaCvoCfgOcp84028ServerYaml,
-	"test/extended/testdata/ota/cvo/cfg-ocp-84029/server.yaml":                                                                                          testExtendedTestdataOtaCvoCfgOcp84029ServerYaml,
 	"test/extended/testdata/ota/cvo/cincy-77520.json":                                                                                                   testExtendedTestdataOtaCvoCincy77520Json,
 	"test/extended/testdata/ota/cvo/cincy-79981.json":                                                                                                   testExtendedTestdataOtaCvoCincy79981Json,
 	"test/extended/testdata/ota/cvo/cincy-conditional-edge-invalid-multi-risks.json":                                                                    testExtendedTestdataOtaCvoCincyConditionalEdgeInvalidMultiRisksJson,
@@ -122873,7 +118550,7 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/ota/cvo/co-test.yaml":                                                                                                       testExtendedTestdataOtaCvoCoTestYaml,
 	"test/extended/testdata/ota/cvo/ocp-66751.yaml":                                                                                                     testExtendedTestdataOtaCvoOcp66751Yaml,
 	"test/extended/testdata/ota/osus/Dockerfile":                                                                                                        testExtendedTestdataOtaOsusDockerfile,
-	"test/extended/testdata/ota/osus/imageset-config-v2.yaml":                                                                                           testExtendedTestdataOtaOsusImagesetConfigV2Yaml,
+	"test/extended/testdata/ota/osus/imageset-config.yaml":                                                                                              testExtendedTestdataOtaOsusImagesetConfigYaml,
 	"test/extended/testdata/ota/osus/ipv6.yaml":                                                                                                         testExtendedTestdataOtaOsusIpv6Yaml,
 	"test/extended/testdata/ota/osus/operatorgroup.yaml":                                                                                                testExtendedTestdataOtaOsusOperatorgroupYaml,
 	"test/extended/testdata/ota/osus/subscription.yaml":                                                                                                 testExtendedTestdataOtaOsusSubscriptionYaml,
@@ -122908,7 +118585,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/psap/nto/deferred-nto-update-patch.yaml":                                                                                    testExtendedTestdataPsapNtoDeferredNtoUpdatePatchYaml,
 	"test/extended/testdata/psap/nto/deferred-nto.yaml":                                                                                                 testExtendedTestdataPsapNtoDeferredNtoYaml,
 	"test/extended/testdata/psap/nto/disable-https-mcp.yaml":                                                                                            testExtendedTestdataPsapNtoDisableHttpsMcpYaml,
-	"test/extended/testdata/psap/nto/disable-https-pp-ppc64le.yaml":                                                                                     testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYaml,
 	"test/extended/testdata/psap/nto/disable-https-pp.yaml":                                                                                             testExtendedTestdataPsapNtoDisableHttpsPpYaml,
 	"test/extended/testdata/psap/nto/hp-performanceprofile-patch.yaml":                                                                                  testExtendedTestdataPsapNtoHpPerformanceprofilePatchYaml,
 	"test/extended/testdata/psap/nto/hp-performanceprofile.yaml":                                                                                        testExtendedTestdataPsapNtoHpPerformanceprofileYaml,
@@ -122938,7 +118614,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/psap/nto/tuning-maxpid.yaml":                                                                                                testExtendedTestdataPsapNtoTuningMaxpidYaml,
 	"test/extended/testdata/psap/nto/worker-stack-tuned.yaml":                                                                                           testExtendedTestdataPsapNtoWorkerStackTunedYaml,
 	"test/extended/testdata/psap/pao/pao-baseprofile-mcp.yaml":                                                                                          testExtendedTestdataPsapPaoPaoBaseprofileMcpYaml,
-	"test/extended/testdata/psap/pao/pao-baseprofile-ppc64le.yaml":                                                                                      testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYaml,
 	"test/extended/testdata/psap/pao/pao-baseprofile.yaml":                                                                                              testExtendedTestdataPsapPaoPaoBaseprofileYaml,
 	"test/extended/testdata/psap/pao/pao-baseqos-pod.yaml":                                                                                              testExtendedTestdataPsapPaoPaoBaseqosPodYaml,
 	"test/extended/testdata/psap/pao/pao-include-performance-profile.yaml":                                                                              testExtendedTestdataPsapPaoPaoIncludePerformanceProfileYaml,
@@ -122947,7 +118622,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/psap/pao/pao-performance-fixpatch.yaml":                                                                                     testExtendedTestdataPsapPaoPaoPerformanceFixpatchYaml,
 	"test/extended/testdata/psap/pao/pao-performance-optimize.yaml":                                                                                     testExtendedTestdataPsapPaoPaoPerformanceOptimizeYaml,
 	"test/extended/testdata/psap/pao/pao-performance-patch.yaml":                                                                                        testExtendedTestdataPsapPaoPaoPerformancePatchYaml,
-	"test/extended/testdata/psap/pao/pao-performanceprofile-ppc64le.yaml":                                                                               testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYaml,
 	"test/extended/testdata/psap/pao/pao-performanceprofile.yaml":                                                                                       testExtendedTestdataPsapPaoPaoPerformanceprofileYaml,
 	"test/extended/testdata/psap/pao/pao-subscription.yaml":                                                                                             testExtendedTestdataPsapPaoPaoSubscriptionYaml,
 	"test/extended/testdata/psap/pao/pao-workercnf-mcp.yaml":                                                                                            testExtendedTestdataPsapPaoPaoWorkercnfMcpYaml,
@@ -122964,7 +118638,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/psap/sro/sro-sub.yaml":                                                                                                      testExtendedTestdataPsapSroSroSubYaml,
 	"test/extended/testdata/router/49802-route.yaml":                                                                                                    testExtendedTestdataRouter49802RouteYaml,
 	"test/extended/testdata/router/awslb/awslbcontroller.yaml":                                                                                          testExtendedTestdataRouterAwslbAwslbcontrollerYaml,
-	"test/extended/testdata/router/awslb/catalog-source.yaml":                                                                                           testExtendedTestdataRouterAwslbCatalogSourceYaml,
 	"test/extended/testdata/router/awslb/ingress-test.yaml":                                                                                             testExtendedTestdataRouterAwslbIngressTestYaml,
 	"test/extended/testdata/router/awslb/namespace.yaml":                                                                                                testExtendedTestdataRouterAwslbNamespaceYaml,
 	"test/extended/testdata/router/awslb/operatorgroup.yaml":                                                                                            testExtendedTestdataRouterAwslbOperatorgroupYaml,
@@ -122984,7 +118657,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/router/error-page2-404.http":                                                                                                testExtendedTestdataRouterErrorPage2404Http,
 	"test/extended/testdata/router/error-page2-503.http":                                                                                                testExtendedTestdataRouterErrorPage2503Http,
 	"test/extended/testdata/router/extdns/aws-sts-creds-secret.yaml":                                                                                    testExtendedTestdataRouterExtdnsAwsStsCredsSecretYaml,
-	"test/extended/testdata/router/extdns/catalog-source.yaml":                                                                                          testExtendedTestdataRouterExtdnsCatalogSourceYaml,
 	"test/extended/testdata/router/extdns/ns-external-dns-operator.yaml":                                                                                testExtendedTestdataRouterExtdnsNsExternalDnsOperatorYaml,
 	"test/extended/testdata/router/extdns/operatorgroup.yaml":                                                                                           testExtendedTestdataRouterExtdnsOperatorgroupYaml,
 	"test/extended/testdata/router/extdns/sample-aws-rt.yaml":                                                                                           testExtendedTestdataRouterExtdnsSampleAwsRtYaml,
@@ -123017,6 +118689,7 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/router/ingresscontroller-syslog.yaml":                                                                                       testExtendedTestdataRouterIngresscontrollerSyslogYaml,
 	"test/extended/testdata/router/ingresscontroller-tuning.yaml":                                                                                       testExtendedTestdataRouterIngresscontrollerTuningYaml,
 	"test/extended/testdata/router/ipfailover.yaml":                                                                                                     testExtendedTestdataRouterIpfailoverYaml,
+	"test/extended/testdata/router/microshift-ingress-destca.yaml":                                                                                      testExtendedTestdataRouterMicroshiftIngressDestcaYaml,
 	"test/extended/testdata/router/microshift-ingress-http.yaml":                                                                                        testExtendedTestdataRouterMicroshiftIngressHttpYaml,
 	"test/extended/testdata/router/ocp57404-stateful-set.yaml":                                                                                          testExtendedTestdataRouterOcp57404StatefulSetYaml,
 	"test/extended/testdata/router/ocp73771-role.yaml":                                                                                                  testExtendedTestdataRouterOcp73771RoleYaml,
@@ -123070,7 +118743,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/securityandcompliance/oc-compliance-scansettingbinding.yaml":                                                                testExtendedTestdataSecurityandcomplianceOcComplianceScansettingbindingYaml,
 	"test/extended/testdata/securityandcompliance/operator-group-all-namespaces.yaml":                                                                   testExtendedTestdataSecurityandcomplianceOperatorGroupAllNamespacesYaml,
 	"test/extended/testdata/securityandcompliance/operator-group.yaml":                                                                                  testExtendedTestdataSecurityandcomplianceOperatorGroupYaml,
-	"test/extended/testdata/securityandcompliance/pod-with-nginx-seccompprofile.yaml":                                                                   testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYaml,
 	"test/extended/testdata/securityandcompliance/pod-with-seccompprofile.yaml":                                                                         testExtendedTestdataSecurityandcompliancePodWithSeccompprofileYaml,
 	"test/extended/testdata/securityandcompliance/pod_modify.yaml":                                                                                      testExtendedTestdataSecurityandcompliancePod_modifyYaml,
 	"test/extended/testdata/securityandcompliance/priorityclass.yaml":                                                                                   testExtendedTestdataSecurityandcompliancePriorityclassYaml,
@@ -123081,9 +118753,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/securityandcompliance/rapidast/data_rapidastconfig_compliance_v1alpha1.yaml":                                                testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_compliance_v1alpha1Yaml,
 	"test/extended/testdata/securityandcompliance/rapidast/data_rapidastconfig_fileintegrity_v1alpha1.yaml":                                             testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_fileintegrity_v1alpha1Yaml,
 	"test/extended/testdata/securityandcompliance/rapidast/data_rapidastconfig_security-profiles-operator_v1beta1.yaml":                                 testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_securityProfilesOperator_v1beta1Yaml,
-	"test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_compliance_v1alpha1.yaml":                                         testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1Yaml,
-	"test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_fileintegrity_v1alpha1.yaml":                                      testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1Yaml,
-	"test/extended/testdata/securityandcompliance/rapidast/data_upload_rapidastconfig_security-profiles-operator_v1beta1.yaml":                          testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1Yaml,
 	"test/extended/testdata/securityandcompliance/rapidast/job_rapidast.yaml":                                                                           testExtendedTestdataSecurityandcomplianceRapidastJob_rapidastYaml,
 	"test/extended/testdata/securityandcompliance/resource-quota.yaml":                                                                                  testExtendedTestdataSecurityandcomplianceResourceQuotaYaml,
 	"test/extended/testdata/securityandcompliance/scansetting.yaml":                                                                                     testExtendedTestdataSecurityandcomplianceScansettingYaml,
@@ -123091,8 +118760,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/securityandcompliance/scansettingbinding.yaml":                                                                              testExtendedTestdataSecurityandcomplianceScansettingbindingYaml,
 	"test/extended/testdata/securityandcompliance/scansettingsingle.yaml":                                                                               testExtendedTestdataSecurityandcomplianceScansettingsingleYaml,
 	"test/extended/testdata/securityandcompliance/scc.yaml":                                                                                             testExtendedTestdataSecurityandcomplianceSccYaml,
-	"test/extended/testdata/securityandcompliance/seccompprofile-auditlogging.yaml":                                                                     testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYaml,
-	"test/extended/testdata/securityandcompliance/seccompprofile-log-everything-by-default.yaml":                                                        testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYaml,
 	"test/extended/testdata/securityandcompliance/seccompprofile.yaml":                                                                                  testExtendedTestdataSecurityandcomplianceSeccompprofileYaml,
 	"test/extended/testdata/securityandcompliance/seccompprofilestack.yaml":                                                                             testExtendedTestdataSecurityandcomplianceSeccompprofilestackYaml,
 	"test/extended/testdata/securityandcompliance/service-unsecure.yaml":                                                                                testExtendedTestdataSecurityandcomplianceServiceUnsecureYaml,
@@ -123166,8 +118833,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/storage/lvms/lvmcluster-with-multi-thinpool-template.yaml":                                                                  testExtendedTestdataStorageLvmsLvmclusterWithMultiThinpoolTemplateYaml,
 	"test/extended/testdata/storage/lvms/lvmcluster-with-optional-paths-template.yaml":                                                                  testExtendedTestdataStorageLvmsLvmclusterWithOptionalPathsTemplateYaml,
 	"test/extended/testdata/storage/lvms/lvmcluster-with-paths-template.yaml":                                                                           testExtendedTestdataStorageLvmsLvmclusterWithPathsTemplateYaml,
-	"test/extended/testdata/storage/lvms/lvmcluster-with-two-device-classes-template.yaml":                                                              testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYaml,
-	"test/extended/testdata/storage/lvms/lvmcluster-with-two-paths-template.yaml":                                                                       testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYaml,
 	"test/extended/testdata/storage/lvms/lvmcluster-without-thinpool-device-template.yaml":                                                              testExtendedTestdataStorageLvmsLvmclusterWithoutThinpoolDeviceTemplateYaml,
 	"test/extended/testdata/storage/microshift/dep-template.yaml":                                                                                       testExtendedTestdataStorageMicroshiftDepTemplateYaml,
 	"test/extended/testdata/storage/microshift/dep-without-volume-template.yaml":                                                                        testExtendedTestdataStorageMicroshiftDepWithoutVolumeTemplateYaml,
@@ -123204,19 +118869,34 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/winc/azure_windows_machineset.yaml":                                                                                         testExtendedTestdataWincAzure_windows_machinesetYaml,
 	"test/extended/testdata/winc/catalogsource.yaml":                                                                                                    testExtendedTestdataWincCatalogsourceYaml,
 	"test/extended/testdata/winc/cluster_autoscaler.yaml":                                                                                               testExtendedTestdataWincCluster_autoscalerYaml,
+	"test/extended/testdata/winc/config-map-ip-dns.yaml":                                                                                                testExtendedTestdataWincConfigMapIpDnsYaml,
+	"test/extended/testdata/winc/config-map.yaml":                                                                                                       testExtendedTestdataWincConfigMapYaml,
 	"test/extended/testdata/winc/gcp_byoh_machineset.yaml":                                                                                              testExtendedTestdataWincGcp_byoh_machinesetYaml,
 	"test/extended/testdata/winc/gcp_windows_machineset.yaml":                                                                                           testExtendedTestdataWincGcp_windows_machinesetYaml,
-	"test/extended/testdata/winc/hpa_template.yaml":                                                                                                     testExtendedTestdataWincHpa_templateYaml,
-	"test/extended/testdata/winc/linux_web_server_template.yaml":                                                                                        testExtendedTestdataWincLinux_web_server_templateYaml,
+	"test/extended/testdata/winc/linux_web_server.yaml":                                                                                                 testExtendedTestdataWincLinux_web_serverYaml,
+	"test/extended/testdata/winc/linux_web_server_disconnected.yaml":                                                                                    testExtendedTestdataWincLinux_web_server_disconnectedYaml,
 	"test/extended/testdata/winc/machine-autoscaler.yaml":                                                                                               testExtendedTestdataWincMachineAutoscalerYaml,
+	"test/extended/testdata/winc/namespace.yaml":                                                                                                        testExtendedTestdataWincNamespaceYaml,
 	"test/extended/testdata/winc/nutanix_byoh_machineset.yaml":                                                                                          testExtendedTestdataWincNutanix_byoh_machinesetYaml,
 	"test/extended/testdata/winc/nutanix_windows_machineset.yaml":                                                                                       testExtendedTestdataWincNutanix_windows_machinesetYaml,
+	"test/extended/testdata/winc/operatorgroup.yaml":                                                                                                    testExtendedTestdataWincOperatorgroupYaml,
+	"test/extended/testdata/winc/proxy_vars.yaml":                                                                                                       testExtendedTestdataWincProxy_varsYaml,
 	"test/extended/testdata/winc/pvc.yaml":                                                                                                              testExtendedTestdataWincPvcYaml,
+	"test/extended/testdata/winc/service_change_machineconfig.yaml":                                                                                     testExtendedTestdataWincService_change_machineconfigYaml,
+	"test/extended/testdata/winc/subscription.yaml":                                                                                                     testExtendedTestdataWincSubscriptionYaml,
 	"test/extended/testdata/winc/vsphere_byoh_machineset.yaml":                                                                                          testExtendedTestdataWincVsphere_byoh_machinesetYaml,
 	"test/extended/testdata/winc/vsphere_storageclass.yaml":                                                                                             testExtendedTestdataWincVsphere_storageclassYaml,
 	"test/extended/testdata/winc/vsphere_windows_machineset.yaml":                                                                                       testExtendedTestdataWincVsphere_windows_machinesetYaml,
-	"test/extended/testdata/winc/windows_daemonset_template.yaml":                                                                                       testExtendedTestdataWincWindows_daemonset_templateYaml,
-	"test/extended/testdata/winc/windows_web_server_template.yaml":                                                                                      testExtendedTestdataWincWindows_web_server_templateYaml,
+	"test/extended/testdata/winc/wicd_configmap.yaml":                                                                                                   testExtendedTestdataWincWicd_configmapYaml,
+	"test/extended/testdata/winc/windows_hpa.yaml":                                                                                                      testExtendedTestdataWincWindows_hpaYaml,
+	"test/extended/testdata/winc/windows_web_server.yaml":                                                                                               testExtendedTestdataWincWindows_web_serverYaml,
+	"test/extended/testdata/winc/windows_web_server_byoh.yaml":                                                                                          testExtendedTestdataWincWindows_web_server_byohYaml,
+	"test/extended/testdata/winc/windows_web_server_disconnected.yaml":                                                                                  testExtendedTestdataWincWindows_web_server_disconnectedYaml,
+	"test/extended/testdata/winc/windows_web_server_no_taint.yaml":                                                                                      testExtendedTestdataWincWindows_web_server_no_taintYaml,
+	"test/extended/testdata/winc/windows_web_server_pvc.yaml":                                                                                           testExtendedTestdataWincWindows_web_server_pvcYaml,
+	"test/extended/testdata/winc/windows_web_server_scaler.yaml":                                                                                        testExtendedTestdataWincWindows_web_server_scalerYaml,
+	"test/extended/testdata/winc/windows_webserver_projected_volume.yaml":                                                                               testExtendedTestdataWincWindows_webserver_projected_volumeYaml,
+	"test/extended/testdata/winc/windows_webserver_secondary_os.yaml":                                                                                   testExtendedTestdataWincWindows_webserver_secondary_osYaml,
 	"test/extended/testdata/workloads/12708358_4.11.0-0.nightly-multi-2022-04-18-120932-release-imagestream.yaml":                                       testExtendedTestdataWorkloads12708358_41100NightlyMulti20220418120932ReleaseImagestreamYaml,
 	"test/extended/testdata/workloads/SecondarySchedulerConfig.yaml":                                                                                    testExtendedTestdataWorkloadsSecondaryschedulerconfigYaml,
 	"test/extended/testdata/workloads/application-template-stibuild-with-mount-secret.json":                                                             testExtendedTestdataWorkloadsApplicationTemplateStibuildWithMountSecretJson,
@@ -123233,14 +118913,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/workloads/case72217/crd-cattoy-72217.yaml":                                                                                  testExtendedTestdataWorkloadsCase72217CrdCattoy72217Yaml,
 	"test/extended/testdata/workloads/case72217/crd-crontab-72217.yaml":                                                                                 testExtendedTestdataWorkloadsCase72217CrdCrontab72217Yaml,
 	"test/extended/testdata/workloads/case72217/crd-customtask-72217.yaml":                                                                              testExtendedTestdataWorkloadsCase72217CrdCustomtask72217Yaml,
-	"test/extended/testdata/workloads/case83849/config-83849.yaml":                                                                                      testExtendedTestdataWorkloadsCase83849Config83849Yaml,
-	"test/extended/testdata/workloads/case83849/test-mirror-helm-0.3.0.tgz":                                                                             testExtendedTestdataWorkloadsCase83849TestMirrorHelm030Tgz,
-	"test/extended/testdata/workloads/case83864/isc_empty.yaml":                                                                                         testExtendedTestdataWorkloadsCase83864Isc_emptyYaml,
-	"test/extended/testdata/workloads/case83864/isc_err.yaml":                                                                                           testExtendedTestdataWorkloadsCase83864Isc_errYaml,
-	"test/extended/testdata/workloads/case83864/isc_no.yaml":                                                                                            testExtendedTestdataWorkloadsCase83864Isc_noYaml,
-	"test/extended/testdata/workloads/case83864/test-mirror-helm-err.tgz":                                                                               testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgz,
-	"test/extended/testdata/workloads/case84007/config-84007.yaml":                                                                                      testExtendedTestdataWorkloadsCase84007Config84007Yaml,
-	"test/extended/testdata/workloads/case84007/operators.lst":                                                                                          testExtendedTestdataWorkloadsCase84007OperatorsLst,
 	"test/extended/testdata/workloads/catlog-loggings.yaml":                                                                                             testExtendedTestdataWorkloadsCatlogLoggingsYaml,
 	"test/extended/testdata/workloads/ceFile-79215.yaml":                                                                                                testExtendedTestdataWorkloadsCefile79215Yaml,
 	"test/extended/testdata/workloads/claimParams72005.yaml":                                                                                            testExtendedTestdataWorkloadsClaimparams72005Yaml,
@@ -123286,6 +118958,10 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/workloads/config-73124.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73124Yaml,
 	"test/extended/testdata/workloads/config-73359.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73359Yaml,
 	"test/extended/testdata/workloads/config-73377.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73377Yaml,
+	"test/extended/testdata/workloads/config-73419.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73419Yaml,
+	"test/extended/testdata/workloads/config-73420.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73420Yaml,
+	"test/extended/testdata/workloads/config-73421-1.yaml":                                                                                              testExtendedTestdataWorkloadsConfig734211Yaml,
+	"test/extended/testdata/workloads/config-73421.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73421Yaml,
 	"test/extended/testdata/workloads/config-73452.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73452Yaml,
 	"test/extended/testdata/workloads/config-73783.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73783Yaml,
 	"test/extended/testdata/workloads/config-73791.yaml":                                                                                                testExtendedTestdataWorkloadsConfig73791Yaml,
@@ -123295,6 +118971,8 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/workloads/config-74650-patch-v1.yaml":                                                                                       testExtendedTestdataWorkloadsConfig74650PatchV1Yaml,
 	"test/extended/testdata/workloads/config-74650-patch-v2.yaml":                                                                                       testExtendedTestdataWorkloadsConfig74650PatchV2Yaml,
 	"test/extended/testdata/workloads/config-74660.yaml":                                                                                                testExtendedTestdataWorkloadsConfig74660Yaml,
+	"test/extended/testdata/workloads/config-74662.yaml":                                                                                                testExtendedTestdataWorkloadsConfig74662Yaml,
+	"test/extended/testdata/workloads/config-75366.yaml":                                                                                                testExtendedTestdataWorkloadsConfig75366Yaml,
 	"test/extended/testdata/workloads/config-75422-delete.yaml":                                                                                         testExtendedTestdataWorkloadsConfig75422DeleteYaml,
 	"test/extended/testdata/workloads/config-75422.yaml":                                                                                                testExtendedTestdataWorkloadsConfig75422Yaml,
 	"test/extended/testdata/workloads/config-75425.yaml":                                                                                                testExtendedTestdataWorkloadsConfig75425Yaml,
@@ -123313,17 +118991,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/workloads/config-79408.yaml":                                                                                                testExtendedTestdataWorkloadsConfig79408Yaml,
 	"test/extended/testdata/workloads/config-79452-v1.yaml":                                                                                             testExtendedTestdataWorkloadsConfig79452V1Yaml,
 	"test/extended/testdata/workloads/config-79452-v2.yaml":                                                                                             testExtendedTestdataWorkloadsConfig79452V2Yaml,
-	"test/extended/testdata/workloads/config-83582.yaml":                                                                                                testExtendedTestdataWorkloadsConfig83582Yaml,
-	"test/extended/testdata/workloads/config-83875.yaml":                                                                                                testExtendedTestdataWorkloadsConfig83875Yaml,
-	"test/extended/testdata/workloads/config-86309.yaml":                                                                                                testExtendedTestdataWorkloadsConfig86309Yaml,
-	"test/extended/testdata/workloads/config-87962-multi-catalog.yaml":                                                                                  testExtendedTestdataWorkloadsConfig87962MultiCatalogYaml,
-	"test/extended/testdata/workloads/config-87962-operators.yaml":                                                                                      testExtendedTestdataWorkloadsConfig87962OperatorsYaml,
-	"test/extended/testdata/workloads/config-87992.yaml":                                                                                                testExtendedTestdataWorkloadsConfig87992Yaml,
-	"test/extended/testdata/workloads/config-88132-digest.yaml":                                                                                         testExtendedTestdataWorkloadsConfig88132DigestYaml,
-	"test/extended/testdata/workloads/config-88132-invalid.yaml":                                                                                        testExtendedTestdataWorkloadsConfig88132InvalidYaml,
-	"test/extended/testdata/workloads/config-88132-target-repo-tag.yaml":                                                                                testExtendedTestdataWorkloadsConfig88132TargetRepoTagYaml,
-	"test/extended/testdata/workloads/config-88132-target-repo.yaml":                                                                                    testExtendedTestdataWorkloadsConfig88132TargetRepoYaml,
-	"test/extended/testdata/workloads/config-88132-target-tag.yaml":                                                                                     testExtendedTestdataWorkloadsConfig88132TargetTagYaml,
 	"test/extended/testdata/workloads/config-images-75997.txt":                                                                                          testExtendedTestdataWorkloadsConfigImages75997Txt,
 	"test/extended/testdata/workloads/config-oci-65149.yaml":                                                                                            testExtendedTestdataWorkloadsConfigOci65149Yaml,
 	"test/extended/testdata/workloads/config-oci-65150.yaml":                                                                                            testExtendedTestdataWorkloadsConfigOci65150Yaml,
@@ -123388,19 +119055,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/workloads/init.ldif":                                                                                                        testExtendedTestdataWorkloadsInitLdif,
 	"test/extended/testdata/workloads/initContainer.yaml":                                                                                               testExtendedTestdataWorkloadsInitcontainerYaml,
 	"test/extended/testdata/workloads/initContainer66989.yaml":                                                                                          testExtendedTestdataWorkloadsInitcontainer66989Yaml,
-	"test/extended/testdata/workloads/jobset/clusterresource-jobset.yaml":                                                                               testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYaml,
-	"test/extended/testdata/workloads/jobset/cs-jobset.yaml":                                                                                            testExtendedTestdataWorkloadsJobsetCsJobsetYaml,
-	"test/extended/testdata/workloads/jobset/icsp-jobset.yaml":                                                                                          testExtendedTestdataWorkloadsJobsetIcspJobsetYaml,
-	"test/extended/testdata/workloads/jobset/jobset-operatorgroup.yaml":                                                                                 testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYaml,
-	"test/extended/testdata/workloads/jobset/jobset-subscription.yaml":                                                                                  testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYaml,
-	"test/extended/testdata/workloads/jobset/rapidast_config_jobset.yaml":                                                                               testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYaml,
-	"test/extended/testdata/workloads/jobsetoperand/failjobset-action-84913.yaml":                                                                       testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913Yaml,
-	"test/extended/testdata/workloads/jobsetoperand/restartjobset-action-84912.yaml":                                                                    testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912Yaml,
-	"test/extended/testdata/workloads/jobsetoperand/restartjobsetandignoremaxrestarts-action-84911.yaml":                                                testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911Yaml,
-	"test/extended/testdata/workloads/jobsetoperand/startuppolicy-82678-anyorder.yaml":                                                                  testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYaml,
-	"test/extended/testdata/workloads/jobsetoperand/startuppolicy-82678-inorder.yaml":                                                                   testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYaml,
-	"test/extended/testdata/workloads/jobsetoperand/successpolicy-82671-all.yaml":                                                                       testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYaml,
-	"test/extended/testdata/workloads/jobsetoperand/successpolicy-82671-any.yaml":                                                                       testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYaml,
 	"test/extended/testdata/workloads/kubedescheduler.yaml":                                                                                             testExtendedTestdataWorkloadsKubedeschedulerYaml,
 	"test/extended/testdata/workloads/kubedescheduler_excludins.yaml":                                                                                   testExtendedTestdataWorkloadsKubedescheduler_excludinsYaml,
 	"test/extended/testdata/workloads/kubedescheduler_includeexcludens.yaml":                                                                            testExtendedTestdataWorkloadsKubedescheduler_includeexcludensYaml,
@@ -123410,13 +119064,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/workloads/kubedescheduler_prioritythp.yaml":                                                                                 testExtendedTestdataWorkloadsKubedescheduler_prioritythpYaml,
 	"test/extended/testdata/workloads/kubedescheduler_thresholdPriority.yaml":                                                                           testExtendedTestdataWorkloadsKubedescheduler_thresholdpriorityYaml,
 	"test/extended/testdata/workloads/kubejobfailed-73886.yaml":                                                                                         testExtendedTestdataWorkloadsKubejobfailed73886Yaml,
-	"test/extended/testdata/workloads/lws/icsp-full-mirrors.yaml":                                                                                       testExtendedTestdataWorkloadsLwsIcspFullMirrorsYaml,
-	"test/extended/testdata/workloads/lws/lws-sample.yaml":                                                                                              testExtendedTestdataWorkloadsLwsLwsSampleYaml,
-	"test/extended/testdata/workloads/lws/lwsManager.yaml":                                                                                              testExtendedTestdataWorkloadsLwsLwsmanagerYaml,
-	"test/extended/testdata/workloads/lws/lws_catalogsource.yaml":                                                                                       testExtendedTestdataWorkloadsLwsLws_catalogsourceYaml,
-	"test/extended/testdata/workloads/lws/lws_operatorgroup.yaml":                                                                                       testExtendedTestdataWorkloadsLwsLws_operatorgroupYaml,
-	"test/extended/testdata/workloads/lws/lws_subscription.yaml":                                                                                        testExtendedTestdataWorkloadsLwsLws_subscriptionYaml,
-	"test/extended/testdata/workloads/lws/rapidast_config_lws.yaml":                                                                                     testExtendedTestdataWorkloadsLwsRapidast_config_lwsYaml,
 	"test/extended/testdata/workloads/mirror-from-filesystem.txt":                                                                                       testExtendedTestdataWorkloadsMirrorFromFilesystemTxt,
 	"test/extended/testdata/workloads/node-affinity-required-case14479-edge.yaml":                                                                       testExtendedTestdataWorkloadsNodeAffinityRequiredCase14479EdgeYaml,
 	"test/extended/testdata/workloads/node-affinity-required-case14479-outposts.yaml":                                                                   testExtendedTestdataWorkloadsNodeAffinityRequiredCase14479OutpostsYaml,
@@ -123525,56 +119172,56 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"extended": {nil, map[string]*bintree{
 			"testdata": {nil, map[string]*bintree{
 				"apiserverauth": {nil, map[string]*bintree{
-					"CRDWebhookConfigurationCustomTemplate.yaml":  {testExtendedTestdataApiserverauthCrdwebhookconfigurationcustomtemplateYaml, map[string]*bintree{}},
-					"CRDWebhookConfigurationTemplate.yaml":        {testExtendedTestdataApiserverauthCrdwebhookconfigurationtemplateYaml, map[string]*bintree{}},
-					"MutatingWebhookConfigurationTemplate.yaml":   {testExtendedTestdataApiserverauthMutatingwebhookconfigurationtemplateYaml, map[string]*bintree{}},
-					"RequestHeader_IDP.yaml":                      {testExtendedTestdataApiserverauthRequestheader_idpYaml, map[string]*bintree{}},
-					"ServiceTemplate.yaml":                        {testExtendedTestdataApiserverauthServicetemplateYaml, map[string]*bintree{}},
-					"ValidatingWebhookConfigurationTemplate.yaml": {testExtendedTestdataApiserverauthValidatingwebhookconfigurationtemplateYaml, map[string]*bintree{}},
-					"allow-same-namespace.yaml":                   {testExtendedTestdataApiserverauthAllowSameNamespaceYaml, map[string]*bintree{}},
-					"aosqe-pod-for-ping.json":                     {testExtendedTestdataApiserverauthAosqePodForPingJson, map[string]*bintree{}},
-					"application-template-stibuild.json":          {testExtendedTestdataApiserverauthApplicationTemplateStibuildJson, map[string]*bintree{}},
-					"clusterresourcequota.yaml":                   {testExtendedTestdataApiserverauthClusterresourcequotaYaml, map[string]*bintree{}},
-					"clusterrole-test-sudoer.yaml":                {testExtendedTestdataApiserverauthClusterroleTestSudoerYaml, map[string]*bintree{}},
-					"create-pod.yaml":                             {testExtendedTestdataApiserverauthCreatePodYaml, map[string]*bintree{}},
-					"custom_scc.yaml":                             {testExtendedTestdataApiserverauthCustom_sccYaml, map[string]*bintree{}},
-					"deny-network-policy.yaml":                    {testExtendedTestdataApiserverauthDenyNetworkPolicyYaml, map[string]*bintree{}},
-					"endpointslice.yaml":                          {testExtendedTestdataApiserverauthEndpointsliceYaml, map[string]*bintree{}},
-					"hello-pod.json":                              {testExtendedTestdataApiserverauthHelloPodJson, map[string]*bintree{}},
-					"microshift-pods-security-context.yaml":       {testExtendedTestdataApiserverauthMicroshiftPodsSecurityContextYaml, map[string]*bintree{}},
-					"microshift-pods-security-context2.yaml":      {testExtendedTestdataApiserverauthMicroshiftPodsSecurityContext2Yaml, map[string]*bintree{}},
-					"ocp-56229-ingress.yaml":                      {testExtendedTestdataApiserverauthOcp56229IngressYaml, map[string]*bintree{}},
-					"ocp-70369.yaml":                              {testExtendedTestdataApiserverauthOcp70369Yaml, map[string]*bintree{}},
-					"ocp10873-dc.yaml":                            {testExtendedTestdataApiserverauthOcp10873DcYaml, map[string]*bintree{}},
-					"ocp10873-svc.json":                           {testExtendedTestdataApiserverauthOcp10873SvcJson, map[string]*bintree{}},
-					"ocp12360-pod.yaml":                           {testExtendedTestdataApiserverauthOcp12360PodYaml, map[string]*bintree{}},
-					"ocp12360-quota.yaml":                         {testExtendedTestdataApiserverauthOcp12360QuotaYaml, map[string]*bintree{}},
-					"ocp16295_pod.yaml":                           {testExtendedTestdataApiserverauthOcp16295_podYaml, map[string]*bintree{}},
-					"ocp24219-cr.yaml":                            {testExtendedTestdataApiserverauthOcp24219CrYaml, map[string]*bintree{}},
-					"ocp24219-crd.yaml":                           {testExtendedTestdataApiserverauthOcp24219CrdYaml, map[string]*bintree{}},
-					"ocp53229-nefarious-pod.yaml":                 {testExtendedTestdataApiserverauthOcp53229NefariousPodYaml, map[string]*bintree{}},
-					"ocp53229-nefarious.yaml":                     {testExtendedTestdataApiserverauthOcp53229NefariousYaml, map[string]*bintree{}},
-					"ocp54745-pod.yaml":                           {testExtendedTestdataApiserverauthOcp54745PodYaml, map[string]*bintree{}},
-					"ocp55494-admission-controller.yaml":          {testExtendedTestdataApiserverauthOcp55494AdmissionControllerYaml, map[string]*bintree{}},
-					"ocp55494-webhook-configuration.yaml":         {testExtendedTestdataApiserverauthOcp55494WebhookConfigurationYaml, map[string]*bintree{}},
-					"ocp55677-crd.yaml":                           {testExtendedTestdataApiserverauthOcp55677CrdYaml, map[string]*bintree{}},
-					"ocp77919-webhook-configuration.yaml":         {testExtendedTestdataApiserverauthOcp77919WebhookConfigurationYaml, map[string]*bintree{}},
-					"ocp9853-limits.yaml":                         {testExtendedTestdataApiserverauthOcp9853LimitsYaml, map[string]*bintree{}},
-					"ocp9853-quota.yaml":                          {testExtendedTestdataApiserverauthOcp9853QuotaYaml, map[string]*bintree{}},
-					"pod-for-ping-microshift.json":                {testExtendedTestdataApiserverauthPodForPingMicroshiftJson, map[string]*bintree{}},
-					"pod-for-ping.json":                           {testExtendedTestdataApiserverauthPodForPingJson, map[string]*bintree{}},
-					"pod-scc-runAsUser.yaml":                      {testExtendedTestdataApiserverauthPodSccRunasuserYaml, map[string]*bintree{}},
-					"pod-with-msgmax.yaml":                        {testExtendedTestdataApiserverauthPodWithMsgmaxYaml, map[string]*bintree{}},
-					"pod_with_multi_ports.json":                   {testExtendedTestdataApiserverauthPod_with_multi_portsJson, map[string]*bintree{}},
-					"pod_with_sysctls.yaml":                       {testExtendedTestdataApiserverauthPod_with_sysctlsYaml, map[string]*bintree{}},
-					"rapidast-config.yaml":                        {testExtendedTestdataApiserverauthRapidastConfigYaml, map[string]*bintree{}},
-					"rapidast-pod.yaml":                           {testExtendedTestdataApiserverauthRapidastPodYaml, map[string]*bintree{}},
-					"rapidast-privileged-sa.yaml":                 {testExtendedTestdataApiserverauthRapidastPrivilegedSaYaml, map[string]*bintree{}},
-					"sample-pod-ephemeral-container-complex.json": {testExtendedTestdataApiserverauthSamplePodEphemeralContainerComplexJson, map[string]*bintree{}},
-					"service-monitor.yaml":                        {testExtendedTestdataApiserverauthServiceMonitorYaml, map[string]*bintree{}},
-					"skopeo-deployment.json":                      {testExtendedTestdataApiserverauthSkopeoDeploymentJson, map[string]*bintree{}},
-					"webhook-deploy.yaml":                         {testExtendedTestdataApiserverauthWebhookDeployYaml, map[string]*bintree{}},
-					"webhook-registration.yaml":                   {testExtendedTestdataApiserverauthWebhookRegistrationYaml, map[string]*bintree{}},
+					"CRDWebhookConfigurationCustomTemplate.yaml":    {testExtendedTestdataApiserverauthCrdwebhookconfigurationcustomtemplateYaml, map[string]*bintree{}},
+					"CRDWebhookConfigurationTemplate.yaml":          {testExtendedTestdataApiserverauthCrdwebhookconfigurationtemplateYaml, map[string]*bintree{}},
+					"MutatingWebhookConfigurationTemplate.yaml":     {testExtendedTestdataApiserverauthMutatingwebhookconfigurationtemplateYaml, map[string]*bintree{}},
+					"RequestHeader_IDP.yaml":                        {testExtendedTestdataApiserverauthRequestheader_idpYaml, map[string]*bintree{}},
+					"ServiceTemplate.yaml":                          {testExtendedTestdataApiserverauthServicetemplateYaml, map[string]*bintree{}},
+					"ValidatingWebhookConfigurationTemplate.yaml":   {testExtendedTestdataApiserverauthValidatingwebhookconfigurationtemplateYaml, map[string]*bintree{}},
+					"allow-same-namespace.yaml":                     {testExtendedTestdataApiserverauthAllowSameNamespaceYaml, map[string]*bintree{}},
+					"aosqe-pod-for-ping.json":                       {testExtendedTestdataApiserverauthAosqePodForPingJson, map[string]*bintree{}},
+					"application-template-stibuild.json":            {testExtendedTestdataApiserverauthApplicationTemplateStibuildJson, map[string]*bintree{}},
+					"clusterresourcequota.yaml":                     {testExtendedTestdataApiserverauthClusterresourcequotaYaml, map[string]*bintree{}},
+					"clusterrole-test-sudoer.yaml":                  {testExtendedTestdataApiserverauthClusterroleTestSudoerYaml, map[string]*bintree{}},
+					"create-pod.yaml":                               {testExtendedTestdataApiserverauthCreatePodYaml, map[string]*bintree{}},
+					"custom_scc.yaml":                               {testExtendedTestdataApiserverauthCustom_sccYaml, map[string]*bintree{}},
+					"deny-network-policy.yaml":                      {testExtendedTestdataApiserverauthDenyNetworkPolicyYaml, map[string]*bintree{}},
+					"endpointslice.yaml":                            {testExtendedTestdataApiserverauthEndpointsliceYaml, map[string]*bintree{}},
+					"hello-pod.json":                                {testExtendedTestdataApiserverauthHelloPodJson, map[string]*bintree{}},
+					"microshift-busybox-deployment.yaml":            {testExtendedTestdataApiserverauthMicroshiftBusyboxDeploymentYaml, map[string]*bintree{}},
+					"microshift-busybox-kustomization.yaml":         {testExtendedTestdataApiserverauthMicroshiftBusyboxKustomizationYaml, map[string]*bintree{}},
+					"microshift-hello-openshift-kustomization.yaml": {testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftKustomizationYaml, map[string]*bintree{}},
+					"microshift-hello-openshift.yaml":               {testExtendedTestdataApiserverauthMicroshiftHelloOpenshiftYaml, map[string]*bintree{}},
+					"microshift-pods-security-context.yaml":         {testExtendedTestdataApiserverauthMicroshiftPodsSecurityContextYaml, map[string]*bintree{}},
+					"microshift-pods-security-context2.yaml":        {testExtendedTestdataApiserverauthMicroshiftPodsSecurityContext2Yaml, map[string]*bintree{}},
+					"ocp-56229-ingress.yaml":                        {testExtendedTestdataApiserverauthOcp56229IngressYaml, map[string]*bintree{}},
+					"ocp-70369.yaml":                                {testExtendedTestdataApiserverauthOcp70369Yaml, map[string]*bintree{}},
+					"ocp10873-dc.yaml":                              {testExtendedTestdataApiserverauthOcp10873DcYaml, map[string]*bintree{}},
+					"ocp10873-svc.json":                             {testExtendedTestdataApiserverauthOcp10873SvcJson, map[string]*bintree{}},
+					"ocp12360-pod.yaml":                             {testExtendedTestdataApiserverauthOcp12360PodYaml, map[string]*bintree{}},
+					"ocp12360-quota.yaml":                           {testExtendedTestdataApiserverauthOcp12360QuotaYaml, map[string]*bintree{}},
+					"ocp16295_pod.yaml":                             {testExtendedTestdataApiserverauthOcp16295_podYaml, map[string]*bintree{}},
+					"ocp24219-cr.yaml":                              {testExtendedTestdataApiserverauthOcp24219CrYaml, map[string]*bintree{}},
+					"ocp24219-crd.yaml":                             {testExtendedTestdataApiserverauthOcp24219CrdYaml, map[string]*bintree{}},
+					"ocp53229-nefarious-pod.yaml":                   {testExtendedTestdataApiserverauthOcp53229NefariousPodYaml, map[string]*bintree{}},
+					"ocp53229-nefarious.yaml":                       {testExtendedTestdataApiserverauthOcp53229NefariousYaml, map[string]*bintree{}},
+					"ocp54745-pod.yaml":                             {testExtendedTestdataApiserverauthOcp54745PodYaml, map[string]*bintree{}},
+					"ocp55494-admission-controller.yaml":            {testExtendedTestdataApiserverauthOcp55494AdmissionControllerYaml, map[string]*bintree{}},
+					"ocp55494-webhook-configuration.yaml":           {testExtendedTestdataApiserverauthOcp55494WebhookConfigurationYaml, map[string]*bintree{}},
+					"ocp55677-crd.yaml":                             {testExtendedTestdataApiserverauthOcp55677CrdYaml, map[string]*bintree{}},
+					"ocp77919-webhook-configuration.yaml":           {testExtendedTestdataApiserverauthOcp77919WebhookConfigurationYaml, map[string]*bintree{}},
+					"ocp9853-limits.yaml":                           {testExtendedTestdataApiserverauthOcp9853LimitsYaml, map[string]*bintree{}},
+					"ocp9853-quota.yaml":                            {testExtendedTestdataApiserverauthOcp9853QuotaYaml, map[string]*bintree{}},
+					"pod-for-ping.json":                             {testExtendedTestdataApiserverauthPodForPingJson, map[string]*bintree{}},
+					"pod-scc-runAsUser.yaml":                        {testExtendedTestdataApiserverauthPodSccRunasuserYaml, map[string]*bintree{}},
+					"pod-with-msgmax.yaml":                          {testExtendedTestdataApiserverauthPodWithMsgmaxYaml, map[string]*bintree{}},
+					"pod_with_multi_ports.json":                     {testExtendedTestdataApiserverauthPod_with_multi_portsJson, map[string]*bintree{}},
+					"pod_with_sysctls.yaml":                         {testExtendedTestdataApiserverauthPod_with_sysctlsYaml, map[string]*bintree{}},
+					"sample-pod-ephemeral-container-complex.json":   {testExtendedTestdataApiserverauthSamplePodEphemeralContainerComplexJson, map[string]*bintree{}},
+					"service-monitor.yaml":                          {testExtendedTestdataApiserverauthServiceMonitorYaml, map[string]*bintree{}},
+					"skopeo-deployment.json":                        {testExtendedTestdataApiserverauthSkopeoDeploymentJson, map[string]*bintree{}},
+					"webhook-deploy.yaml":                           {testExtendedTestdataApiserverauthWebhookDeployYaml, map[string]*bintree{}},
+					"webhook-registration.yaml":                     {testExtendedTestdataApiserverauthWebhookRegistrationYaml, map[string]*bintree{}},
 				}},
 				"cluster_operator": {nil, map[string]*bintree{
 					"cloudcredential": {nil, map[string]*bintree{
@@ -123689,16 +119336,11 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"testpod.yaml":                                 {testExtendedTestdataEtcdTestpodYaml, map[string]*bintree{}},
 				}},
 				"hypershift": {nil, map[string]*bintree{
-					"azure-wi-test-pod.yaml":                   {testExtendedTestdataHypershiftAzureWiTestPodYaml, map[string]*bintree{}},
-					"azure-wi-test-sa.yaml":                    {testExtendedTestdataHypershiftAzureWiTestSaYaml, map[string]*bintree{}},
-					"configmap-machineconfig.yaml":             {testExtendedTestdataHypershiftConfigmapMachineconfigYaml, map[string]*bintree{}},
-					"kubelet-killer.yaml":                      {testExtendedTestdataHypershiftKubeletKillerYaml, map[string]*bintree{}},
-					"mhc.yaml":                                 {testExtendedTestdataHypershiftMhcYaml, map[string]*bintree{}},
-					"ping-for-pod-specific-node-template.yaml": {testExtendedTestdataHypershiftPingForPodSpecificNodeTemplateYaml, map[string]*bintree{}},
-					"prestart-job.yaml":                        {testExtendedTestdataHypershiftPrestartJobYaml, map[string]*bintree{}},
-					"service-generic-template.yaml":            {testExtendedTestdataHypershiftServiceGenericTemplateYaml, map[string]*bintree{}},
-					"workload.yaml":                            {testExtendedTestdataHypershiftWorkloadYaml, map[string]*bintree{}},
-					"workload_nodeselector.yaml":               {testExtendedTestdataHypershiftWorkload_nodeselectorYaml, map[string]*bintree{}},
+					"configmap-machineconfig.yaml": {testExtendedTestdataHypershiftConfigmapMachineconfigYaml, map[string]*bintree{}},
+					"kubelet-killer.yaml":          {testExtendedTestdataHypershiftKubeletKillerYaml, map[string]*bintree{}},
+					"mhc.yaml":                     {testExtendedTestdataHypershiftMhcYaml, map[string]*bintree{}},
+					"prestart-job.yaml":            {testExtendedTestdataHypershiftPrestartJobYaml, map[string]*bintree{}},
+					"workload.yaml":                {testExtendedTestdataHypershiftWorkloadYaml, map[string]*bintree{}},
 				}},
 				"image_registry": {nil, map[string]*bintree{
 					"daemonset-trigger-annoation.yaml":        {testExtendedTestdataImage_registryDaemonsetTriggerAnnoationYaml, map[string]*bintree{}},
@@ -123738,56 +119380,40 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					}},
 				}},
 				"kata": {nil, map[string]*bintree{
-					"ImageContentSourcePolicy-brew.yaml":              {testExtendedTestdataKataImagecontentsourcepolicyBrewYaml, map[string]*bintree{}},
-					"ImageTag-DigestMirrorSet.yaml":                   {testExtendedTestdataKataImagetagDigestmirrorsetYaml, map[string]*bintree{}},
-					"catalogSourceTemplate.yaml":                      {testExtendedTestdataKataCatalogsourcetemplateYaml, map[string]*bintree{}},
-					"cc-feature-gates-cm.yaml":                        {testExtendedTestdataKataCcFeatureGatesCmYaml, map[string]*bintree{}},
-					"containerruntimeconfig_template.yaml":            {testExtendedTestdataKataContainerruntimeconfig_templateYaml, map[string]*bintree{}},
-					"initdata.toml":                                   {testExtendedTestdataKataInitdataToml, map[string]*bintree{}},
-					"initdata_bm.toml":                                {testExtendedTestdataKataInitdata_bmToml, map[string]*bintree{}},
-					"kataDeploymentTemplate.go.tmpl":                  {testExtendedTestdataKataKatadeploymenttemplateGoTmpl, map[string]*bintree{}},
-					"kataPodDefaultTemplate.go.tmpl":                  {testExtendedTestdataKataKatapoddefaulttemplateGoTmpl, map[string]*bintree{}},
-					"kataconfig.yaml":                                 {testExtendedTestdataKataKataconfigYaml, map[string]*bintree{}},
-					"kbs-auth-public-key":                             {testExtendedTestdataKataKbsAuthPublicKey, map[string]*bintree{}},
-					"kbs-client-template.yaml":                        {testExtendedTestdataKataKbsClientTemplateYaml, map[string]*bintree{}},
-					"kbs-config-cm-020-template.yaml":                 {testExtendedTestdataKataKbsConfigCm020TemplateYaml, map[string]*bintree{}},
-					"kbs-config-cm-bm-template.yaml":                  {testExtendedTestdataKataKbsConfigCmBmTemplateYaml, map[string]*bintree{}},
-					"kbs-config-cm-template.yaml":                     {testExtendedTestdataKataKbsConfigCmTemplateYaml, map[string]*bintree{}},
-					"kbsconfig-snp-template.yaml":                     {testExtendedTestdataKataKbsconfigSnpTemplateYaml, map[string]*bintree{}},
-					"kbsconfig-tdx-template.yaml":                     {testExtendedTestdataKataKbsconfigTdxTemplateYaml, map[string]*bintree{}},
-					"kbsconfig-template.yaml":                         {testExtendedTestdataKataKbsconfigTemplateYaml, map[string]*bintree{}},
-					"namespace.yaml":                                  {testExtendedTestdataKataNamespaceYaml, map[string]*bintree{}},
-					"node-feature-rule-kata-template.yaml":            {testExtendedTestdataKataNodeFeatureRuleKataTemplateYaml, map[string]*bintree{}},
-					"node-feature-rule-snp-template.yaml":             {testExtendedTestdataKataNodeFeatureRuleSnpTemplateYaml, map[string]*bintree{}},
-					"node-feature-rule-tdx-template.yaml":             {testExtendedTestdataKataNodeFeatureRuleTdxTemplateYaml, map[string]*bintree{}},
-					"operatorgroup.yaml":                              {testExtendedTestdataKataOperatorgroupYaml, map[string]*bintree{}},
-					"pccs-deployment-template.yaml":                   {testExtendedTestdataKataPccsDeploymentTemplateYaml, map[string]*bintree{}},
-					"pccs-service-template.yaml":                      {testExtendedTestdataKataPccsServiceTemplateYaml, map[string]*bintree{}},
-					"peer-pod-aws-cm-template.yaml":                   {testExtendedTestdataKataPeerPodAwsCmTemplateYaml, map[string]*bintree{}},
-					"peer-pod-azure-cm-template.yaml":                 {testExtendedTestdataKataPeerPodAzureCmTemplateYaml, map[string]*bintree{}},
-					"peer-pod-gcp-cm-template.yaml":                   {testExtendedTestdataKataPeerPodGcpCmTemplateYaml, map[string]*bintree{}},
-					"peer-pod-libvirt-cm-template.yaml":               {testExtendedTestdataKataPeerPodLibvirtCmTemplateYaml, map[string]*bintree{}},
-					"peer-pods-param-libvirt-cm-template.yaml":        {testExtendedTestdataKataPeerPodsParamLibvirtCmTemplateYaml, map[string]*bintree{}},
-					"peerpodCMTemplate.go.tmpl":                       {testExtendedTestdataKataPeerpodcmtemplateGoTmpl, map[string]*bintree{}},
-					"peerpodSecretTemplate.go.tmpl":                   {testExtendedTestdataKataPeerpodsecrettemplateGoTmpl, map[string]*bintree{}},
-					"podvm-image-gcp-template.yaml":                   {testExtendedTestdataKataPodvmImageGcpTemplateYaml, map[string]*bintree{}},
-					"qgs-template.yaml":                               {testExtendedTestdataKataQgsTemplateYaml, map[string]*bintree{}},
-					"resource-policy-template.yaml":                   {testExtendedTestdataKataResourcePolicyTemplateYaml, map[string]*bintree{}},
-					"rvps-reference-values-template.yaml":             {testExtendedTestdataKataRvpsReferenceValuesTemplateYaml, map[string]*bintree{}},
-					"security-policy-template.json":                   {testExtendedTestdataKataSecurityPolicyTemplateJson, map[string]*bintree{}},
-					"sgx-device-plugin.yaml":                          {testExtendedTestdataKataSgxDevicePluginYaml, map[string]*bintree{}},
-					"subscription_template.yaml":                      {testExtendedTestdataKataSubscription_templateYaml, map[string]*bintree{}},
-					"tdx-config.yaml":                                 {testExtendedTestdataKataTdxConfigYaml, map[string]*bintree{}},
-					"tdx-machine-config.yaml":                         {testExtendedTestdataKataTdxMachineConfigYaml, map[string]*bintree{}},
-					"testrun-cm-template.yaml":                        {testExtendedTestdataKataTestrunCmTemplateYaml, map[string]*bintree{}},
-					"testrunUpgradeCatalogImage.yaml":                 {testExtendedTestdataKataTestrunupgradecatalogimageYaml, map[string]*bintree{}},
-					"trustee-cosign-publickey.pem":                    {testExtendedTestdataKataTrusteeCosignPublickeyPem, map[string]*bintree{}},
-					"trustee-cosign-publickey2.pem":                   {testExtendedTestdataKataTrusteeCosignPublickey2Pem, map[string]*bintree{}},
-					"trustee-cosigned-pod.yaml":                       {testExtendedTestdataKataTrusteeCosignedPodYaml, map[string]*bintree{}},
-					"workload-deployment-securityContext-cocobm.yaml": {testExtendedTestdataKataWorkloadDeploymentSecuritycontextCocobmYaml, map[string]*bintree{}},
-					"workload-deployment-securityContext.yaml":        {testExtendedTestdataKataWorkloadDeploymentSecuritycontextYaml, map[string]*bintree{}},
-					"workload-pod-securityContext-cocobm.yaml":        {testExtendedTestdataKataWorkloadPodSecuritycontextCocobmYaml, map[string]*bintree{}},
-					"workload-pod-securityContext.yaml":               {testExtendedTestdataKataWorkloadPodSecuritycontextYaml, map[string]*bintree{}},
+					"ImageContentSourcePolicy-brew.yaml":       {testExtendedTestdataKataImagecontentsourcepolicyBrewYaml, map[string]*bintree{}},
+					"ImageTag-DigestMirrorSet.yaml":            {testExtendedTestdataKataImagetagDigestmirrorsetYaml, map[string]*bintree{}},
+					"catalogSourceTemplate.yaml":               {testExtendedTestdataKataCatalogsourcetemplateYaml, map[string]*bintree{}},
+					"cc-feature-gates-cm.yaml":                 {testExtendedTestdataKataCcFeatureGatesCmYaml, map[string]*bintree{}},
+					"containerruntimeconfig_template.yaml":     {testExtendedTestdataKataContainerruntimeconfig_templateYaml, map[string]*bintree{}},
+					"initdata.toml":                            {testExtendedTestdataKataInitdataToml, map[string]*bintree{}},
+					"kataconfig.yaml":                          {testExtendedTestdataKataKataconfigYaml, map[string]*bintree{}},
+					"kbs-auth-public-key":                      {testExtendedTestdataKataKbsAuthPublicKey, map[string]*bintree{}},
+					"kbs-client-template.yaml":                 {testExtendedTestdataKataKbsClientTemplateYaml, map[string]*bintree{}},
+					"kbs-config-cm-020-template.yaml":          {testExtendedTestdataKataKbsConfigCm020TemplateYaml, map[string]*bintree{}},
+					"kbs-config-cm-template.yaml":              {testExtendedTestdataKataKbsConfigCmTemplateYaml, map[string]*bintree{}},
+					"kbsconfig-template.yaml":                  {testExtendedTestdataKataKbsconfigTemplateYaml, map[string]*bintree{}},
+					"namespace.yaml":                           {testExtendedTestdataKataNamespaceYaml, map[string]*bintree{}},
+					"operatorgroup.yaml":                       {testExtendedTestdataKataOperatorgroupYaml, map[string]*bintree{}},
+					"peer-pod-aws-cm-template.yaml":            {testExtendedTestdataKataPeerPodAwsCmTemplateYaml, map[string]*bintree{}},
+					"peer-pod-azure-cm-template.yaml":          {testExtendedTestdataKataPeerPodAzureCmTemplateYaml, map[string]*bintree{}},
+					"peer-pod-gcp-cm-template.yaml":            {testExtendedTestdataKataPeerPodGcpCmTemplateYaml, map[string]*bintree{}},
+					"peer-pod-libvirt-cm-template.yaml":        {testExtendedTestdataKataPeerPodLibvirtCmTemplateYaml, map[string]*bintree{}},
+					"peer-pod-secret-aws.yaml":                 {testExtendedTestdataKataPeerPodSecretAwsYaml, map[string]*bintree{}},
+					"peer-pod-secret-azure.yaml":               {testExtendedTestdataKataPeerPodSecretAzureYaml, map[string]*bintree{}},
+					"peer-pod-secret-libvirt.yaml":             {testExtendedTestdataKataPeerPodSecretLibvirtYaml, map[string]*bintree{}},
+					"peer-pods-param-libvirt-cm-template.yaml": {testExtendedTestdataKataPeerPodsParamLibvirtCmTemplateYaml, map[string]*bintree{}},
+					"pod-annotations-template.yaml":            {testExtendedTestdataKataPodAnnotationsTemplateYaml, map[string]*bintree{}},
+					"podvm-image-gcp-template.yaml":            {testExtendedTestdataKataPodvmImageGcpTemplateYaml, map[string]*bintree{}},
+					"resource-policy-template.yaml":            {testExtendedTestdataKataResourcePolicyTemplateYaml, map[string]*bintree{}},
+					"rvps-reference-values-template.yaml":      {testExtendedTestdataKataRvpsReferenceValuesTemplateYaml, map[string]*bintree{}},
+					"security-policy-template.json":            {testExtendedTestdataKataSecurityPolicyTemplateJson, map[string]*bintree{}},
+					"subscription_template.yaml":               {testExtendedTestdataKataSubscription_templateYaml, map[string]*bintree{}},
+					"testrun-cm-template.yaml":                 {testExtendedTestdataKataTestrunCmTemplateYaml, map[string]*bintree{}},
+					"testrunUpgradeCatalogImage.yaml":          {testExtendedTestdataKataTestrunupgradecatalogimageYaml, map[string]*bintree{}},
+					"trustee-cosign-publickey.pem":             {testExtendedTestdataKataTrusteeCosignPublickeyPem, map[string]*bintree{}},
+					"trustee-cosigned-pod.yaml":                {testExtendedTestdataKataTrusteeCosignedPodYaml, map[string]*bintree{}},
+					"workload-deployment-securityContext.yaml": {testExtendedTestdataKataWorkloadDeploymentSecuritycontextYaml, map[string]*bintree{}},
+					"workload-pod-securityContext.yaml":        {testExtendedTestdataKataWorkloadPodSecuritycontextYaml, map[string]*bintree{}},
 				}},
 				"ldap": {nil, map[string]*bintree{
 					"groupsync.sh":               {testExtendedTestdataLdapGroupsyncSh, map[string]*bintree{}},
@@ -123961,7 +119587,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"container_json_log_template.json":           {testExtendedTestdataLoggingGeneratelogContainer_json_log_templateJson, map[string]*bintree{}},
 						"container_json_log_template_unannoted.json": {testExtendedTestdataLoggingGeneratelogContainer_json_log_template_unannotedJson, map[string]*bintree{}},
 						"container_non_json_log_template.json":       {testExtendedTestdataLoggingGeneratelogContainer_non_json_log_templateJson, map[string]*bintree{}},
-						"logging-performance-app-generator.json":     {testExtendedTestdataLoggingGeneratelogLoggingPerformanceAppGeneratorJson, map[string]*bintree{}},
 						"multi_container_json_log_template.yaml":     {testExtendedTestdataLoggingGeneratelogMulti_container_json_log_templateYaml, map[string]*bintree{}},
 						"multiline-error-log.yaml":                   {testExtendedTestdataLoggingGeneratelogMultilineErrorLogYaml, map[string]*bintree{}},
 					}},
@@ -123978,9 +119603,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					}},
 					"lokistack": {nil, map[string]*bintree{
 						"fine-grained-access-roles.yaml": {testExtendedTestdataLoggingLokistackFineGrainedAccessRolesYaml, map[string]*bintree{}},
-						"lokistack-simple-ipv6-tls.yaml": {testExtendedTestdataLoggingLokistackLokistackSimpleIpv6TlsYaml, map[string]*bintree{}},
 						"lokistack-simple-ipv6.yaml":     {testExtendedTestdataLoggingLokistackLokistackSimpleIpv6Yaml, map[string]*bintree{}},
-						"lokistack-simple-tls.yaml":      {testExtendedTestdataLoggingLokistackLokistackSimpleTlsYaml, map[string]*bintree{}},
 						"lokistack-simple.yaml":          {testExtendedTestdataLoggingLokistackLokistackSimpleYaml, map[string]*bintree{}},
 					}},
 					"minIO": {nil, map[string]*bintree{
@@ -124015,7 +119638,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"elasticsearch.yaml":                           {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderElasticsearchYaml, map[string]*bintree{}},
 						"google-cloud-logging-multi-logids.yaml":       {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGoogleCloudLoggingMultiLogidsYaml, map[string]*bintree{}},
 						"googleCloudLogging.yaml":                      {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderGooglecloudloggingYaml, map[string]*bintree{}},
-						"http-output-85490.yaml":                       {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutput85490Yaml, map[string]*bintree{}},
 						"http-output.yaml":                             {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpOutputYaml, map[string]*bintree{}},
 						"https-61567.yaml":                             {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttps61567Yaml, map[string]*bintree{}},
 						"https-output-ca.yaml":                         {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderHttpsOutputCaYaml, map[string]*bintree{}},
@@ -124031,8 +119653,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"otlp.yaml":                                    {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderOtlpYaml, map[string]*bintree{}},
 						"rsyslog-mtls.yaml":                            {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsyslogMtlsYaml, map[string]*bintree{}},
 						"rsyslog-serverAuth.yaml":                      {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderRsyslogServerauthYaml, map[string]*bintree{}},
-						"s3-accessKey.yaml":                            {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3AccesskeyYaml, map[string]*bintree{}},
-						"s3-iamRole.yaml":                              {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderS3IamroleYaml, map[string]*bintree{}},
 						"splunk-mtls-passphrase.yaml":                  {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsPassphraseYaml, map[string]*bintree{}},
 						"splunk-mtls.yaml":                             {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkMtlsYaml, map[string]*bintree{}},
 						"splunk-serveronly.yaml":                       {testExtendedTestdataLoggingObservabilityOpenshiftIo_clusterlogforwarderSplunkServeronlyYaml, map[string]*bintree{}},
@@ -124077,6 +119697,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"change-fips.yaml":                               {testExtendedTestdataMcoChangeFipsYaml, map[string]*bintree{}},
 					"change-maxpods-kubelet-config.yaml":             {testExtendedTestdataMcoChangeMaxpodsKubeletConfigYaml, map[string]*bintree{}},
 					"change-policy-json.yaml":                        {testExtendedTestdataMcoChangePolicyJsonYaml, map[string]*bintree{}},
+					"change-worker-all-extensions.yaml":              {testExtendedTestdataMcoChangeWorkerAllExtensionsYaml, map[string]*bintree{}},
 					"change-worker-duplicated-kernel-argument.yaml":  {testExtendedTestdataMcoChangeWorkerDuplicatedKernelArgumentYaml, map[string]*bintree{}},
 					"change-worker-extension-usbguard.yaml":          {testExtendedTestdataMcoChangeWorkerExtensionUsbguardYaml, map[string]*bintree{}},
 					"change-worker-ign-version.yaml":                 {testExtendedTestdataMcoChangeWorkerIgnVersionYaml, map[string]*bintree{}},
@@ -124086,11 +119707,9 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"change-workers-chrony-configuration.yaml":       {testExtendedTestdataMcoChangeWorkersChronyConfigurationYaml, map[string]*bintree{}},
 					"create-deployment.yaml":                         {testExtendedTestdataMcoCreateDeploymentYaml, map[string]*bintree{}},
 					"create-pod.yaml":                                {testExtendedTestdataMcoCreatePodYaml, map[string]*bintree{}},
-					"custom-machine-config-pool-osimagestream.yaml":  {testExtendedTestdataMcoCustomMachineConfigPoolOsimagestreamYaml, map[string]*bintree{}},
 					"custom-machine-config-pool.yaml":                {testExtendedTestdataMcoCustomMachineConfigPoolYaml, map[string]*bintree{}},
 					"custom-tls-profile-kubelet-config.yaml":         {testExtendedTestdataMcoCustomTlsProfileKubeletConfigYaml, map[string]*bintree{}},
 					"disable-chrony.yaml":                            {testExtendedTestdataMcoDisableChronyYaml, map[string]*bintree{}},
-					"extra-disks.yaml":                               {testExtendedTestdataMcoExtraDisksYaml, map[string]*bintree{}},
 					"generic-container-runtime-config-label.yaml":    {testExtendedTestdataMcoGenericContainerRuntimeConfigLabelYaml, map[string]*bintree{}},
 					"generic-container-runtime-config.yaml":          {testExtendedTestdataMcoGenericContainerRuntimeConfigYaml, map[string]*bintree{}},
 					"generic-kubelet-config-label.yaml":              {testExtendedTestdataMcoGenericKubeletConfigLabelYaml, map[string]*bintree{}},
@@ -124204,20 +119823,15 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"image-digest-mirror-set.yaml": {testExtendedTestdataNetobservBpfmanImageDigestMirrorSetYaml, map[string]*bintree{}},
 						"namespace.yaml":               {testExtendedTestdataNetobservBpfmanNamespaceYaml, map[string]*bintree{}},
 					}},
-					"cert_manager_certificates_template.yaml": {testExtendedTestdataNetobservCert_manager_certificates_templateYaml, map[string]*bintree{}},
 					"exporters": {nil, map[string]*bintree{
-						"ipfix-collector.yaml":    {testExtendedTestdataNetobservExportersIpfixCollectorYaml, map[string]*bintree{}},
-						"otel-collector-tls.yaml": {testExtendedTestdataNetobservExportersOtelCollectorTlsYaml, map[string]*bintree{}},
+						"ipfix-collector.yaml": {testExtendedTestdataNetobservExportersIpfixCollectorYaml, map[string]*bintree{}},
+						"otel-collector.yaml":  {testExtendedTestdataNetobservExportersOtelCollectorYaml, map[string]*bintree{}},
 					}},
-					"flowcollectorSlice_v1alpha1_template.yaml": {testExtendedTestdataNetobservFlowcollectorslice_v1alpha1_templateYaml, map[string]*bintree{}},
-					"flowcollector_v1beta2_template.yaml":       {testExtendedTestdataNetobservFlowcollector_v1beta2_templateYaml, map[string]*bintree{}},
-					"flowlogs_pipeline_hpa_template.yaml":       {testExtendedTestdataNetobservFlowlogs_pipeline_hpa_templateYaml, map[string]*bintree{}},
-					"flowmetrics_v1alpha1_template.yaml":        {testExtendedTestdataNetobservFlowmetrics_v1alpha1_templateYaml, map[string]*bintree{}},
-					"gateway-api-template.yaml":                 {testExtendedTestdataNetobservGatewayApiTemplateYaml, map[string]*bintree{}},
+					"flowcollector_v1beta2_template.yaml": {testExtendedTestdataNetobservFlowcollector_v1beta2_templateYaml, map[string]*bintree{}},
+					"flowmetrics_v1alpha1_template.yaml":  {testExtendedTestdataNetobservFlowmetrics_v1alpha1_templateYaml, map[string]*bintree{}},
 					"kafka": {nil, map[string]*bintree{
 						"kafka-default.yaml":        {testExtendedTestdataNetobservKafkaKafkaDefaultYaml, map[string]*bintree{}},
 						"kafka-metrics-config.yaml": {testExtendedTestdataNetobservKafkaKafkaMetricsConfigYaml, map[string]*bintree{}},
-						"kafka-node-pool.yaml":      {testExtendedTestdataNetobservKafkaKafkaNodePoolYaml, map[string]*bintree{}},
 						"kafka-tls.yaml":            {testExtendedTestdataNetobservKafkaKafkaTlsYaml, map[string]*bintree{}},
 						"kafka-topic.yaml":          {testExtendedTestdataNetobservKafkaKafkaTopicYaml, map[string]*bintree{}},
 						"kafka-user.yaml":           {testExtendedTestdataNetobservKafkaKafkaUserYaml, map[string]*bintree{}},
@@ -124249,17 +119863,13 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"test-SYN-flood-client_template.yaml":  {testExtendedTestdataNetobservTestSynFloodClient_templateYaml, map[string]*bintree{}},
 					"test-nginx-client_template.yaml":      {testExtendedTestdataNetobservTestNginxClient_templateYaml, map[string]*bintree{}},
 					"test-nginx-server_template.yaml":      {testExtendedTestdataNetobservTestNginxServer_templateYaml, map[string]*bintree{}},
-					"test-ping-pods_template.yaml":         {testExtendedTestdataNetobservTestPingPods_templateYaml, map[string]*bintree{}},
-					"test-tls-client_template.yaml":        {testExtendedTestdataNetobservTestTlsClient_templateYaml, map[string]*bintree{}},
-					"test-tls-server_template.yaml":        {testExtendedTestdataNetobservTestTlsServer_templateYaml, map[string]*bintree{}},
 					"testuser-client-server_template.yaml": {testExtendedTestdataNetobservTestuserClientServer_templateYaml, map[string]*bintree{}},
 					"testuser-template-crb.yaml":           {testExtendedTestdataNetobservTestuserTemplateCrbYaml, map[string]*bintree{}},
 					"virtualization": {nil, map[string]*bintree{
-						"kubevirt-hyperconverged.yaml":    {testExtendedTestdataNetobservVirtualizationKubevirtHyperconvergedYaml, map[string]*bintree{}},
-						"layer2-nad.yaml":                 {testExtendedTestdataNetobservVirtualizationLayer2NadYaml, map[string]*bintree{}},
-						"test-vm-UDN_template.yaml":       {testExtendedTestdataNetobservVirtualizationTestVmUdn_templateYaml, map[string]*bintree{}},
-						"test-vm-localnet_template.yaml":  {testExtendedTestdataNetobservVirtualizationTestVmLocalnet_templateYaml, map[string]*bintree{}},
-						"test-vm-static-IP_template.yaml": {testExtendedTestdataNetobservVirtualizationTestVmStaticIp_templateYaml, map[string]*bintree{}},
+						"kubevirt-hyperconverged.yaml": {testExtendedTestdataNetobservVirtualizationKubevirtHyperconvergedYaml, map[string]*bintree{}},
+						"layer2-nad.yaml":              {testExtendedTestdataNetobservVirtualizationLayer2NadYaml, map[string]*bintree{}},
+						"test-vm1.yaml":                {testExtendedTestdataNetobservVirtualizationTestVm1Yaml, map[string]*bintree{}},
+						"test-vm2.yaml":                {testExtendedTestdataNetobservVirtualizationTestVm2Yaml, map[string]*bintree{}},
 					}},
 				}},
 				"networking": {nil, map[string]*bintree{
@@ -124323,13 +119933,11 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"hostport-pod.yaml":                         {testExtendedTestdataNetworkingHostportPodYaml, map[string]*bintree{}},
 					"httpserverPod-specific-node-template.yaml": {testExtendedTestdataNetworkingHttpserverpodSpecificNodeTemplateYaml, map[string]*bintree{}},
 					"ingressnodefirewall": {nil, map[string]*bintree{
-						"catalogsource-template.yaml": {testExtendedTestdataNetworkingIngressnodefirewallCatalogsourceTemplateYaml, map[string]*bintree{}},
-						"image-digest-mirrorset.yaml": {testExtendedTestdataNetworkingIngressnodefirewallImageDigestMirrorsetYaml, map[string]*bintree{}},
-						"infw-config.yaml":            {testExtendedTestdataNetworkingIngressnodefirewallInfwConfigYaml, map[string]*bintree{}},
-						"infw-icmp.yaml":              {testExtendedTestdataNetworkingIngressnodefirewallInfwIcmpYaml, map[string]*bintree{}},
-						"infw-icmpv6.yaml":            {testExtendedTestdataNetworkingIngressnodefirewallInfwIcmpv6Yaml, map[string]*bintree{}},
-						"infw-multiple-cidr.yaml":     {testExtendedTestdataNetworkingIngressnodefirewallInfwMultipleCidrYaml, map[string]*bintree{}},
-						"infw.yaml":                   {testExtendedTestdataNetworkingIngressnodefirewallInfwYaml, map[string]*bintree{}},
+						"infw-config.yaml":        {testExtendedTestdataNetworkingIngressnodefirewallInfwConfigYaml, map[string]*bintree{}},
+						"infw-icmp.yaml":          {testExtendedTestdataNetworkingIngressnodefirewallInfwIcmpYaml, map[string]*bintree{}},
+						"infw-icmpv6.yaml":        {testExtendedTestdataNetworkingIngressnodefirewallInfwIcmpv6Yaml, map[string]*bintree{}},
+						"infw-multiple-cidr.yaml": {testExtendedTestdataNetworkingIngressnodefirewallInfwMultipleCidrYaml, map[string]*bintree{}},
+						"infw.yaml":               {testExtendedTestdataNetworkingIngressnodefirewallInfwYaml, map[string]*bintree{}},
 					}},
 					"ipsec": {nil, map[string]*bintree{
 						"invalid-mc.yaml":              {testExtendedTestdataNetworkingIpsecInvalidMcYaml, map[string]*bintree{}},
@@ -124343,11 +119951,10 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"bfdprofile-template.yaml":                        {testExtendedTestdataNetworkingMetallbBfdprofileTemplateYaml, map[string]*bintree{}},
 						"bgpadvertisement-template.yaml":                  {testExtendedTestdataNetworkingMetallbBgpadvertisementTemplateYaml, map[string]*bintree{}},
 						"bgppeer-template.yaml":                           {testExtendedTestdataNetworkingMetallbBgppeerTemplateYaml, map[string]*bintree{}},
-						"catalogsource-template.yaml":                     {testExtendedTestdataNetworkingMetallbCatalogsourceTemplateYaml, map[string]*bintree{}},
 						"community-template.yaml":                         {testExtendedTestdataNetworkingMetallbCommunityTemplateYaml, map[string]*bintree{}},
+						"frr-master-singlestack-configmap-template.yaml":  {testExtendedTestdataNetworkingMetallbFrrMasterSinglestackConfigmapTemplateYaml, map[string]*bintree{}},
 						"frr-master-singlestack-nad-template.yaml":        {testExtendedTestdataNetworkingMetallbFrrMasterSinglestackNadTemplateYaml, map[string]*bintree{}},
 						"frr-master-singlestack-router-pod-template.yaml": {testExtendedTestdataNetworkingMetallbFrrMasterSinglestackRouterPodTemplateYaml, map[string]*bintree{}},
-						"image-digest-mirrorset.yaml":                     {testExtendedTestdataNetworkingMetallbImageDigestMirrorsetYaml, map[string]*bintree{}},
 						"ipaddresspool-template.yaml":                     {testExtendedTestdataNetworkingMetallbIpaddresspoolTemplateYaml, map[string]*bintree{}},
 						"l2advertisement-template.yaml":                   {testExtendedTestdataNetworkingMetallbL2advertisementTemplateYaml, map[string]*bintree{}},
 						"loadbalancer-svc-annotated-template.yaml":        {testExtendedTestdataNetworkingMetallbLoadbalancerSvcAnnotatedTemplateYaml, map[string]*bintree{}},
@@ -124456,8 +120063,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 							"ipBlock-ingress-single-CIDR-template.yaml":           {testExtendedTestdataNetworkingNetworkpolicyIpblockIpblockIngressSingleCidrTemplateYaml, map[string]*bintree{}},
 							"ipBlock-ingress-single-multiple-CIDRs-template.yaml": {testExtendedTestdataNetworkingNetworkpolicyIpblockIpblockIngressSingleMultipleCidrsTemplateYaml, map[string]*bintree{}},
 						}},
-						"netpol-30920-75540.yaml":             {testExtendedTestdataNetworkingNetworkpolicyNetpol3092075540Yaml, map[string]*bintree{}},
-						"vap-npprotection-blockdeletion.yaml": {testExtendedTestdataNetworkingNetworkpolicyVapNpprotectionBlockdeletionYaml, map[string]*bintree{}},
+						"netpol-30920-75540.yaml": {testExtendedTestdataNetworkingNetworkpolicyNetpol3092075540Yaml, map[string]*bintree{}},
 					}},
 					"nmstate": {nil, map[string]*bintree{
 						"apply-route-template.yaml":                   {testExtendedTestdataNetworkingNmstateApplyRouteTemplateYaml, map[string]*bintree{}},
@@ -124466,12 +120072,10 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"bonding-policy-template.yaml":                {testExtendedTestdataNetworkingNmstateBondingPolicyTemplateYaml, map[string]*bintree{}},
 						"bridge-policy-template.yaml":                 {testExtendedTestdataNetworkingNmstateBridgePolicyTemplateYaml, map[string]*bintree{}},
 						"bridge-with-hostname-policy-template.yaml":   {testExtendedTestdataNetworkingNmstateBridgeWithHostnamePolicyTemplateYaml, map[string]*bintree{}},
-						"catalogsource-template.yaml":                 {testExtendedTestdataNetworkingNmstateCatalogsourceTemplateYaml, map[string]*bintree{}},
 						"dhcp-hostname-policy-template.yaml":          {testExtendedTestdataNetworkingNmstateDhcpHostnamePolicyTemplateYaml, map[string]*bintree{}},
 						"global-dns-nncp-recover-template.yaml":       {testExtendedTestdataNetworkingNmstateGlobalDnsNncpRecoverTemplateYaml, map[string]*bintree{}},
 						"global-dns-nncp-template.yaml":               {testExtendedTestdataNetworkingNmstateGlobalDnsNncpTemplateYaml, map[string]*bintree{}},
 						"iface-policy-template.yaml":                  {testExtendedTestdataNetworkingNmstateIfacePolicyTemplateYaml, map[string]*bintree{}},
-						"image-digest-mirrorset.yaml":                 {testExtendedTestdataNetworkingNmstateImageDigestMirrorsetYaml, map[string]*bintree{}},
 						"ipsec-host2host-policy-template.yaml":        {testExtendedTestdataNetworkingNmstateIpsecHost2hostPolicyTemplateYaml, map[string]*bintree{}},
 						"lldp-policy-template.yaml":                   {testExtendedTestdataNetworkingNmstateLldpPolicyTemplateYaml, map[string]*bintree{}},
 						"namespace-template.yaml":                     {testExtendedTestdataNetworkingNmstateNamespaceTemplateYaml, map[string]*bintree{}},
@@ -124491,7 +120095,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"static-hostname-policy-template.yaml":        {testExtendedTestdataNetworkingNmstateStaticHostnamePolicyTemplateYaml, map[string]*bintree{}},
 						"subscription-template.yaml":                  {testExtendedTestdataNetworkingNmstateSubscriptionTemplateYaml, map[string]*bintree{}},
 						"vlan-policy-base-eth-template.yaml":          {testExtendedTestdataNetworkingNmstateVlanPolicyBaseEthTemplateYaml, map[string]*bintree{}},
-						"vlan-policy-dualstack-template.yaml":         {testExtendedTestdataNetworkingNmstateVlanPolicyDualstackTemplateYaml, map[string]*bintree{}},
 						"vlan-policy-template.yaml":                   {testExtendedTestdataNetworkingNmstateVlanPolicyTemplateYaml, map[string]*bintree{}},
 					}},
 					"nodeservice-template.yaml": {testExtendedTestdataNetworkingNodeserviceTemplateYaml, map[string]*bintree{}},
@@ -124566,34 +120169,30 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					}},
 					"statefulset-hello.yaml":              {testExtendedTestdataNetworkingStatefulsetHelloYaml, map[string]*bintree{}},
 					"tcpdump-daemonset-template.yaml":     {testExtendedTestdataNetworkingTcpdumpDaemonsetTemplateYaml, map[string]*bintree{}},
-					"testpod-with-privilege.yaml":         {testExtendedTestdataNetworkingTestpodWithPrivilegeYaml, map[string]*bintree{}},
 					"testpod-with-special-lifecycle.yaml": {testExtendedTestdataNetworkingTestpodWithSpecialLifecycleYaml, map[string]*bintree{}},
 					"testpod.yaml":                        {testExtendedTestdataNetworkingTestpodYaml, map[string]*bintree{}},
 					"udn": {nil, map[string]*bintree{
-						"cudn_crd_dualstack_template.yaml":                      {testExtendedTestdataNetworkingUdnCudn_crd_dualstack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_layer2_dualstack_template.yaml":               {testExtendedTestdataNetworkingUdnCudn_crd_layer2_dualstack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_layer2_singlestack_template.yaml":             {testExtendedTestdataNetworkingUdnCudn_crd_layer2_singlestack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_localnet_singlestack_template.yaml":           {testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_localnet_singlestack_with_vlan_template.yaml": {testExtendedTestdataNetworkingUdnCudn_crd_localnet_singlestack_with_vlan_templateYaml, map[string]*bintree{}},
-						"cudn_crd_matchexp_dualstack_template.yaml":             {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_dualstack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_matchexp_layer2_dualstack_template.yaml":      {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_layer2_dualstack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_matchexp_layer2_singlestack_template.yaml":    {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_layer2_singlestack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_matchexp_singlestack_template.yaml":           {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_singlestack_templateYaml, map[string]*bintree{}},
-						"cudn_crd_singlestack_template.yaml":                    {testExtendedTestdataNetworkingUdnCudn_crd_singlestack_templateYaml, map[string]*bintree{}},
-						"udn_crd_dualstack2_template.yaml":                      {testExtendedTestdataNetworkingUdnUdn_crd_dualstack2_templateYaml, map[string]*bintree{}},
-						"udn_crd_layer2_dualstack_template.yaml":                {testExtendedTestdataNetworkingUdnUdn_crd_layer2_dualstack_templateYaml, map[string]*bintree{}},
-						"udn_crd_layer2_singlestack_template.yaml":              {testExtendedTestdataNetworkingUdnUdn_crd_layer2_singlestack_templateYaml, map[string]*bintree{}},
-						"udn_crd_singlestack_template.yaml":                     {testExtendedTestdataNetworkingUdnUdn_crd_singlestack_templateYaml, map[string]*bintree{}},
-						"udn_nad_template.yaml":                                 {testExtendedTestdataNetworkingUdnUdn_nad_templateYaml, map[string]*bintree{}},
-						"udn_statefulset_template.yaml":                         {testExtendedTestdataNetworkingUdnUdn_statefulset_templateYaml, map[string]*bintree{}},
-						"udn_test_pod_annotation_template.yaml":                 {testExtendedTestdataNetworkingUdnUdn_test_pod_annotation_templateYaml, map[string]*bintree{}},
-						"udn_test_pod_annotation_template_node.yaml":            {testExtendedTestdataNetworkingUdnUdn_test_pod_annotation_template_nodeYaml, map[string]*bintree{}},
-						"udn_test_pod_liveness_template.yaml":                   {testExtendedTestdataNetworkingUdnUdn_test_pod_liveness_templateYaml, map[string]*bintree{}},
-						"udn_test_pod_readiness_template.yaml":                  {testExtendedTestdataNetworkingUdnUdn_test_pod_readiness_templateYaml, map[string]*bintree{}},
-						"udn_test_pod_startup_template.yaml":                    {testExtendedTestdataNetworkingUdnUdn_test_pod_startup_templateYaml, map[string]*bintree{}},
-						"udn_test_pod_template.yaml":                            {testExtendedTestdataNetworkingUdnUdn_test_pod_templateYaml, map[string]*bintree{}},
-						"udn_test_pod_template_node.yaml":                       {testExtendedTestdataNetworkingUdnUdn_test_pod_template_nodeYaml, map[string]*bintree{}},
-						"udn_with_multiplenetworkpolicy.yaml":                   {testExtendedTestdataNetworkingUdnUdn_with_multiplenetworkpolicyYaml, map[string]*bintree{}},
+						"cudn_crd_dualstack_template.yaml":                   {testExtendedTestdataNetworkingUdnCudn_crd_dualstack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_layer2_dualstack_template.yaml":            {testExtendedTestdataNetworkingUdnCudn_crd_layer2_dualstack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_layer2_singlestack_template.yaml":          {testExtendedTestdataNetworkingUdnCudn_crd_layer2_singlestack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_matchexp_dualstack_template.yaml":          {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_dualstack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_matchexp_layer2_dualstack_template.yaml":   {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_layer2_dualstack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_matchexp_layer2_singlestack_template.yaml": {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_layer2_singlestack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_matchexp_singlestack_template.yaml":        {testExtendedTestdataNetworkingUdnCudn_crd_matchexp_singlestack_templateYaml, map[string]*bintree{}},
+						"cudn_crd_singlestack_template.yaml":                 {testExtendedTestdataNetworkingUdnCudn_crd_singlestack_templateYaml, map[string]*bintree{}},
+						"udn_crd_dualstack2_template.yaml":                   {testExtendedTestdataNetworkingUdnUdn_crd_dualstack2_templateYaml, map[string]*bintree{}},
+						"udn_crd_layer2_dualstack_template.yaml":             {testExtendedTestdataNetworkingUdnUdn_crd_layer2_dualstack_templateYaml, map[string]*bintree{}},
+						"udn_crd_layer2_singlestack_template.yaml":           {testExtendedTestdataNetworkingUdnUdn_crd_layer2_singlestack_templateYaml, map[string]*bintree{}},
+						"udn_crd_singlestack_template.yaml":                  {testExtendedTestdataNetworkingUdnUdn_crd_singlestack_templateYaml, map[string]*bintree{}},
+						"udn_nad_template.yaml":                              {testExtendedTestdataNetworkingUdnUdn_nad_templateYaml, map[string]*bintree{}},
+						"udn_test_pod_annotation_template.yaml":              {testExtendedTestdataNetworkingUdnUdn_test_pod_annotation_templateYaml, map[string]*bintree{}},
+						"udn_test_pod_annotation_template_node.yaml":         {testExtendedTestdataNetworkingUdnUdn_test_pod_annotation_template_nodeYaml, map[string]*bintree{}},
+						"udn_test_pod_liveness_template.yaml":                {testExtendedTestdataNetworkingUdnUdn_test_pod_liveness_templateYaml, map[string]*bintree{}},
+						"udn_test_pod_readiness_template.yaml":               {testExtendedTestdataNetworkingUdnUdn_test_pod_readiness_templateYaml, map[string]*bintree{}},
+						"udn_test_pod_startup_template.yaml":                 {testExtendedTestdataNetworkingUdnUdn_test_pod_startup_templateYaml, map[string]*bintree{}},
+						"udn_test_pod_template.yaml":                         {testExtendedTestdataNetworkingUdnUdn_test_pod_templateYaml, map[string]*bintree{}},
+						"udn_test_pod_template_node.yaml":                    {testExtendedTestdataNetworkingUdnUdn_test_pod_template_nodeYaml, map[string]*bintree{}},
+						"udn_with_multiplenetworkpolicy.yaml":                {testExtendedTestdataNetworkingUdnUdn_with_multiplenetworkpolicyYaml, map[string]*bintree{}},
 					}},
 					"udp-listener.yaml": {testExtendedTestdataNetworkingUdpListenerYaml, map[string]*bintree{}},
 				}},
@@ -124607,7 +120206,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"ImageTagMirrorSet.yaml":                       {testExtendedTestdataNodeImagetagmirrorsetYaml, map[string]*bintree{}},
 					"amq-operatorgroup-52384.yaml":                 {testExtendedTestdataNodeAmqOperatorgroup52384Yaml, map[string]*bintree{}},
 					"amq-sub.yaml":                                 {testExtendedTestdataNodeAmqSubYaml, map[string]*bintree{}},
-					"clusterimagepolicy.yaml":                      {testExtendedTestdataNodeClusterimagepolicyYaml, map[string]*bintree{}},
 					"clusterresource-override.yaml":                {testExtendedTestdataNodeClusterresourceOverrideYaml, map[string]*bintree{}},
 					"cma-keda-controller-template.yaml":            {testExtendedTestdataNodeCmaKedaControllerTemplateYaml, map[string]*bintree{}},
 					"containerRuntimeConfig-crun.yaml":             {testExtendedTestdataNodeContainerruntimeconfigCrunYaml, map[string]*bintree{}},
@@ -124661,6 +120259,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"pod-sigStore.yaml":                            {testExtendedTestdataNodePodSigstoreYaml, map[string]*bintree{}},
 					"pod-termination.yaml":                         {testExtendedTestdataNodePodTerminationYaml, map[string]*bintree{}},
 					"pod-user-namespace.yaml":                      {testExtendedTestdataNodePodUserNamespaceYaml, map[string]*bintree{}},
+					"pod-wasm.yaml":                                {testExtendedTestdataNodePodWasmYaml, map[string]*bintree{}},
 					"pod-with-two-containers.yaml":                 {testExtendedTestdataNodePodWithTwoContainersYaml, map[string]*bintree{}},
 					"pod-without-workload-cpu.yaml":                {testExtendedTestdataNodePodWithoutWorkloadCpuYaml, map[string]*bintree{}},
 					"pod-workload-cpu-without-anotation.yaml":      {testExtendedTestdataNodePodWorkloadCpuWithoutAnotationYaml, map[string]*bintree{}},
@@ -124691,6 +120290,44 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"vpacontroller-70962.yaml":                     {testExtendedTestdataNodeVpacontroller70962Yaml, map[string]*bintree{}},
 				}},
 				"oap": {nil, map[string]*bintree{
+					"certmanager": {nil, map[string]*bintree{
+						"cert-generic.yaml":                              {testExtendedTestdataOapCertmanagerCertGenericYaml, map[string]*bintree{}},
+						"cert-match-test-1.yaml":                         {testExtendedTestdataOapCertmanagerCertMatchTest1Yaml, map[string]*bintree{}},
+						"cert-match-test-2.yaml":                         {testExtendedTestdataOapCertmanagerCertMatchTest2Yaml, map[string]*bintree{}},
+						"cert-match-test-3.yaml":                         {testExtendedTestdataOapCertmanagerCertMatchTest3Yaml, map[string]*bintree{}},
+						"cert-selfsigned-vault.yaml":                     {testExtendedTestdataOapCertmanagerCertSelfsignedVaultYaml, map[string]*bintree{}},
+						"cert-selfsigned.yaml":                           {testExtendedTestdataOapCertmanagerCertSelfsignedYaml, map[string]*bintree{}},
+						"cluster-monitoring-config.yaml":                 {testExtendedTestdataOapCertmanagerClusterMonitoringConfigYaml, map[string]*bintree{}},
+						"clusterissuer-acme-dns01-clouddns-ambient.yaml": {testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01ClouddnsAmbientYaml, map[string]*bintree{}},
+						"clusterissuer-acme-dns01-route53-ambient.yaml":  {testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53AmbientYaml, map[string]*bintree{}},
+						"clusterissuer-acme-dns01-route53.yaml":          {testExtendedTestdataOapCertmanagerClusterissuerAcmeDns01Route53Yaml, map[string]*bintree{}},
+						"clusterissuer-acme-multiple-solvers.yaml":       {testExtendedTestdataOapCertmanagerClusterissuerAcmeMultipleSolversYaml, map[string]*bintree{}},
+						"deploy-hello-openshift.yaml":                    {testExtendedTestdataOapCertmanagerDeployHelloOpenshiftYaml, map[string]*bintree{}},
+						"deploy-pebble-server.yaml":                      {testExtendedTestdataOapCertmanagerDeployPebbleServerYaml, map[string]*bintree{}},
+						"exec-curl-helper.yaml":                          {testExtendedTestdataOapCertmanagerExecCurlHelperYaml, map[string]*bintree{}},
+						"exec-helm-helper.yaml":                          {testExtendedTestdataOapCertmanagerExecHelmHelperYaml, map[string]*bintree{}},
+						"helm-vault-tls-config.yaml":                     {testExtendedTestdataOapCertmanagerHelmVaultTlsConfigYaml, map[string]*bintree{}},
+						"issuer-acme-http01.yaml":                        {testExtendedTestdataOapCertmanagerIssuerAcmeHttp01Yaml, map[string]*bintree{}},
+						"issuer-ca.yaml":                                 {testExtendedTestdataOapCertmanagerIssuerCaYaml, map[string]*bintree{}},
+						"issuer-google-cas.yaml":                         {testExtendedTestdataOapCertmanagerIssuerGoogleCasYaml, map[string]*bintree{}},
+						"issuer-selfsigned.yaml":                         {testExtendedTestdataOapCertmanagerIssuerSelfsignedYaml, map[string]*bintree{}},
+						"issuer-vault-approle.yaml":                      {testExtendedTestdataOapCertmanagerIssuerVaultApproleYaml, map[string]*bintree{}},
+						"issuer-vault-bound-sa.yaml":                     {testExtendedTestdataOapCertmanagerIssuerVaultBoundSaYaml, map[string]*bintree{}},
+						"issuer-vault-static-sa.yaml":                    {testExtendedTestdataOapCertmanagerIssuerVaultStaticSaYaml, map[string]*bintree{}},
+						"issuer-vault-token.yaml":                        {testExtendedTestdataOapCertmanagerIssuerVaultTokenYaml, map[string]*bintree{}},
+						"konflux-fbc.yaml":                               {testExtendedTestdataOapCertmanagerKonfluxFbcYaml, map[string]*bintree{}},
+						"namespace.yaml":                                 {testExtendedTestdataOapCertmanagerNamespaceYaml, map[string]*bintree{}},
+						"operatorgroup.yaml":                             {testExtendedTestdataOapCertmanagerOperatorgroupYaml, map[string]*bintree{}},
+						"rapidast-config.yaml":                           {testExtendedTestdataOapCertmanagerRapidastConfigYaml, map[string]*bintree{}},
+						"rapidast-pod.yaml":                              {testExtendedTestdataOapCertmanagerRapidastPodYaml, map[string]*bintree{}},
+						"rapidast-privileged-sa.yaml":                    {testExtendedTestdataOapCertmanagerRapidastPrivilegedSaYaml, map[string]*bintree{}},
+						"rapidast-results-sync-helper.yaml":              {testExtendedTestdataOapCertmanagerRapidastResultsSyncHelperYaml, map[string]*bintree{}},
+						"rbac-secret-reader.yaml":                        {testExtendedTestdataOapCertmanagerRbacSecretReaderYaml, map[string]*bintree{}},
+						"rbac-vault-bound-sa.yaml":                       {testExtendedTestdataOapCertmanagerRbacVaultBoundSaYaml, map[string]*bintree{}},
+						"secret-vault-static-sa-token.yaml":              {testExtendedTestdataOapCertmanagerSecretVaultStaticSaTokenYaml, map[string]*bintree{}},
+						"servicemonitor.yaml":                            {testExtendedTestdataOapCertmanagerServicemonitorYaml, map[string]*bintree{}},
+						"subscription.yaml":                              {testExtendedTestdataOapCertmanagerSubscriptionYaml, map[string]*bintree{}},
+					}},
 					"eso": {nil, map[string]*bintree{
 						"clustergenerator-password.yaml":    {testExtendedTestdataOapEsoClustergeneratorPasswordYaml, map[string]*bintree{}},
 						"externalsecret-awsps.yaml":         {testExtendedTestdataOapEsoExternalsecretAwspsYaml, map[string]*bintree{}},
@@ -124711,24 +120348,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"secretstore-vault.yaml":            {testExtendedTestdataOapEsoSecretstoreVaultYaml, map[string]*bintree{}},
 						"subscription.yaml":                 {testExtendedTestdataOapEsoSubscriptionYaml, map[string]*bintree{}},
 					}},
-					"exec-helm-helper.yaml": {testExtendedTestdataOapExecHelmHelperYaml, map[string]*bintree{}},
-					"konflux-fbc.yaml":      {testExtendedTestdataOapKonfluxFbcYaml, map[string]*bintree{}},
-					"mustgather": {nil, map[string]*bintree{
-						"mustgather-audit.yaml":    {testExtendedTestdataOapMustgatherMustgatherAuditYaml, map[string]*bintree{}},
-						"mustgather-noupload.yaml": {testExtendedTestdataOapMustgatherMustgatherNouploadYaml, map[string]*bintree{}},
-						"mustgather-proxy.yaml":    {testExtendedTestdataOapMustgatherMustgatherProxyYaml, map[string]*bintree{}},
-						"mustgather-pvc.yaml":      {testExtendedTestdataOapMustgatherMustgatherPvcYaml, map[string]*bintree{}},
-						"mustgather-retain.yaml":   {testExtendedTestdataOapMustgatherMustgatherRetainYaml, map[string]*bintree{}},
-						"mustgather-timeout.yaml":  {testExtendedTestdataOapMustgatherMustgatherTimeoutYaml, map[string]*bintree{}},
-						"mustgather-upload.yaml":   {testExtendedTestdataOapMustgatherMustgatherUploadYaml, map[string]*bintree{}},
-						"mustgather.yaml":          {testExtendedTestdataOapMustgatherMustgatherYaml, map[string]*bintree{}},
-						"namespace.yaml":           {testExtendedTestdataOapMustgatherNamespaceYaml, map[string]*bintree{}},
-						"operatorgroup.yaml":       {testExtendedTestdataOapMustgatherOperatorgroupYaml, map[string]*bintree{}},
-						"pvc.yaml":                 {testExtendedTestdataOapMustgatherPvcYaml, map[string]*bintree{}},
-						"reader-pod.yaml":          {testExtendedTestdataOapMustgatherReaderPodYaml, map[string]*bintree{}},
-						"subscription.yaml":        {testExtendedTestdataOapMustgatherSubscriptionYaml, map[string]*bintree{}},
-					}},
-					"operatorgroup.yaml": {testExtendedTestdataOapOperatorgroupYaml, map[string]*bintree{}},
 					"sscsi": {nil, map[string]*bintree{
 						"73739": {nil, map[string]*bintree{
 							"spc_vault_pod.yaml":                {testExtendedTestdataOapSscsi73739Spc_vault_podYaml, map[string]*bintree{}},
@@ -124737,7 +120356,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						}},
 						"75963": {nil, map[string]*bintree{
 							"gcpproviderplugin.yaml": {testExtendedTestdataOapSscsi75963GcpproviderpluginYaml, map[string]*bintree{}},
-							"invalid_sc_pod.yaml":    {testExtendedTestdataOapSscsi75963Invalid_sc_podYaml, map[string]*bintree{}},
 							"sc_pod.yaml":            {testExtendedTestdataOapSscsi75963Sc_podYaml, map[string]*bintree{}},
 						}},
 						"75970": {nil, map[string]*bintree{
@@ -124748,7 +120366,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"operatorgroup.yaml":     {testExtendedTestdataOapSscsiOperatorgroupYaml, map[string]*bintree{}},
 						"subscription.yaml":      {testExtendedTestdataOapSscsiSubscriptionYaml, map[string]*bintree{}},
 					}},
-					"subscription.yaml": {testExtendedTestdataOapSubscriptionYaml, map[string]*bintree{}},
 				}},
 				"oauthserver": {nil, map[string]*bintree{
 					"cabundle-cm.yaml":   {testExtendedTestdataOauthserverCabundleCmYaml, map[string]*bintree{}},
@@ -124806,27 +120423,33 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"etcd-subscription-manual.yaml":                     {testExtendedTestdataOlmEtcdSubscriptionManualYaml, map[string]*bintree{}},
 					"etcd-subscription.yaml":                            {testExtendedTestdataOlmEtcdSubscriptionYaml, map[string]*bintree{}},
 					"mc-workload-partition.yaml":                        {testExtendedTestdataOlmMcWorkloadPartitionYaml, map[string]*bintree{}},
-					"og-allns.yaml":                                     {testExtendedTestdataOlmOgAllnsYaml, map[string]*bintree{}},
-					"og-multins.yaml":                                   {testExtendedTestdataOlmOgMultinsYaml, map[string]*bintree{}},
-					"olm-proxy-subscription.yaml":                       {testExtendedTestdataOlmOlmProxySubscriptionYaml, map[string]*bintree{}},
-					"olm-subscription.yaml":                             {testExtendedTestdataOlmOlmSubscriptionYaml, map[string]*bintree{}},
-					"operator.yaml":                                     {testExtendedTestdataOlmOperatorYaml, map[string]*bintree{}},
-					"operatorgroup-serviceaccount.yaml":                 {testExtendedTestdataOlmOperatorgroupServiceaccountYaml, map[string]*bintree{}},
-					"operatorgroup-upgradestrategy.yaml":                {testExtendedTestdataOlmOperatorgroupUpgradestrategyYaml, map[string]*bintree{}},
-					"operatorgroup.yaml":                                {testExtendedTestdataOlmOperatorgroupYaml, map[string]*bintree{}},
-					"opsrc.yaml":                                        {testExtendedTestdataOlmOpsrcYaml, map[string]*bintree{}},
-					"packageserver.yaml":                                {testExtendedTestdataOlmPackageserverYaml, map[string]*bintree{}},
-					"platform_operator.yaml":                            {testExtendedTestdataOlmPlatform_operatorYaml, map[string]*bintree{}},
-					"prometheus-antiaffinity.yaml":                      {testExtendedTestdataOlmPrometheusAntiaffinityYaml, map[string]*bintree{}},
-					"prometheus-nodeaffinity.yaml":                      {testExtendedTestdataOlmPrometheusNodeaffinityYaml, map[string]*bintree{}},
-					"role-binding.yaml":                                 {testExtendedTestdataOlmRoleBindingYaml, map[string]*bintree{}},
-					"role.yaml":                                         {testExtendedTestdataOlmRoleYaml, map[string]*bintree{}},
-					"scc.yaml":                                          {testExtendedTestdataOlmSccYaml, map[string]*bintree{}},
-					"scoped-sa-etcd.yaml":                               {testExtendedTestdataOlmScopedSaEtcdYaml, map[string]*bintree{}},
-					"scoped-sa-fine-grained-roles.yaml":                 {testExtendedTestdataOlmScopedSaFineGrainedRolesYaml, map[string]*bintree{}},
-					"scoped-sa-roles.yaml":                              {testExtendedTestdataOlmScopedSaRolesYaml, map[string]*bintree{}},
-					"secret.yaml":                                       {testExtendedTestdataOlmSecretYaml, map[string]*bintree{}},
-					"secret_opaque.yaml":                                {testExtendedTestdataOlmSecret_opaqueYaml, map[string]*bintree{}},
+					"microshift": {nil, map[string]*bintree{
+						"catalogsource-image-restricted.yaml": {testExtendedTestdataOlmMicroshiftCatalogsourceImageRestrictedYaml, map[string]*bintree{}},
+						"og-all.yaml":                         {testExtendedTestdataOlmMicroshiftOgAllYaml, map[string]*bintree{}},
+						"og-single.yaml":                      {testExtendedTestdataOlmMicroshiftOgSingleYaml, map[string]*bintree{}},
+						"olm-subscription.yaml":               {testExtendedTestdataOlmMicroshiftOlmSubscriptionYaml, map[string]*bintree{}},
+					}},
+					"og-allns.yaml":                      {testExtendedTestdataOlmOgAllnsYaml, map[string]*bintree{}},
+					"og-multins.yaml":                    {testExtendedTestdataOlmOgMultinsYaml, map[string]*bintree{}},
+					"olm-proxy-subscription.yaml":        {testExtendedTestdataOlmOlmProxySubscriptionYaml, map[string]*bintree{}},
+					"olm-subscription.yaml":              {testExtendedTestdataOlmOlmSubscriptionYaml, map[string]*bintree{}},
+					"operator.yaml":                      {testExtendedTestdataOlmOperatorYaml, map[string]*bintree{}},
+					"operatorgroup-serviceaccount.yaml":  {testExtendedTestdataOlmOperatorgroupServiceaccountYaml, map[string]*bintree{}},
+					"operatorgroup-upgradestrategy.yaml": {testExtendedTestdataOlmOperatorgroupUpgradestrategyYaml, map[string]*bintree{}},
+					"operatorgroup.yaml":                 {testExtendedTestdataOlmOperatorgroupYaml, map[string]*bintree{}},
+					"opsrc.yaml":                         {testExtendedTestdataOlmOpsrcYaml, map[string]*bintree{}},
+					"packageserver.yaml":                 {testExtendedTestdataOlmPackageserverYaml, map[string]*bintree{}},
+					"platform_operator.yaml":             {testExtendedTestdataOlmPlatform_operatorYaml, map[string]*bintree{}},
+					"prometheus-antiaffinity.yaml":       {testExtendedTestdataOlmPrometheusAntiaffinityYaml, map[string]*bintree{}},
+					"prometheus-nodeaffinity.yaml":       {testExtendedTestdataOlmPrometheusNodeaffinityYaml, map[string]*bintree{}},
+					"role-binding.yaml":                  {testExtendedTestdataOlmRoleBindingYaml, map[string]*bintree{}},
+					"role.yaml":                          {testExtendedTestdataOlmRoleYaml, map[string]*bintree{}},
+					"scc.yaml":                           {testExtendedTestdataOlmSccYaml, map[string]*bintree{}},
+					"scoped-sa-etcd.yaml":                {testExtendedTestdataOlmScopedSaEtcdYaml, map[string]*bintree{}},
+					"scoped-sa-fine-grained-roles.yaml":  {testExtendedTestdataOlmScopedSaFineGrainedRolesYaml, map[string]*bintree{}},
+					"scoped-sa-roles.yaml":               {testExtendedTestdataOlmScopedSaRolesYaml, map[string]*bintree{}},
+					"secret.yaml":                        {testExtendedTestdataOlmSecretYaml, map[string]*bintree{}},
+					"secret_opaque.yaml":                 {testExtendedTestdataOlmSecret_opaqueYaml, map[string]*bintree{}},
 					"v1": {nil, map[string]*bintree{
 						"basic-bd-plain-image.yaml":                      {testExtendedTestdataOlmV1BasicBdPlainImageYaml, map[string]*bintree{}},
 						"basic-bd-registry-image.yaml":                   {testExtendedTestdataOlmV1BasicBdRegistryImageYaml, map[string]*bintree{}},
@@ -124843,7 +120466,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"clusterextension-withselectorlabel-OwnSingle.yaml":                        {testExtendedTestdataOlmV1ClusterextensionWithselectorlabelOwnsingleYaml, map[string]*bintree{}},
 						"clusterextension-withselectorlabel-WithoutChannel.yaml":                   {testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutchannelYaml, map[string]*bintree{}},
 						"clusterextension-withselectorlabel-WithoutChannelVersion.yaml":            {testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutchannelversionYaml, map[string]*bintree{}},
-						"clusterextension-withselectorlabel-WithoutVersion.yaml":                   {testExtendedTestdataOlmV1ClusterextensionWithselectorlabelWithoutversionYaml, map[string]*bintree{}},
 						"clusterextension-withselectorlabel.yaml":                                  {testExtendedTestdataOlmV1ClusterextensionWithselectorlabelYaml, map[string]*bintree{}},
 						"clusterextension.yaml":                          {testExtendedTestdataOlmV1ClusterextensionYaml, map[string]*bintree{}},
 						"clusterextensionWithoutChannel.yaml":            {testExtendedTestdataOlmV1ClusterextensionwithoutchannelYaml, map[string]*bintree{}},
@@ -125286,9 +120908,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				}},
 				"ota": {nil, map[string]*bintree{
 					"cvo": {nil, map[string]*bintree{
-						"70980-pdb.yaml":      {testExtendedTestdataOtaCvo70980PdbYaml, map[string]*bintree{}},
-						"84027-test-pod.yaml": {testExtendedTestdataOtaCvo84027TestPodYaml, map[string]*bintree{}},
-						"bad-oauth.yaml":      {testExtendedTestdataOtaCvoBadOauthYaml, map[string]*bintree{}},
+						"bad-oauth.yaml": {testExtendedTestdataOtaCvoBadOauthYaml, map[string]*bintree{}},
 						"cfg-ocp-66746": {nil, map[string]*bintree{
 							"featureset.yaml":       {testExtendedTestdataOtaCvoCfgOcp66746FeaturesetYaml, map[string]*bintree{}},
 							"none-basecap.yaml":     {testExtendedTestdataOtaCvoCfgOcp66746NoneBasecapYaml, map[string]*bintree{}},
@@ -125298,13 +120918,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"cfg-ocp-66747": {nil, map[string]*bintree{
 							"bad.yaml": {testExtendedTestdataOtaCvoCfgOcp66747BadYaml, map[string]*bintree{}},
 							"gcp.yaml": {testExtendedTestdataOtaCvoCfgOcp66747GcpYaml, map[string]*bintree{}},
-						}},
-						"cfg-ocp-84028": {nil, map[string]*bintree{
-							"client.yaml": {testExtendedTestdataOtaCvoCfgOcp84028ClientYaml, map[string]*bintree{}},
-							"server.yaml": {testExtendedTestdataOtaCvoCfgOcp84028ServerYaml, map[string]*bintree{}},
-						}},
-						"cfg-ocp-84029": {nil, map[string]*bintree{
-							"server.yaml": {testExtendedTestdataOtaCvoCfgOcp84029ServerYaml, map[string]*bintree{}},
 						}},
 						"cincy-77520.json": {testExtendedTestdataOtaCvoCincy77520Json, map[string]*bintree{}},
 						"cincy-79981.json": {testExtendedTestdataOtaCvoCincy79981Json, map[string]*bintree{}},
@@ -125318,12 +120931,12 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"ocp-66751.yaml":                                  {testExtendedTestdataOtaCvoOcp66751Yaml, map[string]*bintree{}},
 					}},
 					"osus": {nil, map[string]*bintree{
-						"Dockerfile":              {testExtendedTestdataOtaOsusDockerfile, map[string]*bintree{}},
-						"imageset-config-v2.yaml": {testExtendedTestdataOtaOsusImagesetConfigV2Yaml, map[string]*bintree{}},
-						"ipv6.yaml":               {testExtendedTestdataOtaOsusIpv6Yaml, map[string]*bintree{}},
-						"operatorgroup.yaml":      {testExtendedTestdataOtaOsusOperatorgroupYaml, map[string]*bintree{}},
-						"subscription.yaml":       {testExtendedTestdataOtaOsusSubscriptionYaml, map[string]*bintree{}},
-						"updateservice.yaml":      {testExtendedTestdataOtaOsusUpdateserviceYaml, map[string]*bintree{}},
+						"Dockerfile":           {testExtendedTestdataOtaOsusDockerfile, map[string]*bintree{}},
+						"imageset-config.yaml": {testExtendedTestdataOtaOsusImagesetConfigYaml, map[string]*bintree{}},
+						"ipv6.yaml":            {testExtendedTestdataOtaOsusIpv6Yaml, map[string]*bintree{}},
+						"operatorgroup.yaml":   {testExtendedTestdataOtaOsusOperatorgroupYaml, map[string]*bintree{}},
+						"subscription.yaml":    {testExtendedTestdataOtaOsusSubscriptionYaml, map[string]*bintree{}},
+						"updateservice.yaml":   {testExtendedTestdataOtaOsusUpdateserviceYaml, map[string]*bintree{}},
 					}},
 				}},
 				"perfscale": {nil, map[string]*bintree{
@@ -125368,7 +120981,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"deferred-nto-update-patch.yaml":      {testExtendedTestdataPsapNtoDeferredNtoUpdatePatchYaml, map[string]*bintree{}},
 						"deferred-nto.yaml":                   {testExtendedTestdataPsapNtoDeferredNtoYaml, map[string]*bintree{}},
 						"disable-https-mcp.yaml":              {testExtendedTestdataPsapNtoDisableHttpsMcpYaml, map[string]*bintree{}},
-						"disable-https-pp-ppc64le.yaml":       {testExtendedTestdataPsapNtoDisableHttpsPpPpc64leYaml, map[string]*bintree{}},
 						"disable-https-pp.yaml":               {testExtendedTestdataPsapNtoDisableHttpsPpYaml, map[string]*bintree{}},
 						"hp-performanceprofile-patch.yaml":    {testExtendedTestdataPsapNtoHpPerformanceprofilePatchYaml, map[string]*bintree{}},
 						"hp-performanceprofile.yaml":          {testExtendedTestdataPsapNtoHpPerformanceprofileYaml, map[string]*bintree{}},
@@ -125400,7 +121012,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					}},
 					"pao": {nil, map[string]*bintree{
 						"pao-baseprofile-mcp.yaml":             {testExtendedTestdataPsapPaoPaoBaseprofileMcpYaml, map[string]*bintree{}},
-						"pao-baseprofile-ppc64le.yaml":         {testExtendedTestdataPsapPaoPaoBaseprofilePpc64leYaml, map[string]*bintree{}},
 						"pao-baseprofile.yaml":                 {testExtendedTestdataPsapPaoPaoBaseprofileYaml, map[string]*bintree{}},
 						"pao-baseqos-pod.yaml":                 {testExtendedTestdataPsapPaoPaoBaseqosPodYaml, map[string]*bintree{}},
 						"pao-include-performance-profile.yaml": {testExtendedTestdataPsapPaoPaoIncludePerformanceProfileYaml, map[string]*bintree{}},
@@ -125409,7 +121020,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"pao-performance-fixpatch.yaml":        {testExtendedTestdataPsapPaoPaoPerformanceFixpatchYaml, map[string]*bintree{}},
 						"pao-performance-optimize.yaml":        {testExtendedTestdataPsapPaoPaoPerformanceOptimizeYaml, map[string]*bintree{}},
 						"pao-performance-patch.yaml":           {testExtendedTestdataPsapPaoPaoPerformancePatchYaml, map[string]*bintree{}},
-						"pao-performanceprofile-ppc64le.yaml":  {testExtendedTestdataPsapPaoPaoPerformanceprofilePpc64leYaml, map[string]*bintree{}},
 						"pao-performanceprofile.yaml":          {testExtendedTestdataPsapPaoPaoPerformanceprofileYaml, map[string]*bintree{}},
 						"pao-subscription.yaml":                {testExtendedTestdataPsapPaoPaoSubscriptionYaml, map[string]*bintree{}},
 						"pao-workercnf-mcp.yaml":               {testExtendedTestdataPsapPaoPaoWorkercnfMcpYaml, map[string]*bintree{}},
@@ -125434,7 +121044,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"49802-route.yaml": {testExtendedTestdataRouter49802RouteYaml, map[string]*bintree{}},
 					"awslb": {nil, map[string]*bintree{
 						"awslbcontroller.yaml":         {testExtendedTestdataRouterAwslbAwslbcontrollerYaml, map[string]*bintree{}},
-						"catalog-source.yaml":          {testExtendedTestdataRouterAwslbCatalogSourceYaml, map[string]*bintree{}},
 						"ingress-test.yaml":            {testExtendedTestdataRouterAwslbIngressTestYaml, map[string]*bintree{}},
 						"namespace.yaml":               {testExtendedTestdataRouterAwslbNamespaceYaml, map[string]*bintree{}},
 						"operatorgroup.yaml":           {testExtendedTestdataRouterAwslbOperatorgroupYaml, map[string]*bintree{}},
@@ -125456,7 +121065,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"error-page2-503.http":            {testExtendedTestdataRouterErrorPage2503Http, map[string]*bintree{}},
 					"extdns": {nil, map[string]*bintree{
 						"aws-sts-creds-secret.yaml":     {testExtendedTestdataRouterExtdnsAwsStsCredsSecretYaml, map[string]*bintree{}},
-						"catalog-source.yaml":           {testExtendedTestdataRouterExtdnsCatalogSourceYaml, map[string]*bintree{}},
 						"ns-external-dns-operator.yaml": {testExtendedTestdataRouterExtdnsNsExternalDnsOperatorYaml, map[string]*bintree{}},
 						"operatorgroup.yaml":            {testExtendedTestdataRouterExtdnsOperatorgroupYaml, map[string]*bintree{}},
 						"sample-aws-rt.yaml":            {testExtendedTestdataRouterExtdnsSampleAwsRtYaml, map[string]*bintree{}},
@@ -125490,6 +121098,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"ingresscontroller-syslog.yaml":           {testExtendedTestdataRouterIngresscontrollerSyslogYaml, map[string]*bintree{}},
 					"ingresscontroller-tuning.yaml":           {testExtendedTestdataRouterIngresscontrollerTuningYaml, map[string]*bintree{}},
 					"ipfailover.yaml":                         {testExtendedTestdataRouterIpfailoverYaml, map[string]*bintree{}},
+					"microshift-ingress-destca.yaml":          {testExtendedTestdataRouterMicroshiftIngressDestcaYaml, map[string]*bintree{}},
 					"microshift-ingress-http.yaml":            {testExtendedTestdataRouterMicroshiftIngressHttpYaml, map[string]*bintree{}},
 					"ocp57404-stateful-set.yaml":              {testExtendedTestdataRouterOcp57404StatefulSetYaml, map[string]*bintree{}},
 					"ocp73771-role.yaml":                      {testExtendedTestdataRouterOcp73771RoleYaml, map[string]*bintree{}},
@@ -125547,7 +121156,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"oc-compliance-scansettingbinding.yaml":      {testExtendedTestdataSecurityandcomplianceOcComplianceScansettingbindingYaml, map[string]*bintree{}},
 					"operator-group-all-namespaces.yaml":         {testExtendedTestdataSecurityandcomplianceOperatorGroupAllNamespacesYaml, map[string]*bintree{}},
 					"operator-group.yaml":                        {testExtendedTestdataSecurityandcomplianceOperatorGroupYaml, map[string]*bintree{}},
-					"pod-with-nginx-seccompprofile.yaml":         {testExtendedTestdataSecurityandcompliancePodWithNginxSeccompprofileYaml, map[string]*bintree{}},
 					"pod-with-seccompprofile.yaml":               {testExtendedTestdataSecurityandcompliancePodWithSeccompprofileYaml, map[string]*bintree{}},
 					"pod_modify.yaml":                            {testExtendedTestdataSecurityandcompliancePod_modifyYaml, map[string]*bintree{}},
 					"priorityclass.yaml":                         {testExtendedTestdataSecurityandcompliancePriorityclassYaml, map[string]*bintree{}},
@@ -125555,26 +121163,21 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"prometheus-audit.yaml":                      {testExtendedTestdataSecurityandcompliancePrometheusAuditYaml, map[string]*bintree{}},
 					"pvextractpod.yaml":                          {testExtendedTestdataSecurityandcompliancePvextractpodYaml, map[string]*bintree{}},
 					"rapidast": {nil, map[string]*bintree{
-						"customscan.policy":                                                  {testExtendedTestdataSecurityandcomplianceRapidastCustomscanPolicy, map[string]*bintree{}},
-						"data_rapidastconfig_compliance_v1alpha1.yaml":                       {testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_compliance_v1alpha1Yaml, map[string]*bintree{}},
-						"data_rapidastconfig_fileintegrity_v1alpha1.yaml":                    {testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_fileintegrity_v1alpha1Yaml, map[string]*bintree{}},
-						"data_rapidastconfig_security-profiles-operator_v1beta1.yaml":        {testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_securityProfilesOperator_v1beta1Yaml, map[string]*bintree{}},
-						"data_upload_rapidastconfig_compliance_v1alpha1.yaml":                {testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_compliance_v1alpha1Yaml, map[string]*bintree{}},
-						"data_upload_rapidastconfig_fileintegrity_v1alpha1.yaml":             {testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_fileintegrity_v1alpha1Yaml, map[string]*bintree{}},
-						"data_upload_rapidastconfig_security-profiles-operator_v1beta1.yaml": {testExtendedTestdataSecurityandcomplianceRapidastData_upload_rapidastconfig_securityProfilesOperator_v1beta1Yaml, map[string]*bintree{}},
-						"job_rapidast.yaml":                                                  {testExtendedTestdataSecurityandcomplianceRapidastJob_rapidastYaml, map[string]*bintree{}},
+						"customscan.policy":                                           {testExtendedTestdataSecurityandcomplianceRapidastCustomscanPolicy, map[string]*bintree{}},
+						"data_rapidastconfig_compliance_v1alpha1.yaml":                {testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_compliance_v1alpha1Yaml, map[string]*bintree{}},
+						"data_rapidastconfig_fileintegrity_v1alpha1.yaml":             {testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_fileintegrity_v1alpha1Yaml, map[string]*bintree{}},
+						"data_rapidastconfig_security-profiles-operator_v1beta1.yaml": {testExtendedTestdataSecurityandcomplianceRapidastData_rapidastconfig_securityProfilesOperator_v1beta1Yaml, map[string]*bintree{}},
+						"job_rapidast.yaml":                                           {testExtendedTestdataSecurityandcomplianceRapidastJob_rapidastYaml, map[string]*bintree{}},
 					}},
-					"resource-quota.yaml":                           {testExtendedTestdataSecurityandcomplianceResourceQuotaYaml, map[string]*bintree{}},
-					"scansetting.yaml":                              {testExtendedTestdataSecurityandcomplianceScansettingYaml, map[string]*bintree{}},
-					"scansettingLimit.yaml":                         {testExtendedTestdataSecurityandcomplianceScansettinglimitYaml, map[string]*bintree{}},
-					"scansettingbinding.yaml":                       {testExtendedTestdataSecurityandcomplianceScansettingbindingYaml, map[string]*bintree{}},
-					"scansettingsingle.yaml":                        {testExtendedTestdataSecurityandcomplianceScansettingsingleYaml, map[string]*bintree{}},
-					"scc.yaml":                                      {testExtendedTestdataSecurityandcomplianceSccYaml, map[string]*bintree{}},
-					"seccompprofile-auditlogging.yaml":              {testExtendedTestdataSecurityandcomplianceSeccompprofileAuditloggingYaml, map[string]*bintree{}},
-					"seccompprofile-log-everything-by-default.yaml": {testExtendedTestdataSecurityandcomplianceSeccompprofileLogEverythingByDefaultYaml, map[string]*bintree{}},
-					"seccompprofile.yaml":                           {testExtendedTestdataSecurityandcomplianceSeccompprofileYaml, map[string]*bintree{}},
-					"seccompprofilestack.yaml":                      {testExtendedTestdataSecurityandcomplianceSeccompprofilestackYaml, map[string]*bintree{}},
-					"service-unsecure.yaml":                         {testExtendedTestdataSecurityandcomplianceServiceUnsecureYaml, map[string]*bintree{}},
+					"resource-quota.yaml":      {testExtendedTestdataSecurityandcomplianceResourceQuotaYaml, map[string]*bintree{}},
+					"scansetting.yaml":         {testExtendedTestdataSecurityandcomplianceScansettingYaml, map[string]*bintree{}},
+					"scansettingLimit.yaml":    {testExtendedTestdataSecurityandcomplianceScansettinglimitYaml, map[string]*bintree{}},
+					"scansettingbinding.yaml":  {testExtendedTestdataSecurityandcomplianceScansettingbindingYaml, map[string]*bintree{}},
+					"scansettingsingle.yaml":   {testExtendedTestdataSecurityandcomplianceScansettingsingleYaml, map[string]*bintree{}},
+					"scc.yaml":                 {testExtendedTestdataSecurityandcomplianceSccYaml, map[string]*bintree{}},
+					"seccompprofile.yaml":      {testExtendedTestdataSecurityandcomplianceSeccompprofileYaml, map[string]*bintree{}},
+					"seccompprofilestack.yaml": {testExtendedTestdataSecurityandcomplianceSeccompprofilestackYaml, map[string]*bintree{}},
+					"service-unsecure.yaml":    {testExtendedTestdataSecurityandcomplianceServiceUnsecureYaml, map[string]*bintree{}},
 					"spo": {nil, map[string]*bintree{
 						"machineconfig-nostat.yaml":                        {testExtendedTestdataSecurityandcomplianceSpoMachineconfigNostatYaml, map[string]*bintree{}},
 						"patch-webhook-allowed-syscalls.yaml":              {testExtendedTestdataSecurityandcomplianceSpoPatchWebhookAllowedSyscallsYaml, map[string]*bintree{}},
@@ -125654,8 +121257,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"lvmcluster-with-multi-thinpool-template.yaml":     {testExtendedTestdataStorageLvmsLvmclusterWithMultiThinpoolTemplateYaml, map[string]*bintree{}},
 						"lvmcluster-with-optional-paths-template.yaml":     {testExtendedTestdataStorageLvmsLvmclusterWithOptionalPathsTemplateYaml, map[string]*bintree{}},
 						"lvmcluster-with-paths-template.yaml":              {testExtendedTestdataStorageLvmsLvmclusterWithPathsTemplateYaml, map[string]*bintree{}},
-						"lvmcluster-with-two-device-classes-template.yaml": {testExtendedTestdataStorageLvmsLvmclusterWithTwoDeviceClassesTemplateYaml, map[string]*bintree{}},
-						"lvmcluster-with-two-paths-template.yaml":          {testExtendedTestdataStorageLvmsLvmclusterWithTwoPathsTemplateYaml, map[string]*bintree{}},
 						"lvmcluster-without-thinpool-device-template.yaml": {testExtendedTestdataStorageLvmsLvmclusterWithoutThinpoolDeviceTemplateYaml, map[string]*bintree{}},
 					}},
 					"microshift": {nil, map[string]*bintree{
@@ -125690,26 +121291,41 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"volumesnapshotcontent-template.yaml":                       {testExtendedTestdataStorageVolumesnapshotcontentTemplateYaml, map[string]*bintree{}},
 				}},
 				"winc": {nil, map[string]*bintree{
-					"aws_byoh_machineset.yaml":         {testExtendedTestdataWincAws_byoh_machinesetYaml, map[string]*bintree{}},
-					"aws_windows_machineset.yaml":      {testExtendedTestdataWincAws_windows_machinesetYaml, map[string]*bintree{}},
-					"azure_byoh_machineset.yaml":       {testExtendedTestdataWincAzure_byoh_machinesetYaml, map[string]*bintree{}},
-					"azure_storageclass.yaml":          {testExtendedTestdataWincAzure_storageclassYaml, map[string]*bintree{}},
-					"azure_windows_machineset.yaml":    {testExtendedTestdataWincAzure_windows_machinesetYaml, map[string]*bintree{}},
-					"catalogsource.yaml":               {testExtendedTestdataWincCatalogsourceYaml, map[string]*bintree{}},
-					"cluster_autoscaler.yaml":          {testExtendedTestdataWincCluster_autoscalerYaml, map[string]*bintree{}},
-					"gcp_byoh_machineset.yaml":         {testExtendedTestdataWincGcp_byoh_machinesetYaml, map[string]*bintree{}},
-					"gcp_windows_machineset.yaml":      {testExtendedTestdataWincGcp_windows_machinesetYaml, map[string]*bintree{}},
-					"hpa_template.yaml":                {testExtendedTestdataWincHpa_templateYaml, map[string]*bintree{}},
-					"linux_web_server_template.yaml":   {testExtendedTestdataWincLinux_web_server_templateYaml, map[string]*bintree{}},
-					"machine-autoscaler.yaml":          {testExtendedTestdataWincMachineAutoscalerYaml, map[string]*bintree{}},
-					"nutanix_byoh_machineset.yaml":     {testExtendedTestdataWincNutanix_byoh_machinesetYaml, map[string]*bintree{}},
-					"nutanix_windows_machineset.yaml":  {testExtendedTestdataWincNutanix_windows_machinesetYaml, map[string]*bintree{}},
-					"pvc.yaml":                         {testExtendedTestdataWincPvcYaml, map[string]*bintree{}},
-					"vsphere_byoh_machineset.yaml":     {testExtendedTestdataWincVsphere_byoh_machinesetYaml, map[string]*bintree{}},
-					"vsphere_storageclass.yaml":        {testExtendedTestdataWincVsphere_storageclassYaml, map[string]*bintree{}},
-					"vsphere_windows_machineset.yaml":  {testExtendedTestdataWincVsphere_windows_machinesetYaml, map[string]*bintree{}},
-					"windows_daemonset_template.yaml":  {testExtendedTestdataWincWindows_daemonset_templateYaml, map[string]*bintree{}},
-					"windows_web_server_template.yaml": {testExtendedTestdataWincWindows_web_server_templateYaml, map[string]*bintree{}},
+					"aws_byoh_machineset.yaml":                {testExtendedTestdataWincAws_byoh_machinesetYaml, map[string]*bintree{}},
+					"aws_windows_machineset.yaml":             {testExtendedTestdataWincAws_windows_machinesetYaml, map[string]*bintree{}},
+					"azure_byoh_machineset.yaml":              {testExtendedTestdataWincAzure_byoh_machinesetYaml, map[string]*bintree{}},
+					"azure_storageclass.yaml":                 {testExtendedTestdataWincAzure_storageclassYaml, map[string]*bintree{}},
+					"azure_windows_machineset.yaml":           {testExtendedTestdataWincAzure_windows_machinesetYaml, map[string]*bintree{}},
+					"catalogsource.yaml":                      {testExtendedTestdataWincCatalogsourceYaml, map[string]*bintree{}},
+					"cluster_autoscaler.yaml":                 {testExtendedTestdataWincCluster_autoscalerYaml, map[string]*bintree{}},
+					"config-map-ip-dns.yaml":                  {testExtendedTestdataWincConfigMapIpDnsYaml, map[string]*bintree{}},
+					"config-map.yaml":                         {testExtendedTestdataWincConfigMapYaml, map[string]*bintree{}},
+					"gcp_byoh_machineset.yaml":                {testExtendedTestdataWincGcp_byoh_machinesetYaml, map[string]*bintree{}},
+					"gcp_windows_machineset.yaml":             {testExtendedTestdataWincGcp_windows_machinesetYaml, map[string]*bintree{}},
+					"linux_web_server.yaml":                   {testExtendedTestdataWincLinux_web_serverYaml, map[string]*bintree{}},
+					"linux_web_server_disconnected.yaml":      {testExtendedTestdataWincLinux_web_server_disconnectedYaml, map[string]*bintree{}},
+					"machine-autoscaler.yaml":                 {testExtendedTestdataWincMachineAutoscalerYaml, map[string]*bintree{}},
+					"namespace.yaml":                          {testExtendedTestdataWincNamespaceYaml, map[string]*bintree{}},
+					"nutanix_byoh_machineset.yaml":            {testExtendedTestdataWincNutanix_byoh_machinesetYaml, map[string]*bintree{}},
+					"nutanix_windows_machineset.yaml":         {testExtendedTestdataWincNutanix_windows_machinesetYaml, map[string]*bintree{}},
+					"operatorgroup.yaml":                      {testExtendedTestdataWincOperatorgroupYaml, map[string]*bintree{}},
+					"proxy_vars.yaml":                         {testExtendedTestdataWincProxy_varsYaml, map[string]*bintree{}},
+					"pvc.yaml":                                {testExtendedTestdataWincPvcYaml, map[string]*bintree{}},
+					"service_change_machineconfig.yaml":       {testExtendedTestdataWincService_change_machineconfigYaml, map[string]*bintree{}},
+					"subscription.yaml":                       {testExtendedTestdataWincSubscriptionYaml, map[string]*bintree{}},
+					"vsphere_byoh_machineset.yaml":            {testExtendedTestdataWincVsphere_byoh_machinesetYaml, map[string]*bintree{}},
+					"vsphere_storageclass.yaml":               {testExtendedTestdataWincVsphere_storageclassYaml, map[string]*bintree{}},
+					"vsphere_windows_machineset.yaml":         {testExtendedTestdataWincVsphere_windows_machinesetYaml, map[string]*bintree{}},
+					"wicd_configmap.yaml":                     {testExtendedTestdataWincWicd_configmapYaml, map[string]*bintree{}},
+					"windows_hpa.yaml":                        {testExtendedTestdataWincWindows_hpaYaml, map[string]*bintree{}},
+					"windows_web_server.yaml":                 {testExtendedTestdataWincWindows_web_serverYaml, map[string]*bintree{}},
+					"windows_web_server_byoh.yaml":            {testExtendedTestdataWincWindows_web_server_byohYaml, map[string]*bintree{}},
+					"windows_web_server_disconnected.yaml":    {testExtendedTestdataWincWindows_web_server_disconnectedYaml, map[string]*bintree{}},
+					"windows_web_server_no_taint.yaml":        {testExtendedTestdataWincWindows_web_server_no_taintYaml, map[string]*bintree{}},
+					"windows_web_server_pvc.yaml":             {testExtendedTestdataWincWindows_web_server_pvcYaml, map[string]*bintree{}},
+					"windows_web_server_scaler.yaml":          {testExtendedTestdataWincWindows_web_server_scalerYaml, map[string]*bintree{}},
+					"windows_webserver_projected_volume.yaml": {testExtendedTestdataWincWindows_webserver_projected_volumeYaml, map[string]*bintree{}},
+					"windows_webserver_secondary_os.yaml":     {testExtendedTestdataWincWindows_webserver_secondary_osYaml, map[string]*bintree{}},
 				}},
 				"workloads": {nil, map[string]*bintree{
 					"12708358_4.11.0-0.nightly-multi-2022-04-18-120932-release-imagestream.yaml": {testExtendedTestdataWorkloads12708358_41100NightlyMulti20220418120932ReleaseImagestreamYaml, map[string]*bintree{}},
@@ -125731,20 +121347,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"crd-cattoy-72217.yaml":     {testExtendedTestdataWorkloadsCase72217CrdCattoy72217Yaml, map[string]*bintree{}},
 						"crd-crontab-72217.yaml":    {testExtendedTestdataWorkloadsCase72217CrdCrontab72217Yaml, map[string]*bintree{}},
 						"crd-customtask-72217.yaml": {testExtendedTestdataWorkloadsCase72217CrdCustomtask72217Yaml, map[string]*bintree{}},
-					}},
-					"case83849": {nil, map[string]*bintree{
-						"config-83849.yaml":          {testExtendedTestdataWorkloadsCase83849Config83849Yaml, map[string]*bintree{}},
-						"test-mirror-helm-0.3.0.tgz": {testExtendedTestdataWorkloadsCase83849TestMirrorHelm030Tgz, map[string]*bintree{}},
-					}},
-					"case83864": {nil, map[string]*bintree{
-						"isc_empty.yaml":           {testExtendedTestdataWorkloadsCase83864Isc_emptyYaml, map[string]*bintree{}},
-						"isc_err.yaml":             {testExtendedTestdataWorkloadsCase83864Isc_errYaml, map[string]*bintree{}},
-						"isc_no.yaml":              {testExtendedTestdataWorkloadsCase83864Isc_noYaml, map[string]*bintree{}},
-						"test-mirror-helm-err.tgz": {testExtendedTestdataWorkloadsCase83864TestMirrorHelmErrTgz, map[string]*bintree{}},
-					}},
-					"case84007": {nil, map[string]*bintree{
-						"config-84007.yaml": {testExtendedTestdataWorkloadsCase84007Config84007Yaml, map[string]*bintree{}},
-						"operators.lst":     {testExtendedTestdataWorkloadsCase84007OperatorsLst, map[string]*bintree{}},
 					}},
 					"catlog-loggings.yaml":          {testExtendedTestdataWorkloadsCatlogLoggingsYaml, map[string]*bintree{}},
 					"ceFile-79215.yaml":             {testExtendedTestdataWorkloadsCefile79215Yaml, map[string]*bintree{}},
@@ -125771,169 +121373,138 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"config-normal.yaml":        {testExtendedTestdataWorkloadsConfig60603ConfigNormalYaml, map[string]*bintree{}},
 						"config-oci.yaml":           {testExtendedTestdataWorkloadsConfig60603ConfigOciYaml, map[string]*bintree{}},
 					}},
-					"config-66194.yaml":                        {testExtendedTestdataWorkloadsConfig66194Yaml, map[string]*bintree{}},
-					"config-66869.yaml":                        {testExtendedTestdataWorkloadsConfig66869Yaml, map[string]*bintree{}},
-					"config-66870.yaml":                        {testExtendedTestdataWorkloadsConfig66870Yaml, map[string]*bintree{}},
-					"config-66986.yaml":                        {testExtendedTestdataWorkloadsConfig66986Yaml, map[string]*bintree{}},
-					"config-70105-first.yaml":                  {testExtendedTestdataWorkloadsConfig70105FirstYaml, map[string]*bintree{}},
-					"config-70105-second.yaml":                 {testExtendedTestdataWorkloadsConfig70105SecondYaml, map[string]*bintree{}},
-					"config-70105-third.yaml":                  {testExtendedTestdataWorkloadsConfig70105ThirdYaml, map[string]*bintree{}},
-					"config-70861.yaml":                        {testExtendedTestdataWorkloadsConfig70861Yaml, map[string]*bintree{}},
-					"config-72708.yaml":                        {testExtendedTestdataWorkloadsConfig72708Yaml, map[string]*bintree{}},
-					"config-72913.yaml":                        {testExtendedTestdataWorkloadsConfig72913Yaml, map[string]*bintree{}},
-					"config-72917.yaml":                        {testExtendedTestdataWorkloadsConfig72917Yaml, map[string]*bintree{}},
-					"config-72920.yaml":                        {testExtendedTestdataWorkloadsConfig72920Yaml, map[string]*bintree{}},
-					"config-72938-1.yaml":                      {testExtendedTestdataWorkloadsConfig729381Yaml, map[string]*bintree{}},
-					"config-72938.yaml":                        {testExtendedTestdataWorkloadsConfig72938Yaml, map[string]*bintree{}},
-					"config-72942.yaml":                        {testExtendedTestdataWorkloadsConfig72942Yaml, map[string]*bintree{}},
-					"config-72948.yaml":                        {testExtendedTestdataWorkloadsConfig72948Yaml, map[string]*bintree{}},
-					"config-72949-1.yaml":                      {testExtendedTestdataWorkloadsConfig729491Yaml, map[string]*bintree{}},
-					"config-72949-2.yaml":                      {testExtendedTestdataWorkloadsConfig729492Yaml, map[string]*bintree{}},
-					"config-72971.yaml":                        {testExtendedTestdataWorkloadsConfig72971Yaml, map[string]*bintree{}},
-					"config-72972.yaml":                        {testExtendedTestdataWorkloadsConfig72972Yaml, map[string]*bintree{}},
-					"config-72973.yaml":                        {testExtendedTestdataWorkloadsConfig72973Yaml, map[string]*bintree{}},
-					"config-72982.yaml":                        {testExtendedTestdataWorkloadsConfig72982Yaml, map[string]*bintree{}},
-					"config-72983.yaml":                        {testExtendedTestdataWorkloadsConfig72983Yaml, map[string]*bintree{}},
-					"config-73124.yaml":                        {testExtendedTestdataWorkloadsConfig73124Yaml, map[string]*bintree{}},
-					"config-73359.yaml":                        {testExtendedTestdataWorkloadsConfig73359Yaml, map[string]*bintree{}},
-					"config-73377.yaml":                        {testExtendedTestdataWorkloadsConfig73377Yaml, map[string]*bintree{}},
-					"config-73452.yaml":                        {testExtendedTestdataWorkloadsConfig73452Yaml, map[string]*bintree{}},
-					"config-73783.yaml":                        {testExtendedTestdataWorkloadsConfig73783Yaml, map[string]*bintree{}},
-					"config-73791.yaml":                        {testExtendedTestdataWorkloadsConfig73791Yaml, map[string]*bintree{}},
-					"config-74649.yaml":                        {testExtendedTestdataWorkloadsConfig74649Yaml, map[string]*bintree{}},
-					"config-74650-minor-v1.yaml":               {testExtendedTestdataWorkloadsConfig74650MinorV1Yaml, map[string]*bintree{}},
-					"config-74650-minor-v2.yaml":               {testExtendedTestdataWorkloadsConfig74650MinorV2Yaml, map[string]*bintree{}},
-					"config-74650-patch-v1.yaml":               {testExtendedTestdataWorkloadsConfig74650PatchV1Yaml, map[string]*bintree{}},
-					"config-74650-patch-v2.yaml":               {testExtendedTestdataWorkloadsConfig74650PatchV2Yaml, map[string]*bintree{}},
-					"config-74660.yaml":                        {testExtendedTestdataWorkloadsConfig74660Yaml, map[string]*bintree{}},
-					"config-75422-delete.yaml":                 {testExtendedTestdataWorkloadsConfig75422DeleteYaml, map[string]*bintree{}},
-					"config-75422.yaml":                        {testExtendedTestdataWorkloadsConfig75422Yaml, map[string]*bintree{}},
-					"config-75425.yaml":                        {testExtendedTestdataWorkloadsConfig75425Yaml, map[string]*bintree{}},
-					"config-75437.yaml":                        {testExtendedTestdataWorkloadsConfig75437Yaml, map[string]*bintree{}},
-					"config-75438.yaml":                        {testExtendedTestdataWorkloadsConfig75438Yaml, map[string]*bintree{}},
-					"config-75502.yaml":                        {testExtendedTestdataWorkloadsConfig75502Yaml, map[string]*bintree{}},
-					"config-76469.yaml":                        {testExtendedTestdataWorkloadsConfig76469Yaml, map[string]*bintree{}},
-					"config-76489.yaml":                        {testExtendedTestdataWorkloadsConfig76489Yaml, map[string]*bintree{}},
-					"config-76596.yaml":                        {testExtendedTestdataWorkloadsConfig76596Yaml, map[string]*bintree{}},
-					"config-76597-delete.yaml":                 {testExtendedTestdataWorkloadsConfig76597DeleteYaml, map[string]*bintree{}},
-					"config-76597.yaml":                        {testExtendedTestdataWorkloadsConfig76597Yaml, map[string]*bintree{}},
-					"config-77060.yaml":                        {testExtendedTestdataWorkloadsConfig77060Yaml, map[string]*bintree{}},
-					"config-79215.yaml":                        {testExtendedTestdataWorkloadsConfig79215Yaml, map[string]*bintree{}},
-					"config-79217-1.yaml":                      {testExtendedTestdataWorkloadsConfig792171Yaml, map[string]*bintree{}},
-					"config-79217.yaml":                        {testExtendedTestdataWorkloadsConfig79217Yaml, map[string]*bintree{}},
-					"config-79408.yaml":                        {testExtendedTestdataWorkloadsConfig79408Yaml, map[string]*bintree{}},
-					"config-79452-v1.yaml":                     {testExtendedTestdataWorkloadsConfig79452V1Yaml, map[string]*bintree{}},
-					"config-79452-v2.yaml":                     {testExtendedTestdataWorkloadsConfig79452V2Yaml, map[string]*bintree{}},
-					"config-83582.yaml":                        {testExtendedTestdataWorkloadsConfig83582Yaml, map[string]*bintree{}},
-					"config-83875.yaml":                        {testExtendedTestdataWorkloadsConfig83875Yaml, map[string]*bintree{}},
-					"config-86309.yaml":                        {testExtendedTestdataWorkloadsConfig86309Yaml, map[string]*bintree{}},
-					"config-87962-multi-catalog.yaml":          {testExtendedTestdataWorkloadsConfig87962MultiCatalogYaml, map[string]*bintree{}},
-					"config-87962-operators.yaml":              {testExtendedTestdataWorkloadsConfig87962OperatorsYaml, map[string]*bintree{}},
-					"config-87992.yaml":                        {testExtendedTestdataWorkloadsConfig87992Yaml, map[string]*bintree{}},
-					"config-88132-digest.yaml":                 {testExtendedTestdataWorkloadsConfig88132DigestYaml, map[string]*bintree{}},
-					"config-88132-invalid.yaml":                {testExtendedTestdataWorkloadsConfig88132InvalidYaml, map[string]*bintree{}},
-					"config-88132-target-repo-tag.yaml":        {testExtendedTestdataWorkloadsConfig88132TargetRepoTagYaml, map[string]*bintree{}},
-					"config-88132-target-repo.yaml":            {testExtendedTestdataWorkloadsConfig88132TargetRepoYaml, map[string]*bintree{}},
-					"config-88132-target-tag.yaml":             {testExtendedTestdataWorkloadsConfig88132TargetTagYaml, map[string]*bintree{}},
-					"config-images-75997.txt":                  {testExtendedTestdataWorkloadsConfigImages75997Txt, map[string]*bintree{}},
-					"config-oci-65149.yaml":                    {testExtendedTestdataWorkloadsConfigOci65149Yaml, map[string]*bintree{}},
-					"config-oci-65150.yaml":                    {testExtendedTestdataWorkloadsConfigOci65150Yaml, map[string]*bintree{}},
-					"config-oci-65151-1.yaml":                  {testExtendedTestdataWorkloadsConfigOci651511Yaml, map[string]*bintree{}},
-					"config-oci-65151-2.yaml":                  {testExtendedTestdataWorkloadsConfigOci651512Yaml, map[string]*bintree{}},
-					"config-oci-65152.yaml":                    {testExtendedTestdataWorkloadsConfigOci65152Yaml, map[string]*bintree{}},
-					"config-oci-all.yaml":                      {testExtendedTestdataWorkloadsConfigOciAllYaml, map[string]*bintree{}},
-					"config-oci-f.yaml":                        {testExtendedTestdataWorkloadsConfigOciFYaml, map[string]*bintree{}},
-					"config-oci-filter.yaml":                   {testExtendedTestdataWorkloadsConfigOciFilterYaml, map[string]*bintree{}},
-					"config-oci-s.yaml":                        {testExtendedTestdataWorkloadsConfigOciSYaml, map[string]*bintree{}},
-					"config_74099.yaml":                        {testExtendedTestdataWorkloadsConfig_74099Yaml, map[string]*bintree{}},
-					"config_singleimage.yaml":                  {testExtendedTestdataWorkloadsConfig_singleimageYaml, map[string]*bintree{}},
-					"cronjob50255.yaml":                        {testExtendedTestdataWorkloadsCronjob50255Yaml, map[string]*bintree{}},
-					"cronjob54195.yaml":                        {testExtendedTestdataWorkloadsCronjob54195Yaml, map[string]*bintree{}},
-					"cronjob54195ic.yaml":                      {testExtendedTestdataWorkloadsCronjob54195icYaml, map[string]*bintree{}},
-					"cronjob54195notz.yaml":                    {testExtendedTestdataWorkloadsCronjob54195notzYaml, map[string]*bintree{}},
-					"cronjob56176.yaml":                        {testExtendedTestdataWorkloadsCronjob56176Yaml, map[string]*bintree{}},
-					"cronjob75375.yaml":                        {testExtendedTestdataWorkloadsCronjob75375Yaml, map[string]*bintree{}},
-					"cronjob_54196.yaml":                       {testExtendedTestdataWorkloadsCronjob_54196Yaml, map[string]*bintree{}},
-					"customcrd72005.yaml":                      {testExtendedTestdataWorkloadsCustomcrd72005Yaml, map[string]*bintree{}},
-					"customsub.yaml":                           {testExtendedTestdataWorkloadsCustomsubYaml, map[string]*bintree{}},
-					"daemonset-origin.yaml":                    {testExtendedTestdataWorkloadsDaemonsetOriginYaml, map[string]*bintree{}},
-					"daemonset-update.yaml":                    {testExtendedTestdataWorkloadsDaemonsetUpdateYaml, map[string]*bintree{}},
-					"dc_66672.yaml":                            {testExtendedTestdataWorkloadsDc_66672Yaml, map[string]*bintree{}},
-					"debugpod_48681.yaml":                      {testExtendedTestdataWorkloadsDebugpod_48681Yaml, map[string]*bintree{}},
-					"delete-config-72708.yaml":                 {testExtendedTestdataWorkloadsDeleteConfig72708Yaml, map[string]*bintree{}},
-					"delete-config-72972.yaml":                 {testExtendedTestdataWorkloadsDeleteConfig72972Yaml, map[string]*bintree{}},
-					"delete-config-77061.yaml":                 {testExtendedTestdataWorkloadsDeleteConfig77061Yaml, map[string]*bintree{}},
-					"delete-config-79217.yaml":                 {testExtendedTestdataWorkloadsDeleteConfig79217Yaml, map[string]*bintree{}},
-					"delete-config-79452.yaml":                 {testExtendedTestdataWorkloadsDeleteConfig79452Yaml, map[string]*bintree{}},
-					"deploy75289.yaml":                         {testExtendedTestdataWorkloadsDeploy75289Yaml, map[string]*bintree{}},
-					"deployOCMirrorPlugin.yaml":                {testExtendedTestdataWorkloadsDeployocmirrorpluginYaml, map[string]*bintree{}},
-					"deployPodWithOutScheduler.yaml":           {testExtendedTestdataWorkloadsDeploypodwithoutschedulerYaml, map[string]*bintree{}},
-					"deployPodWithScheduler.yaml":              {testExtendedTestdataWorkloadsDeploypodwithschedulerYaml, map[string]*bintree{}},
-					"deploy_demopod.yaml":                      {testExtendedTestdataWorkloadsDeploy_demopodYaml, map[string]*bintree{}},
-					"deploy_duplicatepods.yaml":                {testExtendedTestdataWorkloadsDeploy_duplicatepodsYaml, map[string]*bintree{}},
-					"deploy_duplicatepodsrs.yaml":              {testExtendedTestdataWorkloadsDeploy_duplicatepodsrsYaml, map[string]*bintree{}},
-					"deploy_interpodantiaffinity.yaml":         {testExtendedTestdataWorkloadsDeploy_interpodantiaffinityYaml, map[string]*bintree{}},
-					"deploy_interpodantiaffinitytpm.yaml":      {testExtendedTestdataWorkloadsDeploy_interpodantiaffinitytpmYaml, map[string]*bintree{}},
-					"deploy_nodeaffinity.yaml":                 {testExtendedTestdataWorkloadsDeploy_nodeaffinityYaml, map[string]*bintree{}},
-					"deploy_nodeselect.yaml":                   {testExtendedTestdataWorkloadsDeploy_nodeselectYaml, map[string]*bintree{}},
-					"deploy_nodetaint.yaml":                    {testExtendedTestdataWorkloadsDeploy_nodetaintYaml, map[string]*bintree{}},
-					"deploy_podTopologySpread.yaml":            {testExtendedTestdataWorkloadsDeploy_podtopologyspreadYaml, map[string]*bintree{}},
-					"deploy_podWithPriorityClassName.yaml":     {testExtendedTestdataWorkloadsDeploy_podwithpriorityclassnameYaml, map[string]*bintree{}},
-					"deploy_single_pts.yaml":                   {testExtendedTestdataWorkloadsDeploy_single_ptsYaml, map[string]*bintree{}},
-					"deploy_softPodTopologySpread.yaml":        {testExtendedTestdataWorkloadsDeploy_softpodtopologyspreadYaml, map[string]*bintree{}},
-					"deploy_softdemopod.yaml":                  {testExtendedTestdataWorkloadsDeploy_softdemopodYaml, map[string]*bintree{}},
-					"deployment-69072.yaml":                    {testExtendedTestdataWorkloadsDeployment69072Yaml, map[string]*bintree{}},
-					"deployment-73887.yaml":                    {testExtendedTestdataWorkloadsDeployment73887Yaml, map[string]*bintree{}},
-					"deployment-with-shutdown-gracefully.yaml": {testExtendedTestdataWorkloadsDeploymentWithShutdownGracefullyYaml, map[string]*bintree{}},
-					"deployment60691.yaml":                     {testExtendedTestdataWorkloadsDeployment60691Yaml, map[string]*bintree{}},
-					"deploymentconfig_with_quota.yaml":         {testExtendedTestdataWorkloadsDeploymentconfig_with_quotaYaml, map[string]*bintree{}},
-					"egressnetworkpolicy.yaml":                 {testExtendedTestdataWorkloadsEgressnetworkpolicyYaml, map[string]*bintree{}},
-					"ibmcustomsub.yaml":                        {testExtendedTestdataWorkloadsIbmcustomsubYaml, map[string]*bintree{}},
-					"icsp60499.yaml":                           {testExtendedTestdataWorkloadsIcsp60499Yaml, map[string]*bintree{}},
-					"icspFile63855.yaml":                       {testExtendedTestdataWorkloadsIcspfile63855Yaml, map[string]*bintree{}},
-					"icspFile64920.yaml":                       {testExtendedTestdataWorkloadsIcspfile64920Yaml, map[string]*bintree{}},
-					"idmsFile63855.yaml":                       {testExtendedTestdataWorkloadsIdmsfile63855Yaml, map[string]*bintree{}},
-					"idmsFile64921.yaml":                       {testExtendedTestdataWorkloadsIdmsfile64921Yaml, map[string]*bintree{}},
-					"imageSetConfig65202.yaml":                 {testExtendedTestdataWorkloadsImagesetconfig65202Yaml, map[string]*bintree{}},
-					"imageSetConfig65203.yaml":                 {testExtendedTestdataWorkloadsImagesetconfig65203Yaml, map[string]*bintree{}},
-					"init.ldif":                                {testExtendedTestdataWorkloadsInitLdif, map[string]*bintree{}},
-					"initContainer.yaml":                       {testExtendedTestdataWorkloadsInitcontainerYaml, map[string]*bintree{}},
-					"initContainer66989.yaml":                  {testExtendedTestdataWorkloadsInitcontainer66989Yaml, map[string]*bintree{}},
-					"jobset": {nil, map[string]*bintree{
-						"clusterresource-jobset.yaml": {testExtendedTestdataWorkloadsJobsetClusterresourceJobsetYaml, map[string]*bintree{}},
-						"cs-jobset.yaml":              {testExtendedTestdataWorkloadsJobsetCsJobsetYaml, map[string]*bintree{}},
-						"icsp-jobset.yaml":            {testExtendedTestdataWorkloadsJobsetIcspJobsetYaml, map[string]*bintree{}},
-						"jobset-operatorgroup.yaml":   {testExtendedTestdataWorkloadsJobsetJobsetOperatorgroupYaml, map[string]*bintree{}},
-						"jobset-subscription.yaml":    {testExtendedTestdataWorkloadsJobsetJobsetSubscriptionYaml, map[string]*bintree{}},
-						"rapidast_config_jobset.yaml": {testExtendedTestdataWorkloadsJobsetRapidast_config_jobsetYaml, map[string]*bintree{}},
-					}},
-					"jobsetoperand": {nil, map[string]*bintree{
-						"failjobset-action-84913.yaml":                        {testExtendedTestdataWorkloadsJobsetoperandFailjobsetAction84913Yaml, map[string]*bintree{}},
-						"restartjobset-action-84912.yaml":                     {testExtendedTestdataWorkloadsJobsetoperandRestartjobsetAction84912Yaml, map[string]*bintree{}},
-						"restartjobsetandignoremaxrestarts-action-84911.yaml": {testExtendedTestdataWorkloadsJobsetoperandRestartjobsetandignoremaxrestartsAction84911Yaml, map[string]*bintree{}},
-						"startuppolicy-82678-anyorder.yaml":                   {testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678AnyorderYaml, map[string]*bintree{}},
-						"startuppolicy-82678-inorder.yaml":                    {testExtendedTestdataWorkloadsJobsetoperandStartuppolicy82678InorderYaml, map[string]*bintree{}},
-						"successpolicy-82671-all.yaml":                        {testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AllYaml, map[string]*bintree{}},
-						"successpolicy-82671-any.yaml":                        {testExtendedTestdataWorkloadsJobsetoperandSuccesspolicy82671AnyYaml, map[string]*bintree{}},
-					}},
-					"kubedescheduler.yaml":                   {testExtendedTestdataWorkloadsKubedeschedulerYaml, map[string]*bintree{}},
-					"kubedescheduler_excludins.yaml":         {testExtendedTestdataWorkloadsKubedescheduler_excludinsYaml, map[string]*bintree{}},
-					"kubedescheduler_includeexcludens.yaml":  {testExtendedTestdataWorkloadsKubedescheduler_includeexcludensYaml, map[string]*bintree{}},
-					"kubedescheduler_includins.yaml":         {testExtendedTestdataWorkloadsKubedescheduler_includinsYaml, map[string]*bintree{}},
-					"kubedescheduler_podlifetime.yaml":       {testExtendedTestdataWorkloadsKubedescheduler_podlifetimeYaml, map[string]*bintree{}},
-					"kubedescheduler_priorityclassname.yaml": {testExtendedTestdataWorkloadsKubedescheduler_priorityclassnameYaml, map[string]*bintree{}},
-					"kubedescheduler_prioritythp.yaml":       {testExtendedTestdataWorkloadsKubedescheduler_prioritythpYaml, map[string]*bintree{}},
-					"kubedescheduler_thresholdPriority.yaml": {testExtendedTestdataWorkloadsKubedescheduler_thresholdpriorityYaml, map[string]*bintree{}},
-					"kubejobfailed-73886.yaml":               {testExtendedTestdataWorkloadsKubejobfailed73886Yaml, map[string]*bintree{}},
-					"lws": {nil, map[string]*bintree{
-						"icsp-full-mirrors.yaml":   {testExtendedTestdataWorkloadsLwsIcspFullMirrorsYaml, map[string]*bintree{}},
-						"lws-sample.yaml":          {testExtendedTestdataWorkloadsLwsLwsSampleYaml, map[string]*bintree{}},
-						"lwsManager.yaml":          {testExtendedTestdataWorkloadsLwsLwsmanagerYaml, map[string]*bintree{}},
-						"lws_catalogsource.yaml":   {testExtendedTestdataWorkloadsLwsLws_catalogsourceYaml, map[string]*bintree{}},
-						"lws_operatorgroup.yaml":   {testExtendedTestdataWorkloadsLwsLws_operatorgroupYaml, map[string]*bintree{}},
-						"lws_subscription.yaml":    {testExtendedTestdataWorkloadsLwsLws_subscriptionYaml, map[string]*bintree{}},
-						"rapidast_config_lws.yaml": {testExtendedTestdataWorkloadsLwsRapidast_config_lwsYaml, map[string]*bintree{}},
-					}},
+					"config-66194.yaml":                              {testExtendedTestdataWorkloadsConfig66194Yaml, map[string]*bintree{}},
+					"config-66869.yaml":                              {testExtendedTestdataWorkloadsConfig66869Yaml, map[string]*bintree{}},
+					"config-66870.yaml":                              {testExtendedTestdataWorkloadsConfig66870Yaml, map[string]*bintree{}},
+					"config-66986.yaml":                              {testExtendedTestdataWorkloadsConfig66986Yaml, map[string]*bintree{}},
+					"config-70105-first.yaml":                        {testExtendedTestdataWorkloadsConfig70105FirstYaml, map[string]*bintree{}},
+					"config-70105-second.yaml":                       {testExtendedTestdataWorkloadsConfig70105SecondYaml, map[string]*bintree{}},
+					"config-70105-third.yaml":                        {testExtendedTestdataWorkloadsConfig70105ThirdYaml, map[string]*bintree{}},
+					"config-70861.yaml":                              {testExtendedTestdataWorkloadsConfig70861Yaml, map[string]*bintree{}},
+					"config-72708.yaml":                              {testExtendedTestdataWorkloadsConfig72708Yaml, map[string]*bintree{}},
+					"config-72913.yaml":                              {testExtendedTestdataWorkloadsConfig72913Yaml, map[string]*bintree{}},
+					"config-72917.yaml":                              {testExtendedTestdataWorkloadsConfig72917Yaml, map[string]*bintree{}},
+					"config-72920.yaml":                              {testExtendedTestdataWorkloadsConfig72920Yaml, map[string]*bintree{}},
+					"config-72938-1.yaml":                            {testExtendedTestdataWorkloadsConfig729381Yaml, map[string]*bintree{}},
+					"config-72938.yaml":                              {testExtendedTestdataWorkloadsConfig72938Yaml, map[string]*bintree{}},
+					"config-72942.yaml":                              {testExtendedTestdataWorkloadsConfig72942Yaml, map[string]*bintree{}},
+					"config-72948.yaml":                              {testExtendedTestdataWorkloadsConfig72948Yaml, map[string]*bintree{}},
+					"config-72949-1.yaml":                            {testExtendedTestdataWorkloadsConfig729491Yaml, map[string]*bintree{}},
+					"config-72949-2.yaml":                            {testExtendedTestdataWorkloadsConfig729492Yaml, map[string]*bintree{}},
+					"config-72971.yaml":                              {testExtendedTestdataWorkloadsConfig72971Yaml, map[string]*bintree{}},
+					"config-72972.yaml":                              {testExtendedTestdataWorkloadsConfig72972Yaml, map[string]*bintree{}},
+					"config-72973.yaml":                              {testExtendedTestdataWorkloadsConfig72973Yaml, map[string]*bintree{}},
+					"config-72982.yaml":                              {testExtendedTestdataWorkloadsConfig72982Yaml, map[string]*bintree{}},
+					"config-72983.yaml":                              {testExtendedTestdataWorkloadsConfig72983Yaml, map[string]*bintree{}},
+					"config-73124.yaml":                              {testExtendedTestdataWorkloadsConfig73124Yaml, map[string]*bintree{}},
+					"config-73359.yaml":                              {testExtendedTestdataWorkloadsConfig73359Yaml, map[string]*bintree{}},
+					"config-73377.yaml":                              {testExtendedTestdataWorkloadsConfig73377Yaml, map[string]*bintree{}},
+					"config-73419.yaml":                              {testExtendedTestdataWorkloadsConfig73419Yaml, map[string]*bintree{}},
+					"config-73420.yaml":                              {testExtendedTestdataWorkloadsConfig73420Yaml, map[string]*bintree{}},
+					"config-73421-1.yaml":                            {testExtendedTestdataWorkloadsConfig734211Yaml, map[string]*bintree{}},
+					"config-73421.yaml":                              {testExtendedTestdataWorkloadsConfig73421Yaml, map[string]*bintree{}},
+					"config-73452.yaml":                              {testExtendedTestdataWorkloadsConfig73452Yaml, map[string]*bintree{}},
+					"config-73783.yaml":                              {testExtendedTestdataWorkloadsConfig73783Yaml, map[string]*bintree{}},
+					"config-73791.yaml":                              {testExtendedTestdataWorkloadsConfig73791Yaml, map[string]*bintree{}},
+					"config-74649.yaml":                              {testExtendedTestdataWorkloadsConfig74649Yaml, map[string]*bintree{}},
+					"config-74650-minor-v1.yaml":                     {testExtendedTestdataWorkloadsConfig74650MinorV1Yaml, map[string]*bintree{}},
+					"config-74650-minor-v2.yaml":                     {testExtendedTestdataWorkloadsConfig74650MinorV2Yaml, map[string]*bintree{}},
+					"config-74650-patch-v1.yaml":                     {testExtendedTestdataWorkloadsConfig74650PatchV1Yaml, map[string]*bintree{}},
+					"config-74650-patch-v2.yaml":                     {testExtendedTestdataWorkloadsConfig74650PatchV2Yaml, map[string]*bintree{}},
+					"config-74660.yaml":                              {testExtendedTestdataWorkloadsConfig74660Yaml, map[string]*bintree{}},
+					"config-74662.yaml":                              {testExtendedTestdataWorkloadsConfig74662Yaml, map[string]*bintree{}},
+					"config-75366.yaml":                              {testExtendedTestdataWorkloadsConfig75366Yaml, map[string]*bintree{}},
+					"config-75422-delete.yaml":                       {testExtendedTestdataWorkloadsConfig75422DeleteYaml, map[string]*bintree{}},
+					"config-75422.yaml":                              {testExtendedTestdataWorkloadsConfig75422Yaml, map[string]*bintree{}},
+					"config-75425.yaml":                              {testExtendedTestdataWorkloadsConfig75425Yaml, map[string]*bintree{}},
+					"config-75437.yaml":                              {testExtendedTestdataWorkloadsConfig75437Yaml, map[string]*bintree{}},
+					"config-75438.yaml":                              {testExtendedTestdataWorkloadsConfig75438Yaml, map[string]*bintree{}},
+					"config-75502.yaml":                              {testExtendedTestdataWorkloadsConfig75502Yaml, map[string]*bintree{}},
+					"config-76469.yaml":                              {testExtendedTestdataWorkloadsConfig76469Yaml, map[string]*bintree{}},
+					"config-76489.yaml":                              {testExtendedTestdataWorkloadsConfig76489Yaml, map[string]*bintree{}},
+					"config-76596.yaml":                              {testExtendedTestdataWorkloadsConfig76596Yaml, map[string]*bintree{}},
+					"config-76597-delete.yaml":                       {testExtendedTestdataWorkloadsConfig76597DeleteYaml, map[string]*bintree{}},
+					"config-76597.yaml":                              {testExtendedTestdataWorkloadsConfig76597Yaml, map[string]*bintree{}},
+					"config-77060.yaml":                              {testExtendedTestdataWorkloadsConfig77060Yaml, map[string]*bintree{}},
+					"config-79215.yaml":                              {testExtendedTestdataWorkloadsConfig79215Yaml, map[string]*bintree{}},
+					"config-79217-1.yaml":                            {testExtendedTestdataWorkloadsConfig792171Yaml, map[string]*bintree{}},
+					"config-79217.yaml":                              {testExtendedTestdataWorkloadsConfig79217Yaml, map[string]*bintree{}},
+					"config-79408.yaml":                              {testExtendedTestdataWorkloadsConfig79408Yaml, map[string]*bintree{}},
+					"config-79452-v1.yaml":                           {testExtendedTestdataWorkloadsConfig79452V1Yaml, map[string]*bintree{}},
+					"config-79452-v2.yaml":                           {testExtendedTestdataWorkloadsConfig79452V2Yaml, map[string]*bintree{}},
+					"config-images-75997.txt":                        {testExtendedTestdataWorkloadsConfigImages75997Txt, map[string]*bintree{}},
+					"config-oci-65149.yaml":                          {testExtendedTestdataWorkloadsConfigOci65149Yaml, map[string]*bintree{}},
+					"config-oci-65150.yaml":                          {testExtendedTestdataWorkloadsConfigOci65150Yaml, map[string]*bintree{}},
+					"config-oci-65151-1.yaml":                        {testExtendedTestdataWorkloadsConfigOci651511Yaml, map[string]*bintree{}},
+					"config-oci-65151-2.yaml":                        {testExtendedTestdataWorkloadsConfigOci651512Yaml, map[string]*bintree{}},
+					"config-oci-65152.yaml":                          {testExtendedTestdataWorkloadsConfigOci65152Yaml, map[string]*bintree{}},
+					"config-oci-all.yaml":                            {testExtendedTestdataWorkloadsConfigOciAllYaml, map[string]*bintree{}},
+					"config-oci-f.yaml":                              {testExtendedTestdataWorkloadsConfigOciFYaml, map[string]*bintree{}},
+					"config-oci-filter.yaml":                         {testExtendedTestdataWorkloadsConfigOciFilterYaml, map[string]*bintree{}},
+					"config-oci-s.yaml":                              {testExtendedTestdataWorkloadsConfigOciSYaml, map[string]*bintree{}},
+					"config_74099.yaml":                              {testExtendedTestdataWorkloadsConfig_74099Yaml, map[string]*bintree{}},
+					"config_singleimage.yaml":                        {testExtendedTestdataWorkloadsConfig_singleimageYaml, map[string]*bintree{}},
+					"cronjob50255.yaml":                              {testExtendedTestdataWorkloadsCronjob50255Yaml, map[string]*bintree{}},
+					"cronjob54195.yaml":                              {testExtendedTestdataWorkloadsCronjob54195Yaml, map[string]*bintree{}},
+					"cronjob54195ic.yaml":                            {testExtendedTestdataWorkloadsCronjob54195icYaml, map[string]*bintree{}},
+					"cronjob54195notz.yaml":                          {testExtendedTestdataWorkloadsCronjob54195notzYaml, map[string]*bintree{}},
+					"cronjob56176.yaml":                              {testExtendedTestdataWorkloadsCronjob56176Yaml, map[string]*bintree{}},
+					"cronjob75375.yaml":                              {testExtendedTestdataWorkloadsCronjob75375Yaml, map[string]*bintree{}},
+					"cronjob_54196.yaml":                             {testExtendedTestdataWorkloadsCronjob_54196Yaml, map[string]*bintree{}},
+					"customcrd72005.yaml":                            {testExtendedTestdataWorkloadsCustomcrd72005Yaml, map[string]*bintree{}},
+					"customsub.yaml":                                 {testExtendedTestdataWorkloadsCustomsubYaml, map[string]*bintree{}},
+					"daemonset-origin.yaml":                          {testExtendedTestdataWorkloadsDaemonsetOriginYaml, map[string]*bintree{}},
+					"daemonset-update.yaml":                          {testExtendedTestdataWorkloadsDaemonsetUpdateYaml, map[string]*bintree{}},
+					"dc_66672.yaml":                                  {testExtendedTestdataWorkloadsDc_66672Yaml, map[string]*bintree{}},
+					"debugpod_48681.yaml":                            {testExtendedTestdataWorkloadsDebugpod_48681Yaml, map[string]*bintree{}},
+					"delete-config-72708.yaml":                       {testExtendedTestdataWorkloadsDeleteConfig72708Yaml, map[string]*bintree{}},
+					"delete-config-72972.yaml":                       {testExtendedTestdataWorkloadsDeleteConfig72972Yaml, map[string]*bintree{}},
+					"delete-config-77061.yaml":                       {testExtendedTestdataWorkloadsDeleteConfig77061Yaml, map[string]*bintree{}},
+					"delete-config-79217.yaml":                       {testExtendedTestdataWorkloadsDeleteConfig79217Yaml, map[string]*bintree{}},
+					"delete-config-79452.yaml":                       {testExtendedTestdataWorkloadsDeleteConfig79452Yaml, map[string]*bintree{}},
+					"deploy75289.yaml":                               {testExtendedTestdataWorkloadsDeploy75289Yaml, map[string]*bintree{}},
+					"deployOCMirrorPlugin.yaml":                      {testExtendedTestdataWorkloadsDeployocmirrorpluginYaml, map[string]*bintree{}},
+					"deployPodWithOutScheduler.yaml":                 {testExtendedTestdataWorkloadsDeploypodwithoutschedulerYaml, map[string]*bintree{}},
+					"deployPodWithScheduler.yaml":                    {testExtendedTestdataWorkloadsDeploypodwithschedulerYaml, map[string]*bintree{}},
+					"deploy_demopod.yaml":                            {testExtendedTestdataWorkloadsDeploy_demopodYaml, map[string]*bintree{}},
+					"deploy_duplicatepods.yaml":                      {testExtendedTestdataWorkloadsDeploy_duplicatepodsYaml, map[string]*bintree{}},
+					"deploy_duplicatepodsrs.yaml":                    {testExtendedTestdataWorkloadsDeploy_duplicatepodsrsYaml, map[string]*bintree{}},
+					"deploy_interpodantiaffinity.yaml":               {testExtendedTestdataWorkloadsDeploy_interpodantiaffinityYaml, map[string]*bintree{}},
+					"deploy_interpodantiaffinitytpm.yaml":            {testExtendedTestdataWorkloadsDeploy_interpodantiaffinitytpmYaml, map[string]*bintree{}},
+					"deploy_nodeaffinity.yaml":                       {testExtendedTestdataWorkloadsDeploy_nodeaffinityYaml, map[string]*bintree{}},
+					"deploy_nodeselect.yaml":                         {testExtendedTestdataWorkloadsDeploy_nodeselectYaml, map[string]*bintree{}},
+					"deploy_nodetaint.yaml":                          {testExtendedTestdataWorkloadsDeploy_nodetaintYaml, map[string]*bintree{}},
+					"deploy_podTopologySpread.yaml":                  {testExtendedTestdataWorkloadsDeploy_podtopologyspreadYaml, map[string]*bintree{}},
+					"deploy_podWithPriorityClassName.yaml":           {testExtendedTestdataWorkloadsDeploy_podwithpriorityclassnameYaml, map[string]*bintree{}},
+					"deploy_single_pts.yaml":                         {testExtendedTestdataWorkloadsDeploy_single_ptsYaml, map[string]*bintree{}},
+					"deploy_softPodTopologySpread.yaml":              {testExtendedTestdataWorkloadsDeploy_softpodtopologyspreadYaml, map[string]*bintree{}},
+					"deploy_softdemopod.yaml":                        {testExtendedTestdataWorkloadsDeploy_softdemopodYaml, map[string]*bintree{}},
+					"deployment-69072.yaml":                          {testExtendedTestdataWorkloadsDeployment69072Yaml, map[string]*bintree{}},
+					"deployment-73887.yaml":                          {testExtendedTestdataWorkloadsDeployment73887Yaml, map[string]*bintree{}},
+					"deployment-with-shutdown-gracefully.yaml":       {testExtendedTestdataWorkloadsDeploymentWithShutdownGracefullyYaml, map[string]*bintree{}},
+					"deployment60691.yaml":                           {testExtendedTestdataWorkloadsDeployment60691Yaml, map[string]*bintree{}},
+					"deploymentconfig_with_quota.yaml":               {testExtendedTestdataWorkloadsDeploymentconfig_with_quotaYaml, map[string]*bintree{}},
+					"egressnetworkpolicy.yaml":                       {testExtendedTestdataWorkloadsEgressnetworkpolicyYaml, map[string]*bintree{}},
+					"ibmcustomsub.yaml":                              {testExtendedTestdataWorkloadsIbmcustomsubYaml, map[string]*bintree{}},
+					"icsp60499.yaml":                                 {testExtendedTestdataWorkloadsIcsp60499Yaml, map[string]*bintree{}},
+					"icspFile63855.yaml":                             {testExtendedTestdataWorkloadsIcspfile63855Yaml, map[string]*bintree{}},
+					"icspFile64920.yaml":                             {testExtendedTestdataWorkloadsIcspfile64920Yaml, map[string]*bintree{}},
+					"idmsFile63855.yaml":                             {testExtendedTestdataWorkloadsIdmsfile63855Yaml, map[string]*bintree{}},
+					"idmsFile64921.yaml":                             {testExtendedTestdataWorkloadsIdmsfile64921Yaml, map[string]*bintree{}},
+					"imageSetConfig65202.yaml":                       {testExtendedTestdataWorkloadsImagesetconfig65202Yaml, map[string]*bintree{}},
+					"imageSetConfig65203.yaml":                       {testExtendedTestdataWorkloadsImagesetconfig65203Yaml, map[string]*bintree{}},
+					"init.ldif":                                      {testExtendedTestdataWorkloadsInitLdif, map[string]*bintree{}},
+					"initContainer.yaml":                             {testExtendedTestdataWorkloadsInitcontainerYaml, map[string]*bintree{}},
+					"initContainer66989.yaml":                        {testExtendedTestdataWorkloadsInitcontainer66989Yaml, map[string]*bintree{}},
+					"kubedescheduler.yaml":                           {testExtendedTestdataWorkloadsKubedeschedulerYaml, map[string]*bintree{}},
+					"kubedescheduler_excludins.yaml":                 {testExtendedTestdataWorkloadsKubedescheduler_excludinsYaml, map[string]*bintree{}},
+					"kubedescheduler_includeexcludens.yaml":          {testExtendedTestdataWorkloadsKubedescheduler_includeexcludensYaml, map[string]*bintree{}},
+					"kubedescheduler_includins.yaml":                 {testExtendedTestdataWorkloadsKubedescheduler_includinsYaml, map[string]*bintree{}},
+					"kubedescheduler_podlifetime.yaml":               {testExtendedTestdataWorkloadsKubedescheduler_podlifetimeYaml, map[string]*bintree{}},
+					"kubedescheduler_priorityclassname.yaml":         {testExtendedTestdataWorkloadsKubedescheduler_priorityclassnameYaml, map[string]*bintree{}},
+					"kubedescheduler_prioritythp.yaml":               {testExtendedTestdataWorkloadsKubedescheduler_prioritythpYaml, map[string]*bintree{}},
+					"kubedescheduler_thresholdPriority.yaml":         {testExtendedTestdataWorkloadsKubedescheduler_thresholdpriorityYaml, map[string]*bintree{}},
+					"kubejobfailed-73886.yaml":                       {testExtendedTestdataWorkloadsKubejobfailed73886Yaml, map[string]*bintree{}},
 					"mirror-from-filesystem.txt":                     {testExtendedTestdataWorkloadsMirrorFromFilesystemTxt, map[string]*bintree{}},
 					"node-affinity-required-case14479-edge.yaml":     {testExtendedTestdataWorkloadsNodeAffinityRequiredCase14479EdgeYaml, map[string]*bintree{}},
 					"node-affinity-required-case14479-outposts.yaml": {testExtendedTestdataWorkloadsNodeAffinityRequiredCase14479OutpostsYaml, map[string]*bintree{}},
