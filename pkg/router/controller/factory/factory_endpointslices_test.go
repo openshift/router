@@ -91,7 +91,7 @@ func newEndpointSliceTestSetup(t *testing.T, plugin router.Plugin, initialObject
 		fakeProject.Projects(),
 		client,
 		false, // watch endpoints
-	).Create(plugin, false, stopCh)
+	).Create(plugin, false, true, stopCh)
 
 	return client, stopCh
 }

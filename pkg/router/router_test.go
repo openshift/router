@@ -192,7 +192,7 @@ u3YLAbyW/lHhOCiZu2iAI8AbmXem9lW6Tr7p/97s0w==
 	plugin = controller.NewHostAdmitter(plugin, routerSelection.RouteAdmissionFunc(), false, false, statusPlugin)
 
 	// Start the controller
-	c := factory.Create(plugin, false, wait.NeverStop)
+	c := factory.Create(plugin, false, true, wait.NeverStop)
 	c.Run()
 
 	exitCode := m.Run()
