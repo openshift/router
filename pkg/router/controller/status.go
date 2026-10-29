@@ -234,7 +234,12 @@ func performIngressConditionUpdate(action string, lease writerlease.Lease, track
 		// value, skip updating altogether and rely on the next resync to resolve conflicts. This prevents routers
 		// with different configurations from endlessly updating the route status.
 		// TRICKY: The tracker keys off of the route UID, not the workKey.
-		if !created && tracker.IsChangeContended(contentionKey(route.UID), now, original) {
+		// External-certificate status can change rapidly as Secrets and RBAC
+		// change. A delayed informer event can make our own earlier status
+		// write look like contention, or unrelated routes can trip the
+		// tracker's global limit. Always persist these validation results;
+		// the writer lease and API conflict retries still serialize writes.
+		if !created && !ignoreIngressConditionReason.Has(condition.Reason) && tracker.IsChangeContended(contentionKey(route.UID), now, original) {
 			log.V(4).Info("skipped update due to another process altering the route with a different ingress status value", "action", action, "workKey", workKey, "original", original)
 			return writerlease.Release, false
 		}
