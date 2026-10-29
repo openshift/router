@@ -1032,6 +1032,9 @@ func TestConfigTemplate(t *testing.T) {
 	}
 }
 
+// waitForConfig returns the parser from the successful polling iteration on success.
+// On timeout, it returns the last successfully parsed snapshot, which may not
+// satisfy all expectations, or nil if no configuration was successfully parsed.
 func waitForConfig(config string, interval, timeout time.Duration, tests map[string][]mustCreateWithConfig) (haproxyconfparser.Parser, error) {
 	var parser haproxyconfparser.Parser
 	var lastErr error
