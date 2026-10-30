@@ -152,6 +152,18 @@ func Test_hostIndex(t *testing.T) {
 				{route: newRoute("test", "1", 1, 1, routev1.RouteSpec{Host: "test.com"})},
 			},
 			active: map[string][]string{"test.com": {"001"}},
+			// an active route is re-notified on resync so lower plugins can retry work
+			activates: map[string]struct{}{"001": {}},
+		},
+		{
+			name: "update - no change, inactive",
+			steps: []step{
+				{route: newRoute("test", "1", 1, 1, routev1.RouteSpec{Host: "test.com"})},
+				{route: newRoute("test", "2", 11, 2, routev1.RouteSpec{Host: "test.com"})},
+				{route: newRoute("test", "2", 11, 2, routev1.RouteSpec{Host: "test.com"})},
+			},
+			active:   map[string][]string{"test.com": {"001"}},
+			inactive: map[string][]string{"test.com": {"011"}},
 		},
 		{
 			name: "update - inactive",
