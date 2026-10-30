@@ -1,0 +1,1220 @@
+[
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created",
+    "labels": {
+      "OCP-10024": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:33"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Set balance leastconn for passthrough routes",
+    "labels": {
+      "OCP-10043": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:102"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route",
+    "labels": {
+      "OCP-10207": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:129"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Service endpoint can be work well if the mapping pod ip is updated",
+    "labels": {
+      "OCP-10660": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:227"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route",
+    "labels": {
+      "OCP-11036": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:263"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge oc help information should contain option wildcard-policy",
+    "labels": {
+      "OCP-11067": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:328"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes",
+    "labels": {
+      "OCP-11130": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:362"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Limit the number of TCP connection per IP in specified time period",
+    "labels": {
+      "OCP-11619": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:445"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for passthough route",
+    "labels": {
+      "OCP-11635": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:513"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router haproxy hash based sticky session for tcp mode passthrough routes",
+    "labels": {
+      "OCP-11728": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:547"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for http route",
+    "labels": {
+      "OCP-11982": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:608"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router haproxy config information should be clean when changing the service to another route",
+    "labels": {
+      "OCP-12091": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:649"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router reencrypt route with no cert if a router is configured with a default wildcard cert",
+    "labels": {
+      "OCP-12506": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:742"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for edge/unsecure termination",
+    "labels": {
+      "OCP-12562": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:776"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for reencrypt terminated",
+    "labels": {
+      "OCP-12564": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:842"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router The later route should be HostAlreadyClaimed when there is a same host exist",
+    "labels": {
+      "OCP-12652": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:876"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route",
+    "labels": {
+      "OCP-13753": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:941"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route",
+    "labels": {
+      "OCP-13839": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:995"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes",
+    "labels": {
+      "OCP-14678": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1036"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route",
+    "labels": {
+      "OCP-15028": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1129"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge can set cookie name for edge/reen routes by annotation",
+    "labels": {
+      "OCP-15873": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1181"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified",
+    "labels": {
+      "OCP-16732": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1273"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router haproxy router support websocket via unsecure route",
+    "labels": {
+      "OCP-17145": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1317"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route",
+    "labels": {
+      "OCP-18482": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1365"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge limits multiple backend pods max concurrent connections",
+    "labels": {
+      "OCP-18490": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1419"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Unsecure route with path and another tls route with same hostname can work at the same time",
+    "labels": {
+      "OCP-19804": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1459"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'",
+    "labels": {
+      "OCP-34106": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1491"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes",
+    "labels": {
+      "OCP-38671": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1530"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes",
+    "labels": {
+      "OCP-38672": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1595"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router route can be configured to whitelist more than 61 ips/CIDRs",
+    "labels": {
+      "OCP-42230": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1631"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router ingress controller continue to function normally with unexpected high timeout value",
+    "labels": {
+      "OCP-45399": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1673"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router ingress canary route redirects http to https",
+    "labels": {
+      "OCP-45741": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1705"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router HTTPS redirect happens even if there is a more specific http-only",
+    "labels": {
+      "OCP-49802": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1718"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Ipv6 addresses are also acceptable for whitelisting",
+    "labels": {
+      "OCP-63004": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1922"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes",
+    "labels": {
+      "OCP-77080": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1951"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present",
+    "labels": {
+      "OCP-77082": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:2039"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given",
+    "labels": {
+      "OCP-77091": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:2098"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Route status should updates accordingly when ingress routes cleaned up [Disruptive] [Serial]",
+    "labels": {
+      "OCP-53696": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1765"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Ingress should be in degraded status when canary route is not available [Disruptive] [Serial]",
+    "labels": {
+      "OCP-55895": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1822"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Canary daemonset can schedule pods to both worker and infra nodes [Disruptive] [Serial]",
+    "labels": {
+      "OCP-56240": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:1862"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "((externalConnectivity==\"Disconnected\") || (topology==\"External\")) || (topology==\"SingleReplica\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]",
+    "labels": {
+      "OCP-85274": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:2153"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][OTP][Level0] Network_Edge Component_Router UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]",
+    "labels": {
+      "OCP-88075": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route.go:23",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route.go:2198"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  }
+]
