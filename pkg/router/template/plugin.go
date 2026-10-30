@@ -47,6 +47,7 @@ type TemplatePluginConfig struct {
 	WorkingDir                    string
 	TemplatePath                  string
 	ReloadScriptPath              string
+	HAProxyAdminUnixSocketPath    string
 	ReloadFn                      func(shutdown bool) error
 	ReloadInterval                time.Duration
 	ReloadCallbacks               []func()
@@ -152,6 +153,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		dir:                           cfg.WorkingDir,
 		templates:                     templates,
 		reloadScriptPath:              cfg.ReloadScriptPath,
+		haproxyAdminUnixSocketPath:    cfg.HAProxyAdminUnixSocketPath,
 		reloadFn:                      cfg.ReloadFn,
 		reloadInterval:                cfg.ReloadInterval,
 		reloadCallbacks:               cfg.ReloadCallbacks,
