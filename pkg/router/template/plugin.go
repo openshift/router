@@ -102,7 +102,9 @@ type RouterInterface interface {
 	FilterNamespaces(namespaces sets.String)
 	// Commit applies the changes in the background. It kicks off a rate-limited
 	// commit (persist router state + refresh the backend) that coalesces multiple changes.
-	Commit()
+	// Changes are written and reload is applied only if there are pending changes. Set
+	// force to true to always write the configuration and reload the proxy.
+	Commit(force bool)
 }
 
 // createTemplateWithHelper generates a new template with a map helper function.
@@ -246,7 +248,7 @@ func (p *TemplatePlugin) HandleNamespaces(namespaces sets.String) error {
 }
 
 func (p *TemplatePlugin) Commit() error {
-	p.Router.Commit()
+	p.Router.Commit(false)
 	return nil
 }
 
