@@ -9,9 +9,14 @@ function print_failure {
 }
 
 if [ "${OPENSHIFT_CI:-false}" = true ]; then
-  go mod vendor
-  go mod tidy
-
+  for module in . tests-extension; do
+    (
+      cd "$module"
+      go mod vendor
+      go mod tidy
+      test -z "$(git status --porcelain -- go.mod go.sum vendor)" || print_failure
+    )
+  done
   test -z "$(git status --porcelain)" || print_failure
   echo "verified Go modules"
 fi
