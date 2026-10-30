@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/apis/apiserver"
 	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
@@ -84,20 +83,7 @@ var routerLong = heredoc.Doc(`
 	provisioning each backend with a pool of dynamic servers, which can
 	then be used as needed. The max-dynamic-servers option (and/or
 	ROUTER_MAX_DYNAMIC_SERVERS environment variable) controls the size
-	of this pool.
-	For new routes to be made available immediately, the haproxy-manager
-	provisions a pre-allocated pool of routes called blueprints. A backend
-	from this blueprint pool is used if the new route matches a specific blueprint.
-	The default set of blueprints support for passthrough, insecure (or http)
-	and edge secured routes using the default certificates.
-	The blueprint-route-pool-size option (and/or the
-	ROUTER_BLUEPRINT_ROUTE_POOL_SIZE environment variable) control the
-	size of this pre-allocated pool.
-
-	These blueprints can be extended or customized by using the blueprint route
-	namespace and the blueprint label selector. Those options allow selected routes
-	from a certain namespace (matching the label selection criteria) to
-	serve as custom blueprints.`)
+	of this pool.`)
 
 type TemplateRouterOptions struct {
 	Config *Config
@@ -138,11 +124,8 @@ type TemplateRouter struct {
 }
 
 type TemplateRouterConfigManager struct {
-	UseHAProxyConfigManager     bool
-	CommitInterval              time.Duration
-	BlueprintRouteNamespace     string
-	BlueprintRouteLabelSelector string
-	BlueprintRoutePoolSize      int
+	UseHAProxyConfigManager bool
+	CommitInterval          time.Duration
 }
 
 // isTrue here has the same logic as the function within package pkg/router/template
@@ -188,9 +171,6 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.MetricsType, "metrics-type", env("ROUTER_METRICS_TYPE", ""), "Specifies the type of metrics to gather. Supports 'haproxy'.")
 	flag.BoolVar(&o.UseHAProxyConfigManager, "haproxy-config-manager", isTrue(env("ROUTER_HAPROXY_CONFIG_MANAGER", "")), "Use the the haproxy config manager (and dynamic configuration API) to configure route and endpoint changes. Reduces the number of haproxy reloads needed on configuration changes.")
 	flag.DurationVar(&o.CommitInterval, "commit-interval", getIntervalFromEnv("COMMIT_INTERVAL", defaultCommitInterval), "Controls how often to commit (to the actual config) all the changes made using the router specific dynamic configuration manager.")
-	flag.StringVar(&o.BlueprintRouteNamespace, "blueprint-route-namespace", env("ROUTER_BLUEPRINT_ROUTE_NAMESPACE", ""), "Specifies the namespace which contains the routes that serve as blueprints for the dynamic configuration manager.")
-	flag.StringVar(&o.BlueprintRouteLabelSelector, "blueprint-route-labels", env("ROUTER_BLUEPRINT_ROUTE_LABELS", ""), "A label selector to apply to the routes in the blueprint route namespace. These selected routes will serve as blueprints for the dynamic dynamic configuration manager.")
-	flag.IntVar(&o.BlueprintRoutePoolSize, "blueprint-route-pool-size", int(envInt("ROUTER_BLUEPRINT_ROUTE_POOL_SIZE", 10, 0)), "Specifies the size of the pre-allocated pool for each route blueprint managed by the router specific dynamic configuration manager. This can be overriden by an annotation router.openshift.io/pool-size on an individual route.")
 	flag.StringVar(&o.CaptureHTTPRequestHeadersString, "capture-http-request-headers", env("ROUTER_CAPTURE_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPResponseHeadersString, "capture-http-response-headers", env("ROUTER_CAPTURE_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and maximum header value lengths that should be captured for logging. Each item must have the following form: name:maxLength")
 	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
@@ -199,6 +179,9 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.HTTPRequestHeadersString, "set-delete-http-request-header", env("ROUTER_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and values that should be set/deleted.")
 
 	// deprecated flags
+	_ = flag.String("blueprint-route-namespace", env("ROUTER_BLUEPRINT_ROUTE_NAMESPACE", ""), "Specifies the namespace which contains the routes that serve as blueprints for the dynamic configuration manager. DEPRECATED: Blueprint routes are no longer supported.")
+	_ = flag.String("blueprint-route-labels", env("ROUTER_BLUEPRINT_ROUTE_LABELS", ""), "A label selector to apply to the routes in the blueprint route namespace. These selected routes will serve as blueprints for the dynamic configuration manager. DEPRECATED: Blueprint routes are no longer supported.")
+	_ = flag.Int("blueprint-route-pool-size", int(envInt("ROUTER_BLUEPRINT_ROUTE_POOL_SIZE", 10, 0)), "Specifies the size of the pre-allocated pool for each route blueprint managed by the router specific dynamic configuration manager. DEPRECATED: Blueprint routes are no longer supported.")
 	_ = flag.Int("max-dynamic-servers", int(envInt("ROUTER_MAX_DYNAMIC_SERVERS", 5, 1)), "Specifies the maximum number of dynamic servers added to a route for use by the router specific dynamic configuration manager. DEPRECATED: router now created backend servers dynamically.")
 }
 
@@ -751,26 +734,16 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	}
 
 	var cfgManager templateplugin.ConfigManager
-	var blueprintPlugin router.Plugin
 	if o.UseHAProxyConfigManager {
-		blueprintRoutes, err := o.blueprintRoutes(routeclient)
-		if err != nil {
-			return err
-		}
 		cmopts := templateplugin.ConfigManagerOptions{
-			ConnectionInfo:         adminSocketURL.String(),
-			CommitInterval:         o.CommitInterval,
-			BlueprintRoutes:        blueprintRoutes,
-			BlueprintRoutePoolSize: o.BlueprintRoutePoolSize,
-			WildcardRoutesAllowed:  o.AllowWildcardRoutes,
-			ExtendedValidation:     o.ExtendedValidation,
-			WorkingDir:             o.WorkingDir,
-			DefaultDestinationCA:   o.DefaultDestinationCAPath,
+			ConnectionInfo:        adminSocketURL.String(),
+			CommitInterval:        o.CommitInterval,
+			WildcardRoutesAllowed: o.AllowWildcardRoutes,
+			ExtendedValidation:    o.ExtendedValidation,
+			WorkingDir:            o.WorkingDir,
+			DefaultDestinationCA:  o.DefaultDestinationCAPath,
 		}
 		cfgManager = haproxyconfigmanager.NewHAProxyConfigManager(cmopts)
-		if len(o.BlueprintRouteNamespace) > 0 {
-			blueprintPlugin = haproxyconfigmanager.NewBlueprintPlugin(cfgManager)
-		}
 	}
 
 	statsUsername, statsPassword, err := getStatsAuth(o.StatsUsernameFile, o.StatsPasswordFile, o.StatsUsername, o.StatsPassword)
@@ -848,17 +821,6 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	controller := factory.Create(plugin, false, o.EndpointAddressValidation, stopCh)
 	controller.Run()
 
-	if blueprintPlugin != nil {
-		// f is like factory but filters the routes based on the
-		// blueprint route namespace and label selector (if any).
-		f := o.RouterSelection.NewFactory(routeclient, projectclient.ProjectV1().Projects(), kc)
-		f.LabelSelector = o.BlueprintRouteLabelSelector
-		f.Namespace = o.BlueprintRouteNamespace
-		f.ResyncInterval = o.ResyncInterval
-		c := f.Create(blueprintPlugin, false, o.EndpointAddressValidation, stopCh)
-		c.Run()
-	}
-
 	proc.StartReaper(6 * time.Second)
 
 	<-stopCh
@@ -877,29 +839,6 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 	// wait one second to let any remaining actions settle
 	time.Sleep(time.Second)
 	return nil
-}
-
-// blueprintRoutes returns all the routes in the blueprint namespace.
-func (o *TemplateRouterOptions) blueprintRoutes(routeclient *routeclientset.Clientset) ([]*routev1.Route, error) {
-	blueprints := make([]*routev1.Route, 0)
-	if len(o.BlueprintRouteNamespace) == 0 {
-		return blueprints, nil
-	}
-
-	options := metav1.ListOptions{}
-	if len(o.BlueprintRouteLabelSelector) > 0 {
-		options.LabelSelector = o.BlueprintRouteLabelSelector
-	}
-
-	routeList, err := routeclient.RouteV1().Routes(o.BlueprintRouteNamespace).List(context.TODO(), options)
-	if err != nil {
-		return blueprints, err
-	}
-	for _, r := range routeList.Items {
-		blueprints = append(blueprints, r.DeepCopy())
-	}
-
-	return blueprints, nil
 }
 
 // makeTLSConfig checks whether metrics TLS is configured and

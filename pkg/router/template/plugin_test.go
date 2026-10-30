@@ -298,7 +298,7 @@ func getKey(route *routev1.Route) ServiceAliasConfigKey {
 	return routeKeyFromParts(route.Spec.Host, route.Spec.Path)
 }
 
-func (r *TestRouter) Commit() {
+func (r *TestRouter) Commit(force bool) {
 	// No op
 }
 
