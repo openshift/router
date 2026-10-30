@@ -1306,6 +1306,83 @@ func TestSARCompletedOnlyOnAdded(t *testing.T) {
 	}
 }
 
+// TestResyncSkipsRevalidationOfValidatedRoute verifies that a resync of an
+// already validated route version does not repeat the SAR check, so a
+// transient SAR failure cannot take a serving route offline, while a new
+// route version is still re-validated.
+func TestResyncSkipsRevalidationOfValidatedRoute(t *testing.T) {
+	routeapihelpers.ClearAsyncSARCacheForTest()
+
+	secret := fakeSecret("sandbox", "tls-secret", corev1.SecretTypeTLS, map[string][]byte{
+		"tls.crt": []byte("my-crt"),
+		"tls.key": []byte("my-key"),
+	})
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "route-test",
+			Namespace:       "sandbox",
+			UID:             "uid1",
+			ResourceVersion: "1",
+		},
+		Spec: routev1.RouteSpec{
+			TLS: &routev1.TLSConfig{
+				ExternalCertificate: &routev1.LocalObjectReference{
+					Name: "tls-secret",
+				},
+			},
+		},
+	}
+
+	plugin := &fakePlugin{}
+	recorder := &statusRecorder{}
+	sar := &testSARCreator{allow: true}
+	rsm := NewRouteSecretManager(
+		plugin,
+		recorder,
+		&fake.SecretManager{
+			Secret:     secret,
+			IsPresent:  true,
+			SecretName: "tls-secret",
+		},
+		testRouterName,
+		&testSecretGetter{namespace: "sandbox", secret: secret},
+		&routeLister{items: []*routev1.Route{route}},
+		sar,
+	)
+
+	if err := rsm.HandleRoute(watch.Added, route); err != nil {
+		t.Fatalf("HandleRoute(Added) failed: %v", err)
+	}
+
+	// The API server now fails SAR requests; the resync delivers the same
+	// route version.
+	routeapihelpers.ClearAsyncSARCacheForTest()
+	sar.err = fmt.Errorf("the server is currently unable to handle the request")
+	sar.sar = nil
+	if err := rsm.HandleRoute(watch.Modified, route); err != nil {
+		t.Fatalf("HandleRoute(Modified) on resync failed: %v", err)
+	}
+	if sar.sar != nil {
+		t.Fatalf("expected no SAR request on resync of a validated route version")
+	}
+	if rejections := recorder.GetRejections(); len(rejections) != 0 {
+		t.Fatalf("expected no rejection on resync, got: %v", rejections)
+	}
+	if plugin.t != watch.Modified || plugin.route.Spec.TLS.Certificate != "my-crt" {
+		t.Fatalf("expected the route to be forwarded with its certificate, got event %q", plugin.t)
+	}
+
+	// A new route version must be re-validated.
+	updated := route.DeepCopy()
+	updated.ResourceVersion = "2"
+	if err := rsm.HandleRoute(watch.Modified, updated); err == nil {
+		t.Fatalf("expected re-validation of a new route version to fail")
+	}
+	if rejections := recorder.GetRejections(); len(rejections) != 1 {
+		t.Fatalf("expected one rejection for the new route version, got: %v", rejections)
+	}
+}
+
 // TestDeletedSecretDoesNotGetReadmitted reproduces the failure mode from
 // the Hypershift conformance test "the secret is deleted then routes are
 // not reachable": after the DeleteFunc rejects the route (Admitted=False),
