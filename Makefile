@@ -49,3 +49,5 @@ local-run:
 verify:
 	hack/verify-gofmt.sh
 	hack/verify-deps.sh
+	$(MAKE) -C tests-extension verify
+	$(GO) test ./hack
