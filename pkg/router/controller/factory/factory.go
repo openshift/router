@@ -74,7 +74,7 @@ func NewDefaultRouterControllerFactory(rc routeclientset.Interface, pc projectcl
 
 // Create begins listing and watching against the API server for the desired route and endpoint
 // resources.
-func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, stopCh <-chan struct{}) *routercontroller.RouterController {
+func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, validateEndpointAddresses bool, stopCh <-chan struct{}) *routercontroller.RouterController {
 	rc := &routercontroller.RouterController{
 		Plugin:     plugin,
 		WatchNodes: watchNodes,
@@ -83,6 +83,8 @@ func (f *RouterControllerFactory) Create(plugin router.Plugin, watchNodes bool, 
 		FilteredNamespaceNames: make(sets.String),
 		NamespaceRoutes:        make(map[string]map[string]*routev1.Route),
 		NamespaceEndpoints:     make(map[string]map[string]*kapi.Endpoints),
+
+		EndpointAddressValidation: validateEndpointAddresses,
 
 		ProjectClient:       f.ProjectClient,
 		ProjectLabels:       f.ProjectLabels,

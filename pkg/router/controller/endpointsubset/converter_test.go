@@ -97,7 +97,7 @@ func TestConvertEndpointSlice(t *testing.T) {
 				}},
 			}}
 
-			got := endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs())
+			got := endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs(), true)
 			if diff := cmp.Diff(got, tc.want); len(diff) != 0 {
 				t.Errorf("ConvertEndpointSlice() failed (-want +got):\n%s", diff)
 			}
@@ -115,9 +115,10 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 	}
 
 	tests := []struct {
-		name  string
-		items []discoveryv1.EndpointSlice
-		want  []v1.EndpointSubset
+		name             string
+		items            []discoveryv1.EndpointSlice
+		want             []v1.EndpointSubset
+		enableValidation bool
 	}{{
 		name: "FQDN AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -135,6 +136,29 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Port: int32Ptr(8080),
 			}},
 		}},
+		enableValidation: true,
+	}, {
+		name: "FQDN AddressType is kept when validation is disabled",
+		items: []discoveryv1.EndpointSlice{{
+			TypeMeta: sliceMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "slice-fqdn",
+				Namespace: "namespace-a",
+				Labels:    serviceLabels,
+			},
+			AddressType: discoveryv1.AddressTypeFQDN,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"metadata.google.internal"},
+			}},
+			Ports: []discoveryv1.EndpointPort{{
+				Port: int32Ptr(8080),
+			}},
+		}},
+		enableValidation: false,
+		want: []v1.EndpointSubset{{
+			Addresses: []v1.EndpointAddress{{IP: "metadata.google.internal"}},
+			Ports:     []v1.EndpointPort{{Port: 8080}},
+		}},
 	}, {
 		name: "unknown AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -149,6 +173,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Addresses: []string{"10.0.0.2"},
 			}},
 		}},
+		enableValidation: true,
 	}, {
 		name: "empty AddressType is skipped",
 		items: []discoveryv1.EndpointSlice{{
@@ -162,6 +187,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Addresses: []string{"10.0.0.3"},
 			}},
 		}},
+		enableValidation: true,
 	}, {
 		name: "IPv6 AddressType is converted",
 		items: []discoveryv1.EndpointSlice{{
@@ -179,6 +205,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Port: int32Ptr(443),
 			}},
 		}},
+		enableValidation: true,
 		want: []v1.EndpointSubset{{
 			Addresses: []v1.EndpointAddress{{IP: "2001:db8::1"}},
 			Ports:     []v1.EndpointPort{{Port: 443}},
@@ -200,6 +227,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Port: int32Ptr(8080),
 			}},
 		}},
+		enableValidation: true,
 		want: []v1.EndpointSubset{{
 			Addresses: []v1.EndpointAddress{
 				{IP: "metadata.google.internal"},
@@ -270,6 +298,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				Port: int32Ptr(443),
 			}},
 		}},
+		enableValidation: true,
 		want: []v1.EndpointSubset{{
 			Addresses: []v1.EndpointAddress{{IP: "10.0.0.1"}},
 			Ports:     []v1.EndpointPort{{Port: 80}},
@@ -285,6 +314,7 @@ func TestConvertEndpointSlice_addressTypes(t *testing.T) {
 				tc.items,
 				endpointsubset.DefaultEndpointAddressOrderByFuncs(),
 				endpointsubset.DefaultEndpointPortOrderByFuncs(),
+				tc.enableValidation,
 			)
 			if diff := cmp.Diff(tc.want, got); len(diff) != 0 {
 				t.Errorf("ConvertEndpointSlice() failed (-want +got):\n%s", diff)

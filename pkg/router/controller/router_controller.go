@@ -40,6 +40,9 @@ type RouterController struct {
 	// Holds Namespace --> EndpointsName --> EndpointsObject
 	NamespaceEndpoints map[string]map[string]*kapi.Endpoints
 
+	// EndpointAddressValidation enables address validation for endpoints.
+	EndpointAddressValidation bool
+
 	ProjectClient       projectclient.ProjectInterface
 	ProjectLabels       labels.Selector
 	ProjectSyncInterval time.Duration
@@ -239,7 +242,7 @@ func (c *RouterController) HandleEndpointSlice(eventType watch.EventType, objMet
 			Annotations:     objMeta.Annotations,
 			OwnerReferences: objMeta.OwnerReferences,
 		},
-		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs()),
+		Subsets: endpointsubset.ConvertEndpointSlice(items, endpointsubset.DefaultEndpointAddressOrderByFuncs(), endpointsubset.DefaultEndpointPortOrderByFuncs(), c.EndpointAddressValidation),
 	}
 
 	// RecordNamespaceEndpoints and all HandleEndpoints
