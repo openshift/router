@@ -455,11 +455,22 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	case watch.Added:
 		// register with secret monitor
 		if hasExternalCertificate(route) {
-			log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
-			if err := p.validateAndRegister(route); err != nil {
-				return err
+			// Registering the informer event handlers replays cached routes as
+			// Added events after the initial sync already validated them.
+			// Skipping the SAR call here means a transient API error cannot
+			// withdraw a route that is already validated.
+			if p.isValidatedRouteVersion(route) {
+				log.V(4).Info("Route version already validated, skipping re-validation", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				if err := p.populateRouteTLSFromSecret(route); err != nil {
+					return err
+				}
+			} else {
+				log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				if err := p.validateAndRegister(route); err != nil {
+					return err
+				}
+				registered = true
 			}
-			registered = true
 		}
 
 	case watch.Modified:
