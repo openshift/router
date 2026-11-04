@@ -2,7 +2,9 @@ package util
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -42,6 +44,19 @@ type IngressControllerDescription struct {
 	Template    string
 }
 
+// IngressControllerHostPortDescription describes a host-network ingress controller with custom ports.
+type IngressControllerHostPortDescription struct {
+	Name        string
+	Namespace   string
+	DefaultCert string
+	Domain      string
+	HTTPPort    int
+	HTTPSPort   int
+	StatsPort   int
+	Replicas    int
+	Template    string
+}
+
 type RouteDescription struct {
 	Name      string
 	Namespace string
@@ -68,6 +83,19 @@ func (ingctrl *IngressControllerDescription) Create(oc *exutil.CLI) {
 }
 
 func (ingctrl *IngressControllerDescription) Delete(oc *exutil.CLI) error {
+	return oc.AsAdmin().WithoutNamespace().Run("delete").Args("--ignore-not-found", "-n", ingctrl.Namespace, "ingresscontroller", ingctrl.Name).Execute()
+}
+
+// Create creates a host-network ingress controller using its template and configured ports.
+func (ingctrl *IngressControllerHostPortDescription) Create(oc *exutil.CLI) {
+	err := CreateResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", ingctrl.Template,
+		"-p", "NAME="+ingctrl.Name, "NAMESPACE="+ingctrl.Namespace, "DOMAIN="+ingctrl.Domain,
+		"HTTPPORT="+strconv.Itoa(ingctrl.HTTPPort), "HTTPSPORT="+strconv.Itoa(ingctrl.HTTPSPort), "STATSPORT="+strconv.Itoa(ingctrl.StatsPort))
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// Delete deletes a host-network ingress controller, ignoring a missing resource.
+func (ingctrl *IngressControllerHostPortDescription) Delete(oc *exutil.CLI) error {
 	return oc.AsAdmin().WithoutNamespace().Run("delete").Args("--ignore-not-found", "-n", ingctrl.Namespace, "ingresscontroller", ingctrl.Name).Execute()
 }
 
@@ -293,6 +321,12 @@ func MirrorFixtureImages(oc *exutil.CLI, ns, file string) string {
 	}
 
 	skipWithoutInternalRegistry(oc)
+	// The mirrored image is served by the integrated registry, which requires
+	// the namespace pull secret. Wait for it before any pod that references the
+	// mirrored image is created; otherwise CRI-O can pull anonymously, the
+	// registry returns 401, and the pod repeats ImagePullBackOff events. See
+	// the revert of cluster-ingress-operator#1654 for the payload impact.
+	WaitForDefaultServiceAccountPullSecret(oc, ns)
 
 	rewritten := string(manifest)
 	mirrored := make(map[string]bool, len(matches))
@@ -316,6 +350,48 @@ func MirrorFixtureImages(oc *exutil.CLI, ns, file string) string {
 	g.DeferCleanup(os.Remove, mirroredFile)
 	e2e.Logf("mirrored fixture %s to %s for namespace %s", file, mirroredFile, ns)
 	return mirroredFile
+}
+
+// CopyFixture returns a private copy of an extracted fixture.  Tests that edit
+// a fixture with sed must edit a copy: TestdataDir extracts each file once per
+// process, so an in-place edit changes the fixture that every later spec in
+// this process uses.
+func CopyFixture(src string) string {
+	data, err := os.ReadFile(src)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read fixture %s", src)
+	dst, err := os.CreateTemp("", GetRandomString()+"-"+filepath.Base(src))
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create a private copy of %s", src)
+	defer dst.Close()
+	_, err = dst.Write(data)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write a private copy of %s", src)
+	g.DeferCleanup(os.Remove, dst.Name())
+	return dst.Name()
+}
+
+// WaitForDefaultServiceAccountPullSecret waits until the default service
+// account in ns references an image pull secret that exists.  Pods that pull
+// from the integrated registry can otherwise be scheduled before the service
+// account controller has populated the secret.
+func WaitForDefaultServiceAccountPullSecret(oc *exutil.CLI, ns string) {
+	err := wait.Poll(2*time.Second, 2*time.Minute, func() (bool, error) {
+		secrets, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("serviceaccount", "default", "-n", ns, "-o=jsonpath={.imagePullSecrets[*].name}").Output()
+		if err != nil {
+			e2e.Logf("failed to get the image pull secrets of the default service account in %s: %v, retrying...", ns, err)
+			return false, nil
+		}
+		for _, name := range strings.Fields(secrets) {
+			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("secret", name, "-n", ns, "--ignore-not-found", "-o=name").Output()
+			if err != nil {
+				e2e.Logf("failed to get the image pull secret %s in %s: %v, retrying...", name, ns, err)
+				return false, nil
+			}
+			if strings.TrimSpace(output) != "" {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("the default service account in %s has no image pull secret", ns))
 }
 
 // skipWithoutInternalRegistry skips only when registry configuration explicitly
@@ -478,6 +554,12 @@ func SetAnnotation(oc *exutil.CLI, ns, resource, annotation string) {
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
+// SetAnnotationAsAdmin sets an annotation on a resource using an administrator client.
+func SetAnnotationAsAdmin(oc *exutil.CLI, ns, resource, annotation string) {
+	err := oc.AsAdmin().WithoutNamespace().Run("annotate").Args("-n", ns, resource, annotation, "--overwrite").Execute()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
 // GetAnnotation reads the annotation from the given resource
 func GetAnnotation(oc *exutil.CLI, ns, resource, resourceName string) string {
 	findAnnotation, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
@@ -494,6 +576,12 @@ func GetByJsonPath(oc *exutil.CLI, ns, resource, jsonPath string) string {
 	}
 	e2e.Logf("the output filtered by jsonpath is: %v", output)
 	return output
+}
+
+// getByJsonPathWithContext is GetByJsonPath bounded by ctx.
+func getByJsonPathWithContext(ctx context.Context, oc *exutil.CLI, ns, resource, jsonPath string) (string, error) {
+	out, _, err := runOcCommandWithContextOutputs(ctx, oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", ns, resource, "-o=jsonpath="+jsonPath))
+	return out, err
 }
 
 // GetByLabelAndJsonPath gets resource using label and filtered by jsonpath
@@ -574,27 +662,25 @@ func EnsureHaproxyBlockConfigNotContains(oc *exutil.CLI, routerPodName string, b
 	return haproxyCfg
 }
 
-// GetBlockConfig gets block content of haproxy.conf
+// GetBlockConfig gets block content of haproxy.conf.
 func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
-	// Use deployment reference for exec to avoid stale pod name issues during
-	// rolling updates (same technique used in openshift-tests-private).
-	execTarget := routerPodName
-	parts := strings.Split(routerPodName, "-")
-	if len(parts) >= 4 && parts[0] == "router" {
-		icName := strings.Join(parts[1:len(parts)-2], "-")
-		execTarget = "deploy/router-" + icName
-	}
-	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", execTarget, "--", "bash", "-c", "cat haproxy.config").Output()
+	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerPodName, "--", "bash", "-c", "cat haproxy.config").Output()
 	o.Expect(err).NotTo(o.HaveOccurred(), "get the content of haproxy.config failed")
-	// Scope search to test namespace to prevent cross-test contamination
-	// When tests run in parallel (e.g., "route-edge" matching "route-edge15873" from a different test's namespace).
+	// Scope route block searches to the test namespace so that, for example,
+	// "route-edge" does not match "route-edge15873" from another test running
+	// in parallel. Global directives such as "bind :80 accept-proxy" must not
+	// be filtered because they never contain a namespace.
 	ns := oc.Namespace()
 	result := ""
 	flag := 0
 	startIndex := 0
 	for _, line := range strings.Split(output, "\n") {
 		if strings.Contains(line, searchString) {
-			if flag == 0 && ns != "" && !strings.Contains(searchString, ns) && !strings.Contains(line, ns) {
+			trimmed := strings.TrimSpace(line)
+			isRouteBlock := strings.HasPrefix(trimmed, "backend ") ||
+				strings.HasPrefix(trimmed, "listen ") ||
+				strings.HasPrefix(trimmed, "frontend ")
+			if flag == 0 && ns != "" && isRouteBlock && !strings.Contains(searchString, ns) && !strings.Contains(line, ns) {
 				continue
 			}
 			result = result + line + "\n"
@@ -612,7 +698,6 @@ func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 					flag = 2
 				}
 			}
-
 		} else if flag == 2 {
 			break
 		}
@@ -621,17 +706,9 @@ func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 	return result
 }
 
-// ReadRouterPodData collects information from router pod
+// ReadRouterPodData collects information from router pod.
 func ReadRouterPodData(oc *exutil.CLI, routername, executeCmd string, searchString string) string {
-	// Use deployment reference for exec to avoid stale pod name issues during
-	// rolling updates (same technique used in openshift-tests-private).
-	execTarget := routername
-	parts := strings.Split(routername, "-")
-	if len(parts) >= 4 && parts[0] == "router" {
-		icName := strings.Join(parts[1:len(parts)-2], "-")
-		execTarget = "deploy/router-" + icName
-	}
-	output := ReadPodData(oc, execTarget, "openshift-ingress", executeCmd, searchString)
+	output := ReadPodData(oc, routername, "openshift-ingress", executeCmd, searchString)
 	return output
 }
 
@@ -867,7 +944,59 @@ func CheckRouteDetailsRemoved(oc *exutil.CLI, namespace, routeName, ingresscontr
 	o.Expect(waitErr).NotTo(o.HaveOccurred(), "The route %s yielded unexpected results", routeName)
 }
 
-// RepeatCmdOnClient executes a command on the internal or external client for the desired times
+// runOcCommandWithContextOutputs runs an oc command and returns stdout and
+// stderr separately. The child is stopped and reaped when the context expires.
+// Background() is used because the vendored CLI does not accept a context.
+func runOcCommandWithContextOutputs(ctx context.Context, cmd *exutil.CLI) (string, string, error) {
+	process, stdout, stderr, err := cmd.Background()
+	if err != nil {
+		return "", "", err
+	}
+	return runStartedProcessWithContextOutputs(ctx, process, stdout, stderr)
+}
+
+// runStartedProcessWithContextOutputs waits for an already-started process. On
+// context expiry it kills the process, waits for it to exit, and only then
+// returns, so a stalled child cannot outlive the caller or remain unreaped.
+func runStartedProcessWithContextOutputs(ctx context.Context, process *exec.Cmd, stdout, stderr *bytes.Buffer) (string, string, error) {
+	done := make(chan error, 1)
+	go func() {
+		done <- process.Wait()
+	}()
+	select {
+	case err := <-done:
+		return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+	case <-ctx.Done():
+		if process.Process != nil {
+			if killErr := process.Process.Kill(); killErr != nil && !errors.Is(killErr, os.ErrProcessDone) {
+				e2e.Logf("failed to kill oc command: %v", killErr)
+			}
+		}
+		<-done
+		return "", "", ctx.Err()
+	}
+}
+
+// runOcCommandWithContext returns combined output for callers that match on
+// either stream.
+func runOcCommandWithContext(ctx context.Context, cmd *exutil.CLI) (string, error) {
+	out, errOut, err := runOcCommandWithContextOutputs(ctx, cmd)
+	switch {
+	case out == "":
+		return errOut, err
+	case errOut == "":
+		return out, err
+	default:
+		return out + "\n" + errOut, err
+	}
+}
+
+// runOcExecCommand runs an oc exec command with a bounded context.
+func runOcExecCommand(ctx context.Context, oc *exutil.CLI, args []string) (string, error) {
+	return runOcCommandWithContext(ctx, oc.AsAdmin().WithoutNamespace().Run("exec").Args(args...))
+}
+
+// RepeatCmdOnClient executes a command on the internal or external client for the desired times.
 func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration int, repeatTimes int) (string, []int) {
 	var (
 		clientType       = "Internal"
@@ -901,24 +1030,40 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 	e2e.Logf("The cmdStr (used by External client) is '%v' and cmdList (used by Internal client) is %v", cmdStr, cmdList)
 	e2e.Logf("The expectOutputList is %v and initial matchedTimesList is %v", expectOutputList, matchedTimesList)
 
-	waitErr := wait.Poll(1*time.Second, time.Duration(duration)*time.Second, func() (bool, error) {
+	// Bound the whole retry loop, including a single command that connects but
+	// never receives headers: --connect-timeout cannot stop such a request, and
+	// an unbounded child would otherwise outlive the polling deadline.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(duration)*time.Second)
+	defer cancel()
+
+	waitErr := wait.PollWithContext(ctx, 1*time.Second, time.Duration(duration)*time.Second, func(ctx context.Context) (bool, error) {
 		isMatch := false
 		if clientType == "Internal" {
-			info, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(cmdList...).Output()
+			info, err := runOcExecCommand(ctx, oc, cmdList)
 			if err != nil {
-				e2e.Logf("The error is: %v", err.Error())
-				searchInfo := regexp.MustCompile(expectOutputList[0]).FindStringSubmatch(err.Error())
-				if len(searchInfo) > 0 {
-					e2e.Logf("The expected string is included in err: %v", err)
-					return true, nil
-				} else {
-					e2e.Logf("Failed to execute cmd and got err %v, retrying...", err.Error())
-					return false, nil
+				if ctx.Err() != nil {
+					return false, ctx.Err()
 				}
+				errText := err.Error()
+				if info != "" {
+					errText = info + "\n" + errText
+				}
+				e2e.Logf("The error is: %v", errText)
+				searchInfo := regexp.MustCompile(expectOutputList[0]).FindStringSubmatch(errText)
+				if len(searchInfo) > 0 {
+					e2e.Logf("The expected string is included in err: %v", errText)
+					output = errText
+					return true, nil
+				}
+				e2e.Logf("Failed to execute cmd %v, retrying...", errText)
+				return false, nil
 			}
 			output = info
 		} else {
-			info, err := exec.Command("bash", "-c", cmdStr).CombinedOutput()
+			info, err := exec.CommandContext(ctx, "bash", "-c", cmdStr).CombinedOutput()
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
 			if err != nil {
 				e2e.Logf("The error is: %v", err.Error())
 				searchInfo := regexp.MustCompile(expectOutputList[0]).FindStringSubmatch(err.Error())
@@ -1132,9 +1277,10 @@ func WaitForCurlInPodContains(oc *exutil.CLI, ns, podName, curlCmd, expected str
 }
 
 func UpdateFilebySedCmd(file, toBeReplaced, newContent string) {
-	sedCmd := fmt.Sprintf(`sed -i'' -e 's|%s|%s|g' %s`, toBeReplaced, newContent, file)
-	_, err := exec.Command("bash", "-c", sedCmd).Output()
-	o.Expect(err).NotTo(o.HaveOccurred())
+	data, err := os.ReadFile(file)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read fixture %s", file)
+	updated := strings.ReplaceAll(string(data), toBeReplaced, newContent)
+	o.Expect(os.WriteFile(file, []byte(updated), 0644)).NotTo(o.HaveOccurred(), "failed to update fixture %s", file)
 }
 
 // ScaleDeploy scales Deployment for DCM testing
@@ -1242,4 +1388,208 @@ func ParseToJSON(oc *exutil.CLI, parameters []string) string {
 	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("fail to process %v", parameters))
 	e2e.Logf("the file of resource is %s", jsonCfg)
 	return jsonCfg
+}
+
+// AddExtraParametersToYamlFile writes a copy of a YAML file with content inserted after matching lines.
+func AddExtraParametersToYamlFile(originalFile, flagPara, addedContent string) string {
+	return addContentToYamlFile(originalFile, flagPara, addedContent, 0)
+}
+
+// AddContentToFileWithMatchedOrder inserts content after the selected matching line in a file.
+func AddContentToFileWithMatchedOrder(originalFile, flagPara, addedContent string, sequence int) string {
+	return addContentToYamlFile(originalFile, flagPara, addedContent, sequence)
+}
+
+func addContentToYamlFile(originalFile, flagPara, addedContent string, sequence int) string {
+	content, err := ioutil.ReadFile(originalFile)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read input fixture")
+	var updated strings.Builder
+	matched := 0
+	for _, line := range strings.Split(string(content), "\n") {
+		updated.WriteString(line)
+		updated.WriteByte('\n')
+		if strings.Contains(line, flagPara) {
+			matched++
+			if sequence == 0 || sequence == matched {
+				updated.WriteString(addedContent)
+			}
+		}
+	}
+	newFile := filepath.Join(filepath.Dir(originalFile), GetRandomString()+filepath.Ext(originalFile))
+	err = ioutil.WriteFile(newFile, []byte(updated.String()), 0644)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write updated fixture")
+	return newFile
+}
+
+// CreateConfigMapFromFile creates a ConfigMap from a local file.
+func CreateConfigMapFromFile(oc *exutil.CLI, ns, name, file string) {
+	_, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("configmap", name, "--from-file="+file, "-n", ns).Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// DeleteConfigMap deletes a ConfigMap from the given namespace.
+func DeleteConfigMap(oc *exutil.CLI, ns, name string) {
+	_, err := oc.AsAdmin().WithoutNamespace().Run("delete").Args("configmap", name, "-n", ns).Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// CheckConfigMap waits for a ConfigMap to appear in the namespace.
+func CheckConfigMap(oc *exutil.CLI, ns, name string) error {
+	return wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
+		stdout, _, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("cm", name, "-n", ns, "-o=jsonpath={.metadata.name}").Outputs()
+		if err != nil {
+			return false, nil
+		}
+		return strings.TrimSpace(stdout) == name, nil
+	})
+}
+
+// CheckIPStackType reports whether service networks use IPv4, IPv6, or both.
+func CheckIPStackType(oc *exutil.CLI) string {
+	serviceNetwork, err := oc.WithoutNamespace().AsAdmin().Run("get").Args("network.operator", "cluster", "-o=jsonpath={.spec.serviceNetwork}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	ipv4 := strings.Count(serviceNetwork, ".") >= 2
+	ipv6 := strings.Count(serviceNetwork, ":") >= 2
+	switch {
+	case ipv4 && ipv6:
+		return "dualstack"
+	case ipv6:
+		return "ipv6single"
+	case ipv4:
+		return "ipv4single"
+	default:
+		return ""
+	}
+}
+
+// GetNodeNameByPod returns the node currently running a pod.
+func GetNodeNameByPod(oc *exutil.CLI, ns, podName string) string {
+	output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", podName, "-n", ns, "-o=jsonpath={.spec.nodeName}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	return output
+}
+
+// ReadPodEnv returns matching environment variables from a pod.
+func ReadPodEnv(oc *exutil.CLI, podName, ns, envName string) string {
+	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, podName, "--", "bash", "-c", "/usr/bin/env | grep "+envName).Output()
+	if err != nil {
+		return "NotFound"
+	}
+	return output
+}
+
+// ReadRouterPodEnv returns matching environment variables from a router pod.
+func ReadRouterPodEnv(oc *exutil.CLI, podName, envName string) string {
+	return ReadPodEnv(oc, podName, "openshift-ingress", envName)
+}
+
+// ReadPodEnvVars returns the full environment of a pod. Unlike ReadPodEnv, it
+// fails the test if the exec command fails, so an exec failure is never treated
+// as evidence that an environment variable is absent.
+func ReadPodEnvVars(oc *exutil.CLI, ns, podName string) string {
+	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, podName, "--", "/usr/bin/env").Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read environment from pod %s/%s", ns, podName)
+	return output
+}
+
+// WaitForPodWithLabelAppear waits until at least one pod matches the label selector.
+func WaitForPodWithLabelAppear(oc *exutil.CLI, ns, label string) error {
+	return wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", ns, "-l", label).Output()
+		return err == nil && len(output) > 0 && !strings.Contains(output, "No resources found"), nil
+	})
+}
+
+// PollReadPodData retries a command in a pod until it succeeds or times out.
+func PollReadPodData(oc *exutil.CLI, ns, podName, command, searchString string) string {
+	var output string
+	err := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
+		var err error
+		output, err = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, podName, "--", "bash", "-c", command+" | grep \""+searchString+"\"").Output()
+		return err == nil, nil
+	})
+	compat_otp.AssertWaitPollNoErr(err, "timed out waiting for expected pod data")
+	return output
+}
+
+// EnsureHaproxyBlockConfigMatchRegexp waits until HAProxy config contains each regular expression.
+func EnsureHaproxyBlockConfigMatchRegexp(oc *exutil.CLI, routerPod, blockStart string, patterns []string) string {
+	var config string
+	err := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
+		config = GetBlockConfig(oc, routerPod, blockStart)
+		for _, pattern := range patterns {
+			matched, err := regexp.MatchString(pattern, config)
+			if err != nil {
+				return false, err
+			}
+			if !matched {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(err, "timed out waiting for expected HAProxy configuration")
+	return config
+}
+
+// IsCanaryRouteAvailable checks whether the ingress canary route responds successfully.
+func IsCanaryRouteAvailable(oc *exutil.CLI) bool {
+	// Compare the status code exactly: a substring match on the header block can
+	// match a value such as "content-length: 1200". Poll instead of asserting so
+	// that an unreachable canary route makes the caller skip the test. Use one
+	// polling context and derive every request context from it so a request
+	// started near the deadline cannot outlive the poll.
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	waitErr := wait.PollUntilContextTimeout(ctx, 1*time.Second, 60*time.Second, true, func(ctx context.Context) (bool, error) {
+		host, err := getByJsonPathWithContext(ctx, oc, "openshift-ingress-canary", "route/canary", "{.status.ingress[0].host}")
+		if err != nil {
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			return false, nil
+		}
+		if host == "" {
+			return false, nil
+		}
+		reqCtx, reqCancel := context.WithTimeout(ctx, 10*time.Second)
+		defer reqCancel()
+		output, err := exec.CommandContext(reqCtx, "curl", "https://"+host, "-skI", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "9").Output()
+		if err != nil {
+			return false, nil
+		}
+		return strings.TrimSpace(string(output)) == "200", nil
+	})
+	return waitErr == nil
+}
+
+// OpenSSLNewCA creates a self-signed certificate authority key and certificate.
+func OpenSSLNewCA(caKey, caCert, subject string) {
+	_, err := exec.Command("openssl", "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "365", "-keyout", caKey, "-out", caCert, "-nodes", "-subj", subject).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create a test certificate authority")
+}
+
+// OpenSSLNewCSR creates a private key and certificate signing request.
+func OpenSSLNewCSR(serverKey, serverCSR, subject string) {
+	_, err := exec.Command("openssl", "req", "-newkey", "rsa:4096", "-nodes", "-sha256", "-keyout", serverKey, "-out", serverCSR, "-subj", subject).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create a test certificate request")
+}
+
+// OpenSSLSignCSR signs a certificate signing request with the test CA.
+func OpenSSLSignCSR(extensions, serverCSR, caCert, caKey, serverCert string) {
+	extensionFile, err := ioutil.TempFile("", "router-test-extensions-*.conf")
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create temporary certificate extensions file")
+	defer func() {
+		if closeErr := extensionFile.Close(); closeErr != nil && !errors.Is(closeErr, os.ErrClosed) {
+			e2e.Logf("failed to close temporary certificate extensions file: %v", closeErr)
+		}
+		if removeErr := os.Remove(extensionFile.Name()); removeErr != nil && !os.IsNotExist(removeErr) {
+			e2e.Logf("failed to remove temporary certificate extensions file: %v", removeErr)
+		}
+	}()
+	_, err = extensionFile.WriteString(extensions)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write temporary certificate extensions file")
+	o.Expect(extensionFile.Close()).NotTo(o.HaveOccurred(), "failed to close temporary certificate extensions file")
+	_, err = exec.Command("openssl", "x509", "-req", "-extfile", extensionFile.Name(), "-days", "30", "-in", serverCSR, "-CA", caCert, "-CAcreateserial", "-CAkey", caKey, "-out", serverCert).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to sign a test certificate")
 }

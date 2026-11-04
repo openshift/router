@@ -153,6 +153,7 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		fileDir, err := os.MkdirTemp("", "ocp-10207-cookie")
 		o.Expect(err).NotTo(o.HaveOccurred(), "failed to create private cookie directory for OCP-10207")
 		defer os.RemoveAll(fileDir)
+		testPodSvc = util.CopyFixture(testPodSvc)
 		util.UpdateFilebySedCmd(testPodSvc, "replicas: 1", "replicas: 2")
 
 		compat_otp.By("2.0: Create a client pod, two server pods and the service")
@@ -168,7 +169,9 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		compat_otp.By("3.0: Create a custom ingresscontroller and an edge route with insecure_policy Allow")
 		ingctrl.Domain = ingctrl.Name + "." + util.GetBaseDomain(oc)
 		routehost := "edge10207" + "." + ingctrl.Domain
-		defer ingctrl.Delete(oc)
+		defer func() {
+			o.Expect(ingctrl.Delete(oc)).NotTo(o.HaveOccurred())
+		}()
 		ingctrl.Create(oc)
 		util.EnsureCustomIngressControllerAvailable(oc, ingctrl.Name)
 		util.CreateRoute(oc, ns, "edge", "route-edge10207", unSecSvcName, []string{"--hostname=" + routehost, "--insecure-policy=Allow"})
@@ -379,6 +382,7 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		)
 
 		compat_otp.By("1.0: Updated replicas in the web-server-deploy file for testing")
+		testPodSvc = util.CopyFixture(testPodSvc)
 		util.UpdateFilebySedCmd(testPodSvc, "replicas: 1", "replicas: 2")
 
 		compat_otp.By("2.0: Create a client pod, two server pods and the service")
@@ -394,7 +398,9 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		compat_otp.By("3.0: Create an edge route")
 		ingctrl.Domain = ingctrl.Name + "." + util.GetBaseDomain(oc)
 		routehost := "edge11130" + "." + ingctrl.Domain
-		defer ingctrl.Delete(oc)
+		defer func() {
+			o.Expect(ingctrl.Delete(oc)).NotTo(o.HaveOccurred())
+		}()
 		ingctrl.Create(oc)
 		util.EnsureCustomIngressControllerAvailable(oc, ingctrl.Name)
 		util.CreateRoute(oc, ns, "edge", "route-edge11130", unSecSvcName, []string{"--hostname=" + routehost})
@@ -566,11 +572,14 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		compat_otp.By("1.0: Create one custom ingresscontroller")
 		baseDomain := util.GetBaseDomain(oc)
 		ingctrl.Domain = ingctrl.Name + "." + baseDomain
-		defer ingctrl.Delete(oc)
+		defer func() {
+			o.Expect(ingctrl.Delete(oc)).NotTo(o.HaveOccurred())
+		}()
 		ingctrl.Create(oc)
 		util.EnsureRouterDeployGenerationIs(oc, ingctrl.Name, "1")
 
 		compat_otp.By("2.0: Updated replicas in the web-server-deploy file for testing")
+		testPodSvc = util.CopyFixture(testPodSvc)
 		util.UpdateFilebySedCmd(testPodSvc, "replicas: 1", "replicas: 2")
 
 		compat_otp.By("3.0: Create a client pod, two server pods and the service")
@@ -684,7 +693,9 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		compat_otp.By("1.0 Create a custom ingresscontroller")
 		baseDomain := util.GetBaseDomain(oc)
 		ingctrl.Domain = ingctrl.Name + "." + baseDomain
-		defer ingctrl.Delete(oc)
+		defer func() {
+			o.Expect(ingctrl.Delete(oc)).NotTo(o.HaveOccurred())
+		}()
 		ingctrl.Create(oc)
 		util.EnsureRouterDeployGenerationIs(oc, ingctrl.Name, "1")
 
@@ -1199,6 +1210,7 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		)
 
 		compat_otp.By("1.0: Updated replicas in the web-server-signed-deploy.yaml for testing")
+		testPodSvc = util.CopyFixture(testPodSvc)
 		util.UpdateFilebySedCmd(testPodSvc, "replicas: 1", "replicas: 2")
 
 		compat_otp.By("2.0: Create a client pod, two server pods and the service")
@@ -1214,7 +1226,9 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		compat_otp.By("3.0: Create an edge route")
 		ingctrl.Domain = ingctrl.Name + "." + util.GetBaseDomain(oc)
 		routehost := "edge15873" + "." + ingctrl.Domain
-		defer ingctrl.Delete(oc)
+		defer func() {
+			o.Expect(ingctrl.Delete(oc)).NotTo(o.HaveOccurred())
+		}()
 		ingctrl.Create(oc)
 		util.EnsureCustomIngressControllerAvailable(oc, ingctrl.Name)
 		util.CreateRoute(oc, ns, "edge", "route-edge15873", unSecSvcName, []string{"--hostname=" + routehost})
@@ -1333,6 +1347,7 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		ns := oc.Namespace()
 		baseDomain := util.GetBaseDomain(oc)
 		// Client pod with websocket client tool
+		clientPod = util.CopyFixture(clientPod)
 		util.UpdateFilebySedCmd(clientPod,
 			"quay.io/openshifttest/nginx-alpine@sha256:cee6930776b92dc1e93b73f9e5965925d49cff3d2e91e1d071c2f0ff72cbca29",
 			"quay.io/openshifttest/hello-sdn@sha256:c89445416459e7adea9a5a416b3365ed3d74f2491beb904d61dc8d1eb89a72a4")
@@ -1797,7 +1812,9 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		baseDomain := util.GetBaseDomain(oc)
 		ingctrl.Domain = "shard." + baseDomain
 		ingctrlResource := "ingresscontrollers/" + ingctrl.Name
-		defer ingctrl.Delete(oc)
+		defer func() {
+			o.Expect(ingctrl.Delete(oc)).NotTo(o.HaveOccurred())
+		}()
 		ingctrl.Create(oc)
 		util.EnsureRouterDeployGenerationIs(oc, ingctrl.Name, "1")
 
@@ -2227,19 +2244,25 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 		util.EnsurePodWithLabelReady(oc, unmanagedNamespace, "name=web-server-deploy")
 
 		compat_otp.By("2.0 Create two ingresses with same name, one managed and one with non-existing ingress class")
-		// Create managed ingress using sed to replace ingress name, ingressClassName, and host
+		// Create managed ingress using sed to replace ingress name, ingressClassName, and host.
+		// Edit private copies: TestdataDir extracts each fixture once per process,
+		// so editing the shared file would leak changes into later specs.
 		managedHost := fmt.Sprintf("ocp-88075-managed.apps.%s", baseDomain)
+		managedIngress := util.CopyFixture(ingressTemplate)
 		sedCmd := fmt.Sprintf(`sed -i'' -e 's@ingress-with-class@%s@g;s@mytest@%s@g;s@foo.bar.com@%s@g' %s`,
-			ingressName, managedIngressClass, managedHost, ingressTemplate)
+			ingressName, managedIngressClass, managedHost, managedIngress)
 		_, err = exec.Command("bash", "-c", sedCmd).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
-		util.CreateResourceFromFile(oc, ns, ingressTemplate)
+		util.CreateResourceFromFile(oc, ns, managedIngress)
 
 		// Create unmanaged ingress with non-existing ingress class
-		sedCmd1 := fmt.Sprintf(`sed -i'' -e 's|openshift-default|%s|g;s|ocp-88075-managed|ocp-88075-unmanaged|g' %s`, unmanagedIngressClass, ingressTemplate)
+		unmanagedHost := fmt.Sprintf("ocp-88075-unmanaged.apps.%s", baseDomain)
+		unmanagedIngress := util.CopyFixture(ingressTemplate)
+		sedCmd1 := fmt.Sprintf(`sed -i'' -e 's@ingress-with-class@%s@g;s@mytest@%s@g;s@foo.bar.com@%s@g' %s`,
+			ingressName, unmanagedIngressClass, unmanagedHost, unmanagedIngress)
 		_, err = exec.Command("bash", "-c", sedCmd1).Output()
 		o.Expect(err).NotTo(o.HaveOccurred())
-		err = oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", util.MirrorFixtureImages(oc, unmanagedNamespace, ingressTemplate), "-n", unmanagedNamespace).Execute()
+		err = oc.AsAdmin().WithoutNamespace().Run("create").Args("-f", util.MirrorFixtureImages(oc, unmanagedNamespace, unmanagedIngress), "-n", unmanagedNamespace).Execute()
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		compat_otp.By("3.0 Verify two ingresses are created - one managed and one unmanaged")
