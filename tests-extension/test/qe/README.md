@@ -1,19 +1,22 @@
 # Router OTE Test Extension
 
-Route test cases migrated from `openshift-tests-private` to the OTE
+Route and HAProxy test cases migrated from `openshift-tests-private` to the OTE
 (openshift-tests-extension) framework, under the NE-2126 migration epic.
 
 | File | Tests | Description |
 |------|-------|-------------|
 | `route.go` | 42 | Router/Route lifecycle tests (route types, timeouts, cookies, annotations, whitelisting, allowlisting) |
+| `haproxy.go` | 42 | HAProxy health checks, protocol settings, balancing, error pages, and ingress-controller behavior |
 
 ## Test naming conventions
 
-Every test name has the shape:
+The Route test names have the shape:
 
 ```text
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router <description> [<execution tags>]
 ```
+
+The HAProxy cases use the same naming convention.
 
 | Token | Meaning |
 |-------|---------|
@@ -556,7 +559,8 @@ tests-extension/
 ├── test/
 │   ├── util.go                         # Shared helpers, fixture image mirroring
 │   └── qe/
-│       ├── route.go                    # Route test implementations
+│       ├── route.go                    # 42 Route test implementations
+│       ├── haproxy.go                  # 42 HAProxy test implementations
 │       ├── bindata.go                  # Embedded test fixtures (auto-generated)
 │       ├── fixtures.go                 # TestdataDir/FixturePath helpers
 │       ├── bindata.mk                  # Bindata generation makefile
@@ -565,6 +569,18 @@ tests-extension/
 │           ├── 49802-route.yaml        # Edge+HTTP route template (test 49802)
 │           ├── ca-bundle.pem           # CA certificate for reencrypt routes
 │           ├── httpbin-deploy.yaml     # Httpbin deployment for timeout tests
+│           ├── bug1826225-proh2-deploy.yaml # HTTP/2 backend fixture
+│           ├── error-page-404.http     # Custom 404 error page fixture
+│           ├── error-page-503.http     # Custom 503 error page fixture
+│           ├── error-page2-404.http    # Alternate 404 error page fixture
+│           ├── error-page2-503.http    # Alternate 503 error page fixture
+│           ├── ingresscontroller-IBMproxy.yaml # IBM proxy protocol fixture
+│           ├── ingresscontroller-hn-PROXY.yaml # Host-network proxy protocol fixture
+│           ├── ingresscontroller-hostnetwork-only.yaml # Host-network controller fixture
+│           ├── ingresscontroller-np-PROXY.yaml # NodePort proxy protocol fixture
+│           ├── ingresscontroller-private.yaml # Private endpoint fixture
+│           ├── ocp57404-stateful-set.yaml # StatefulSet idling fixture
+│           ├── svc-additional-backend.yaml # Additional backend service fixture
 │           ├── ingress-with-class.yaml # Ingress with class template (test 88075)
 │           ├── ingresscontroller-np.yaml  # Custom ingresscontroller template
 │           ├── template-web-server-deploy.yaml  # Templated web server (test 12091)
@@ -582,6 +598,8 @@ tests-extension/
 ```
 
 ## All test names
+
+The 42 Route names are followed by the 42 HAProxy names currently in the working tree.
 
 ```text
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created
@@ -626,4 +644,46 @@ tests-extension/
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router No health check when there is only one endpoint for a route
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Health check when there are multi service and each service has one backend
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router misc tests for haproxy router
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router support HTTP2 for passthrough route and reencrypt route with custom certs
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller routes traffic only to ready pods/backends
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with endpointPublishingStrategy of hostNetwork allows PROXY protocol for source forwarding
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with endpointPublishingStrategy of nodePort allows PROXY protocol for source forwarding
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features defaults to random LB algorithm instead of leastconn for REEN/Edge/insecure routes
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features switches to roundrobin mode for REEN/Edge/insecure/passthrough routes with multiple backends configured with weights
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power of two balancing  honours the per route balancing algorithm defined via haproxy.router.openshift.io/balance annotation
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Power-of-two feature allows unsupportedConfigOverrides ingress operator option to enable leastconn balancing algorithm
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router continues to function normally with the service selector of exposed route gets removed/deleted
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Errorfile stanzas and dummy default html files have been added to the router
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router User can customize HAProxy 2.0 Error Page
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Configmap mounted on router volume after ingresscontroller has spec field HttpErrorCodePage populated with configmap name
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router User can delete configmap and update configmap with new custom error page
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The logEmptyRequests ingresscontroller parameter set to Ignore add the dontlognull option in the haproxy configuration
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router httpEmptyRequestsPolicy ingresscontroller parameter set to ignore adds the http-ignore-probes option in the haproxy configuration
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The logEmptyRequests option only gets applied when the access logging is configured for the ingresscontroller
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Setting ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Setting wrong data in ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router check haproxy router v4v6 mode
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router check haproxy's version and router base image
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Allow Ingress to be modified on the settings of livenessProbe and readinessProbe
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Negative test of allow Ingress to be modified on the settings of livenessProbe and readinessProbe
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Multiple routers with hostnetwork endpoint strategy can be deployed on same worker node with different http/https/stat port numbers
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The http/https/stat port field in the ingresscontroller does not accept negative values during configuration
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features switches to source algorithm for passthrough routes
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with private endpoint publishing strategy supports PROXY protocol
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set Cookie2 by an application in a route should not kill all router pods
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router the 503 Error page should not contain license for a vulnerable release of Bootstrap
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Accessing the route should wake up the idled resources
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router edge terminated h2 (gRPC) connections need a haproxy template change to work correctly
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Idling StatefulSet is not supported
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HAProxyDown message only for pods and No reaper messages for zombie processes
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router IngressController option to use PROXY protocol with IBM Cloud load-balancers - TCP, PROXY and omitted
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress controller stats port is not set according to endpointPublishingStrategy
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router option idle-close-on-response is configurable
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Support Prometheus monitoring metric for router max connections
 ```
