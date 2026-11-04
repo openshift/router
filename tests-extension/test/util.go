@@ -42,6 +42,19 @@ type IngressControllerDescription struct {
 	Template    string
 }
 
+// IngressControllerHostPortDescription describes a host-network ingress controller with custom ports.
+type IngressControllerHostPortDescription struct {
+	Name        string
+	Namespace   string
+	DefaultCert string
+	Domain      string
+	HTTPPort    int
+	HTTPSPort   int
+	StatsPort   int
+	Replicas    int
+	Template    string
+}
+
 type RouteDescription struct {
 	Name      string
 	Namespace string
@@ -68,6 +81,19 @@ func (ingctrl *IngressControllerDescription) Create(oc *exutil.CLI) {
 }
 
 func (ingctrl *IngressControllerDescription) Delete(oc *exutil.CLI) error {
+	return oc.AsAdmin().WithoutNamespace().Run("delete").Args("--ignore-not-found", "-n", ingctrl.Namespace, "ingresscontroller", ingctrl.Name).Execute()
+}
+
+// Create creates a host-network ingress controller using its template and configured ports.
+func (ingctrl *IngressControllerHostPortDescription) Create(oc *exutil.CLI) {
+	err := CreateResourceFromTemplate(oc, "--ignore-unknown-parameters=true", "-f", ingctrl.Template,
+		"-p", "NAME="+ingctrl.Name, "NAMESPACE="+ingctrl.Namespace, "DOMAIN="+ingctrl.Domain,
+		"HTTPPORT="+strconv.Itoa(ingctrl.HTTPPort), "HTTPSPORT="+strconv.Itoa(ingctrl.HTTPSPort), "STATSPORT="+strconv.Itoa(ingctrl.StatsPort))
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// Delete deletes a host-network ingress controller, ignoring a missing resource.
+func (ingctrl *IngressControllerHostPortDescription) Delete(oc *exutil.CLI) error {
 	return oc.AsAdmin().WithoutNamespace().Run("delete").Args("--ignore-not-found", "-n", ingctrl.Namespace, "ingresscontroller", ingctrl.Name).Execute()
 }
 
@@ -478,6 +504,12 @@ func SetAnnotation(oc *exutil.CLI, ns, resource, annotation string) {
 	o.Expect(err).NotTo(o.HaveOccurred())
 }
 
+// SetAnnotationAsAdmin sets an annotation on a resource using an administrator client.
+func SetAnnotationAsAdmin(oc *exutil.CLI, ns, resource, annotation string) {
+	err := oc.AsAdmin().WithoutNamespace().Run("annotate").Args("-n", ns, resource, annotation, "--overwrite").Execute()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
 // GetAnnotation reads the annotation from the given resource
 func GetAnnotation(oc *exutil.CLI, ns, resource, resourceName string) string {
 	findAnnotation, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
@@ -574,27 +606,25 @@ func EnsureHaproxyBlockConfigNotContains(oc *exutil.CLI, routerPodName string, b
 	return haproxyCfg
 }
 
-// GetBlockConfig gets block content of haproxy.conf
+// GetBlockConfig gets block content of haproxy.conf.
 func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
-	// Use deployment reference for exec to avoid stale pod name issues during
-	// rolling updates (same technique used in openshift-tests-private).
-	execTarget := routerPodName
-	parts := strings.Split(routerPodName, "-")
-	if len(parts) >= 4 && parts[0] == "router" {
-		icName := strings.Join(parts[1:len(parts)-2], "-")
-		execTarget = "deploy/router-" + icName
-	}
-	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", execTarget, "--", "bash", "-c", "cat haproxy.config").Output()
+	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerPodName, "--", "bash", "-c", "cat haproxy.config").Output()
 	o.Expect(err).NotTo(o.HaveOccurred(), "get the content of haproxy.config failed")
-	// Scope search to test namespace to prevent cross-test contamination
-	// When tests run in parallel (e.g., "route-edge" matching "route-edge15873" from a different test's namespace).
+	// Scope route block searches to the test namespace so that, for example,
+	// "route-edge" does not match "route-edge15873" from another test running
+	// in parallel. Global directives such as "bind :80 accept-proxy" must not
+	// be filtered because they never contain a namespace.
 	ns := oc.Namespace()
 	result := ""
 	flag := 0
 	startIndex := 0
 	for _, line := range strings.Split(output, "\n") {
 		if strings.Contains(line, searchString) {
-			if flag == 0 && ns != "" && !strings.Contains(searchString, ns) && !strings.Contains(line, ns) {
+			trimmed := strings.TrimSpace(line)
+			isRouteBlock := strings.HasPrefix(trimmed, "backend ") ||
+				strings.HasPrefix(trimmed, "listen ") ||
+				strings.HasPrefix(trimmed, "frontend ")
+			if flag == 0 && ns != "" && isRouteBlock && !strings.Contains(searchString, ns) && !strings.Contains(line, ns) {
 				continue
 			}
 			result = result + line + "\n"
@@ -612,7 +642,6 @@ func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 					flag = 2
 				}
 			}
-
 		} else if flag == 2 {
 			break
 		}
@@ -621,17 +650,9 @@ func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 	return result
 }
 
-// ReadRouterPodData collects information from router pod
+// ReadRouterPodData collects information from router pod.
 func ReadRouterPodData(oc *exutil.CLI, routername, executeCmd string, searchString string) string {
-	// Use deployment reference for exec to avoid stale pod name issues during
-	// rolling updates (same technique used in openshift-tests-private).
-	execTarget := routername
-	parts := strings.Split(routername, "-")
-	if len(parts) >= 4 && parts[0] == "router" {
-		icName := strings.Join(parts[1:len(parts)-2], "-")
-		execTarget = "deploy/router-" + icName
-	}
-	output := ReadPodData(oc, execTarget, "openshift-ingress", executeCmd, searchString)
+	output := ReadPodData(oc, routername, "openshift-ingress", executeCmd, searchString)
 	return output
 }
 
@@ -1242,4 +1263,178 @@ func ParseToJSON(oc *exutil.CLI, parameters []string) string {
 	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("fail to process %v", parameters))
 	e2e.Logf("the file of resource is %s", jsonCfg)
 	return jsonCfg
+}
+
+// AddExtraParametersToYamlFile writes a copy of a YAML file with content inserted after matching lines.
+func AddExtraParametersToYamlFile(originalFile, flagPara, addedContent string) string {
+	return addContentToYamlFile(originalFile, flagPara, addedContent, 0)
+}
+
+// AddContentToFileWithMatchedOrder inserts content after the selected matching line in a file.
+func AddContentToFileWithMatchedOrder(originalFile, flagPara, addedContent string, sequence int) string {
+	return addContentToYamlFile(originalFile, flagPara, addedContent, sequence)
+}
+
+func addContentToYamlFile(originalFile, flagPara, addedContent string, sequence int) string {
+	content, err := ioutil.ReadFile(originalFile)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read input fixture")
+	var updated strings.Builder
+	matched := 0
+	for _, line := range strings.Split(string(content), "\n") {
+		updated.WriteString(line)
+		updated.WriteByte('\n')
+		if strings.Contains(line, flagPara) {
+			matched++
+			if sequence == 0 || sequence == matched {
+				updated.WriteString(addedContent)
+			}
+		}
+	}
+	newFile := filepath.Join(filepath.Dir(originalFile), GetRandomString()+filepath.Ext(originalFile))
+	err = ioutil.WriteFile(newFile, []byte(updated.String()), 0644)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write updated fixture")
+	return newFile
+}
+
+// CreateConfigMapFromFile creates a ConfigMap from a local file.
+func CreateConfigMapFromFile(oc *exutil.CLI, ns, name, file string) {
+	_, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("configmap", name, "--from-file="+file, "-n", ns).Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// DeleteConfigMap deletes a ConfigMap from the given namespace.
+func DeleteConfigMap(oc *exutil.CLI, ns, name string) {
+	_, err := oc.AsAdmin().WithoutNamespace().Run("delete").Args("configmap", name, "-n", ns).Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+}
+
+// CheckConfigMap waits for a ConfigMap to appear in the namespace.
+func CheckConfigMap(oc *exutil.CLI, ns, name string) error {
+	return wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("cm", "-n", ns).Output()
+		if err != nil {
+			return false, nil
+		}
+		return strings.Contains(output, name), nil
+	})
+}
+
+// CheckIPStackType reports whether service networks use IPv4, IPv6, or both.
+func CheckIPStackType(oc *exutil.CLI) string {
+	serviceNetwork, err := oc.WithoutNamespace().AsAdmin().Run("get").Args("network.operator", "cluster", "-o=jsonpath={.spec.serviceNetwork}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	ipv4 := strings.Count(serviceNetwork, ".") >= 2
+	ipv6 := strings.Count(serviceNetwork, ":") >= 2
+	switch {
+	case ipv4 && ipv6:
+		return "dualstack"
+	case ipv6:
+		return "ipv6single"
+	case ipv4:
+		return "ipv4single"
+	default:
+		return ""
+	}
+}
+
+// GetNodeNameByPod returns the node currently running a pod.
+func GetNodeNameByPod(oc *exutil.CLI, ns, podName string) string {
+	output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", podName, "-n", ns, "-o=jsonpath={.spec.nodeName}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred())
+	return output
+}
+
+// ReadPodEnv returns matching environment variables from a pod.
+func ReadPodEnv(oc *exutil.CLI, podName, ns, envName string) string {
+	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, podName, "--", "bash", "-c", "/usr/bin/env | grep "+envName).Output()
+	if err != nil {
+		return "NotFound"
+	}
+	return output
+}
+
+// ReadRouterPodEnv returns matching environment variables from a router pod.
+func ReadRouterPodEnv(oc *exutil.CLI, podName, envName string) string {
+	return ReadPodEnv(oc, podName, "openshift-ingress", envName)
+}
+
+// WaitForPodWithLabelAppear waits until at least one pod matches the label selector.
+func WaitForPodWithLabelAppear(oc *exutil.CLI, ns, label string) error {
+	return wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", ns, "-l", label).Output()
+		return err == nil && len(output) > 0 && !strings.Contains(output, "No resources found"), nil
+	})
+}
+
+// PollReadPodData retries a command in a pod until it succeeds or times out.
+func PollReadPodData(oc *exutil.CLI, ns, podName, command, searchString string) string {
+	var output string
+	err := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
+		var err error
+		output, err = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, podName, "--", "bash", "-c", command+" | grep \""+searchString+"\"").Output()
+		return err == nil, nil
+	})
+	compat_otp.AssertWaitPollNoErr(err, "timed out waiting for expected pod data")
+	return output
+}
+
+// EnsureHaproxyBlockConfigMatchRegexp waits until HAProxy config contains each regular expression.
+func EnsureHaproxyBlockConfigMatchRegexp(oc *exutil.CLI, routerPod, blockStart string, patterns []string) string {
+	var config string
+	err := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
+		config = GetBlockConfig(oc, routerPod, blockStart)
+		for _, pattern := range patterns {
+			matched, err := regexp.MatchString(pattern, config)
+			if err != nil {
+				return false, err
+			}
+			if !matched {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(err, "timed out waiting for expected HAProxy configuration")
+	return config
+}
+
+// IsCanaryRouteAvailable checks whether the ingress canary route responds successfully.
+func IsCanaryRouteAvailable(oc *exutil.CLI) bool {
+	host := GetByJsonPath(oc, "openshift-ingress-canary", "route/canary", "{.status.ingress[0].host}")
+	// Compare the status code exactly: a substring match on the header block can
+	// match a value such as "content-length: 1200". Poll instead of asserting so
+	// that an unreachable canary route makes the caller skip the test.
+	cmd := fmt.Sprintf("curl https://%s -skI -o /dev/null -w '%%{http_code}' --connect-timeout 10", host)
+	waitErr := wait.Poll(1*time.Second, 60*time.Second, func() (bool, error) {
+		output, err := exec.Command("bash", "-c", cmd).Output()
+		if err != nil {
+			return false, nil
+		}
+		return strings.TrimSpace(string(output)) == "200", nil
+	})
+	return waitErr == nil
+}
+
+// OpenSSLNewCA creates a self-signed certificate authority key and certificate.
+func OpenSSLNewCA(caKey, caCert, subject string) {
+	_, err := exec.Command("openssl", "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "365", "-keyout", caKey, "-out", caCert, "-nodes", "-subj", subject).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create a test certificate authority")
+}
+
+// OpenSSLNewCSR creates a private key and certificate signing request.
+func OpenSSLNewCSR(serverKey, serverCSR, subject string) {
+	_, err := exec.Command("openssl", "req", "-newkey", "rsa:4096", "-nodes", "-sha256", "-keyout", serverKey, "-out", serverCSR, "-subj", subject).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create a test certificate request")
+}
+
+// OpenSSLSignCSR signs a certificate signing request with the test CA.
+func OpenSSLSignCSR(extensions, serverCSR, caCert, caKey, serverCert string) {
+	extensionFile, err := ioutil.TempFile("", "router-test-extensions-*.conf")
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create temporary certificate extensions file")
+	defer os.Remove(extensionFile.Name())
+	_, err = extensionFile.WriteString(extensions)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write temporary certificate extensions file")
+	o.Expect(extensionFile.Close()).NotTo(o.HaveOccurred(), "failed to close temporary certificate extensions file")
+	_, err = exec.Command("openssl", "x509", "-req", "-extfile", extensionFile.Name(), "-days", "30", "-in", serverCSR, "-CA", caCert, "-CAcreateserial", "-CAkey", caKey, "-out", serverCert).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to sign a test certificate")
 }
