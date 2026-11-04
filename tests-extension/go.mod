@@ -6,9 +6,12 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.0
 	github.com/onsi/gomega v1.42.1
 	github.com/openshift-eng/openshift-tests-extension v0.0.0-20260812190735-a8b44e9f9fed
+	github.com/openshift/api v0.0.0-20260715165912-72066cc9718b
+	github.com/openshift/client-go v0.0.0-20260715172546-dac61734e0ec
 	github.com/openshift/origin v1.6.2
 	github.com/spf13/cobra v1.10.2
 	k8s.io/apimachinery v0.36.2
+	k8s.io/client-go v0.36.2
 	k8s.io/component-base v0.36.2
 	k8s.io/kubernetes v1.36.2
 )
@@ -222,8 +225,6 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.3.0 // indirect
 	github.com/opencontainers/selinux v1.13.1 // indirect
-	github.com/openshift/api v0.0.0-20260715165912-72066cc9718b // indirect
-	github.com/openshift/client-go v0.0.0-20260715172546-dac61734e0ec // indirect
 	github.com/openshift/library-go v0.0.0-20260716164659-7926d144f96a // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
@@ -304,7 +305,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.36.2 // indirect
 	k8s.io/apiserver v0.36.2 // indirect
 	k8s.io/cli-runtime v0.36.2 // indirect
-	k8s.io/client-go v0.36.2 // indirect
 	k8s.io/cloud-provider v0.31.1 // indirect
 	k8s.io/cluster-bootstrap v0.0.0 // indirect
 	k8s.io/component-helpers v0.36.2 // indirect
