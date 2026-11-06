@@ -992,25 +992,9 @@ func TestConfigTemplate(t *testing.T) {
 	// Wait for the router to process every route and write the resulting config.
 	// A fixed sleep can observe an earlier reload while routes are still queued.
 	config := filepath.Join(h.workdir, "conf", "haproxy.config")
-	var lastErr error
-	err := wait.PollImmediate(reloadInterval, 20*time.Second, func() (bool, error) {
-		parser, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
-		if err != nil {
-			lastErr = err
-			return false, nil
-		}
-		for _, expectations := range tests {
-			for _, expectation := range expectations {
-				if err := expectation.Match(parser); err != nil {
-					lastErr = err
-					return false, nil
-				}
-			}
-		}
-		return true, nil
-	})
+	parser, err := waitForConfig(config, reloadInterval, 20*time.Second, tests)
 	if err != nil {
-		t.Errorf("timed out waiting for the router config to include all routes: %v (last error: %v)", err, lastErr)
+		t.Error(err)
 	}
 
 	stopCh <- struct{}{}
@@ -1024,8 +1008,7 @@ func TestConfigTemplate(t *testing.T) {
 	}
 
 	// check the generated config
-	parser, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
-	if err != nil {
+	if parser == nil {
 		t.Fatalf("Failed to parse the generated config: %v", err)
 	}
 
@@ -1047,6 +1030,89 @@ func TestConfigTemplate(t *testing.T) {
 			})
 		}
 	}
+}
+
+// waitForConfig returns the parser from the successful polling iteration on success.
+// On timeout, it returns the last successfully parsed snapshot, which may not
+// satisfy all expectations, or nil if no configuration was successfully parsed.
+func waitForConfig(config string, interval, timeout time.Duration, tests map[string][]mustCreateWithConfig) (haproxyconfparser.Parser, error) {
+	var parser haproxyconfparser.Parser
+	var lastErr error
+	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+		parsed, err := haproxyconfparser.New(haproxyconfparseroptions.Path(config))
+		if err != nil {
+			lastErr = err
+			return false, nil
+		}
+		parser = parsed
+		for _, expectations := range tests {
+			for _, expectation := range expectations {
+				if err := expectation.Match(parser); err != nil {
+					lastErr = err
+					return false, nil
+				}
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		return parser, fmt.Errorf("timed out waiting for the router config to include all routes: %v (last error: %v)", err, lastErr)
+	}
+	return parser, nil
+}
+
+func TestWaitForConfig(t *testing.T) {
+	expectation := mustCreateWithConfig{mustMatchConfig: mustMatchConfig{
+		section: "backend", sectionName: "example", attribute: "server", value: "inter 5000ms",
+	}}
+	expectations := map[string][]mustCreateWithConfig{"example": {expectation}}
+	t.Run("successful parser survives config removal", func(t *testing.T) {
+		config := filepath.Join(t.TempDir(), "haproxy.config")
+		if err := os.WriteFile(config, []byte("backend example\n  server local 127.0.0.1:8080 inter 5000ms\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		parser, err := waitForConfig(config, time.Millisecond, time.Second, expectations)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Remove(config); err != nil {
+			t.Fatal(err)
+		}
+		if err := expectation.Match(parser); err != nil {
+			t.Fatalf("successful config snapshot was not retained: %v", err)
+		}
+	})
+	t.Run("timeout retains failed assertion and snapshot", func(t *testing.T) {
+		config := filepath.Join(t.TempDir(), "haproxy.config")
+		if err := os.WriteFile(config, []byte("backend example\n  server local 127.0.0.1:8080 inter 5000ms\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		missing := expectation
+		missing.sectionName = "missing"
+		parser, err := waitForConfig(config, time.Millisecond, 10*time.Millisecond, map[string][]mustCreateWithConfig{"example": {expectation, missing}})
+		if err == nil || !strings.Contains(err.Error(), "timed out waiting for the router config to include all routes:") || !strings.Contains(err.Error(), "section missing") {
+			t.Fatalf("expected timeout with last assertion error, got %v", err)
+		}
+		if parser == nil {
+			t.Fatal("expected the last parsed snapshot for failure diagnostics")
+		}
+		if err := expectation.Match(parser); err != nil {
+			t.Fatalf("expected the first assertion to pass: %v", err)
+		}
+		if err := missing.Match(parser); err == nil {
+			t.Fatal("missing section must still fail the final assertion")
+		}
+	})
+	t.Run("timeout reports read error without parser", func(t *testing.T) {
+		config := filepath.Join(t.TempDir(), "missing.config")
+		parser, err := waitForConfig(config, time.Millisecond, 10*time.Millisecond, expectations)
+		if err == nil || !strings.Contains(err.Error(), "timed out waiting for the router config to include all routes:") || !strings.Contains(err.Error(), "last error:") || !strings.Contains(err.Error(), config) {
+			t.Fatalf("expected timeout with last read error, got %v", err)
+		}
+		if parser != nil {
+			t.Fatal("expected no parser when every config read fails")
+		}
+	})
 }
 
 type expectation interface {
