@@ -21,7 +21,7 @@ type ExtendedValidator struct {
 	plugin router.Plugin
 
 	// recorder is an interface for indicating route status.
-	recorder RouteStatusRecorder
+	recorder RejectionRecorder
 
 	// extendedRouteValidation enables extended route validation checks.
 	extendedRouteValidation bool
@@ -31,7 +31,7 @@ type ExtendedValidator struct {
 // endpoints that pass validation are relayed to the next plugin in the chain.
 // Endpoint address validation is always enabled. Route validation is
 // controlled by extendedRouteValidation.
-func NewExtendedValidator(plugin router.Plugin, recorder RouteStatusRecorder, extendedRouteValidation bool) *ExtendedValidator {
+func NewExtendedValidator(plugin router.Plugin, recorder RejectionRecorder, extendedRouteValidation bool) *ExtendedValidator {
 	return &ExtendedValidator{
 		plugin:                  plugin,
 		recorder:                recorder,
