@@ -511,9 +511,10 @@ func (r *templateRouter) watchMutualTLSCert() error {
 
 // Commit applies the changes made to the router configuration - persists
 // the state and refresh the backend. This is all done in the background
-// so that we can rate limit + coalesce multiple changes.
-// Note: If this is changed FakeCommit() in fake.go should also be updated
-func (r *templateRouter) Commit() {
+// so that we can rate limit + coalesce multiple changes. Changes are written
+// and reload is applied only if there are pending changes. Set force to true
+// to always write the configuration and reload the proxy.
+func (r *templateRouter) Commit(force bool) {
 	r.lock.Lock()
 
 	if !r.synced {
@@ -523,7 +524,10 @@ func (r *templateRouter) Commit() {
 		r.dynamicallyConfigured = false
 	}
 
-	needsCommit := r.stateChanged && !r.dynamicallyConfigured
+	needsCommit := true
+	if !force {
+		needsCommit = r.stateChanged && !r.dynamicallyConfigured
+	}
 	r.lock.Unlock()
 
 	if needsCommit {
@@ -855,46 +859,6 @@ func (r *templateRouter) updateEndpointTable(cfg *ServiceAliasConfig) {
 		}
 	}
 	cfg.EndpointTable = endpointTable
-}
-
-// dynamicallyAddRoute attempts to dynamically add a route.
-// Note: The config should have been synced at least once initially and
-// the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyAddRoute(backendKey ServiceAliasConfigKey, route *routev1.Route, backend *ServiceAliasConfig) bool {
-	if r.dynamicConfigManager == nil {
-		return false
-	}
-
-	log.V(4).Info("dynamically adding route backend", "backendKey", backendKey)
-	r.dynamicConfigManager.Register(backendKey, backend, route)
-
-	// If no initial sync was done, don't try to dynamically add the
-	// route as we will need a reload anyway.
-	if !r.synced {
-		return false
-	}
-
-	err := r.dynamicConfigManager.AddRoute(backendKey, backend.RoutingKeyName, route)
-	if err != nil {
-		log.Info("router will reload as the ConfigManager could not dynamically add route for backend", "backendKey", backendKey, "error", err)
-		return false
-	}
-
-	activeEndpoints := r.getActiveEndpoints(backend.ServiceUnits, backend.PreferPort)
-	for key := range backend.ServiceUnits {
-		if service, ok := r.findMatchingServiceUnit(key); ok {
-			newEndpoints := backend.EndpointTable[key]
-			log.V(4).Info("for new route backend, replacing endpoints for service", "backendKey", backendKey, "serviceKey", key, "newEndpoints", newEndpoints)
-			if err := r.dynamicConfigManager.ReplaceRouteEndpoints(backendKey, &service, nil, newEndpoints, activeEndpoints); err != nil {
-				log.Info("router will reload as the ConfigManager could not dynamically replace endpoints for route backend",
-					"backendKey", backendKey, "serviceKey", key, "error", err)
-				return false
-			}
-		}
-	}
-
-	log.V(4).Info("dynamically added route backend", "backendKey", backendKey)
-	return true
 }
 
 func (r *templateRouter) dynamicallyUpdateRoute(backendKey ServiceAliasConfigKey, oldConfig, newConfig *ServiceAliasConfig) bool {
@@ -1267,11 +1231,12 @@ func (r *templateRouter) AddRoute(route *routev1.Route) {
 
 	r.updateEndpointTable(newConfig)
 
+	// configChanged stays false for new routes because they always need a reload.
 	var configChanged bool
 	if exists {
 		configChanged = r.dynamicallyUpdateRoute(backendKey, &existingConfig, newConfig)
-	} else {
-		configChanged = r.dynamicallyAddRoute(backendKey, route, newConfig)
+	} else if r.dynamicConfigManager != nil {
+		r.dynamicConfigManager.Register(backendKey, newConfig, route)
 	}
 
 	r.state[backendKey] = *newConfig

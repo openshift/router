@@ -182,16 +182,6 @@ type ConfigManagerOptions struct {
 	// underlying router via the configuration manager.
 	CommitInterval time.Duration
 
-	// BlueprintRoutes are a list of routes blueprints pre-allocated by
-	// the config manager to dynamically manage route additions.
-	BlueprintRoutes []*routev1.Route
-
-	// BlueprintRoutePoolSize is the size of the pre-allocated pool for
-	// each route blueprint. This can be overriden on an individual
-	// route basis with a route annotation:
-	//    router.openshift.io/pool-size
-	BlueprintRoutePoolSize int
-
 	// WildcardRoutesAllowed indicates if wildcard routes are allowed.
 	WildcardRoutesAllowed bool
 
@@ -220,17 +210,8 @@ type ConfigManager interface {
 	// Initialize initializes the config manager.
 	Initialize(router RouterInterface, certPath string)
 
-	// AddBlueprint adds a new (or replaces an existing) route blueprint.
-	AddBlueprint(route *routev1.Route) error
-
-	// RemoveBlueprint removes a route blueprint.
-	RemoveBlueprint(route *routev1.Route)
-
 	// Register registers an id to be associated with a route.
 	Register(id ServiceAliasConfigKey, backend *ServiceAliasConfig, route *routev1.Route)
-
-	// AddRoute adds a new route or updates an existing route.
-	AddRoute(id ServiceAliasConfigKey, routingKey string, route *routev1.Route) error
 
 	// RemoveRoute removes a route.
 	RemoveRoute(id ServiceAliasConfigKey, route *routev1.Route) error
