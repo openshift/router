@@ -457,7 +457,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			inner := &fakeTestPlugin{}
 			recorder := &fakeTestRecorder{}
-			validator := NewExtendedValidator(inner, recorder, true)
+			validator := NewExtendedValidator(inner, recorder, true, true)
 
 			err := validator.HandleEndpoints(watch.Added, tc.endpoints)
 			require.NoError(t, err)
@@ -471,7 +471,7 @@ func TestExtendedValidator_HandleEndpoints(t *testing.T) {
 func TestExtendedValidator_EndpointValidationWithRouteValidationDisabled(t *testing.T) {
 	inner := &fakeTestPlugin{}
 	recorder := &fakeTestRecorder{}
-	validator := NewExtendedValidator(inner, recorder, false)
+	validator := NewExtendedValidator(inner, recorder, false, true)
 
 	endpoints := &kapi.Endpoints{
 		Subsets: []kapi.EndpointSubset{{
@@ -497,7 +497,7 @@ func TestExtendedValidator_EndpointValidationWithRouteValidationDisabled(t *test
 func TestExtendedValidator_HandleEndpoints_DoesNotMutateInput(t *testing.T) {
 	inner := &fakeTestPlugin{}
 	recorder := &fakeTestRecorder{}
-	validator := NewExtendedValidator(inner, recorder, true)
+	validator := NewExtendedValidator(inner, recorder, true, true)
 
 	addresses := []kapi.EndpointAddress{
 		{IP: "10.0.0.1"},
@@ -538,7 +538,7 @@ func TestExtendedValidator_HandleEndpoints_DoesNotMutateInput(t *testing.T) {
 func TestExtendedValidator_HandleEndpoints_DeletedSkipsFiltering(t *testing.T) {
 	inner := &fakeTestPlugin{}
 	recorder := &fakeTestRecorder{}
-	validator := NewExtendedValidator(inner, recorder, true)
+	validator := NewExtendedValidator(inner, recorder, true, true)
 
 	endpoints := &kapi.Endpoints{
 		Subsets: []kapi.EndpointSubset{{
@@ -557,7 +557,7 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 	serviceLabels := map[string]string{
 		discoveryv1.LabelServiceName: "service-a",
 	}
-	endpointsFromSlices := func(namespace, name string, slices []discoveryv1.EndpointSlice) *kapi.Endpoints {
+	endpointsFromSlices := func(namespace, name string, slices []discoveryv1.EndpointSlice, enableValidation bool) *kapi.Endpoints {
 		return &kapi.Endpoints{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
@@ -567,6 +567,7 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 				slices,
 				endpointsubset.DefaultEndpointAddressOrderByFuncs(),
 				endpointsubset.DefaultEndpointPortOrderByFuncs(),
+				enableValidation,
 			),
 		}
 	}
@@ -575,6 +576,7 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 		name              string
 		slices            []discoveryv1.EndpointSlice
 		expectedEndpoints *kapi.Endpoints
+		enableValidation  bool
 	}{
 		{
 			name: "FQDN EndpointSlice produces no backend addresses",
@@ -598,6 +600,35 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 					Name:      "service-a",
 				},
 			},
+			enableValidation: true,
+		},
+		{
+			name: "FQDN EndpointSlice address passes through end-to-end when validation is disabled",
+			slices: []discoveryv1.EndpointSlice{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "slice-fqdn",
+					Namespace: "namespace-a",
+					Labels:    serviceLabels,
+				},
+				AddressType: discoveryv1.AddressTypeFQDN,
+				Endpoints: []discoveryv1.Endpoint{{
+					Addresses: []string{"metadata.google.internal"},
+				}},
+				Ports: []discoveryv1.EndpointPort{{
+					Port: int32Ptr(8080),
+				}},
+			}},
+			expectedEndpoints: &kapi.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "namespace-a",
+					Name:      "service-a",
+				},
+				Subsets: []kapi.EndpointSubset{{
+					Addresses: []kapi.EndpointAddress{{IP: "metadata.google.internal"}},
+					Ports:     []kapi.EndpointPort{{Port: 8080}},
+				}},
+			},
+			enableValidation: false,
 		},
 		{
 			name: "IPv4 EndpointSlice with hostname keeps only valid IP after validation",
@@ -625,6 +656,7 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 					Ports:     []kapi.EndpointPort{{Port: 8080}},
 				}},
 			},
+			enableValidation: true,
 		},
 		{
 			name: "IPv6 EndpointSlice with canonical metadata address filtered",
@@ -652,6 +684,7 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 					Ports:     []kapi.EndpointPort{{Port: 8080}},
 				}},
 			},
+			enableValidation: true,
 		},
 	}
 
@@ -659,9 +692,9 @@ func TestExtendedValidator_HandleEndpointSliceConversion(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			inner := &fakeTestPlugin{}
 			recorder := &fakeTestRecorder{}
-			validator := NewExtendedValidator(inner, recorder, true)
+			validator := NewExtendedValidator(inner, recorder, true, tc.enableValidation)
 
-			endpoints := endpointsFromSlices("namespace-a", "service-a", tc.slices)
+			endpoints := endpointsFromSlices("namespace-a", "service-a", tc.slices, tc.enableValidation)
 			err := validator.HandleEndpoints(watch.Added, endpoints)
 			require.NoError(t, err)
 			require.Len(t, inner.endpoints, 1)
