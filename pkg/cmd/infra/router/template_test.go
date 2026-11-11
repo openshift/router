@@ -2,8 +2,13 @@ package router
 
 import (
 	"crypto/tls"
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"k8s.io/utils/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	configv1 "github.com/openshift/api/config/v1"
@@ -242,6 +247,111 @@ func TestParseCurvePreferences(t *testing.T) {
 				if !cmp.Equal(actual, tc.expected) {
 					t.Errorf("expected %v, got %v", tc.expected, actual)
 				}
+			}
+		})
+	}
+}
+
+// TestFIPSEnabled verifies that fipsEnabled correctly interprets the content
+// of the kernel's fips_enabled file.
+func TestFIPSEnabled(t *testing.T) {
+	testCases := []struct {
+		name        string
+		content     *string
+		expected    bool
+		expectError bool
+	}{
+		{name: "FIPS enabled", content: ptr.To("1\n"), expected: true},
+		{name: "FIPS enabled without newline", content: ptr.To("1"), expected: true},
+		{name: "FIPS disabled", content: ptr.To("0\n"), expected: false},
+		{name: "missing file", content: nil, expected: false},
+		{name: "empty file", content: ptr.To(""), expectError: true},
+		{name: "unexpected number", content: ptr.To("2\n"), expectError: true},
+		{name: "non-numeric content", content: ptr.To("yes\n"), expectError: true},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "fips_enabled")
+			if tc.content != nil {
+				if err := os.WriteFile(path, []byte(*tc.content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			defer func(orig string) { fipsEnabledPath = orig }(fipsEnabledPath)
+			fipsEnabledPath = path
+
+			actual, err := fipsEnabled()
+			if tc.expectError {
+				if err == nil {
+					t.Fatalf("expected an error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if actual != tc.expected {
+				t.Errorf("expected %v, got %v", tc.expected, actual)
+			}
+		})
+	}
+
+	t.Run("unreadable path", func(t *testing.T) {
+		// Reading a directory fails with an error other than "not exist".
+		defer func(orig string) { fipsEnabledPath = orig }(fipsEnabledPath)
+		fipsEnabledPath = t.TempDir()
+
+		if _, err := fipsEnabled(); err == nil {
+			t.Fatal("expected an error, got nil")
+		}
+	})
+}
+
+// Test_resolveQAT verifies that QAT is enabled only if it is requested and
+// FIPS mode is known to be disabled.
+func Test_resolveQAT(t *testing.T) {
+	testCases := []struct {
+		name      string
+		requested bool
+		fips      bool
+		fipsErr   error
+		expected  bool
+	}{
+		{
+			name:      "not requested",
+			requested: false,
+			expected:  false,
+		},
+		{
+			name:      "not requested, FIPS enabled",
+			requested: false,
+			fips:      true,
+			expected:  false,
+		},
+		{
+			name:      "requested, FIPS disabled",
+			requested: true,
+			fips:      false,
+			expected:  true,
+		},
+		{
+			name:      "requested, FIPS enabled",
+			requested: true,
+			fips:      true,
+			expected:  false,
+		},
+		{
+			name:      "requested, FIPS unknown",
+			requested: true,
+			fipsErr:   errors.New("permission denied"),
+			expected:  false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			isFIPSEnabled := func() (bool, error) { return tc.fips, tc.fipsErr }
+			if actual := resolveQAT(tc.requested, isFIPSEnabled); actual != tc.expected {
+				t.Errorf("expected %v, got %v", tc.expected, actual)
 			}
 		})
 	}

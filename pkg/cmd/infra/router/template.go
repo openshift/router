@@ -133,6 +133,7 @@ type TemplateRouter struct {
 	HTTPResponseHeaders                 []templateplugin.HTTPHeader
 	HTTPRequestHeadersString            string
 	HTTPRequestHeaders                  []templateplugin.HTTPHeader
+	EnableQAT                           bool
 
 	TemplateRouterConfigManager
 }
@@ -196,6 +197,7 @@ func (o *TemplateRouter) Bind(flag *pflag.FlagSet) {
 	flag.StringVar(&o.CaptureHTTPCookieString, "capture-http-cookie", env("ROUTER_CAPTURE_HTTP_COOKIE", ""), "Name and maximum length of HTTP cookie that should be captured for logging.  The argument must have the following form: name:maxLength. Append '=' to the name to indicate that an exact match should be performed; otherwise a prefix match will be performed.  The value of first cookie that matches the name is captured.")
 	flag.StringVar(&o.HTTPHeaderNameCaseAdjustmentsString, "http-header-name-case-adjustments", env("ROUTER_H1_CASE_ADJUST", ""), "A comma-delimited list of HTTP header names that should have their case adjusted. Each item must be a valid HTTP header name and should have the desired capitalization.")
 	flag.StringVar(&o.HTTPResponseHeadersString, "set-delete-http-response-header", env("ROUTER_HTTP_RESPONSE_HEADERS", ""), "A comma-delimited list of HTTP response header names and values that should be set/deleted.")
+	flag.BoolVar(&o.EnableQAT, "enable-qat", isTrue(env("ROUTER_QAT", "")), "Configure HAProxy to offload TLS operations to Intel QuickAssist Technology (QAT) devices.  Ignored if FIPS mode is enabled or cannot be determined.")
 	flag.StringVar(&o.HTTPRequestHeadersString, "set-delete-http-request-header", env("ROUTER_HTTP_REQUEST_HEADERS", ""), "A comma-delimited list of HTTP request header names and values that should be set/deleted.")
 
 	// deprecated flags
@@ -539,7 +541,57 @@ func (o *TemplateRouterOptions) Complete() error {
 	}
 	o.HTTPHeaderNameCaseAdjustments = httpHeaderNameCaseAdjustments
 
+	o.EnableQAT = resolveQAT(o.EnableQAT, fipsEnabled)
+
 	return o.RouterSelection.Complete()
+}
+
+// fipsEnabledPath is the kernel file that reports whether FIPS mode is
+// enabled. It is a variable so that unit tests can override it.
+var fipsEnabledPath = "/proc/sys/crypto/fips_enabled"
+
+// fipsEnabled returns true if the kernel reports that FIPS mode is enabled.
+// A missing file means that the kernel has no FIPS support, so FIPS mode is
+// considered disabled. Any other failure to read the file, or any content
+// other than "0" or "1", is returned as an error, given that FIPS mode cannot
+// be safely determined.
+func fipsEnabled() (bool, error) {
+	data, err := os.ReadFile(fipsEnabledPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	switch value := strings.TrimSpace(string(data)); value {
+	case "0":
+		return false, nil
+	case "1":
+		return true, nil
+	default:
+		return false, fmt.Errorf("unexpected content in %s: %q", fipsEnabledPath, value)
+	}
+}
+
+// resolveQAT returns whether Intel QAT offload should be enabled, given
+// whether it was requested and a function that reports whether FIPS mode is
+// enabled. QAT is enabled only if it was requested and FIPS mode is known to
+// be disabled; if FIPS mode cannot be determined, QAT is disabled.
+func resolveQAT(requested bool, isFIPSEnabled func() (bool, error)) bool {
+	if !requested {
+		return false
+	}
+	fips, err := isFIPSEnabled()
+	if err != nil {
+		log.Error(err, "disabling QAT: failed to determine whether FIPS mode is enabled")
+		return false
+	}
+	if fips {
+		log.Info("disabling QAT: FIPS mode is enabled")
+		return false
+	}
+	log.Info("QAT offload is enabled")
+	return true
 }
 
 // supportedMetricsTypes is the set of supported metrics arguments
@@ -807,6 +859,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		HTTPHeaderNameCaseAdjustments: o.HTTPHeaderNameCaseAdjustments,
 		HTTPResponseHeaders:           o.HTTPResponseHeaders,
 		HTTPRequestHeaders:            o.HTTPRequestHeaders,
+		EnableQAT:                     o.EnableQAT,
 	}
 
 	svcFetcher := templateplugin.NewListWatchServiceLookup(kc.CoreV1(), o.ResyncInterval, o.Namespace)
