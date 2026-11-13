@@ -1,5 +1,815 @@
 [
   {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation",
+    "labels": {
+      "OCP-15044": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:31"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy No health check when there is only one endpoint for a route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router No health check when there is only one endpoint for a route",
+    "labels": {
+      "OCP-16870": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:70"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Health check when there are multi service and each service has one backend",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Health check when there are multi service and each service has one backend",
+    "labels": {
+      "OCP-16872": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:111"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy misc tests for haproxy router",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router misc tests for haproxy router",
+    "labels": {
+      "OCP-21766": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:162"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy router support HTTP2 for passthrough route and reencrypt route with custom certs",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router support HTTP2 for passthrough route and reencrypt route with custom certs",
+    "labels": {
+      "OCP-27628": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:190"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingresscontroller routes traffic only to ready pods/backends",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller routes traffic only to ready pods/backends",
+    "labels": {
+      "OCP-37714": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:305"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features defaults to random LB algorithm instead of leastconn for REEN/Edge/insecure routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features defaults to random LB algorithm instead of leastconn for REEN/Edge/insecure routes",
+    "labels": {
+      "OCP-41042": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:426"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features switches to roundrobin mode for REEN/Edge/insecure/passthrough routes with multiple backends configured with weights",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features switches to roundrobin mode for REEN/Edge/insecure/passthrough routes with multiple backends configured with weights",
+    "labels": {
+      "OCP-41186": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:468"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power of two balancing  honours the per route balancing algorithm defined via haproxy.router.openshift.io/balance annotation",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power of two balancing  honours the per route balancing algorithm defined via haproxy.router.openshift.io/balance annotation",
+    "labels": {
+      "OCP-41187": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:530"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Power-of-two feature allows unsupportedConfigOverrides ingress operator option to enable leastconn balancing algorithm",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Power-of-two feature allows unsupportedConfigOverrides ingress operator option to enable leastconn balancing algorithm",
+    "labels": {
+      "OCP-41206": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:561"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy router continues to function normally with the service selector of exposed route gets removed/deleted",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router continues to function normally with the service selector of exposed route gets removed/deleted",
+    "labels": {
+      "OCP-41929": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:606"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Errorfile stanzas and dummy default html files have been added to the router",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Errorfile stanzas and dummy default html files have been added to the router",
+    "labels": {
+      "OCP-42878": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:661"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy User can customize HAProxy 2.0 Error Page",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router User can customize HAProxy 2.0 Error Page",
+    "labels": {
+      "OCP-42940": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:677"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Configmap mounted on router volume after ingresscontroller has spec field HttpErrorCodePage populated with configmap name",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Configmap mounted on router volume after ingresscontroller has spec field HttpErrorCodePage populated with configmap name",
+    "labels": {
+      "OCP-43115": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:771"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy User can delete configmap and update configmap with new custom error page",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router User can delete configmap and update configmap with new custom error page",
+    "labels": {
+      "OCP-43292": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:835"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The logEmptyRequests ingresscontroller parameter set to Ignore add the dontlognull option in the haproxy configuration",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The logEmptyRequests ingresscontroller parameter set to Ignore add the dontlognull option in the haproxy configuration",
+    "labels": {
+      "OCP-43414": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:980"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy httpEmptyRequestsPolicy ingresscontroller parameter set to ignore adds the http-ignore-probes option in the haproxy configuration",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router httpEmptyRequestsPolicy ingresscontroller parameter set to ignore adds the http-ignore-probes option in the haproxy configuration",
+    "labels": {
+      "OCP-43416": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1017"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The logEmptyRequests option only gets applied when the access logging is configured for the ingresscontroller",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The logEmptyRequests option only gets applied when the access logging is configured for the ingresscontroller",
+    "labels": {
+      "OCP-43454": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1052"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Setting ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Setting ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy",
+    "labels": {
+      "OCP-46571": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1089"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features switches to source algorithm for passthrough routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features switches to source algorithm for passthrough routes",
+    "labels": {
+      "OCP-52738": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1198"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingresscontroller with private endpoint publishing strategy supports PROXY protocol",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with private endpoint publishing strategy supports PROXY protocol",
+    "labels": {
+      "OCP-53048": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1226"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Set Cookie2 by an application in a route should not kill all router pods",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set Cookie2 by an application in a route should not kill all router pods",
+    "labels": {
+      "OCP-54998": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1298"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy the 503 Error page should not contain license for a vulnerable release of Bootstrap",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router the 503 Error page should not contain license for a vulnerable release of Bootstrap",
+    "labels": {
+      "OCP-55825": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1375"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Idling StatefulSet is not supported",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Idling StatefulSet is not supported",
+    "labels": {
+      "OCP-57404": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1420"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy HAProxyDown message only for pods and No reaper messages for zombie processes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HAProxyDown message only for pods and No reaper messages for zombie processes",
+    "labels": {
+      "OCP-57406": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1475"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy IngressController option to use PROXY protocol with IBM Cloud load-balancers - TCP, PROXY and omitted",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router IngressController option to use PROXY protocol with IBM Cloud load-balancers - TCP, PROXY and omitted",
+    "labels": {
+      "OCP-59951": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1490"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingress controller stats port is not set according to endpointPublishingStrategy",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress controller stats port is not set according to endpointPublishingStrategy",
+    "labels": {
+      "OCP-62926": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1552"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
     "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created",
     "labels": {
       "OCP-10024": {}
@@ -1065,6 +1875,66 @@
       "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
       "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
       "test/qe/route.go:2098"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork [Serial]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork",
+    "labels": {
+      "OCP-40679": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:371"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node [Serial]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node",
+    "labels": {
+      "OCP-50819": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/haproxy.go:21",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/haproxy.go:1127"
     ],
     "lifecycle": "informing",
     "environmentSelector": {

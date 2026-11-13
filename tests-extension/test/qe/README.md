@@ -1,19 +1,30 @@
 # Router OTE Test Extension
 
-Route test cases migrated from `openshift-tests-private` to the OTE
+Route and HAProxy test cases migrated from `openshift-tests-private` to the OTE
 (openshift-tests-extension) framework, under the NE-2126 migration epic.
 
 | File | Tests | Description |
 |------|-------|-------------|
 | `route.go` | 42 | Router/Route lifecycle tests (route types, timeouts, cookies, annotations, whitelisting, allowlisting) |
+| `haproxy.go` | 29 | HAProxy health checks, protocol settings, balancing, error pages, and ingress-controller behavior |
 
 ## Test naming conventions
 
-Every test name has the shape:
+Route tests use the `Component_Router` prefix:
 
 ```text
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router <description> [<execution tags>]
 ```
+
+HAProxy tests use the `Component_Haproxy` prefix:
+
+```text
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy <description> [<execution tags>]
+```
+
+Both prefixes carry `[sig-network-edge]` and `[Feature:Router]`, which is what
+ci-test-mapping and the origin suite qualifiers key on, so the split does not
+change ownership or suite membership.
 
 | Token | Meaning |
 |-------|---------|
@@ -30,7 +41,7 @@ The metadata records the current titles, including `[Feature:Router]`, without
 legacy-name aliases. The canonical OCP labels remain unchanged.
 
 `[Level0]` should reflect the QE case classification. The current OTP source has
-no explicit Level0 markers for these 42 migrated cases, so the existing tags are
+no explicit Level0 markers for these 71 migrated cases, so the existing tags are
 retained pending confirmation against the QE-approved Level0 plan or Polarion
 export. Priority and suite membership alone do not establish that classification.
 
@@ -50,7 +61,7 @@ OTE requires each test to have an owning component, declared either as a
 [ci-test-mapping](https://github.com/openshift-eng/ci-test-mapping).  These tests
 use the ci-test-mapping route, so **confirming ownership coverage is required
 as part of migration**. Informing status does not waive this requirement.
-All 42 names contain both `[sig-network-edge]` and `[Feature:Router]`, matching
+All 71 names contain both `[sig-network-edge]` and `[Feature:Router]`, matching
 the existing router SIG rule in `pkg/components/networking/router/component.go`.
 This applies when the payload runner reports JUnit suite `openshift-tests`;
 it does not depend on the private runner's `Network_Edge` suite matcher.
@@ -136,7 +147,7 @@ failure.  See `applyEnvironmentSelectors` in `cmd/main.go`.
 
 - All tests require the `config.openshift.io` API group, which excludes
   MicroShift without excluding bare metal or other supported platforms.
-- All 42 tests are temporarily excluded on disconnected clusters
+- All 71 tests are temporarily excluded on disconnected clusters
   (`externalConnectivity == "Disconnected"`), including IPv4, IPv6-only, and
   dual-stack, because fixture setup still requires the source registry.
   Connected and proxied clusters remain eligible on every network stack,
@@ -261,7 +272,7 @@ and unfiltered suite membership are unchanged. To verify the current selection:
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv6 --external-connectivity Disconnected
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack dual --external-connectivity Disconnected
 
-# All 42 remain eligible on connected or proxied clusters, before other filters.
+# All 71 remain eligible on connected or proxied clusters, before other filters.
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv4 --external-connectivity Direct -o names
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv6 --external-connectivity Direct -o names
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv6 --external-connectivity Proxied -o names
@@ -303,13 +314,13 @@ Re-enable disconnected coverage in a separate follow-up PR:
 
 | Suite | Parent | Tests |
 |-------|--------|-------|
-| `router/conformance/parallel` | `openshift/conformance/parallel` | 37 |
-| `router/conformance/serial` | `openshift/conformance/serial` | 2 |
+| `router/conformance/parallel` | `openshift/conformance/parallel` | 64 |
+| `router/conformance/serial` | `openshift/conformance/serial` | 4 |
 | `router/disruptive` | — | 3 |
-| `router/non-disruptive` | — | 39 |
-| `router/all` | — | 42 |
+| `router/non-disruptive` | — | 68 |
+| `router/all` | — | 71 |
 
-Conformance selects 37 parallel tests and two non-disruptive `[Serial]` tests.
+Conformance selects 64 parallel tests and four non-disruptive `[Serial]` tests.
 The three disruptive cases carry only `[Disruptive]` and are excluded from both
 conformance suites. They remain available through `router/disruptive` and
 `router/all`, with isolation taints that prevent overlap with other tests.
@@ -341,6 +352,8 @@ These cases are excluded from conformance suites and require explicit selection.
 
 ### Serial tests
 
+- 40679 - The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork [Serial]
+- 50819 - Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node [Serial]
 - 85274 - Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]
 - 88075 - UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]
 
@@ -383,7 +396,7 @@ See the repository's [fixture build guidance](../../../HACKING.md#test-extension
 Use `--help` on a subcommand to see its flags, for example
 `./bin/router-tests-ext run-suite --help`. Listing tests does not execute them.
 
-### Run all tests
+### Run All Tests
 
 This includes the disruptive cases and can interrupt platform routes. Use a
 disposable cluster or a lane that supports intentional outages. For normal
@@ -393,10 +406,10 @@ conformance coverage, run the parallel and serial conformance suites instead.
 ./bin/router-tests-ext run-suite router/all
 ```
 
-### Run by suite
+### Run by Suite
 
 ```bash
-# All tests except the disruptive ones.  Note this suite still contains the two
+# All tests except the disruptive ones.  Note this suite still contains the four
 # [Serial] tests, which the scheduler isolates; see Scheduling below.
 ./bin/router-tests-ext run-suite router/non-disruptive
 
@@ -407,6 +420,99 @@ conformance coverage, run the parallel and serial conformance suites instead.
 ./bin/router-tests-ext run-suite router/conformance/parallel
 ./bin/router-tests-ext run-suite router/conformance/serial
 ```
+
+### Run Only `route.go` Tests
+
+```bash
+# Run all 42 route tests by name filter
+./bin/router-tests-ext run-test \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set balance leastconn for passthrough routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Service endpoint can be work well if the mapping pod ip is updated" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge oc help information should contain option wildcard-policy" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Limit the number of TCP connection per IP in specified time period" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for passthough route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy hash based sticky session for tcp mode passthrough routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for http route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy config information should be clean when changing the service to another route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router reencrypt route with no cert if a router is configured with a default wildcard cert" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for edge/unsecure termination" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for reencrypt terminated" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The later route should be HostAlreadyClaimed when there is a same host exist" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge can set cookie name for edge/reen routes by annotation" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy router support websocket via unsecure route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits multiple backend pods max concurrent connections" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Unsecure route with path and another tls route with same hostname can work at the same time" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router route can be configured to whitelist more than 61 ips/CIDRs" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress controller continue to function normally with unexpected high timeout value" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress canary route redirects http to https" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HTTPS redirect happens even if there is a more specific http-only" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ipv6 addresses are also acceptable for whitelisting" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route status should updates accordingly when ingress routes cleaned up [Disruptive]" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress should be in degraded status when canary route is not available [Disruptive]" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Canary daemonset can schedule pods to both worker and infra nodes [Disruptive]" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]" \
+  --max-concurrency=1
+```
+
+### Run Only `haproxy.go` Tests
+
+```bash
+# Run all 29 HAProxy tests by name filter
+./bin/router-tests-ext run-test \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Configmap mounted on router volume after ingresscontroller has spec field HttpErrorCodePage populated with configmap name" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Errorfile stanzas and dummy default html files have been added to the router" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy HAProxyDown message only for pods and No reaper messages for zombie processes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Health check when there are multi service and each service has one backend" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Idling StatefulSet is not supported" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingress controller stats port is not set according to endpointPublishingStrategy" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy IngressController option to use PROXY protocol with IBM Cloud load-balancers - TCP, PROXY and omitted" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingresscontroller routes traffic only to ready pods/backends" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingresscontroller with private endpoint publishing strategy supports PROXY protocol" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy No health check when there is only one endpoint for a route" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Power-of-two feature allows unsupportedConfigOverrides ingress operator option to enable leastconn balancing algorithm" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node [Serial]" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Set Cookie2 by an application in a route should not kill all router pods" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Setting ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power of two balancing  honours the per route balancing algorithm defined via haproxy.router.openshift.io/balance annotation" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features defaults to random LB algorithm instead of leastconn for REEN/Edge/insecure routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features switches to roundrobin mode for REEN/Edge/insecure/passthrough routes with multiple backends configured with weights" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features switches to source algorithm for passthrough routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork [Serial]" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The logEmptyRequests ingresscontroller parameter set to Ignore add the dontlognull option in the haproxy configuration" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The logEmptyRequests option only gets applied when the access logging is configured for the ingresscontroller" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy User can customize HAProxy 2.0 Error Page" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy User can delete configmap and update configmap with new custom error page" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy httpEmptyRequestsPolicy ingresscontroller parameter set to ignore adds the http-ignore-probes option in the haproxy configuration" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy misc tests for haproxy router" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy router continues to function normally with the service selector of exposed route gets removed/deleted" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy router support HTTP2 for passthrough route and reencrypt route with custom certs" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy the 503 Error page should not contain license for a vulnerable release of Bootstrap" \
+  --max-concurrency=1
+```
+
+Both lists select tests by their full names. If a test title changes, refresh
+the list with `list tests -o names`. The `[Serial]` and `[Disruptive]` cases
+are included on purpose; `--max-concurrency=1` keeps them apart, but the
+three disruptive cases still change platform routes, so run them only on a
+disposable cluster.
 
 ### Run a single test
 
@@ -470,7 +576,7 @@ gives every spec an isolation taint instead: `[Serial]` and `[Disruptive]`
 specs are tainted `disruptive` and tolerate nothing, while parallel specs are
 tainted `parallel-running` and tolerate only that.  The scheduler refuses to
 start a spec that cannot tolerate every currently active taint, so a serial
-spec waits for all parallel specs to drain and vice versa, and two serial specs
+spec waits for all parallel specs to drain and vice versa, and serial specs
 never overlap.
 
 That makes the taints, not the flag, the thing to protect.  If you change the
@@ -556,7 +662,8 @@ tests-extension/
 ├── test/
 │   ├── util.go                         # Shared helpers, fixture image mirroring
 │   └── qe/
-│       ├── route.go                    # Route test implementations
+│       ├── route.go                    # 42 Route test implementations
+│       ├── haproxy.go                  # 29 HAProxy test implementations
 │       ├── bindata.go                  # Embedded test fixtures (auto-generated)
 │       ├── fixtures.go                 # TestdataDir/FixturePath helpers
 │       ├── bindata.mk                  # Bindata generation makefile
@@ -565,6 +672,16 @@ tests-extension/
 │           ├── 49802-route.yaml        # Edge+HTTP route template (test 49802)
 │           ├── ca-bundle.pem           # CA certificate for reencrypt routes
 │           ├── httpbin-deploy.yaml     # Httpbin deployment for timeout tests
+│           ├── error-page-404.http     # Custom 404 error page fixture
+│           ├── error-page-503.http     # Custom 503 error page fixture
+│           ├── error-page2-404.http    # Alternate 404 error page fixture
+│           ├── error-page2-503.http    # Alternate 503 error page fixture
+│           ├── ingresscontroller-IBMproxy.yaml # IBM proxy protocol fixture
+│           ├── ingresscontroller-hn-PROXY.yaml # Host-network proxy protocol fixture
+│           ├── ingresscontroller-hostnetwork-only.yaml # Host-network controller fixture
+│           ├── ingresscontroller-private.yaml # Private endpoint fixture
+│           ├── ocp57404-stateful-set.yaml # StatefulSet idling fixture
+│           ├── svc-additional-backend.yaml # Additional backend service fixture
 │           ├── ingress-with-class.yaml # Ingress with class template (test 88075)
 │           ├── ingresscontroller-np.yaml  # Custom ingresscontroller template
 │           ├── template-web-server-deploy.yaml  # Templated web server (test 12091)
@@ -579,51 +696,4 @@ tests-extension/
 ├── go.mod                              # Dependencies
 ├── go.sum                              # Dependency checksums
 └── vendor/                             # Vendored dependencies
-```
-
-## All test names
-
-```text
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set balance leastconn for passthrough routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Service endpoint can be work well if the mapping pod ip is updated
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge oc help information should contain option wildcard-policy
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Limit the number of TCP connection per IP in specified time period
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for passthough route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy hash based sticky session for tcp mode passthrough routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for http route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy config information should be clean when changing the service to another route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router reencrypt route with no cert if a router is configured with a default wildcard cert
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for edge/unsecure termination
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for reencrypt terminated
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The later route should be HostAlreadyClaimed when there is a same host exist
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge can set cookie name for edge/reen routes by annotation
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy router support websocket via unsecure route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits multiple backend pods max concurrent connections
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Unsecure route with path and another tls route with same hostname can work at the same time
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router route can be configured to whitelist more than 61 ips/CIDRs
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress controller continue to function normally with unexpected high timeout value
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress canary route redirects http to https
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HTTPS redirect happens even if there is a more specific http-only
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route status should updates accordingly when ingress routes cleaned up [Disruptive]
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress should be in degraded status when canary route is not available [Disruptive]
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Canary daemonset can schedule pods to both worker and infra nodes [Disruptive]
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ipv6 addresses are also acceptable for whitelisting
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]
-[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]
 ```

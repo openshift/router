@@ -10,6 +10,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20260715172546-dac61734e0ec
 	github.com/openshift/origin v1.6.2
 	github.com/spf13/cobra v1.10.2
+	github.com/tidwall/gjson v1.18.0
 	k8s.io/apimachinery v0.36.2
 	k8s.io/client-go v0.36.2
 	k8s.io/component-base v0.36.2
@@ -248,7 +249,6 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/tecbiz-ch/nutanix-go-sdk v0.1.15 // indirect
-	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect

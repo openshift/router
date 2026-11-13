@@ -5,8 +5,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+	utilrand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/component-base/logs"
 
 	"github.com/openshift-eng/openshift-tests-extension/pkg/cmd"
@@ -22,6 +24,13 @@ import (
 )
 
 func main() {
+	// Ginkgo child processes are started simultaneously. The e2e namespace
+	// generator seeds its random source from the process clock, so parallel
+	// children can generate identical namespaces and fail in BeforeEach with
+	// "user already exists". Mix in the PID to give every child a distinct
+	// random sequence.
+	utilrand.Seed(time.Now().UnixNano() ^ int64(os.Getpid()))
+
 	util.InitStandardFlags()
 	if framework.TestContext.Provider == "" {
 		framework.TestContext.Provider = "skeleton"
@@ -71,6 +80,12 @@ func main() {
 			spec.Include(et.PlatformEquals(platform))
 		}
 
+		// Record the pre-[Serial] name for hostNetwork cases that were renamed
+		// in this branch so that metadata regeneration treats them as renames.
+		if originalName, ok := renamedTests[spec.Name]; ok && spec.OriginalName == "" {
+			spec.OriginalName = originalName
+		}
+
 		spec.Lifecycle = et.LifecycleInforming
 
 		// Enforce serial execution for [Disruptive] and [Serial] tests,
@@ -100,6 +115,8 @@ func main() {
 	componentSpecs = append(parallelSpecs, serialSpecs...)
 
 	ext.AddSpecs(componentSpecs)
+
+	ext.IgnoreObsoleteTests(removedHAProxyTests...)
 
 	registry.Register(ext)
 
@@ -140,6 +157,61 @@ var hyperShiftUnsupportedTests = []string{
 	"OCP-17145",
 	"OCP-55895",
 	"OCP-56240",
+}
+
+// renamedTests maps the current name of a test to the very first name it was
+// registered under, so that metadata regeneration records the rename.  The
+// HAProxy cases were originally registered under the Route component prefix;
+// they now use Component_Haproxy to distinguish them from the Route cases.
+var renamedTests = map[string]string{
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Configmap mounted on router volume after ingresscontroller has spec field HttpErrorCodePage populated with configmap name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Configmap mounted on router volume after ingresscontroller has spec field HttpErrorCodePage populated with configmap name",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Errorfile stanzas and dummy default html files have been added to the router": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Errorfile stanzas and dummy default html files have been added to the router",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy HAProxyDown message only for pods and No reaper messages for zombie processes": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HAProxyDown message only for pods and No reaper messages for zombie processes",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Health check when there are multi service and each service has one backend": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Health check when there are multi service and each service has one backend",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Idling StatefulSet is not supported": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Idling StatefulSet is not supported",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingress controller stats port is not set according to endpointPublishingStrategy": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress controller stats port is not set according to endpointPublishingStrategy",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy IngressController option to use PROXY protocol with IBM Cloud load-balancers - TCP, PROXY and omitted": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router IngressController option to use PROXY protocol with IBM Cloud load-balancers - TCP, PROXY and omitted",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingresscontroller routes traffic only to ready pods/backends": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller routes traffic only to ready pods/backends",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Ingresscontroller with private endpoint publishing strategy supports PROXY protocol": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with private endpoint publishing strategy supports PROXY protocol",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy No health check when there is only one endpoint for a route": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router No health check when there is only one endpoint for a route",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Power-of-two feature allows unsupportedConfigOverrides ingress operator option to enable leastconn balancing algorithm": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Power-of-two feature allows unsupportedConfigOverrides ingress operator option to enable leastconn balancing algorithm",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node [Serial]": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Routers with hostnetwork endpoint strategy with same http/https/stat port numbers cannot be deployed on the same worker node",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Set Cookie2 by an application in a route should not kill all router pods": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set Cookie2 by an application in a route should not kill all router pods",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy Setting ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Setting ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power of two balancing  honours the per route balancing algorithm defined via haproxy.router.openshift.io/balance annotation": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power of two balancing  honours the per route balancing algorithm defined via haproxy.router.openshift.io/balance annotation",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features defaults to random LB algorithm instead of leastconn for REEN/Edge/insecure routes": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features defaults to random LB algorithm instead of leastconn for REEN/Edge/insecure routes",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features switches to roundrobin mode for REEN/Edge/insecure/passthrough routes with multiple backends configured with weights": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features switches to roundrobin mode for REEN/Edge/insecure/passthrough routes with multiple backends configured with weights",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The Power-of-two balancing features switches to source algorithm for passthrough routes": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The Power-of-two balancing features switches to source algorithm for passthrough routes",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork [Serial]": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The endpointPublishingStrategy parameter allows TCP, PROXY, and empty definitions for HostNetwork",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The logEmptyRequests ingresscontroller parameter set to Ignore add the dontlognull option in the haproxy configuration": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The logEmptyRequests ingresscontroller parameter set to Ignore add the dontlognull option in the haproxy configuration",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The logEmptyRequests option only gets applied when the access logging is configured for the ingresscontroller": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The logEmptyRequests option only gets applied when the access logging is configured for the ingresscontroller",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy User can customize HAProxy 2.0 Error Page": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router User can customize HAProxy 2.0 Error Page",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy User can delete configmap and update configmap with new custom error page": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router User can delete configmap and update configmap with new custom error page",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy httpEmptyRequestsPolicy ingresscontroller parameter set to ignore adds the http-ignore-probes option in the haproxy configuration": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router httpEmptyRequestsPolicy ingresscontroller parameter set to ignore adds the http-ignore-probes option in the haproxy configuration",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy misc tests for haproxy router": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router misc tests for haproxy router",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy router continues to function normally with the service selector of exposed route gets removed/deleted": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router continues to function normally with the service selector of exposed route gets removed/deleted",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy router support HTTP2 for passthrough route and reencrypt route with custom certs": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router support HTTP2 for passthrough route and reencrypt route with custom certs",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy the 503 Error page should not contain license for a vulnerable release of Bootstrap": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router the 503 Error page should not contain license for a vulnerable release of Bootstrap",
+}
+
+// removedHAProxyTests lists the previously registered names of HAProxy cases
+// that were dropped from test/qe/haproxy.go.  Listing them here lets
+// "make update-metadata" retire the stale entries.
+var removedHAProxyTests = []string{
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with endpointPublishingStrategy of hostNetwork allows PROXY protocol for source forwarding",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingresscontroller with endpointPublishingStrategy of nodePort allows PROXY protocol for source forwarding",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Setting wrong data in ROUTER_ENABLE_COMPRESSION and ROUTER_COMPRESSION_MIME in HAProxy",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router check haproxy router v4v6 mode",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router check haproxy's version and router base image",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Allow Ingress to be modified on the settings of livenessProbe and readinessProbe",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Negative test of allow Ingress to be modified on the settings of livenessProbe and readinessProbe",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Multiple routers with hostnetwork endpoint strategy can be deployed on same worker node with different http/https/stat port numbers",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The http/https/stat port field in the ingresscontroller does not accept negative values during configuration",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Accessing the route should wake up the idled resources",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router edge terminated h2 (gRPC) connections need a haproxy template change to work correctly",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router option idle-close-on-response is configurable",
+	"[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Support Prometheus monitoring metric for router max connections",
 }
 
 // moduleDirSegment is the path segment that ends at this module's root.  It is
