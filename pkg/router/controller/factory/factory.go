@@ -10,6 +10,7 @@ import (
 
 	kapi "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -254,6 +255,26 @@ func (f *RouterControllerFactory) processExistingItems(rc *routercontroller.Rout
 	}
 }
 
+// stripManagedFields clears the managedFields metadata from objects before they are
+// stored in an informer's cache. The router only reads objects from its informer caches
+// and never performs server-side apply against them, so retaining managedFields only adds
+// to the memory footprint of the cache.
+func stripManagedFields(obj interface{}) (interface{}, error) {
+	if accessor, err := meta.Accessor(obj); err == nil {
+		accessor.SetManagedFields(nil)
+	}
+	return obj, nil
+}
+
+// setInformerTransform configures informer to strip managedFields from cached objects,
+// logging an error if the transform could not be set (which can only happen if the
+// informer has already started running).
+func setInformerTransform(objType reflect.Type, informer kcache.SharedIndexInformer) {
+	if err := informer.SetTransform(stripManagedFields); err != nil {
+		utilruntime.HandleError(fmt.Errorf("failed to set managedFields transform for %+v shared informer: %w", objType, err))
+	}
+}
+
 func (f *RouterControllerFactory) setSelectors(options *metav1.ListOptions) {
 	options.LabelSelector = f.LabelSelector
 	options.FieldSelector = f.FieldSelector
@@ -273,6 +294,7 @@ func (f *RouterControllerFactory) createEndpointsSharedInformer() {
 	objType := reflect.TypeOf(ep)
 	indexers := kcache.Indexers{kcache.NamespaceIndex: kcache.MetaNamespaceIndexFunc}
 	informer := kcache.NewSharedIndexInformer(lw, ep, f.ResyncInterval, indexers)
+	setInformerTransform(objType, informer)
 	f.informers[objType] = informer
 }
 
@@ -318,6 +340,7 @@ func (f *RouterControllerFactory) CreateRoutesSharedInformer() kcache.SharedInde
 	}
 	indexers := kcache.Indexers{kcache.NamespaceIndex: kcache.MetaNamespaceIndexFunc}
 	informer := kcache.NewSharedIndexInformer(lw, rt, f.ResyncInterval, indexers)
+	setInformerTransform(objType, informer)
 	f.informers[objType] = informer
 	return informer
 }
@@ -327,6 +350,7 @@ func (f *RouterControllerFactory) createNodesSharedInformer() {
 	ifactory := informerfactory.NewSharedInformerFactory(f.KClient, f.ResyncInterval)
 	informer := ifactory.Core().V1().Nodes().Informer()
 	objType := reflect.TypeOf(&kapi.Node{})
+	setInformerTransform(objType, informer)
 	f.informers[objType] = informer
 }
 
@@ -345,6 +369,7 @@ func (f *RouterControllerFactory) createNamespacesSharedInformer() {
 	objType := reflect.TypeOf(ns)
 	indexers := kcache.Indexers{kcache.NamespaceIndex: kcache.MetaNamespaceIndexFunc}
 	informer := kcache.NewSharedIndexInformer(lw, ns, f.ResyncInterval, indexers)
+	setInformerTransform(objType, informer)
 	f.informers[objType] = informer
 }
 
@@ -424,5 +449,6 @@ func (f *RouterControllerFactory) createEndpointSliceSharedInformer() {
 		kcache.NamespaceIndex: kcache.MetaNamespaceIndexFunc,
 		ServiceNameIndex:      endpointSliceByServiceLabelIndexFunc,
 	})
+	setInformerTransform(objType, informer)
 	f.informers[objType] = informer
 }
