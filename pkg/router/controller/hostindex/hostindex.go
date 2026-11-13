@@ -106,13 +106,12 @@ func (hi *hostIndex) add(route *routev1.Route, changes *routeChanges) bool {
 			// duplicate claim in the index.
 			hi.remove(existing, false, changes)
 		default:
-			// if no changes have been made, we don't need to note a change
-			if existing.ResourceVersion == route.ResourceVersion {
-				return false
-			}
 			// no other significant changes, we can update the cache and then exit
 			rules.replace(existing, route)
-			// a route that is active should be notified
+			// A route that is active should be notified, even when its
+			// ResourceVersion is unchanged (as on a resync): lower plugins
+			// rely on resyncs to retry work such as status updates skipped
+			// due to contention.
 			if active {
 				changes.Activated(route)
 			}

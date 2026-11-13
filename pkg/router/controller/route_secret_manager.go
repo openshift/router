@@ -68,6 +68,9 @@ type routeSecretValidation struct {
 	everValidated             bool
 	postAdmissionCheckPending bool
 	loadedSecretVersion       string
+	// validatedRouteVersion is the route ResourceVersion that was last
+	// validated successfully.
+	validatedRouteVersion string
 }
 
 // RouteSecretManager implements the router.Plugin interface to register
@@ -326,6 +329,18 @@ func (p *RouteSecretManager) markRouteValidationFailed(route *routev1.Route) {
 	}
 }
 
+// isValidatedRouteVersion returns true if this exact version of the route
+// passed validation and has not failed validation since.
+func (p *RouteSecretManager) isValidatedRouteVersion(route *routev1.Route) bool {
+	stored, ok := p.routeValidation.Load(routeKey(route.Namespace, route.Name))
+	if !ok {
+		return false
+	}
+	state := stored.(routeSecretValidation)
+	return route.ResourceVersion != "" && state.validated && state.uid == route.UID && state.secretName == route.Spec.TLS.ExternalCertificate.Name &&
+		state.validatedRouteVersion == route.ResourceVersion
+}
+
 func (p *RouteSecretManager) markRouteValidated(route *routev1.Route) {
 	key := routeKey(route.Namespace, route.Name)
 	stored, ok := p.routeValidation.Load(key)
@@ -340,6 +355,7 @@ func (p *RouteSecretManager) markRouteValidated(route *routev1.Route) {
 	state.validated = true
 	state.everValidated = true
 	state.loadedSecretVersion = route.Annotations[certResourceVersionAnnotation]
+	state.validatedRouteVersion = route.ResourceVersion
 	// Namespace-wide informers are shared by all routes in a namespace.
 	// Avoid one fresh SAR and Secret read per route in large unrestricted
 	// namespaces; the missed startup events were in per-Secret informers.
@@ -439,11 +455,22 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 	case watch.Added:
 		// register with secret monitor
 		if hasExternalCertificate(route) {
-			log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
-			if err := p.validateAndRegister(route); err != nil {
-				return err
+			// Registering the informer event handlers replays cached routes as
+			// Added events after the initial sync already validated them.
+			// Skipping the SAR call here means a transient API error cannot
+			// withdraw a route that is already validated.
+			if p.isValidatedRouteVersion(route) {
+				log.V(4).Info("Route version already validated, skipping re-validation", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				if err := p.populateRouteTLSFromSecret(route); err != nil {
+					return err
+				}
+			} else {
+				log.V(4).Info("Validating and registering external certificate", "namespace", route.Namespace, "secret", route.Spec.TLS.ExternalCertificate.Name, "route", route.Name)
+				if err := p.validateAndRegister(route); err != nil {
+					return err
+				}
+				registered = true
 			}
-			registered = true
 		}
 
 	case watch.Modified:
@@ -486,20 +513,29 @@ func (p *RouteSecretManager) HandleRoute(eventType watch.EventType, route *route
 				//
 				// Therefore, it is essential to re-sync the secret to ensure the plugin chain correctly handles the route.
 
-				log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
-				// Re-validate under the route lock so a Secret update or
-				// deletion cannot change the validated state midway through
-				// propagation.
-				if err := p.validate(route); err != nil {
-					return err
+				// A resync delivers the same route version that was already
+				// validated. Skip the SAR calls in that case, as the Secret
+				// update handler does for validated routes: a transient API
+				// error must not take a serving route offline, and Secret
+				// changes are handled by the Secret informer handlers.
+				if p.isValidatedRouteVersion(route) {
+					log.V(4).Info("Route version already validated, skipping re-validation", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
+				} else {
+					log.V(4).Info("Re-validating existing external certificate", "namespace", route.Namespace, "secret", oldSecret, "route", route.Name)
+					// Re-validate under the route lock so a Secret update or
+					// deletion cannot change the validated state midway through
+					// propagation.
+					if err := p.validate(route); err != nil {
+						return err
+					}
+					// Don't let the SAR result from this re-validation persist
+					// in the cache. If RBAC was just revoked, the API server
+					// may not have propagated the change yet, producing a stale
+					// "allowed" result. Invalidating ensures the next evaluation
+					// (triggered by the rejection→re-admission status cycle)
+					// does a fresh SAR check.
+					routeapihelpers.InvalidateAsyncSARCache(route.Namespace, route.Spec.TLS.ExternalCertificate.Name)
 				}
-				// Don't let the SAR result from this re-validation persist
-				// in the cache. If RBAC was just revoked, the API server
-				// may not have propagated the change yet, producing a stale
-				// "allowed" result. Invalidating ensures the next evaluation
-				// (triggered by the rejection→re-admission status cycle)
-				// does a fresh SAR check.
-				routeapihelpers.InvalidateAsyncSARCache(route.Namespace, route.Spec.TLS.ExternalCertificate.Name)
 
 				// read referenced secret and update TLS certificate and key
 				if err := p.populateRouteTLSFromSecret(route); err != nil {
