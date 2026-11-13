@@ -81,7 +81,7 @@ $ make check
 
 ## Local Run and Debugging
 
-The steps below configures the local development environment to run OpenShift router.
+The steps below configure the local development environment to run OpenShift router.
 
 > Note that a local router cannot properly proxy requests, since it cannot reach the overlay network in the
 Kubernetes cluster. This mode is mostly useful for debugging controller behavior and configuration builder,
@@ -107,21 +107,40 @@ make TARGET=linux-glibc USE_OPENSSL=1 USE_PROMEX=1 USE_PCRE2=1 USE_PCRE2_JIT=1
 sudo cp haproxy /usr/sbin/
 ```
 
+`socat` is also required. `make local-run` uses it to check that HAProxy's admin socket is responding before
+starting the router:
+
+```bash
+sudo yum install -y socat
+```
+
 ### Run OpenShift router locally
 
-Prepare the local environment and start router with default options:
+Prepare the local environment and start HAProxy:
+
+```bash
+make local-prepare
+```
+
+Prepare kills any HAProxy previously started by itself, recreates the `conf`, `run` and `router` sub-directories
+of `/var/lib/haproxy`, and copies the configuration template into `conf`. It then starts HAProxy in the
+foreground in master-worker mode, playing the role of the HAProxy sidecar container. Keep it running; press
+^C to stop it.
+
+In another terminal, start the router with default options:
 
 ```bash
 make local-run
 ```
 
-Prepare means create and clean `/var/lib/haproxy` and sub-directories, which router uses to configure HAProxy.
+The router connects to the cluster that `KUBECONFIG` (or `~/.kube/config`) points to, and configures HAProxy
+to listen on ports 9090 (HTTP), 9443 (HTTPS) and 1936 (stats, `admin`/`admin`).
 
 ### Debug locally
 
 Here is the VSCode launch configuration that starts OpenShift router in debug mode.
 
-> Run `make local-prepare` before the very first run, and whenever a clean environment is needed.
+> Run `make local-prepare` in another terminal, and keep it running, before starting the router.
 
 `.vscode/launch.json` content, merge its content with any previous one:
 
@@ -143,10 +162,11 @@ Here is the VSCode launch configuration that starts OpenShift router in debug mo
                 "STATS_USERNAME": "admin",
                 "STATS_PASSWORD": "admin",
                 "STATS_PORT": "1936",
+                "ROUTER_GRACEFUL_SHUTDOWN_DELAY": "2s",
             },
             "args": [
                 "--template=images/router/haproxy/conf/haproxy-config.template",
-                "--reload=images/router/haproxy/reload-haproxy",
+                "--haproxy-admin-unix-socket=/var/lib/haproxy/run/admin.sock",
             ],
         }
     ]
@@ -156,4 +176,3 @@ Here is the VSCode launch configuration that starts OpenShift router in debug mo
 Caveats:
 
 1. On debug mode, the binary name is not `openshift-router`, making the bootstrap code to fail. Temporarily patch `cmd/openshift-router/main.go` and hardcode `openshift-router` in the `CommandFor()` call.
-1. A haproxy instance should be left behind depending on how the router is stopped. Run `killall haproxy` in case the router complains when trying to listen to sockets.
