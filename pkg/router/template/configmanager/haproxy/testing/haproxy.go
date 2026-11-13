@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,8 +16,6 @@ import (
 
 const (
 	haproxyConfigDir = "/var/lib/haproxy/conf"
-
-	serverName = "_dynamic-pod-1"
 
 	OnePodAndOneDynamicServerBackendTemplate = `1
 # be_id be_name srv_id srv_name srv_addr srv_op_state srv_admin_state srv_uweight srv_iweight srv_time_since_last_change srv_check_status srv_check_result srv_check_health srv_check_state srv_agent_state bk_f_forced_id srv_f_forced_id srv_fqdn srv_port
@@ -417,14 +416,37 @@ func (p *fakeHAProxy) setServer(name string, options []string) string {
 		return fmt.Sprintf("Require 'backend/server'.\n")
 	}
 
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	existingServer := fmt.Sprintf("%s/%s", p.backendName, serverName)
-	if name != existingServer {
+	if !p.hasServerBackend(name) {
 		return fmt.Sprintf("No such server.\n")
 	}
 
 	return fmt.Sprintf("\n")
+}
+
+// addServer accepts any new server on a known backend.
+func (p *fakeHAProxy) addServer(name string) string {
+	if !p.hasServerBackend(name) {
+		return fmt.Sprintf("No such backend.\n")
+	}
+	return "New server registered.\n"
+}
+
+// delServer accepts the removal of any server on a known backend.
+func (p *fakeHAProxy) delServer(name string) string {
+	if !p.hasServerBackend(name) {
+		return fmt.Sprintf("No such server.\n")
+	}
+	return "Server deleted.\n"
+}
+
+// hasServerBackend reports whether name, in the `backend/server` format,
+// refers to one of the backends listed by `show backend`.
+func (p *fakeHAProxy) hasServerBackend(name string) bool {
+	backend, _, found := strings.Cut(name, "/")
+	if !found {
+		return false
+	}
+	return slices.Contains(strings.Split(p.listBackends(), "\n")[1:], backend)
 }
 
 func (p *fakeHAProxy) process(conn net.Conn) error {
@@ -488,6 +510,15 @@ func (p *fakeHAProxy) process(conn net.Conn) error {
 			name = vals[0]
 		}
 		response = p.setServer(name, vals[1:])
+	} else if strings.HasPrefix(cmd, "add server") {
+		vals := strings.Fields(cmd[len("add server"):])
+		name := ""
+		if len(vals) > 0 {
+			name = vals[0]
+		}
+		response = p.addServer(name)
+	} else if strings.HasPrefix(cmd, "del server") {
+		response = p.delServer(strings.TrimSpace(cmd[len("del server"):]))
 	} else {
 		response = fmt.Sprintf("Unknown command. Please enter one of the following commands only :\nhelp\n...\n")
 	}
