@@ -289,6 +289,32 @@ func TestHAProxyMaxConnectionsVariableRequiresInteger(t *testing.T) {
 	assert.Equal(t, 2, strings.Count(rendered, "maxconn -1"))
 }
 
+// TestHAProxyQATConfig verifies that the QAT directives are added to the
+// global section only if QAT is enabled.
+func TestHAProxyQATConfig(t *testing.T) {
+	qatDirectives := "\n  ssl-provider default\n  ssl-provider qatprovider\n  ssl-mode-async\n"
+	testCases := []struct {
+		name      string
+		enableQAT bool
+	}{
+		{name: "QAT disabled", enableQAT: false},
+		{name: "QAT enabled", enableQAT: true},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			rendered := renderHAProxyConfig(t, templateData{BindPorts: true, EnableQAT: tc.enableQAT})
+			global, _, found := strings.Cut(rendered, "\ndefaults\n")
+			require.True(t, found, "missing defaults section")
+			if tc.enableQAT {
+				assert.Contains(t, global, qatDirectives)
+			} else {
+				assert.NotContains(t, rendered, "ssl-provider")
+				assert.NotContains(t, rendered, "ssl-mode-async")
+			}
+		})
+	}
+}
+
 // renderHAProxyConfig renders the HAProxy configuration template with data.
 func renderHAProxyConfig(t *testing.T, data templateData) string {
 	t.Helper()

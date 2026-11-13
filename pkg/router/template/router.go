@@ -133,6 +133,9 @@ type templateRouter struct {
 	httpResponseHeaders []HTTPHeader
 	// httpRequestHeaders allows users to set or delete custom HTTP request headers.
 	httpRequestHeaders []HTTPHeader
+	// enableQAT configures HAProxy to offload TLS operations to Intel
+	// QuickAssist Technology (QAT) devices.
+	enableQAT bool
 }
 
 // templateRouterCfg holds all configuration items required to initialize the template router
@@ -161,6 +164,7 @@ type templateRouterCfg struct {
 	httpHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 	httpResponseHeaders           []HTTPHeader
 	httpRequestHeaders            []HTTPHeader
+	enableQAT                     bool
 }
 
 // templateConfig is a subset of the templateRouter information that should be passed to the template for generating
@@ -212,6 +216,9 @@ type templateData struct {
 	// that a certificate has been observed over various routes, used to
 	// detect duplicate certificates.
 	CertificateIndex map[string]int
+	// EnableQAT configures HAProxy to offload TLS operations to Intel
+	// QuickAssist Technology (QAT) devices.
+	EnableQAT bool
 }
 
 func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
@@ -276,6 +283,7 @@ func newTemplateRouter(cfg templateRouterCfg) (*templateRouter, error) {
 		httpHeaderNameCaseAdjustments: cfg.httpHeaderNameCaseAdjustments,
 		httpResponseHeaders:           cfg.httpResponseHeaders,
 		httpRequestHeaders:            cfg.httpRequestHeaders,
+		enableQAT:                     cfg.enableQAT,
 
 		metricReload:        metricsReload,
 		metricReloadFailure: metricReloadFailure,
@@ -655,6 +663,7 @@ func (r *templateRouter) writeConfig() error {
 			HTTPResponseHeaders:           r.httpResponseHeaders,
 			HTTPRequestHeaders:            r.httpRequestHeaders,
 			CertificateIndex:              certificateIndex,
+			EnableQAT:                     r.enableQAT,
 		}
 		if err := template.Execute(file, data); err != nil {
 			file.Close()
