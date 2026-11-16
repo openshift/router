@@ -378,7 +378,7 @@ func parseIPList(list string) string {
 			validIPs = append(validIPs, ip)
 		} else {
 			// Log invalid IP/CIDR
-			log.V(0).Info("parseIPList found invalid IP/CIDR", ip)
+			log.V(0).Info("parseIPList found invalid IP/CIDR", "value", ip)
 		}
 	}
 

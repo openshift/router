@@ -8,6 +8,9 @@ var (
 	// ErrServerAlreadyExists is an attempt to add a new backend server whose server name was already used.
 	ErrServerAlreadyExists = errors.New("ErrServerAlreadyExists")
 
+	// ErrServerNotFound is an attempt to change a backend server that does not exist.
+	ErrServerNotFound = errors.New("ErrServerNotFound")
+
 	// ErrHealthCheckNotConfigured is an attempt to enable health check on a backend server whose health check was not configured.
 	ErrHealthCheckNotConfigured = errors.New("ErrHealthCheckNotConfigured")
 )

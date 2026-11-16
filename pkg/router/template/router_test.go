@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 
 	"github.com/openshift/router/pkg/router/client/client_testutils"
 )
@@ -676,6 +677,296 @@ func TestRemoveRoute(t *testing.T) {
 	if _, ok := router.state[routeKey(route2)]; !ok {
 		t.Errorf("Route %v was expected to exist but was not found", route2)
 	}
+}
+
+// fakeConfigManager is a ConfigManager that records the endpoints sent to RemoveRoute and ReplaceRouteEndpoints.
+type fakeConfigManager struct {
+	removedEndpoints  []Endpoint
+	replacedEndpoints []fakeReplacedEndpoints
+}
+
+// fakeReplacedEndpoints are the arguments of a ReplaceRouteEndpoints call.
+type fakeReplacedEndpoints struct {
+	service                    ServiceUnitKey
+	oldEndpoints, newEndpoints []Endpoint
+}
+
+// Initialize implements ConfigManager.
+func (cm *fakeConfigManager) Initialize(RouterInterface, string) {}
+
+// Register implements ConfigManager.
+func (cm *fakeConfigManager) Register(ServiceAliasConfigKey, *ServiceAliasConfig, *routev1.Route) {}
+
+// RemoveRoute implements ConfigManager, recording the endpoints that should be removed.
+func (cm *fakeConfigManager) RemoveRoute(_ ServiceAliasConfigKey, _ *routev1.Route, endpoints []Endpoint) error {
+	cm.removedEndpoints = append(cm.removedEndpoints, endpoints...)
+	return nil
+}
+
+// ReplaceRouteEndpoints implements ConfigManager, recording the old and new endpoints.
+func (cm *fakeConfigManager) ReplaceRouteEndpoints(_ ServiceAliasConfigKey, svc *ServiceUnit, oldEndpoints, newEndpoints []Endpoint, _ int) error {
+	cm.replacedEndpoints = append(cm.replacedEndpoints, fakeReplacedEndpoints{service: ServiceUnitKey(svc.Name), oldEndpoints: oldEndpoints, newEndpoints: newEndpoints})
+	return nil
+}
+
+// RemoveRouteEndpoints implements ConfigManager.
+func (cm *fakeConfigManager) RemoveRouteEndpoints(ServiceAliasConfigKey, []Endpoint) error {
+	return nil
+}
+
+// Notify implements ConfigManager.
+func (cm *fakeConfigManager) Notify(RouterEventType) {}
+
+// TestDynamicallyRemoveRouteEndpoints tests that dynamically removing a route asks the
+// ConfigManager to remove only the endpoints that are part of the route's backend, i.e.
+// the ones whose port matches the route's target port, from all the route's services.
+func TestDynamicallyRemoveRouteEndpoints(t *testing.T) {
+	const namespace = "ns1"
+	svc1Endpoints := []Endpoint{
+		{ID: "ept:svc1:http:10.0.0.1:8080", IP: "10.0.0.1", Port: "8080", PortName: "http"},
+		{ID: "ept:svc1:metrics:10.0.0.1:9090", IP: "10.0.0.1", Port: "9090", PortName: "metrics"},
+		{ID: "ept:svc1:http:10.0.0.2:8080", IP: "10.0.0.2", Port: "8080", PortName: "http"},
+		{ID: "ept:svc1:metrics:10.0.0.2:9090", IP: "10.0.0.2", Port: "9090", PortName: "metrics"},
+	}
+	svc2Endpoints := []Endpoint{
+		{ID: "ept:svc2:http:10.0.1.1:8080", IP: "10.0.1.1", Port: "8080", PortName: "http"},
+		{ID: "ept:svc2:metrics:10.0.1.1:9090", IP: "10.0.1.1", Port: "9090", PortName: "metrics"},
+	}
+	testCases := []struct {
+		name             string
+		targetPort       *intstr.IntOrString
+		alternateBackend bool
+		expectedIDs      []string
+	}{
+		{
+			name:        "no target port",
+			expectedIDs: []string{"ept:svc1:http:10.0.0.1:8080", "ept:svc1:metrics:10.0.0.1:9090", "ept:svc1:http:10.0.0.2:8080", "ept:svc1:metrics:10.0.0.2:9090"},
+		},
+		{
+			name:        "target port by name",
+			targetPort:  &intstr.IntOrString{Type: intstr.String, StrVal: "http"},
+			expectedIDs: []string{"ept:svc1:http:10.0.0.1:8080", "ept:svc1:http:10.0.0.2:8080"},
+		},
+		{
+			name:        "target port by number",
+			targetPort:  &intstr.IntOrString{Type: intstr.Int, IntVal: 9090},
+			expectedIDs: []string{"ept:svc1:metrics:10.0.0.1:9090", "ept:svc1:metrics:10.0.0.2:9090"},
+		},
+		{
+			name:             "target port by name with alternate backend",
+			targetPort:       &intstr.IntOrString{Type: intstr.String, StrVal: "http"},
+			alternateBackend: true,
+			expectedIDs:      []string{"ept:svc1:http:10.0.0.1:8080", "ept:svc1:http:10.0.0.2:8080", "ept:svc2:http:10.0.1.1:8080"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cm := &fakeConfigManager{}
+			router := NewFakeTemplateRouter()
+			router.dynamicConfigManager = cm
+			router.synced = true
+
+			// Adding endpoints before the route, so no dynamic endpoint replacement happens.
+			svc1Key := endpointsKeyFromParts(namespace, "svc1")
+			svc2Key := endpointsKeyFromParts(namespace, "svc2")
+			router.CreateServiceUnit(svc1Key)
+			router.CreateServiceUnit(svc2Key)
+			router.AddEndpoints(svc1Key, svc1Endpoints)
+			router.AddEndpoints(svc2Key, svc2Endpoints)
+
+			route := &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "route1",
+				},
+				Spec: routev1.RouteSpec{
+					Host: "route1.example.com",
+					To:   routev1.RouteTargetReference{Name: "svc1"},
+				},
+			}
+			if tc.targetPort != nil {
+				route.Spec.Port = &routev1.RoutePort{TargetPort: *tc.targetPort}
+			}
+			if tc.alternateBackend {
+				route.Spec.AlternateBackends = []routev1.RouteTargetReference{{Name: "svc2"}}
+			}
+			router.AddRoute(route)
+			router.RemoveRoute(route)
+
+			var removedIDs []string
+			for _, ep := range cm.removedEndpoints {
+				removedIDs = append(removedIDs, ep.ID)
+			}
+			require.ElementsMatch(t, tc.expectedIDs, removedIDs)
+		})
+	}
+}
+
+// TestRouteEndpointTableRefresh tests that the endpoints of a route are kept in sync with the endpoints
+// of its services, which is a requirement for the dynamic config manager to compute the changes it needs
+// to apply.
+func TestRouteEndpointTableRefresh(t *testing.T) {
+	const namespace = "ns1"
+	svcKey := endpointsKeyFromParts(namespace, "svc1")
+	endpoints := []Endpoint{
+		{ID: "ept:svc1:http:10.0.0.1:8080", IP: "10.0.0.1", Port: "8080", PortName: "http"},
+		{ID: "ept:svc1:http:10.0.0.2:8080", IP: "10.0.0.2", Port: "8080", PortName: "http"},
+	}
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: "route1"},
+		Spec: routev1.RouteSpec{
+			Host: "route1.example.com",
+			To:   routev1.RouteTargetReference{Name: "svc1"},
+		},
+	}
+	routeEndpointIDs := func(router *templateRouter) []string {
+		var ids []string
+		for _, ep := range router.state[routeKey(route)].EndpointTable[svcKey] {
+			ids = append(ids, ep.ID)
+		}
+		return ids
+	}
+
+	t.Run("endpoints added before sync are refreshed when writing the configuration", func(t *testing.T) {
+		router := NewFakeTemplateRouter()
+		router.dynamicConfigManager = &fakeConfigManager{}
+		router.CreateServiceUnit(svcKey)
+		router.AddRoute(route)
+		router.AddEndpoints(svcKey, endpoints)
+		require.Empty(t, routeEndpointIDs(router), "endpoints should not be refreshed before sync")
+
+		require.NoError(t, router.writeConfig())
+		require.ElementsMatch(t, []string{endpoints[0].ID, endpoints[1].ID}, routeEndpointIDs(router))
+	})
+
+	t.Run("deleted endpoints are dynamically added again when they come back", func(t *testing.T) {
+		cm := &fakeConfigManager{}
+		router := NewFakeTemplateRouter()
+		router.dynamicConfigManager = cm
+		router.synced = true
+		router.CreateServiceUnit(svcKey)
+		router.AddEndpoints(svcKey, endpoints)
+		router.AddRoute(route)
+
+		router.DeleteEndpoints(svcKey)
+		require.Empty(t, routeEndpointIDs(router))
+		require.Len(t, cm.replacedEndpoints, 1)
+		require.Len(t, cm.replacedEndpoints[0].oldEndpoints, len(endpoints))
+		require.Empty(t, cm.replacedEndpoints[0].newEndpoints)
+
+		cm.replacedEndpoints = nil
+		router.AddEndpoints(svcKey, endpoints)
+		require.Len(t, cm.replacedEndpoints, 1)
+		require.Empty(t, cm.replacedEndpoints[0].oldEndpoints)
+		require.Len(t, cm.replacedEndpoints[0].newEndpoints, len(endpoints))
+	})
+
+	t.Run("deleting endpoints updates the weights of the other services", func(t *testing.T) {
+		svc2Key := endpointsKeyFromParts(namespace, "svc2")
+		svc2Endpoints := []Endpoint{
+			{ID: "ept:svc2:http:10.0.1.1:8080", IP: "10.0.1.1", Port: "8080", PortName: "http"},
+			{ID: "ept:svc2:http:10.0.1.2:8080", IP: "10.0.1.2", Port: "8080", PortName: "http"},
+		}
+		cm := &fakeConfigManager{}
+		router := NewFakeTemplateRouter()
+		router.dynamicConfigManager = cm
+		router.synced = true
+		router.CreateServiceUnit(svcKey)
+		router.CreateServiceUnit(svc2Key)
+		router.AddEndpoints(svcKey, endpoints)
+		router.AddEndpoints(svc2Key, svc2Endpoints)
+		route := route.DeepCopy()
+		route.Spec.AlternateBackends = []routev1.RouteTargetReference{{Name: "svc2", Weight: ptr.To[int32](100)}}
+		router.AddRoute(route)
+
+		router.DeleteEndpoints(svcKey)
+		replaced := map[ServiceUnitKey]fakeReplacedEndpoints{}
+		for _, r := range cm.replacedEndpoints {
+			replaced[r.service] = r
+		}
+		require.Len(t, replaced, 2)
+
+		// endpoints of the deleted service are removed.
+		require.Len(t, replaced[svcKey].oldEndpoints, len(endpoints))
+		require.Empty(t, replaced[svcKey].newEndpoints)
+
+		// svc2 is now the only active service, so the weight of its endpoints is reduced to 1.
+		svc2Replaced := replaced[svc2Key]
+		require.Len(t, svc2Replaced.oldEndpoints, len(svc2Endpoints))
+		require.Len(t, svc2Replaced.newEndpoints, len(svc2Endpoints))
+		for i := range svc2Endpoints {
+			require.Equal(t, int32(256), svc2Replaced.oldEndpoints[i].Weight)
+			require.Equal(t, int32(1), svc2Replaced.newEndpoints[i].Weight)
+		}
+	})
+}
+
+// TestEndpointTableZeroWeight tests that the route's endpoints do not have the passthrough endpoints whose
+// weight is zero, since the template does not configure them as backend servers.
+func TestEndpointTableZeroWeight(t *testing.T) {
+	const namespace = "ns1"
+	svc1Key := endpointsKeyFromParts(namespace, "svc1")
+	svc2Key := endpointsKeyFromParts(namespace, "svc2")
+	svc1Endpoints := []Endpoint{
+		{ID: "ept:svc1:http:10.0.0.1:8080", IP: "10.0.0.1", Port: "8080", PortName: "http"},
+		{ID: "ept:svc1:http:10.0.0.2:8080", IP: "10.0.0.2", Port: "8080", PortName: "http"},
+	}
+	svc2Endpoints := []Endpoint{
+		{ID: "ept:svc2:http:10.0.1.1:8080", IP: "10.0.1.1", Port: "8080", PortName: "http"},
+	}
+	newRouter := func(termination routev1.TLSTerminationType) (*templateRouter, *fakeConfigManager) {
+		cm := &fakeConfigManager{}
+		router := NewFakeTemplateRouter()
+		router.dynamicConfigManager = cm
+		router.synced = true
+		router.CreateServiceUnit(svc1Key)
+		router.CreateServiceUnit(svc2Key)
+		router.AddEndpoints(svc1Key, svc1Endpoints)
+		router.AddEndpoints(svc2Key, svc2Endpoints)
+		route := &routev1.Route{
+			ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: "route1"},
+			Spec: routev1.RouteSpec{
+				Host:              "route1.example.com",
+				To:                routev1.RouteTargetReference{Name: "svc1", Weight: ptr.To[int32](100)},
+				AlternateBackends: []routev1.RouteTargetReference{{Name: "svc2", Weight: ptr.To[int32](0)}},
+			},
+		}
+		if termination != "" {
+			route.Spec.TLS = &routev1.TLSConfig{Termination: termination}
+		}
+		router.AddRoute(route)
+		return router, cm
+	}
+	routeEndpoints := func(router *templateRouter, key ServiceUnitKey) []Endpoint {
+		return router.state[routeKeyFromParts(namespace, "route1")].EndpointTable[key]
+	}
+
+	t.Run("zero weight endpoints are kept on non passthrough routes", func(t *testing.T) {
+		router, _ := newRouter("")
+		require.Len(t, routeEndpoints(router, svc1Key), len(svc1Endpoints))
+		require.Len(t, routeEndpoints(router, svc2Key), len(svc2Endpoints))
+		require.Equal(t, int32(0), routeEndpoints(router, svc2Key)[0].Weight)
+	})
+
+	t.Run("zero weight endpoints are filtered out on passthrough routes", func(t *testing.T) {
+		router, _ := newRouter(routev1.TLSTerminationPassthrough)
+		require.Len(t, routeEndpoints(router, svc1Key), len(svc1Endpoints))
+		require.Empty(t, routeEndpoints(router, svc2Key))
+	})
+
+	t.Run("deleting endpoints sends no zero weight passthrough endpoints", func(t *testing.T) {
+		router, cm := newRouter(routev1.TLSTerminationPassthrough)
+		router.DeleteEndpoints(svc1Key)
+		replaced := map[ServiceUnitKey]fakeReplacedEndpoints{}
+		for _, r := range cm.replacedEndpoints {
+			replaced[r.service] = r
+		}
+		require.Len(t, replaced, 2)
+		require.Len(t, replaced[svc1Key].oldEndpoints, len(svc1Endpoints))
+		require.Empty(t, replaced[svc1Key].newEndpoints)
+		require.Empty(t, replaced[svc2Key].oldEndpoints)
+		require.Empty(t, replaced[svc2Key].newEndpoints)
+	})
 }
 
 func TestShouldWriteCertificates(t *testing.T) {

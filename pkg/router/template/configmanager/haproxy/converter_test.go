@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
-
-	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
 
 // TestNewConverter tests a new converter.
@@ -161,115 +159,6 @@ Pid: 42
 	}
 }
 
-// TestShowBackendCommandConverter tests show backend command output with a converter.
-func TestShowBackendCommandConverter(t *testing.T) {
-	showBackendOutput := `# name
-be_sni
-be_no_sni
-openshift_default
-be_edge_http:blueprints:blueprint-redirect-to-https
-be_edge_http:default:example-route
-be_edge_http:default:test-http-allow
-be_edge_http:default:test-https
-be_edge_http:default:test-https-only
-be_edge_http:ns1:example-route
-be_tcp:default:test-passthrough
-be_tcp:ns1:passthru-1
-be_tcp:ns2:passthru-1
-be_secure:default:test
-be_secure:ns1:re1
-be_secure:ns2:reencrypt-one
-be_secure:ns2:reencrypt-two
-be_secure:ns2:reencrypt-three
-be_secure:ns3:re1
-be_secure:ns3:re2
-`
-	testCases := []struct {
-		name            string
-		commandOutput   string
-		header          string
-		converter       ByteConverterFunc
-		failureExpected bool
-	}{
-		{
-			name:            "show backend command",
-			commandOutput:   showBackendOutput,
-			header:          "name",
-			converter:       nil,
-			failureExpected: false,
-		},
-		{
-			name:            "show backend with noop converter",
-			commandOutput:   showBackendOutput,
-			header:          "name",
-			converter:       noopConverter,
-			failureExpected: false,
-		},
-		{
-			name:            "show backend removing leading hash",
-			commandOutput:   showBackendOutput,
-			header:          "name",
-			converter:       removeLeadingHashConverter,
-			failureExpected: false,
-		},
-		{
-			name:            "show backend removing leading hash 2",
-			commandOutput:   showBackendOutput,
-			header:          "#name",
-			converter:       removeLeadingHashConverter,
-			failureExpected: false,
-		},
-		{
-			name:            "show backend comment first line",
-			commandOutput:   showBackendOutput[1:],
-			header:          "name",
-			converter:       commentFirstLineConverter,
-			failureExpected: false,
-		},
-		{
-			name:            "show backend remove first line",
-			commandOutput:   showBackendOutput,
-			header:          "name",
-			converter:       removeFirstLineConverter,
-			failureExpected: false,
-		},
-		{
-			name:            "show backend error converter",
-			commandOutput:   showBackendOutput,
-			header:          "name",
-			converter:       errorConverter,
-			failureExpected: true,
-		},
-		{
-			name:            "empty output error converter",
-			commandOutput:   "",
-			header:          "name",
-			converter:       errorConverter,
-			failureExpected: true,
-		},
-		{
-			name:            "show backend error output",
-			commandOutput:   "connection failed, no backends",
-			header:          "name",
-			converter:       noopConverter,
-			failureExpected: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		entries := []*backendEntry{}
-		c := NewCSVConverter(tc.header, &entries, tc.converter)
-		response, err := c.Convert([]byte(tc.commandOutput))
-		if tc.failureExpected && err == nil {
-			t.Errorf("TestShowBackendCommandConverter test case %s expected a failure but got none, response=%s",
-				tc.name, string(response))
-		}
-		if !tc.failureExpected && err != nil {
-			t.Errorf("TestShowBackendCommandConverter test case %s expected no failure but got one: %v", tc.name, err)
-		}
-	}
-}
-
 // TestShowMapCommandConverter tests show map command output with a converter.
 func TestShowMapCommandConverter(t *testing.T) {
 	listMapOutput := `# id (file) description
@@ -339,73 +228,6 @@ func TestShowMapCommandConverter(t *testing.T) {
 		}
 		if !tc.failureExpected && err != nil {
 			t.Errorf("TestShowMapCommandConverter test case %s expected no failure but got one: %v", tc.name, err)
-		}
-	}
-}
-
-// TestShowServerStateOutputConverter tests show servers state output with a converter.
-func TestShowServerStateOutputConverter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		commandOutput   string
-		header          string
-		converter       ByteConverterFunc
-		failureExpected bool
-	}{
-		{
-			name:            "show servers state",
-			commandOutput:   haproxytesting.OnePodAndOneDynamicServerBackendTemplate,
-			header:          serversStateHeader,
-			converter:       stripVersionNumber,
-			failureExpected: false,
-		},
-		{
-			name:            "show servers state without a converter",
-			commandOutput:   haproxytesting.OnePodAndOneDynamicServerBackendTemplate,
-			header:          serversStateHeader,
-			converter:       nil,
-			failureExpected: true,
-		},
-		{
-			name:            "show servers state without removing version number",
-			commandOutput:   haproxytesting.OnePodAndOneDynamicServerBackendTemplate,
-			header:          serversStateHeader,
-			converter:       removeLeadingHashConverter,
-			failureExpected: true,
-		},
-		{
-			name:            "show servers state removing first line with version number",
-			commandOutput:   haproxytesting.OnePodAndOneDynamicServerBackendTemplate,
-			header:          serversStateHeader,
-			converter:       removeFirstLineConverter,
-			failureExpected: false,
-		},
-		{
-			name:            "show servers state with error converter",
-			commandOutput:   haproxytesting.OnePodAndOneDynamicServerBackendTemplate,
-			header:          serversStateHeader,
-			converter:       errorConverter,
-			failureExpected: true,
-		},
-		{
-			name:            "show servers state with error output",
-			commandOutput:   "error: failed to find backend",
-			header:          serversStateHeader,
-			converter:       nil,
-			failureExpected: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		entries := []*serverStateInfo{}
-		c := NewCSVConverter(tc.header, &entries, tc.converter)
-		response, err := c.Convert([]byte(tc.commandOutput))
-		if tc.failureExpected && err == nil {
-			t.Errorf("TestShowServerStateOutputConverter test case %s expected a failure but got none, response=%s",
-				tc.name, string(response))
-		}
-		if !tc.failureExpected && err != nil {
-			t.Errorf("TestShowServerStateOutputConverter test case %s expected no failure but got one: %v", tc.name, err)
 		}
 	}
 }

@@ -622,6 +622,12 @@ func (r *templateRouter) writeConfig() error {
 		// Calculate the number of active endpoints for the route.
 		cfg.ActiveEndpoints = r.getActiveEndpoints(cfg.ServiceUnits, cfg.PreferPort)
 
+		// Refresh the route's endpoints, so they match the backend servers being written to the
+		// configuration. The dynamic config manager relies on them to compute the changes it needs
+		// to apply after the reload, and they can be outdated, e.g. endpoints added before the
+		// router has synced do not update the endpoints of their routes.
+		r.updateEndpointTable(&cfg)
+
 		cfg.Status = ServiceAliasConfigStatusSaved
 		r.state[k] = cfg
 	}
@@ -850,11 +856,20 @@ func (r *templateRouter) removeServiceAliasAssociation(id ServiceUnitKey, alias 
 	}
 }
 
+// updateEndpointTable rebuilds the route's endpoints from its service units, so they match the backend
+// servers that the template configures for the route.
 func (r *templateRouter) updateEndpointTable(cfg *ServiceAliasConfig) {
 	weights := r.calculateServiceWeights(cfg.ServiceUnits, cfg.PreferPort)
 	endpointTable := make(map[ServiceUnitKey][]Endpoint)
 	for key := range cfg.ServiceUnits {
 		if service, found := r.findMatchingServiceUnit(key); found {
+			if cfg.TLSTermination == routev1.TLSTerminationPassthrough && weights[key] == 0 {
+				// The template does not configure passthrough servers whose weight is zero, since
+				// cookies cannot be used to keep sending existing clients to them. Note that the
+				// weight is only zero if the service weight is zero.
+				endpointTable[key] = []Endpoint{}
+				continue
+			}
 			newEndpoints := slices.Clone(endpointsForAlias(*cfg, service))
 			for i := range newEndpoints {
 				ep := &newEndpoints[i]
@@ -920,14 +935,22 @@ func (r *templateRouter) dynamicallyUpdateRoute(backendKey ServiceAliasConfigKey
 // dynamicallyRemoveRoute attempts to dynamically remove a route.
 // Note: The config should have been synced at least once initially and
 // the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey, route *routev1.Route) bool {
+func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey, route *routev1.Route, cfg *ServiceAliasConfig) bool {
 	if r.dynamicConfigManager == nil || !r.synced {
 		return false
 	}
 
 	log.V(4).Info("dynamically removing route backend", "backendKey", backendKey)
 
-	if err := r.dynamicConfigManager.RemoveRoute(backendKey, route); err != nil {
+	// Use the route's own endpoint table instead of the service units' one: the former is what
+	// was used to build the backend servers, e.g. endpoints whose port does not match the route's
+	// target port are filtered out, so they do not exist in HAProxy as backend servers.
+	var endpoints []Endpoint
+	for _, serviceEndpoints := range cfg.EndpointTable {
+		endpoints = append(endpoints, serviceEndpoints...)
+	}
+
+	if err := r.dynamicConfigManager.RemoveRoute(backendKey, route, endpoints); err != nil {
 		log.Info("router will reload as the ConfigManager could not dynamically remove route backend", "backendKey", backendKey, "error", err)
 		return false
 	}
@@ -936,7 +959,11 @@ func (r *templateRouter) dynamicallyRemoveRoute(backendKey ServiceAliasConfigKey
 }
 
 // dynamicallyReplaceEndpoints attempts to dynamically replace endpoints
-// on all the routes associated with a given service.
+// on all the routes associated with a given service. The service should
+// already be stored with its new endpoints, which can be empty in case
+// its endpoints were deleted. Endpoints of the other services of the routes
+// are also updated, since their weights depend on the number of endpoints
+// of all the services.
 // Note: The config should have been synced at least once initially and
 // the caller needs to acquire a lock [and release it].
 func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service ServiceUnit) bool {
@@ -994,34 +1021,6 @@ func (r *templateRouter) dynamicallyReplaceEndpoints(id ServiceUnitKey, service 
 	return true
 }
 
-// dynamicallyRemoveEndpoints attempts to dynamically remove endpoints on
-// all the routes associated with a given service.
-// Note: The config should have been synced at least once initially and
-// the caller needs to acquire a lock [and release it].
-func (r *templateRouter) dynamicallyRemoveEndpoints(id ServiceUnitKey, service ServiceUnit) bool {
-	if r.dynamicConfigManager == nil || !r.synced {
-		return false
-	}
-
-	log.V(4).Info("dynamically removing endpoints for service unit", "service", service.Name)
-
-	for backendKey := range service.ServiceAliasAssociations {
-		cfg, ok := r.state[backendKey]
-		if !ok {
-			continue
-		}
-
-		log.V(4).Info("dynamically removing endpoints for associated backend", "backendKey", backendKey)
-		if err := r.dynamicConfigManager.RemoveRouteEndpoints(backendKey, cfg.EndpointTable[id]); err != nil {
-			// Error dynamically modifying the config, so return false to cause a reload to happen.
-			log.Info("router will reload as the ConfigManager could not dynamically remove endpoints for backend", "backendKey", backendKey, "error", err)
-			return false
-		}
-	}
-
-	return true
-}
-
 // DeleteEndpoints deletes the endpoints for the service with the given id.
 func (r *templateRouter) DeleteEndpoints(id ServiceUnitKey) {
 	r.lock.Lock()
@@ -1031,11 +1030,14 @@ func (r *templateRouter) DeleteEndpoints(id ServiceUnitKey) {
 		return
 	}
 
-	configChanged := r.dynamicallyRemoveEndpoints(id, service)
-
 	service.EndpointTable = []Endpoint{}
 
 	r.serviceUnits[id] = service
+
+	// Deleting endpoints is the same as replacing them with an empty list: their servers are removed, and the
+	// endpoints of the other services of the associated routes are updated, since their weights can change.
+	// This also refreshes the routes' endpoints, so they do not refer to the deleted endpoints anymore.
+	configChanged := r.dynamicallyReplaceEndpoints(id, service)
 
 	if len(service.ServiceAliasAssociations) > 0 {
 		r.stateChanged = true
@@ -1269,7 +1271,7 @@ func (r *templateRouter) RemoveRoute(route *routev1.Route) {
 		return
 	}
 
-	configChanged := r.dynamicallyRemoveRoute(backendKey, route)
+	configChanged := r.dynamicallyRemoveRoute(backendKey, route, &serviceAliasConfig)
 
 	for key := range serviceAliasConfig.ServiceUnits {
 		r.removeServiceAliasAssociation(key, backendKey)

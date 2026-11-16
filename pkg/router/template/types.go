@@ -76,7 +76,8 @@ type ServiceAliasConfig struct {
 	ActiveEndpoints int
 
 	// EndpointTable are endpoints that back the service in this ServiceAliasConfig: non matching ports from
-	// route configuration is filtered out. This translates into a final backend implementation for routers.
+	// route configuration are filtered out, as well as passthrough endpoints whose weight is zero. This
+	// translates into a final backend implementation for routers.
 	EndpointTable map[ServiceUnitKey][]Endpoint
 
 	// HTTPResponseHeaders has route-specific custom HTTP response headers.
@@ -213,8 +214,10 @@ type ConfigManager interface {
 	// Register registers an id to be associated with a route.
 	Register(id ServiceAliasConfigKey, backend *ServiceAliasConfig, route *routev1.Route)
 
-	// RemoveRoute removes a route.
-	RemoveRoute(id ServiceAliasConfigKey, route *routev1.Route) error
+	// RemoveRoute removes a route. endpoints are the route's endpoints from all of its
+	// service units, as found in ServiceAliasConfig.EndpointTable, whose backend servers
+	// should be removed.
+	RemoveRoute(id ServiceAliasConfigKey, route *routev1.Route, endpoints []Endpoint) error
 
 	// ReplaceRouteEndpoints replaces a subset (the ones associated with
 	// a single service unit) of a route endpoints. activeEndpoints is the
