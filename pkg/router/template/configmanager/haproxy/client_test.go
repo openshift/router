@@ -1,9 +1,9 @@
 package haproxy
 
 import (
+	"slices"
 	"testing"
 
-	templaterouter "github.com/openshift/router/pkg/router/template"
 	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
 
@@ -142,42 +142,6 @@ func TestClientRunInfoCommandConverter(t *testing.T) {
 	}
 }
 
-// TestClientRunBackendCommandConverter tests client show backend command execution with a converter.
-func TestClientRunBackendCommandConverter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		command         string
-		header          string
-		converter       ByteConverterFunc
-		failureExpected bool
-	}{
-		{
-			name:            "show backend command",
-			command:         "show backend",
-			header:          "name",
-			converter:       nil,
-			failureExpected: false,
-		},
-	}
-
-	server := haproxytesting.StartFakeServerForTest(t)
-	defer server.Stop()
-
-	for _, tc := range testCases {
-		client := NewClient(server.SocketFile(), 1)
-		entries := []*backendEntry{}
-		csvcon := NewCSVConverter(tc.header, &entries, tc.converter)
-		response, err := client.RunCommand(tc.command, csvcon)
-		if tc.failureExpected && err == nil {
-			t.Errorf("TestClientRunBackendCommandConverter test case %s expected a failure but got none, response=%s",
-				tc.name, string(response))
-		}
-		if !tc.failureExpected && err != nil {
-			t.Errorf("TestClientRunBackendCommandConverter test case %s expected no failure but got one: %v", tc.name, err)
-		}
-	}
-}
-
 // TestClientRunMapCommandConverter tests client show map command execution with a converter.
 func TestClientRunMapCommandConverter(t *testing.T) {
 	testCases := []struct {
@@ -221,49 +185,6 @@ func TestClientRunMapCommandConverter(t *testing.T) {
 	}
 }
 
-// TestClientRunServerCommandConverter tests client show servers state command execution with a converter.
-func TestClientRunServerCommandConverter(t *testing.T) {
-	testCases := []struct {
-		name            string
-		command         string
-		header          string
-		converter       ByteConverterFunc
-		failureExpected bool
-	}{
-		{
-			name:            "show servers state command",
-			command:         "show servers state be_edge_http:default:example-route",
-			header:          serversStateHeader,
-			converter:       stripVersionNumber,
-			failureExpected: false,
-		},
-		{
-			name:            "show servers state command without a converter",
-			command:         "show servers state be_edge_http:default:example-route",
-			header:          serversStateHeader,
-			converter:       nil,
-			failureExpected: true,
-		},
-	}
-
-	server := haproxytesting.StartFakeServerForTest(t)
-	defer server.Stop()
-
-	for _, tc := range testCases {
-		client := NewClient(server.SocketFile(), 1)
-		entries := []*serverStateInfo{}
-		csvcon := NewCSVConverter(tc.header, &entries, tc.converter)
-		response, err := client.RunCommand(tc.command, csvcon)
-		if tc.failureExpected && err == nil {
-			t.Errorf("TestClientRunServerCommandConverter test case %s expected a failure but got none, response=%s",
-				tc.name, string(response))
-		}
-		if !tc.failureExpected && err != nil {
-			t.Errorf("TestClientRunServerCommandConverter test case %s expected no failure but got one: %v", tc.name, err)
-		}
-	}
-}
-
 // TestClientExecute tests client command execution.
 func TestClientExecute(t *testing.T) {
 	testCases := []struct {
@@ -280,11 +201,6 @@ func TestClientExecute(t *testing.T) {
 			name:            "bad command",
 			command:         "bad command here",
 			failureExpected: true,
-		},
-		{
-			name:            "show backend command",
-			command:         "show backend",
-			failureExpected: false,
 		},
 		{
 			name:            "show map command",
@@ -340,39 +256,26 @@ func TestClientReset(t *testing.T) {
 	defer server.Stop()
 
 	client := NewClient(server.SocketFile(), 1)
-	if _, err := client.Backends(); err != nil {
-		t.Errorf("TestClientReset error getting backends: %v", err)
-	}
 	if _, err := client.Maps(); err != nil {
 		t.Errorf("TestClientReset error getting maps: %v", err)
 	}
 
+	// Maps are cached, so no command should be sent to haproxy.
 	server.Reset()
-	commands := server.Commands()
-	if len(commands) != 0 {
-		t.Errorf("TestClientReset error resetting server commands=%+v", commands)
+	if _, err := client.Maps(); err != nil {
+		t.Errorf("TestClientReset error getting cached maps: %v", err)
+	}
+	if commands := server.Commands(); len(commands) != 0 {
+		t.Errorf("TestClientReset expected cached maps, but found server commands=%+v", commands)
 	}
 
+	// Reset should clear the cache, so maps should be read again from haproxy.
 	client.Reset()
-	if _, err := client.Backends(); err != nil {
-		t.Errorf("TestClientReset error getting backends: %v", err)
+	if _, err := client.Maps(); err != nil {
+		t.Errorf("TestClientReset error getting maps after reset: %v", err)
 	}
-	commands = server.Commands()
-	if len(commands) == 0 {
-		t.Errorf("TestClientReset after reset no server command found, where one was expected")
-	}
-
-	server.Reset()
-	commands = server.Commands()
-	if len(commands) != 0 {
-		t.Errorf("TestClientReset error resetting server commands=%+v", commands)
-	}
-
-	client.Reset()
-	client.FindBackend("foo")
-	commands = server.Commands()
-	if len(commands) == 0 {
-		t.Errorf("TestClientReset after reset no server command found, where one was expected")
+	if commands := server.Commands(); !slices.Contains(commands, "show map") {
+		t.Errorf("TestClientReset expected maps to be read after reset, but found server commands=%+v", commands)
 	}
 }
 
@@ -382,10 +285,6 @@ func TestClientCommit(t *testing.T) {
 	defer server.Stop()
 
 	client := NewClient(server.SocketFile(), 1)
-	backends, err := client.Backends()
-	if err != nil {
-		t.Errorf("TestClientCommit error getting backends: %v", err)
-	}
 	maps, err := client.Maps()
 	if err != nil {
 		t.Errorf("TestClientCommit error getting maps: %v", err)
@@ -399,134 +298,6 @@ func TestClientCommit(t *testing.T) {
 	}
 	if len(server.Commands()) == 0 {
 		t.Errorf("TestClientCommit no commands found after reset and adding to maps")
-	}
-
-	skipNames := map[string]bool{
-		"be_sni":            true,
-		"be_no_sni":         true,
-		"openshift_default": true,
-	}
-
-	server.Reset()
-	for _, be := range backends {
-		if _, ok := skipNames[string(be.Name())]; ok {
-			continue
-		}
-
-		serverName := "_dynamic-pod-1"
-		if err := be.UpdateServerState(serverName, BackendServerStateMaint); err != nil {
-			t.Errorf("TestClientCommit error setting state to maint for backend %s, server %s: %v",
-				be.Name(), serverName, err)
-		}
-	}
-	client.Commit()
-	if len(server.Commands()) == 0 {
-		t.Errorf("TestClientCommit no commands found after reset and commit")
-	}
-
-	server.Reset()
-	for _, be := range backends {
-		if _, ok := skipNames[string(be.Name())]; ok {
-			continue
-		}
-
-		serverName := "invalid-pod-not-found-name"
-		if err := be.UpdateServerState(serverName, BackendServerStateMaint); err == nil {
-			t.Errorf("TestClientCommit error setting state to maint for backend %s, server %s, expected an error but got none",
-				be.Name(), serverName)
-		}
-	}
-	client.Commit()
-	if len(server.Commands()) == 0 {
-		t.Errorf("TestClientCommit no commands found after second reset and commit")
-	}
-}
-
-// TestClientBackends tests client backends.
-func TestClientBackends(t *testing.T) {
-	server := haproxytesting.StartFakeServerForTest(t)
-	defer server.Stop()
-
-	client := NewClient(server.SocketFile(), 1)
-	backends, err := client.Backends()
-	if err != nil {
-		t.Errorf("TestClientBackends error getting backends: %v", err)
-	}
-	if len(backends) == 0 {
-		t.Errorf("TestClientBackends got no backends")
-	}
-}
-
-// TestClientFindBackend tests client find a specific backend.
-func TestClientFindBackend(t *testing.T) {
-	testCases := []struct {
-		name            string
-		backendName     templaterouter.ServiceAliasConfigKey
-		failureExpected bool
-	}{
-		{
-			name:            "non-existent backend",
-			backendName:     "be_this_does_not_exist",
-			failureExpected: true,
-		},
-		{
-			name:            "existing backend",
-			backendName:     "be_edge_http:default:example-route",
-			failureExpected: false,
-		},
-		{
-			name:            "existing http backend",
-			backendName:     "be_edge_http:default:test-http-allow",
-			failureExpected: false,
-		},
-		{
-			name:            "existing edge backend",
-			backendName:     "be_edge_http:default:test-https",
-			failureExpected: false,
-		},
-		{
-			name:            "existing passthrough backend",
-			backendName:     "be_tcp:default:test-passthrough",
-			failureExpected: false,
-		},
-		{
-			name:            "existing reencrypt backend",
-			backendName:     "be_secure:default:test-reencrypt",
-			failureExpected: false,
-		},
-		{
-			name:            "existing wildcard backend",
-			backendName:     "be_edge_http:default:wildcard-redirect-to-https",
-			failureExpected: false,
-		},
-		{
-			name:            "bad backend name typo",
-			backendName:     "be_secure:default:test-reencrypt-1234",
-			failureExpected: true,
-		},
-	}
-
-	server := haproxytesting.StartFakeServerForTest(t)
-	defer server.Stop()
-
-	for _, tc := range testCases {
-		client := NewClient(server.SocketFile(), 1)
-		backend, err := client.FindBackend(tc.backendName)
-		if tc.failureExpected {
-			if err == nil {
-				t.Errorf("TestClientFindBackend test case %s expected an error and got none", tc.name)
-			}
-			if backend != nil {
-				t.Errorf("TestClientFindBackend test case %s expected an error and got a valid backend: %+v", tc.name, backend)
-			}
-		} else {
-			if err != nil {
-				t.Errorf("TestClientFindBackend test case %s expected no error and got: %v", tc.name, err)
-			}
-			if backend == nil {
-				t.Errorf("TestClientFindBackend test case %s expected a backend and got none", tc.name)
-			}
-		}
 	}
 }
 

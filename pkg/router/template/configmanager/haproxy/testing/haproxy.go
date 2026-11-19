@@ -17,12 +17,29 @@ import (
 const (
 	haproxyConfigDir = "/var/lib/haproxy/conf"
 
-	OnePodAndOneDynamicServerBackendTemplate = `1
+	// twoServersBackendTemplate is the `show servers state <backend>` response of a backend with two
+	// servers. The backend name should be provided twice, one per server.
+	twoServersBackendTemplate = `1
 # be_id be_name srv_id srv_name srv_addr srv_op_state srv_admin_state srv_uweight srv_iweight srv_time_since_last_change srv_check_status srv_check_result srv_check_health srv_check_state srv_agent_state bk_f_forced_id srv_f_forced_id srv_fqdn srv_port
 9 %s 1 pod:test-1-l8x8w:test-service:172.17.0.3:1234 172.17.0.3 2 4 256 1 8117 6 3 4 6 0 0 0 - 1234
-9 %s 2 _dynamic-pod-1 172.4.0.4 2 4 256 1 8117 6 3 4 6 0 0 0 - 1234
+9 %s 2 pod:test-1-x9k2p:test-service:172.4.0.4:1234 172.4.0.4 2 4 256 1 8117 6 3 4 6 0 0 0 - 1234
 `
 )
+
+// knownBackends are the backends that the fake server knows about. Commands referring to any other
+// backend fail, the same way HAProxy fails when it is asked about a non-existent backend.
+var knownBackends = []string{
+	"be_sni",
+	"be_no_sni",
+	"openshift_default",
+	"be_edge_http:default:example-route",
+	"be_edge_http:default:test-http-allow",
+	"be_edge_http:default:test-https",
+	"be_edge_http:default:test-https-only",
+	"be_tcp:default:test-passthrough",
+	"be_secure:default:test-reencrypt",
+	"be_edge_http:default:wildcard-redirect-to-https",
+}
 
 type haproxyMapEntry struct {
 	id, key, value string
@@ -35,10 +52,8 @@ type CustomHAProxyMap struct {
 
 type fakeHAProxy struct {
 	socketFile  string
-	backendName string
 	maps        map[string][]haproxyMapEntry
 	pendingMaps map[string][]haproxyMapEntry
-	backends    map[string]string
 	lock        sync.Mutex
 	shutdown    bool
 	commands    []string
@@ -52,7 +67,7 @@ func startFakeHAProxyServer(prefix string) (*fakeHAProxy, error) {
 
 	name := f.Name()
 	os.Remove(name)
-	server := newFakeHAProxy(name, "")
+	server := newFakeHAProxy(name)
 	server.Start()
 	return server, nil
 }
@@ -65,16 +80,11 @@ func StartFakeServerForTest(t *testing.T) *fakeHAProxy {
 	return server
 }
 
-func newFakeHAProxy(sockFile, backendName string) *fakeHAProxy {
-	if len(backendName) == 0 {
-		backendName = "be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1"
-	}
+func newFakeHAProxy(sockFile string) *fakeHAProxy {
 	p := &fakeHAProxy{
 		socketFile:  sockFile,
-		backendName: backendName,
 		maps:        make(map[string][]haproxyMapEntry, 0),
 		pendingMaps: make(map[string][]haproxyMapEntry, 0),
-		backends:    make(map[string]string, 0),
 		shutdown:    false,
 		commands:    make([]string, 0),
 	}
@@ -335,118 +345,35 @@ func (p *fakeHAProxy) commitMap(name string) string {
 	return "\n"
 }
 
-func (p *fakeHAProxy) listBackends() string {
-	return `# name
-be_sni
-be_no_sni
-openshift_default
-be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1
-be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-2
-be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-3
-be_http:_hapcm_blueprint_pool:_blueprint-http-route-1
-be_http:_hapcm_blueprint_pool:_blueprint-http-route-2
-be_http:_hapcm_blueprint_pool:_blueprint-http-route-3
-be_tcp:_hapcm_blueprint_pool:_blueprint-passthrough-route-1
-be_tcp:_hapcm_blueprint_pool:_blueprint-passthrough-route-2
-be_tcp:_hapcm_blueprint_pool:_blueprint-passthrough-route-3
-be_edge_http:blueprints:blueprint-redirect-to-https
-be_secure:blueprints:blueprint-reencrypt
-be_edge_http:default:example-route
-be_edge_http:default:test-http-allow
-be_edge_http:default:test-https
-be_edge_http:default:test-https-only
-be_tcp:default:test-passthrough
-be_secure:default:test-reencrypt
-be_edge_http:default:wildcard-redirect-to-https
-`
-}
-
+// showServers responds to `show servers state <backend>`. Every known backend has two servers.
 func (p *fakeHAProxy) showServers(name string) string {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	onePodAndOneDynamicServerBackends := map[string]string{
-		"be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1": "",
-		"be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-2": "",
-		"be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-3": "",
-
-		"be_http:_hapcm_blueprint_pool:_blueprint-http-route-1": "",
-		"be_http:_hapcm_blueprint_pool:_blueprint-http-route-2": "",
-		"be_http:_hapcm_blueprint_pool:_blueprint-http-route-3": "",
-
-		"be_tcp:_hapcm_blueprint_pool:_blueprint-passthrough-route-1": "",
-		"be_tcp:_hapcm_blueprint_pool:_blueprint-passthrough-route-2": "",
-		"be_tcp:_hapcm_blueprint_pool:_blueprint-passthrough-route-3": "",
-
-		"be_edge_http:blueprints:blueprint-redirect-to-https": "",
-		"be_secure:blueprints:blueprint-reencrypt":            "",
-		"be_edge_http:default:example-route":                  "",
-
-		"be_edge_http:default:test-http-allow": "",
-		"be_edge_http:default:test-https":      "",
-		"be_edge_http:default:test-https-only": "",
-
-		"be_tcp:default:test-passthrough":  "",
-		"be_secure:default:test-reencrypt": "",
-
-		"be_edge_http:default:wildcard-redirect-to-https": "",
+	if !slices.Contains(knownBackends, name) {
+		return "Can't find backend.\n"
 	}
-
-	if name != p.backendName {
-		if _, ok := onePodAndOneDynamicServerBackends[name]; ok {
-			return fmt.Sprintf(OnePodAndOneDynamicServerBackendTemplate, name, name)
-		}
-		if len(name) > 0 {
-			return fmt.Sprintf("Can't find backend.\n")
-		}
-	}
-
-	return `1
-# be_id be_name srv_id srv_name srv_addr srv_op_state srv_admin_state srv_uweight srv_iweight srv_time_since_last_change srv_check_status srv_check_result srv_check_health srv_check_state srv_agent_state bk_f_forced_id srv_f_forced_id srv_fqdn srv_port
-9 be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1 1 _dynamic-pod-1 172.17.0.3 2 4 256 1 8117 6 3 4 6 0 0 0 - 8080
-9 be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1 2 _dynamic-pod-2 172.17.0.3 2 5 256 1 8117 6 3 0 14 0 0 0 - 8080
-9 be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1 3 _dynamic-pod-3 172.4.0.4 0 5 1 1 8206 1 0 0 14 0 0 0 - 8765
-9 be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1 4 _dynamic-pod-4 172.4.0.4 0 5 1 1 8206 1 0 0 14 0 0 0 - 8765
-9 be_edge_http:_hapcm_blueprint_pool:_blueprint-edge-route-1 5 _dynamic-pod-5 172.17.0.2 2 4 256 1 8206 6 3 4 6 0 0 0 - 8080
-`
+	return fmt.Sprintf(twoServersBackendTemplate, name, name)
 }
 
+// setServer responds to `set server <backend>/<server> ...`, accepting any change on a known backend.
 func (p *fakeHAProxy) setServer(name string, options []string) string {
 	if len(name) == 0 {
 		return fmt.Sprintf("Require 'backend/server'.\n")
 	}
 
 	if !p.hasServerBackend(name) {
-		return fmt.Sprintf("No such server.\n")
+		return "No such backend.\n"
 	}
 
-	return fmt.Sprintf("\n")
-}
-
-// addServer accepts any new server on a known backend.
-func (p *fakeHAProxy) addServer(name string) string {
-	if !p.hasServerBackend(name) {
-		return fmt.Sprintf("No such backend.\n")
-	}
-	return "New server registered.\n"
-}
-
-// delServer accepts the removal of any server on a known backend.
-func (p *fakeHAProxy) delServer(name string) string {
-	if !p.hasServerBackend(name) {
-		return fmt.Sprintf("No such server.\n")
-	}
-	return "Server deleted.\n"
+	return "\n"
 }
 
 // hasServerBackend reports whether name, in the `backend/server` format,
-// refers to one of the backends listed by `show backend`.
+// refers to one of the known backends.
 func (p *fakeHAProxy) hasServerBackend(name string) bool {
 	backend, _, found := strings.Cut(name, "/")
 	if !found {
 		return false
 	}
-	return slices.Contains(strings.Split(p.listBackends(), "\n")[1:], backend)
+	return slices.Contains(knownBackends, backend)
 }
 
 func (p *fakeHAProxy) process(conn net.Conn) error {
@@ -480,8 +407,6 @@ func (p *fakeHAProxy) process(conn net.Conn) error {
 		} else {
 			response = p.showMap(name)
 		}
-	} else if strings.HasPrefix(cmd, "show backend") {
-		response = p.listBackends()
 	} else if strings.HasPrefix(cmd, "prepare map") {
 		response = p.prepareMap()
 	} else if strings.HasPrefix(cmd, "add map @") {
@@ -510,15 +435,6 @@ func (p *fakeHAProxy) process(conn net.Conn) error {
 			name = vals[0]
 		}
 		response = p.setServer(name, vals[1:])
-	} else if strings.HasPrefix(cmd, "add server") {
-		vals := strings.Fields(cmd[len("add server"):])
-		name := ""
-		if len(vals) > 0 {
-			name = vals[0]
-		}
-		response = p.addServer(name)
-	} else if strings.HasPrefix(cmd, "del server") {
-		response = p.delServer(strings.TrimSpace(cmd[len("del server"):]))
 	} else {
 		response = fmt.Sprintf("Unknown command. Please enter one of the following commands only :\nhelp\n...\n")
 	}

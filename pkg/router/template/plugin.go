@@ -391,7 +391,7 @@ func createRouterEndpoints(endpoints *kapi.Endpoints, excludeUDP bool, lookupSvc
 					out = append(out, ep)
 					duplicated[ep.ID] = true
 				} else {
-					log.V(4).Info("skip a duplicated endpoints to add", ep.ID)
+					log.V(4).Info("skipping a duplicated endpoint", "endpointID", ep.ID)
 				}
 			}
 		}

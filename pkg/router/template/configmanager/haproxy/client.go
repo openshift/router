@@ -6,10 +6,7 @@ import (
 	"strings"
 	"time"
 
-	templaterouter "github.com/openshift/router/pkg/router/template"
-
 	haproxy "github.com/bcicen/go-haproxy"
-
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -24,18 +21,27 @@ const (
 	maxRetries = 3
 )
 
+// HAProxyClient sends commands to the haproxy dynamic configuration API.
 type HAProxyClient interface {
-	RunCommand(cmd string, converter Converter) ([]byte, error)
+	// Execute executes a command and returns its raw response.
 	Execute(cmd string) ([]byte, error)
+
+	// Maps returns the haproxy maps, reading them from haproxy if they are not cached yet.
+	//
+	// maps compatibility, remove along with https://redhat.atlassian.net/browse/NE-2644
+	Maps() ([]*HAProxyMap, error)
+
+	// Reset clears the cached maps, so they are read again from haproxy on the next Maps() call.
+	//
+	// maps compatibility, remove along with https://redhat.atlassian.net/browse/NE-2644
+	Reset()
 }
 
 // Client is a client used to dynamically configure haproxy.
 type Client struct {
 	socketAddress string
 	timeout       int
-
-	backends []*Backend
-	maps     map[string]*HAProxyMap
+	maps          map[string]*HAProxyMap
 }
 
 // NewClient returns a client used to dynamically change the haproxy config.
@@ -48,7 +54,6 @@ func NewClient(socketName string, timeout int) *Client {
 	return &Client{
 		socketAddress: sockAddr,
 		timeout:       timeout,
-		backends:      make([]*Backend, 0),
 		maps:          make(map[string]*HAProxyMap),
 	}
 }
@@ -77,55 +82,19 @@ func (c *Client) Execute(cmd string) ([]byte, error) {
 	return c.RunCommand(cmd, nil)
 }
 
-// Reset resets any changes and clears the backends and maps.
+// Reset clears the cached maps, so they are read again from haproxy on the next Maps() call.
 func (c *Client) Reset() {
-	c.backends = make([]*Backend, 0)
 	c.maps = make(map[string]*HAProxyMap)
 }
 
-// Commit flushes out any pending changes on all the backends and maps.
+// Commit flushes out any pending changes on all the maps.
 func (c *Client) Commit() error {
-	for _, b := range c.backends {
-		if err := b.Commit(); err != nil {
-			return err
-		}
-	}
-
 	for _, m := range c.maps {
 		if err := m.Commit(); err != nil {
 			return err
 		}
 	}
-
 	return nil
-}
-
-// Backends returns the list of configured haproxy backends.
-func (c *Client) Backends() ([]*Backend, error) {
-	if len(c.backends) == 0 {
-		if backends, err := buildHAProxyBackends(c); err != nil {
-			return nil, err
-		} else {
-			c.backends = backends
-		}
-	}
-
-	return c.backends, nil
-}
-
-// FindBackend returns a specific haproxy backend if it is configured.
-func (c *Client) FindBackend(id templaterouter.ServiceAliasConfigKey) (*Backend, error) {
-	if _, err := c.Backends(); err != nil {
-		return nil, err
-	}
-
-	for _, b := range c.backends {
-		if b.Name() == id {
-			return b, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no backend found for id: %s", id)
 }
 
 // Maps returns the list of configured haproxy maps.

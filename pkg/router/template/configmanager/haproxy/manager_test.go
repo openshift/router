@@ -1,19 +1,357 @@
 package haproxy
 
 import (
+	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	routev1 "github.com/openshift/api/route/v1"
 
 	templaterouter "github.com/openshift/router/pkg/router/template"
-	haproxytesting "github.com/openshift/router/pkg/router/template/configmanager/haproxy/testing"
 )
+
+func TestReplaceRouteEndpoints(t *testing.T) {
+	ep1 := templaterouter.Endpoint{ID: "ep1", IP: "10.0.1.11", Port: "8080", Weight: 1}
+	ep2 := templaterouter.Endpoint{ID: "ep2", IP: "10.0.1.12", Port: "8080", Weight: 1}
+	ep3 := templaterouter.Endpoint{ID: "ep3", IP: "10.0.1.13", Port: "8080", Weight: 1}
+
+	ep2weight2 := ep2
+	ep2weight2.Weight = 2
+
+	ep2h2 := ep2
+	ep2h2.AppProtocol = "h2c"
+
+	testCases := map[string]struct {
+		oldEndpoints    []templaterouter.Endpoint
+		newEndpoints    []templaterouter.Endpoint
+		activeEndpoints int
+		cmdCustomResp   map[int]string
+		cmdErrors       map[int]error
+		expectedCmds    []string
+		expectedError   string
+	}{
+		"no endpoints": {
+			// e.g. a passthrough service whose weight is zero, which has no backend servers.
+			expectedCmds: nil,
+		},
+		"adding one endpoint": {
+			newEndpoints: []templaterouter.Endpoint{ep1},
+			expectedCmds: []string{
+				"add server be_http:service1/ep1 10.0.1.11:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep1 state ready",
+				"disable health be_http:service1/ep1",
+				"set server be_http:service1/ep1 health up",
+			},
+		},
+		"adding one endpoint having more than one service": {
+			newEndpoints: []templaterouter.Endpoint{ep1},
+			// two activeEndpoints: one endpoint from this service, another one from the second service,
+			// so health check should be enabled.
+			activeEndpoints: 2,
+			expectedCmds: []string{
+				"add server be_http:service1/ep1 10.0.1.11:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep1 state ready",
+				"enable health be_http:service1/ep1",
+			},
+		},
+		"adding two endpoints": {
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			expectedCmds: []string{
+				"add server be_http:service1/ep1 10.0.1.11:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep1 state ready",
+				"add server be_http:service1/ep2 10.0.1.12:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep2 state ready",
+				"enable health be_http:service1/ep1",
+				"enable health be_http:service1/ep2",
+			},
+		},
+		"scaling out to two": {
+			oldEndpoints: []templaterouter.Endpoint{ep1},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			expectedCmds: []string{
+				"add server be_http:service1/ep2 10.0.1.12:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep2 state ready",
+				"enable health be_http:service1/ep1",
+				"enable health be_http:service1/ep2",
+			},
+		},
+		"scaling out to two and first server failing to enable health": {
+			oldEndpoints: []templaterouter.Endpoint{ep1},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			cmdCustomResp: map[int]string{
+				2: "Some unknown enable health check error",
+			},
+			expectedError: `unexpected response from haproxy: Some unknown enable health check error`,
+			expectedCmds: []string{
+				"add server be_http:service1/ep2 10.0.1.12:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep2 state ready",
+				"enable health be_http:service1/ep1",
+				"enable health be_http:service1/ep2",
+			},
+		},
+		"scaling out to two and first server not having health check configured": {
+			oldEndpoints: []templaterouter.Endpoint{ep1},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			cmdCustomResp: map[int]string{
+				2: "Health check was not configured on this server",
+				3: "1\n#\nep1\nep2",
+			},
+			expectedCmds: []string{
+				"add server be_http:service1/ep2 10.0.1.12:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep2 state ready",
+				"enable health be_http:service1/ep1",
+				"show servers state be_http:service1",
+				"set server be_http:service1/ep1 state maint",
+				"del server be_http:service1/ep1",
+				"add server be_http:service1/ep1 10.0.1.11:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep1 state ready",
+				"enable health be_http:service1/ep2",
+				"enable health be_http:service1/ep1",
+			},
+		},
+		"scaling out to three": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2, ep3},
+			expectedCmds: []string{
+				"add server be_http:service1/ep3 10.0.1.13:8080 weight 1 check inter 5000ms",
+				"set server be_http:service1/ep3 state ready",
+				"enable health be_http:service1/ep3",
+			},
+		},
+		"scaling in to two": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2, ep3},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			expectedCmds: []string{
+				"set server be_http:service1/ep3 state maint",
+				"del server be_http:service1/ep3",
+			},
+		},
+		"scaling in to one": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1},
+			expectedCmds: []string{
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+				"disable health be_http:service1/ep1",
+				"set server be_http:service1/ep1 health up",
+			},
+		},
+		"scaling in to one, deleted server not found": {
+			// e.g. the router state is out of sync with haproxy and the server was already removed.
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1},
+			cmdCustomResp: map[int]string{
+				0: "No such server.",
+			},
+			expectedCmds: []string{
+				"set server be_http:service1/ep2 state maint",
+				"disable health be_http:service1/ep1",
+				"set server be_http:service1/ep1 health up",
+			},
+		},
+		"scaling in to one failing on transport error": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1},
+			cmdErrors:    map[int]error{0: errors.New("connection refused")},
+			expectedCmds: []string{
+				"set server be_http:service1/ep2 state maint",
+			},
+			expectedError: "error deleting backend server ep2: connection refused",
+		},
+		"scaling in to one having more than one service": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1},
+			// two activeEndpoints: one endpoint from this service, another one from the second service,
+			// so health check shouldn't be disabled.
+			activeEndpoints: 2,
+			expectedCmds: []string{
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+			},
+		},
+		"changing weight": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2weight2},
+			expectedCmds: []string{
+				"set server be_http:service1/ep2 weight 2",
+			},
+		},
+		"changing backend protocol": {
+			oldEndpoints: []templaterouter.Endpoint{ep1, ep2},
+			newEndpoints: []templaterouter.Endpoint{ep1, ep2h2},
+			cmdCustomResp: map[int]string{
+				0: "1\n#\nep1\nep2",
+			},
+			expectedCmds: []string{
+				"show servers state be_http:service1",
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+				"add server be_http:service1/ep2 10.0.1.12:8080 weight 1 proto h2 check inter 5000ms",
+				"set server be_http:service1/ep2 state ready",
+				"enable health be_http:service1/ep2",
+			},
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			if test.activeEndpoints == 0 {
+				test.activeEndpoints = len(test.newEndpoints)
+			}
+			require.GreaterOrEqual(t, test.activeEndpoints, len(test.newEndpoints), "activeEndpoints should be 0 (zero) or >=len(newEndpoints)")
+
+			client := &fakeClient{cmdCustomResp: test.cmdCustomResp, cmdErrors: test.cmdErrors}
+			cm, _, _ := newTestConfigManager(t, client, 0)
+			err := cm.ReplaceRouteEndpoints(testRouteID, &templaterouter.ServiceUnit{}, test.oldEndpoints, test.newEndpoints, test.activeEndpoints)
+			if test.expectedError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, strings.TrimSpace(test.expectedError))
+			}
+			assert.Equal(t, test.expectedCmds, client.executedCmds)
+		})
+	}
+}
+
+func TestRemoveRouteEndpoints(t *testing.T) {
+	testCases := map[string]struct {
+		endpoints     []templaterouter.Endpoint
+		cmdCustomResp map[int]string
+		expectedCmds  []string
+		expectedError string
+	}{
+		"single endpoint": {
+			endpoints: []templaterouter.Endpoint{{ID: "ep1"}},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"del server be_http:service1/ep1",
+			},
+		},
+		"two endpoints failing first": {
+			endpoints: []templaterouter.Endpoint{{ID: "ep1"}, {ID: "ep2"}},
+			cmdCustomResp: map[int]string{
+				0: "some error setting maintenance",
+			},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+			},
+			expectedError: `error deleting server ep1: unexpected response from haproxy: some error setting maintenance`,
+		},
+		"two endpoints failing both": {
+			endpoints: []templaterouter.Endpoint{{ID: "ep1"}, {ID: "ep2"}},
+			cmdCustomResp: map[int]string{
+				0: "some error setting maintenance on endpoint1",
+				1: "some error setting maintenance on endpoint2",
+			},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"set server be_http:service1/ep2 state maint",
+			},
+			expectedError: `
+error deleting server ep1: unexpected response from haproxy: some error setting maintenance on endpoint1
+error deleting server ep2: unexpected response from haproxy: some error setting maintenance on endpoint2
+`,
+		},
+		"two endpoints failing first to delete": {
+			endpoints: []templaterouter.Endpoint{{ID: "ep1"}, {ID: "ep2"}},
+			cmdCustomResp: map[int]string{
+				1: "some error deleting server", // failing the first delete
+			},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"del server be_http:service1/ep1",
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+			},
+			expectedError: "", // should have no error
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			client := &fakeClient{cmdCustomResp: test.cmdCustomResp}
+			cm, _, _ := newTestConfigManager(t, client, 0)
+			err := cm.RemoveRouteEndpoints(testRouteID, test.endpoints)
+			if test.expectedError == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, strings.TrimSpace(test.expectedError))
+			}
+			require.Equal(t, test.expectedCmds, client.executedCmds)
+		})
+	}
+}
+
+func TestRemoveRoute(t *testing.T) {
+	ep1 := templaterouter.Endpoint{ID: "ep1"}
+	ep2 := templaterouter.Endpoint{ID: "ep2"}
+	testCases := map[string]struct {
+		endpoints     []templaterouter.Endpoint
+		cmdCustomResp map[int]string
+		expectedCmds  []string
+		expectedError string
+	}{
+		"no endpoints": {},
+		"two endpoints": {
+			endpoints: []templaterouter.Endpoint{ep1, ep2},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"del server be_http:service1/ep1",
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+			},
+		},
+		"two endpoints, first not found": {
+			endpoints: []templaterouter.Endpoint{ep1, ep2},
+			cmdCustomResp: map[int]string{
+				0: "No such server.",
+			},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"set server be_http:service1/ep2 state maint",
+				"del server be_http:service1/ep2",
+			},
+		},
+		"two endpoints failing both": {
+			endpoints: []templaterouter.Endpoint{ep1, ep2},
+			cmdCustomResp: map[int]string{
+				0: "some error setting maintenance on endpoint1",
+				1: "some error setting maintenance on endpoint2",
+			},
+			expectedCmds: []string{
+				"set server be_http:service1/ep1 state maint",
+				"set server be_http:service1/ep2 state maint",
+			},
+			expectedError: `
+error deleting server ep1: unexpected response from haproxy: some error setting maintenance on endpoint1
+error deleting server ep2: unexpected response from haproxy: some error setting maintenance on endpoint2
+`,
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			client := &fakeClient{cmdCustomResp: test.cmdCustomResp}
+			cm, _, _ := newTestConfigManager(t, client, 0)
+			err := cm.RemoveRoute(testRouteID, &routev1.Route{}, test.endpoints)
+			if test.expectedError == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, strings.TrimSpace(test.expectedError))
+			}
+			require.Equal(t, test.expectedCmds, client.executedCmds)
+
+			// The route should be unregistered, even on failures.
+			require.EqualError(t, cm.RemoveRoute(testRouteID, &routev1.Route{}, nil), "route id service1 was not registered")
+		})
+	}
+}
 
 // fakeRouter is a template router that only records Commit() calls. Any
 // other method panics, since the config manager is not expected to call them.
@@ -73,7 +411,7 @@ func TestCommitInterval(t *testing.T) {
 
 	type step func(t *testing.T, cm *haproxyConfigManager, timers *fakeTimers)
 	removeRoute := func(t *testing.T, cm *haproxyConfigManager, _ *fakeTimers) {
-		require.NoError(t, cm.RemoveRoute(testRouteID, &routev1.Route{}))
+		require.NoError(t, cm.RemoveRoute(testRouteID, &routev1.Route{}, []templaterouter.Endpoint{ep1}))
 	}
 	removeEndpoints := func(t *testing.T, cm *haproxyConfigManager, _ *fakeTimers) {
 		require.NoError(t, cm.RemoveRouteEndpoints(testRouteID, []templaterouter.Endpoint{ep1}))
@@ -136,10 +474,7 @@ func TestCommitInterval(t *testing.T) {
 
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
-			cm, router := newTestConfigManager(t, commitInterval)
-			timers := &fakeTimers{}
-			t.Cleanup(timers.Stop)
-			cm.afterFunc = timers.AfterFunc
+			cm, router, timers := newTestConfigManager(t, &fakeClient{}, commitInterval)
 
 			for _, s := range test.steps {
 				s(t, cm, timers)
@@ -153,31 +488,23 @@ func TestCommitInterval(t *testing.T) {
 	}
 }
 
-// testRouteID is the id of the route registered by newTestConfigManager().
-const testRouteID = templaterouter.ServiceAliasConfigKey("default:example-route")
+// testRouteID is the id of the route registered by newTestConfigManager(). Its
+// route has no TLS termination, so the haproxy backend is `be_http:service1`.
+const testRouteID = templaterouter.ServiceAliasConfigKey("service1")
 
-// newTestConfigManager returns a config manager connected to a fake haproxy,
-// with an edge route registered on a backend that the fake haproxy serves.
-func newTestConfigManager(t *testing.T, commitInterval time.Duration) (*haproxyConfigManager, *fakeRouter) {
-	server := haproxytesting.StartFakeServerForTest(t)
-	t.Cleanup(server.Stop)
-
+// newTestConfigManager returns a config manager that sends haproxy commands to client, with a
+// route registered as testRouteID. Commits are sent to the returned fakeRouter, and they are
+// scheduled using the returned fakeTimers, so they only happen when a test fires the timers.
+func newTestConfigManager(t *testing.T, client HAProxyClient, commitInterval time.Duration) (*haproxyConfigManager, *fakeRouter, *fakeTimers) {
 	router := &fakeRouter{}
-	cm := NewHAProxyConfigManager(templaterouter.ConfigManagerOptions{
-		ConnectionInfo: server.SocketFile(),
-		CommitInterval: commitInterval,
-		WorkingDir:     t.TempDir(),
-	})
+	timers := &fakeTimers{}
+	t.Cleanup(timers.Stop)
+
+	cm := NewHAProxyConfigManager(templaterouter.ConfigManagerOptions{CommitInterval: commitInterval})
 	cm.Initialize(router, "")
+	cm.client = client
+	cm.afterFunc = timers.AfterFunc
+	cm.Register(testRouteID, &templaterouter.ServiceAliasConfig{}, &routev1.Route{})
 
-	route := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "example-route"},
-		Spec: routev1.RouteSpec{
-			Host: "example.com",
-			TLS:  &routev1.TLSConfig{Termination: routev1.TLSTerminationEdge},
-		},
-	}
-	cm.Register(testRouteID, &templaterouter.ServiceAliasConfig{}, route)
-
-	return cm, router
+	return cm, router, timers
 }

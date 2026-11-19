@@ -42,7 +42,7 @@ type routeBackendEntry struct {
 	// id is the route id.
 	id string
 
-	//
+	// backend is the route's configuration, used to build new haproxy backend servers.
 	backend *templaterouter.ServiceAliasConfig
 
 	// termination is the route termination.
@@ -51,7 +51,7 @@ type routeBackendEntry struct {
 	// wildcard indicates if the route is a wildcard route.
 	wildcard bool
 
-	// BackendName is the name of the associated haproxy backend.
+	// backendName is the name of the associated haproxy backend.
 	backendName templaterouter.ServiceAliasConfigKey
 
 	// mapAssociations is the associated set of haproxy maps and their
@@ -93,7 +93,7 @@ type haproxyConfigManager struct {
 	defaultDestinationCA string
 
 	// client is the client used to dynamically manage haproxy.
-	client *Client
+	client HAProxyClient
 
 	// reloadInProgress indicates if a router reload is in progress.
 	reloadInProgress bool
@@ -172,7 +172,7 @@ func (cm *haproxyConfigManager) Register(id templaterouter.ServiceAliasConfigKey
 }
 
 // RemoveRoute removes a route.
-func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfigKey, route *routev1.Route) error {
+func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfigKey, route *routev1.Route, endpoints []templaterouter.Endpoint) error {
 	log.V(4).Info("removing route", "id", id)
 	if cm.isReloading() {
 		return fmt.Errorf("Router reload in progress, cannot dynamically remove route id %s", id)
@@ -201,26 +201,25 @@ func (cm *haproxyConfigManager) RemoveRoute(id templaterouter.ServiceAliasConfig
 	// Delete entry for route id to backend info.
 	delete(cm.backendEntries, id)
 
-	// Finally, disable all the servers.
-	log.V(4).Info("finding backend", "backend", backendName)
-	backend, err := cm.client.FindBackend(backendName)
-	if err != nil {
-		return err
-	}
+	// Finally, delete all the servers. Removing the map entries above already stops new requests from
+	// reaching this backend, but map removal failures are only logged, so putting the servers in
+	// maintenance mode, which is a pre-requisite to delete them, is the fallback in such case.
+	// Note that endpoints come from the router's view of the route, which can drift from the servers
+	// actually configured in haproxy: servers missing in haproxy are reported as removed by DeleteServer,
+	// and servers missing in endpoints, e.g. ones left in maintenance mode by a former failed deletion,
+	// are not touched here. The latter does not receive new requests, and the reload scheduled below
+	// removes them.
+	backend := newBackend(cm.client, backendName)
 
 	log.V(4).Info("deleting all servers for backend", "backend", backendName)
-	servers, err := backend.Servers()
-	if err != nil {
-		return err
-	}
-	for _, server := range servers {
-		if _, err := backend.DeleteServer(templaterouter.Endpoint{ID: server.Name}); err != nil {
-			return err
+	var errs []error
+	for _, ep := range endpoints {
+		if _, err := backend.DeleteServer(ep); err != nil {
+			errs = append(errs, fmt.Errorf("error deleting server %s: %w", ep.ID, err))
 		}
 	}
 
-	log.V(4).Info("committing changes made to backend", "backend", backendName)
-	return backend.Commit()
+	return errors.Join(errs...)
 }
 
 // ReplaceRouteEndpoints dynamically replaces a subset of the endpoints for
@@ -246,16 +245,12 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 		return fmt.Errorf("route id %s was not registered", id)
 	}
 
-	backendName := entry.backendName
-	log.V(4).Info("finding backend", "backend", backendName)
-	backend, err := cm.client.FindBackend(backendName)
-	if err != nil {
-		return err
-	}
+	backend := newBackend(cm.client, entry.backendName)
 
+	// Endpoint IDs are unique in both lists, duplicates are filtered out when endpoints are built by the router plugin.
 	type epPair struct{ oldEP, newEP templaterouter.Endpoint }
-	addedEndpoints := make(map[string]templaterouter.Endpoint)
-	modifiedEndpoints := make(map[string]epPair)
+	var addedEndpoints []templaterouter.Endpoint
+	var modifiedEndpoints []epPair
 	for i := range newEndpoints {
 		newEP := newEndpoints[i]
 		j := slices.IndexFunc(oldEndpoints, func(oldEP templaterouter.Endpoint) bool {
@@ -272,25 +267,25 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 					// would no longer hold.
 					return fmt.Errorf("detected change in idled configuration in service %q, need to reload", svc.Name)
 				}
-				modifiedEndpoints[newEP.ID] = epPair{oldEP: oldEP, newEP: newEP}
+				modifiedEndpoints = append(modifiedEndpoints, epPair{oldEP: oldEP, newEP: newEP})
 			}
 		} else {
-			addedEndpoints[newEP.ID] = newEP
+			addedEndpoints = append(addedEndpoints, newEP)
 		}
 	}
 
-	deletedEndpoints := make(map[string]templaterouter.Endpoint)
+	var deletedEndpoints []templaterouter.Endpoint
 	for i := range oldEndpoints {
 		oldEP := oldEndpoints[i]
 		found := slices.ContainsFunc(newEndpoints, func(newEP templaterouter.Endpoint) bool {
 			return oldEP.ID == newEP.ID
 		})
 		if !found {
-			deletedEndpoints[oldEP.ID] = oldEP
+			deletedEndpoints = append(deletedEndpoints, oldEP)
 		}
 	}
 
-	// there is a configuration change if any of the tracking maps have endpoint(s)
+	// there is a configuration change if any of the tracking lists have endpoint(s)
 	configChanged = len(deletedEndpoints) > 0 || len(modifiedEndpoints) > 0 || len(addedEndpoints) > 0
 
 	log.V(4).Info("processing endpoint changes", "added", addedEndpoints, "deleted", deletedEndpoints, "modified", modifiedEndpoints)
@@ -298,24 +293,24 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 	// Aggregating errors instead of failing fast in the first API error. This ensures that the old
 	// process has a more accurate configuration in case it lives longer due to persistent connections.
 	var errs []error
-	for name, ep := range addedEndpoints {
+	for _, ep := range addedEndpoints {
 		if err := backend.AddServer(entry.backend, svc, ep, cm.workingDir, cm.defaultDestinationCA); err != nil {
-			errs = append(errs, fmt.Errorf("error adding backend server %s: %w", name, err))
+			errs = append(errs, fmt.Errorf("error adding backend server %s: %w", ep.ID, err))
 		}
 	}
 	var addedFromUpdate []templaterouter.Endpoint
-	for name, epPair := range modifiedEndpoints {
+	for _, epPair := range modifiedEndpoints {
 		oldEP := epPair.oldEP
 		newEP := epPair.newEP
 		if added, err := backend.UpdateServer(entry.backend, svc, oldEP, newEP, entry.termination == routev1.TLSTerminationPassthrough, cm.workingDir, cm.defaultDestinationCA); err != nil {
-			errs = append(errs, fmt.Errorf("error updating backend server %s: %w", name, err))
+			errs = append(errs, fmt.Errorf("error updating backend server %s: %w", newEP.ID, err))
 		} else if added {
 			addedFromUpdate = append(addedFromUpdate, newEP)
 		}
 	}
-	for name, ep := range deletedEndpoints {
+	for _, ep := range deletedEndpoints {
 		if _, err := backend.DeleteServer(ep); err != nil {
-			errs = append(errs, fmt.Errorf("error deleting backend server %s: %w", name, err))
+			errs = append(errs, fmt.Errorf("error deleting backend server %s: %w", ep.ID, err))
 		}
 	}
 	if len(errs) > 0 {
@@ -327,17 +322,11 @@ func (cm *haproxyConfigManager) ReplaceRouteEndpoints(id templaterouter.ServiceA
 	// * enable also the only former endpoint if scaling out from 1 to 2 or more
 	// * disable the only current endpoint if scaling in to 1
 	if activeEndpoints > 1 {
-		var newEPs []templaterouter.Endpoint
-		for _, ep := range addedEndpoints {
-			// enabling for all the new added endpoints
-			newEPs = append(newEPs, ep)
-		}
-		for _, ep := range addedFromUpdate {
-			newEPs = append(newEPs, ep)
-		}
+		// enabling for all the new added endpoints, including the ones re-added when updated
+		newEPs := slices.Concat(addedEndpoints, addedFromUpdate)
 		if len(oldEndpoints) == 1 {
 			ep := oldEndpoints[0]
-			_, deleted := deletedEndpoints[ep.ID]
+			deleted := slices.ContainsFunc(deletedEndpoints, func(dep templaterouter.Endpoint) bool { return dep.ID == ep.ID })
 			if !ep.NoHealthCheck && !deleted {
 				// The backend was previously in the single server scenario, so health check should be enabled.
 				// Dynamically enabling health check only works if health check is configured, and we only
@@ -401,11 +390,7 @@ func (cm *haproxyConfigManager) RemoveRouteEndpoints(id templaterouter.ServiceAl
 	}
 
 	backendName := entry.backendName
-	log.V(4).Info("finding backend", "backend", backendName)
-	backend, err := cm.client.FindBackend(backendName)
-	if err != nil {
-		return err
-	}
+	backend := newBackend(cm.client, backendName)
 
 	var errs []error
 	for _, ep := range endpoints {
@@ -457,7 +442,7 @@ func (cm *haproxyConfigManager) commitRouterConfig() {
 	cm.router.Commit(true)
 }
 
-// reloadInProgress indicates if a router reload is in progress.
+// isReloading indicates if a router reload is in progress.
 func (cm *haproxyConfigManager) isReloading() bool {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()

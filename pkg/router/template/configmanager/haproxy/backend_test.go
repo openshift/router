@@ -1,6 +1,7 @@
 package haproxy
 
 import (
+	"errors"
 	"testing"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -45,7 +46,8 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		annotations     map[string]string
 		envvars         []string
 		defaultCA       string
-		cmdCustomResp   []string // 1:1 to `cmdExpected`, trailing empty items can be omited.
+		cmdCustomResp   map[int]string // responses, keyed by the 0-based position of the command in `cmdExpected`.
+		cmdErrors       map[int]error  // transport errors, keyed by the 0-based position of the command in `cmdExpected`.
 		addedExpected   bool
 		errExpected     string
 		errTypeExpected error
@@ -59,6 +61,14 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmdExpected: []string{
 				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 				"set server route1/server1 state ready",
+			},
+		},
+		"should fail to add server on transport error": {
+			cmd:         cmdAdd,
+			cmdErrors:   map[int]error{0: errors.New("connection refused")},
+			errExpected: "connection refused",
+			cmdExpected: []string{
+				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 			},
 		},
 		"should add insecure server with zero weight": {
@@ -177,8 +187,10 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			},
 		},
 		"should retry adding insecure server": {
-			cmd:           cmdAdd,
-			cmdCustomResp: []string{"Already exists a server ..."},
+			cmd: cmdAdd,
+			cmdCustomResp: map[int]string{
+				0: "Already exists a server ...",
+			},
 			cmdExpected: []string{
 				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 				"del server route1/server1",
@@ -187,9 +199,11 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			},
 		},
 		"should fail if failing to add insecure server": {
-			cmd:           cmdAdd,
-			cmdCustomResp: []string{"Some unknown adding error."},
-			errExpected:   "unexpected response from haproxy: Some unknown adding error.",
+			cmd: cmdAdd,
+			cmdCustomResp: map[int]string{
+				0: "Some unknown adding error.",
+			},
+			errExpected: "unexpected response from haproxy: Some unknown adding error.",
 			cmdExpected: []string{
 				"add server route1/server1 10.0.1.11:9000 weight 1 check inter 5000ms",
 			},
@@ -251,7 +265,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			oldAppProto:   "",
 			appProto:      "h2c",
 			addedExpected: true,
-			cmdCustomResp: []string{defaultShowServersStateReply},
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
+			},
 			cmdExpected: []string{
 				"show servers state route1",
 				"set server route1/server1 state maint",
@@ -265,11 +281,13 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			cmdExpected: nil,
 		},
 		"should fail if failing to update server": {
-			cmd:           cmdUpdate,
-			oldWeight:     ptr.To[int32](2),
-			weight:        ptr.To[int32](1),
-			cmdCustomResp: []string{"Some unknown updating error."},
-			errExpected:   "unexpected response from haproxy: Some unknown updating error.",
+			cmd:       cmdUpdate,
+			oldWeight: ptr.To[int32](2),
+			weight:    ptr.To[int32](1),
+			cmdCustomResp: map[int]string{
+				0: "Some unknown updating error.",
+			},
+			errExpected: "unexpected response from haproxy: Some unknown updating error.",
 			cmdExpected: []string{
 				"set server route1/server1 weight 1",
 			},
@@ -279,10 +297,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			oldAppProto:   "",
 			appProto:      "h2c",
 			addedExpected: true,
-			cmdCustomResp: []string{
-				defaultShowServersStateReply,   // first cmd
-				"",                             // second cmd
-				"Some unknown deleting error.", // third cmd
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
+				2: "Some unknown deleting error.",
 			},
 			errExpected: "unexpected response from haproxy: Some unknown deleting error.",
 			cmdExpected: []string{
@@ -297,8 +314,8 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		// replacing
 		"should replace an existing server": {
 			cmd: cmdReplace,
-			cmdCustomResp: []string{
-				defaultShowServersStateReply,
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
 			},
 			cmdExpected: []string{
 				"show servers state route1",
@@ -310,9 +327,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		},
 		"should fail if failing to disable on replace server": {
 			cmd: cmdReplace,
-			cmdCustomResp: []string{
-				defaultShowServersStateReply,
-				"Some unknown set server error.",
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
+				1: "Some unknown set server error.",
 			},
 			errExpected: "unexpected response from haproxy: Some unknown set server error.",
 			cmdExpected: []string{
@@ -322,10 +339,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		},
 		"should fail if failing to delete on replace server": {
 			cmd: cmdReplace,
-			cmdCustomResp: []string{
-				defaultShowServersStateReply,   // first cmd
-				"",                             // second cmd
-				"Some unknown deleting error.", // third cmd
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
+				2: "Some unknown deleting error.",
 			},
 			errExpected: "unexpected response from haproxy: Some unknown deleting error.",
 			cmdExpected: []string{
@@ -337,11 +353,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		},
 		"should fail if failing to add on replace server": {
 			cmd: cmdReplace,
-			cmdCustomResp: []string{
-				defaultShowServersStateReply,     // first cmd
-				"",                               // second cmd
-				"",                               // third cmd
-				"Some unknown add server error.", // fourth cmd
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
+				3: "Some unknown add server error.",
 			},
 			errExpected: "unexpected response from haproxy: Some unknown add server error.",
 			cmdExpected: []string{
@@ -353,12 +367,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		},
 		"should fail if failing to set server state on replace server": {
 			cmd: cmdReplace,
-			cmdCustomResp: []string{
-				defaultShowServersStateReply,           // first cmd
-				"",                                     // second cmd
-				"",                                     // third cmd
-				"",                                     // forth cmd
-				"Some unknown set server state error.", // fifth cmd
+			cmdCustomResp: map[int]string{
+				0: defaultShowServersStateReply,
+				4: "Some unknown set server state error.",
 			},
 			errExpected: "unexpected response from haproxy: Some unknown set server state error.",
 			cmdExpected: []string{
@@ -370,25 +381,39 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			},
 		},
 		"should fail if having one server": {
-			cmd:           cmdReplace,
-			cmdCustomResp: []string{"1\n#header\nserver1\n\n"},
-			errExpected:   `cannot replace server: backend "route1" has only one server`,
+			cmd: cmdReplace,
+			cmdCustomResp: map[int]string{
+				0: "1\n#header\nserver1\n\n",
+			},
+			errExpected: `cannot replace server: backend "route1" has fewer than two servers`,
 			cmdExpected: []string{
 				"show servers state route1",
 			},
 		},
 		"should fail if server count returned an invalid response": {
-			cmd:           cmdReplace,
-			cmdCustomResp: []string{"zz\n\n"},
-			errExpected:   "invalid HAProxy response for 'show servers state': zz",
+			cmd: cmdReplace,
+			cmdCustomResp: map[int]string{
+				0: "zz\n\n",
+			},
+			errExpected: "invalid HAProxy response for 'show servers state': zz",
+			cmdExpected: []string{
+				"show servers state route1",
+			},
+		},
+		"should fail if server count failed on transport error": {
+			cmd:         cmdReplace,
+			cmdErrors:   map[int]error{0: errors.New("connection refused")},
+			errExpected: "connection refused",
 			cmdExpected: []string{
 				"show servers state route1",
 			},
 		},
 		"should fail if server count returned an unsupported format version": {
-			cmd:           cmdReplace,
-			cmdCustomResp: []string{"42\n#header\nserver1\n\n"},
-			errExpected:   "unsupported format version for 'show servers state': 42",
+			cmd: cmdReplace,
+			cmdCustomResp: map[int]string{
+				0: "42\n#header\nserver1\n\n",
+			},
+			errExpected: "unsupported format version for 'show servers state': 42",
 			cmdExpected: []string{
 				"show servers state route1",
 			},
@@ -403,16 +428,20 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			},
 		},
 		"should fail if failing to enable health check": {
-			cmd:           cmdEnableHealth,
-			cmdCustomResp: []string{"Some unknown set health error."},
-			errExpected:   "unexpected response from haproxy: Some unknown set health error.",
+			cmd: cmdEnableHealth,
+			cmdCustomResp: map[int]string{
+				0: "Some unknown set health error.",
+			},
+			errExpected: "unexpected response from haproxy: Some unknown set health error.",
 			cmdExpected: []string{
 				"enable health route1/server1",
 			},
 		},
 		"should fail if health check was not configured": {
-			cmd:             cmdEnableHealth,
-			cmdCustomResp:   []string{"Health check was not configured ..."},
+			cmd: cmdEnableHealth,
+			cmdCustomResp: map[int]string{
+				0: "Health check was not configured ...",
+			},
 			errExpected:     "Health check was not configured ...",
 			errTypeExpected: ErrHealthCheckNotConfigured,
 			cmdExpected: []string{
@@ -427,9 +456,11 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			},
 		},
 		"should fail if failing to disable health check": {
-			cmd:           cmdDisableHealth,
-			cmdCustomResp: []string{"Some unknown set health error."},
-			errExpected:   "unexpected response from haproxy: Some unknown set health error.",
+			cmd: cmdDisableHealth,
+			cmdCustomResp: map[int]string{
+				0: "Some unknown set health error.",
+			},
+			errExpected: "unexpected response from haproxy: Some unknown set health error.",
 			cmdExpected: []string{
 				"disable health route1/server1",
 			},
@@ -446,9 +477,41 @@ func TestBackendDynamicUpdate(t *testing.T) {
 			removedExpected: true,
 		},
 		"should fail to delete if failing to disable server": {
-			cmd:             cmdDel,
-			cmdCustomResp:   []string{"Some unknown set server error."},
+			cmd: cmdDel,
+			cmdCustomResp: map[int]string{
+				0: "Some unknown set server error.",
+			},
 			errExpected:     "unexpected response from haproxy: Some unknown set server error.",
+			removedExpected: false,
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+			},
+		},
+		"should fail to delete on transport error": {
+			cmd:             cmdDel,
+			cmdErrors:       map[int]error{0: errors.New("connection refused")},
+			errExpected:     "connection refused",
+			removedExpected: false,
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+			},
+		},
+		"should report as removed if server does not exist": {
+			cmd: cmdDel,
+			cmdCustomResp: map[int]string{
+				0: "No such server.",
+			},
+			removedExpected: true,
+			cmdExpected: []string{
+				"set server route1/server1 state maint",
+			},
+		},
+		"should fail to delete if backend does not exist": {
+			cmd: cmdDel,
+			cmdCustomResp: map[int]string{
+				0: "No such backend.",
+			},
+			errExpected:     "unexpected response from haproxy: No such backend.",
 			removedExpected: false,
 			cmdExpected: []string{
 				"set server route1/server1 state maint",
@@ -456,9 +519,8 @@ func TestBackendDynamicUpdate(t *testing.T) {
 		},
 		"should succeed delete if failing to remove and succeeding to disable": {
 			cmd: cmdDel,
-			cmdCustomResp: []string{
-				"",                               // first cmd
-				"Some unknown del server error.", // second cmd
+			cmdCustomResp: map[int]string{
+				1: "Some unknown del server error.",
 			},
 			removedExpected: false,
 			cmdExpected: []string{
@@ -507,9 +569,9 @@ func TestBackendDynamicUpdate(t *testing.T) {
 				VerifyHostname: test.verifyHost,
 			}
 			isPassthrough := test.tlsTermination == routev1.TLSTerminationPassthrough
-			client := &fakeClient{cmdCustomResp: test.cmdCustomResp}
+			client := &fakeClient{cmdCustomResp: test.cmdCustomResp, cmdErrors: test.cmdErrors}
 
-			b := newBackend(backendName, client)
+			b := newBackend(client, backendName)
 
 			var removed bool
 			var addedFromUpdate bool
@@ -547,25 +609,43 @@ func TestBackendDynamicUpdate(t *testing.T) {
 	}
 }
 
+// fakeClient is an HAProxyClient that records the executed commands, and responds to them using
+// cmdCustomResp and cmdErrors, both keyed by the 0-based position of the command. cmdCustomResp
+// holds haproxy responses, missing ones are empty, which means success for most of the haproxy
+// commands. cmdErrors emulates transport errors, e.g. a failure connecting to haproxy.
 type fakeClient struct {
-	cmdCustomResp []string
+	cmdCustomResp map[int]string
+	cmdErrors     map[int]error
 	executedCmds  []string
-	respCount     int
 }
 
-func (c *fakeClient) RunCommand(cmd string, _ Converter) ([]byte, error) {
-	return c.Execute(cmd)
-}
-
+// Execute implements HAProxyClient, recording cmd and returning its custom response or error.
 func (c *fakeClient) Execute(cmd string) ([]byte, error) {
+	pos := len(c.executedCmds)
 	c.executedCmds = append(c.executedCmds, cmd)
 
+	if err := c.cmdErrors[pos]; err != nil {
+		return nil, err
+	}
+
 	var response string
-	if len(c.cmdCustomResp) > c.respCount {
-		response = c.cmdCustomResp[c.respCount] + "\n"
-		c.respCount++
+	if resp, ok := c.cmdCustomResp[pos]; ok {
+		response = resp + "\n"
 	}
 	response += "\n"
 
 	return []byte(response), nil
+}
+
+// Maps implements HAProxyClient, returning no maps.
+//
+// maps compatibility, remove along with https://redhat.atlassian.net/browse/NE-2644
+func (c *fakeClient) Maps() ([]*HAProxyMap, error) {
+	return nil, nil
+}
+
+// Reset implements HAProxyClient, there is nothing to be reset.
+//
+// maps compatibility, remove along with https://redhat.atlassian.net/browse/NE-2644
+func (c *fakeClient) Reset() {
 }
