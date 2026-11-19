@@ -1,5 +1,12 @@
 FROM registry.ci.openshift.org/ocp/5.1:base-rhel10
+# qatengine provides the Intel QuickAssist Technology (QAT) OpenSSL provider
+# (qatprovider.so). It is inert unless explicitly loaded with the
+# "ssl-provider qatprovider" global keyword. QAT is Intel-only hardware, hence
+# the package is installed on x86_64 only.
+# Also, qatengine installation needs install_weak_deps=0 configured - optional
+# and not used dependencies would increase image size and install init scripts.
 RUN INSTALL_PKGS="socat haproxy34" && \
+    if [ "$(uname -m)" = "x86_64" ]; then INSTALL_PKGS="$INSTALL_PKGS qatengine"; fi && \
     yum install -y --setopt=install_weak_deps=0 $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
