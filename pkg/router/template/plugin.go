@@ -71,6 +71,7 @@ type TemplatePluginConfig struct {
 	HTTPHeaderNameCaseAdjustments []HTTPHeaderNameCaseAdjustment
 	HTTPResponseHeaders           []HTTPHeader
 	HTTPRequestHeaders            []HTTPHeader
+	EnableQAT                     bool
 }
 
 // RouterInterface controls the interaction of the plugin with the underlying router implementation
@@ -175,6 +176,7 @@ func NewTemplatePlugin(cfg TemplatePluginConfig, lookupSvc ServiceLookup) (*Temp
 		httpHeaderNameCaseAdjustments: cfg.HTTPHeaderNameCaseAdjustments,
 		httpResponseHeaders:           cfg.HTTPResponseHeaders,
 		httpRequestHeaders:            cfg.HTTPRequestHeaders,
+		enableQAT:                     cfg.EnableQAT,
 	}
 	router, err := newTemplateRouter(templateRouterCfg)
 	if err != nil {

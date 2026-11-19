@@ -58,6 +58,14 @@ global
 {{- if ne "" (firstMatch "[1-9][0-9]*" $threads) }}
   nbthread {{ $threads }}
 {{- end }}
+{{- if .EnableQAT }}
+  # Offload TLS operations to Intel QuickAssist Technology (QAT).  Declaring
+  # any ssl-provider prevents OpenSSL from implicitly loading the default
+  # provider, so it has to be declared explicitly as well.
+  ssl-provider default
+  ssl-provider qatprovider
+  ssl-mode-async
+{{- end }}
 
 
 
