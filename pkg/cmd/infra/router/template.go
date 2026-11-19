@@ -666,6 +666,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
+		checkCRLs := metrics.CRLsUpdated()
 		checkController := metrics.ControllerLive()
 		checkSocket := metrics.AdminSocketAvailable(adminSocketURL)
 		liveChecks := []healthz.HealthChecker{checkController}
@@ -725,7 +726,7 @@ func (o *TemplateRouterOptions) Run(stopCh <-chan struct{}) error {
 				Name:            o.RouterName,
 			},
 			LiveChecks:  liveChecks,
-			ReadyChecks: []healthz.HealthChecker{checkBackend, checkSync, metrics.ProcessRunning(stopCh)},
+			ReadyChecks: []healthz.HealthChecker{checkBackend, checkSync, metrics.ProcessRunning(stopCh), checkCRLs},
 		}
 
 		if tlsConfig, err := makeTLSConfig(30 * time.Second); err != nil {
