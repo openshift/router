@@ -20,7 +20,7 @@ import (
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
-var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router", func() {
+var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route", func() {
 	defer g.GinkgoRecover()
 
 	oc := exutil.NewCLI("routes")
@@ -92,7 +92,7 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 			if !strings.Contains(noBackendConfig, aliasRoute) {
 				return true, nil
 			}
-			e2e.Logf("Still waiting for the alias route to get removed from the haproxy")
+			util.Logf("Still waiting for the alias route to get removed from the haproxy")
 			return false, nil
 		})
 		o.Expect(waitErr).NotTo(o.HaveOccurred(), "The alias route %s never get removed", aliasRoute)
