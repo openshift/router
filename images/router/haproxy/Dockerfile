@@ -1,5 +1,11 @@
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base-router
-RUN INSTALL_PKGS="haproxy26 rsyslog sysvinit-tools" && \
+
+RUN curl -fLo /tmp/haproxy.rpm https://github.com/jcmoraisjr/openshift-router/raw/refs/heads/rpms/haproxy26-2.6.36-1.rhaos4.15.el8.x86_64.rpm && \
+    rpm -ivh /tmp/haproxy.rpm && \
+    rm -f /tmp/haproxy.rpm && \
+    haproxy -vv
+
+RUN INSTALL_PKGS="rsyslog sysvinit-tools" && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
