@@ -1413,10 +1413,10 @@ var _ = g.Describe("[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge
 				return
 			}
 			if killErr := cmd1.Process.Kill(); killErr != nil && !errors.Is(killErr, os.ErrProcessDone) {
-				e2e.Logf("failed to stop background socat exec: %v", killErr)
+				util.Logf("failed to stop background socat exec: %v", killErr)
 			}
 			if waitErr := cmd1.Wait(); waitErr != nil {
-				e2e.Logf("background socat exec finished: %v", waitErr)
+				util.Logf("background socat exec finished: %v", waitErr)
 			}
 		}()
 

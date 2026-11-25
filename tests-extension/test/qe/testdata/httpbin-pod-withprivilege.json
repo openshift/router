@@ -1,0 +1,91 @@
+{
+  "kind": "Pod",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "httpbin-pod",
+    "labels": {
+      "name": "httpbin-pod"
+    }
+  },
+  "spec": {
+    "containers": [
+      {
+        "name": "httpbin-http",
+        "image": "quay.io/openshifttest/httpbin@sha256:ffed23268de41390b8b9417c8835fd125f80d07b19dd9ba5b2273c0145e8f479",
+        "ports": [
+          {
+            "containerPort": 8080
+          }
+        ],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        }
+      },
+      {
+        "name": "httpbin-https",
+        "image": "quay.io/openshifttest/httpbin@sha256:b6239cf4c31274db9cb87a9f6216a36d9d6ded5694c71eac3c9b13c17c4f98c5",
+        "ports": [
+          {
+            "containerPort": 8443
+          }
+        ],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "src",
+            "mountPath": "/src"
+          }
+        ]
+      }
+    ],
+    "securityContext": {
+      "runAsNonRoot": true,
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      }
+    },
+    "initContainers": [
+      {
+        "name": "seed-src",
+        "image": "quay.io/openshifttest/httpbin@sha256:b6239cf4c31274db9cb87a9f6216a36d9d6ded5694c71eac3c9b13c17c4f98c5",
+        "command": [
+          "/bin/bash",
+          "-c",
+          "cp -R /src/. /tls/"
+        ],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "src",
+            "mountPath": "/tls"
+          }
+        ]
+      }
+    ],
+    "volumes": [
+      {
+        "name": "src",
+        "emptyDir": {}
+      }
+    ]
+  }
+}
