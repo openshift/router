@@ -165,6 +165,9 @@ var hyperShiftUnsupportedTests = []string{
 	"OCP-43884",
 	"OCP-30190",
 	"OCP-30191",
+	"OCP-12563",
+	"OCP-12573",
+	"OCP-14089",
 }
 
 // renamedTests maps the current name of a test to the very first name it was

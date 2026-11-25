@@ -933,6 +933,38 @@ func EnsureClusterOperatorNormal(oc *exutil.CLI, coName string, healthyThreshold
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but CO %v is still abnoraml.", coName))
 }
 
+// CheckRouteCertificationInRouterPod waits for a route certificate file to be
+// present or absent in the router pod and returns the listing that matched.
+func CheckRouteCertificationInRouterPod(oc *exutil.CLI, ns, routeName, routerpod, certType, option string) string {
+	var certCfg, cmd string
+	var err error
+	certName := fmt.Sprintf("%s:%s.pem", ns, routeName)
+	switch {
+	case option == "--noCert" && certType == "cacerts":
+		cmd = "ls /var/lib/haproxy/router/cacerts/"
+	case option != "--noCert" && certType != "cacerts":
+		cmd = "ls --full-time /var/lib/haproxy/router/certs/" + certName
+	case option != "--noCert" && certType == "cacerts":
+		cmd = "ls --full-time /var/lib/haproxy/router/cacerts/" + certName
+	default:
+		cmd = "ls /var/lib/haproxy/router/certs/"
+	}
+
+	waitErr := wait.Poll(3*time.Second, 120*time.Second, func() (bool, error) {
+		certCfg, err = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerpod, "--", "bash", "-c", cmd).Output()
+		if err != nil {
+			Logf("failed to inspect route certificate %s, retrying: %v", certName, err)
+			return false, nil
+		}
+		if option == "--hasCert" {
+			return strings.Contains(certCfg, certName), nil
+		}
+		return !strings.Contains(certCfg, certName), nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("route certificate %s did not reach option %s", certName, option))
+	return certCfg
+}
+
 // ReadPodData searches the specific data from the given pod
 func ReadPodData(oc *exutil.CLI, podname string, ns string, executeCmd string, searchString string) string {
 	cmd := fmt.Sprintf("%s | grep \"%s\"", executeCmd, searchString)

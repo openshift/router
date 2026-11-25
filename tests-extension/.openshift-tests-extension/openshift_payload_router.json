@@ -2906,6 +2906,93 @@
     }
   },
   {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS The certs for the edge and reencrypt termination routes are removed when the routes are removed",
+    "labels": {
+      "OCP-12563": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/tls.go:15",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/tls.go:22"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS Default haproxy router can skip invalid certificate routes",
+    "labels": {
+      "OCP-12573": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/tls.go:15",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/tls.go:109"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS Route cannot be accessed if the backend cannot be matched by the default destination CA of router",
+    "labels": {
+      "OCP-14089": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/tls.go:15",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/tls.go:189"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
     "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Check whether required ENV variables are configured after enabling Dynamic Configuration Manager [Serial]",
     "labels": {
       "OCP-77862": {}

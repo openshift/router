@@ -14,6 +14,7 @@ Route, HAProxy, cookie, route-logging, route-weight, route-headers, route-HSTS, 
 | `route-hsts.go` | 7 | Route HSTS annotations and global HSTS policies; excludes OCP-15977, OCP-43478, and OCP-43966 |
 | `dynamic_config_manager.go` | 8 | Dynamic Configuration Manager behavior across route types and endpoint scaling |
 | `route-admission.go` | 5 | Route-admission namespace ownership and wildcard policies |
+| `tls.go` | 3 | Route certificate lifecycle, invalid certificates, and destination CA defaults |
 
 ## Test naming conventions
 
@@ -71,6 +72,12 @@ Route-admission tests use the `Component_Route-Admission` prefix:
 [sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission <description> [<execution tags>]
 ```
 
+Route-TLS tests use the `Component_Route-TLS` prefix:
+
+```text
+[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS <description> [<execution tags>]
+```
+
 All prefixes carry `[sig-network-edge]` and `[Feature:Router]`, which is what
 ci-test-mapping and the origin suite qualifiers key on, so the split does not
 change ownership or suite membership.
@@ -90,7 +97,7 @@ The metadata records the current titles, including `[Feature:Router]`, without
 legacy-name aliases. The canonical OCP labels remain unchanged.
 
 `[Level0]` should reflect the QE case classification. The current OTP source has
-no explicit Level0 markers for these 119 migrated cases, so the existing tags are
+no explicit Level0 markers for these 122 migrated cases, so the existing tags are
 retained pending confirmation against the QE-approved Level0 plan or Polarion
 export. Priority and suite membership alone do not establish that classification.
 
@@ -110,7 +117,7 @@ OTE requires each test to have an owning component, declared either as a
 [ci-test-mapping](https://github.com/openshift-eng/ci-test-mapping).  These tests
 use the ci-test-mapping route, so **confirming ownership coverage is required
 as part of migration**. Informing status does not waive this requirement.
-All 119 names contain both `[sig-network-edge]` and `[Feature:Router]`, matching
+All 122 names contain both `[sig-network-edge]` and `[Feature:Router]`, matching
 the existing router SIG rule in `pkg/components/networking/router/component.go`.
 This applies when the payload runner reports JUnit suite `openshift-tests`;
 it does not depend on the private runner's `Network_Edge` suite matcher.
@@ -118,7 +125,7 @@ it does not depend on the private runner's `Network_Edge` suite matcher.
 This initial registration baseline does not include `originalName` fields or
 a companion `TestRenames` mapping. Component Readiness can assign the current
 names to the router component, but historical results under earlier names
-are not joined automatically. The three disruptive cases continue to carry
+are not joined automatically. The four disruptive cases continue to carry
 only `[Disruptive]` in their current names.
 
 ### Renaming or removing a test
@@ -322,7 +329,7 @@ and unfiltered suite membership are unchanged. To verify the current selection:
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv6 --external-connectivity Disconnected
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack dual --external-connectivity Disconnected
 
-# All 119 remain eligible on connected or proxied clusters, before other filters.
+# All 122 remain eligible on connected or proxied clusters, before other filters.
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv4 --external-connectivity Direct -o names
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv6 --external-connectivity Direct -o names
 ./bin/router-tests-ext list tests --api-group config.openshift.io --network-stack ipv6 --external-connectivity Proxied -o names
@@ -364,13 +371,13 @@ Re-enable disconnected coverage in a separate follow-up PR:
 
 | Suite | Parent | Tests |
 |-------|--------|-------|
-| `router/conformance/parallel` | `openshift/conformance/parallel` | 98 |
+| `router/conformance/parallel` | `openshift/conformance/parallel` | 101 |
 | `router/conformance/serial` | `openshift/conformance/serial` | 17 |
 | `router/disruptive` | — | 4 |
-| `router/non-disruptive` | — | 115 |
-| `router/all` | — | 119 |
+| `router/non-disruptive` | — | 118 |
+| `router/all` | — | 122 |
 
-Conformance selects 98 parallel tests and 17 non-disruptive `[Serial]` tests.
+Conformance selects 101 parallel tests and 17 non-disruptive `[Serial]` tests.
 The four disruptive cases carry only `[Disruptive]` and are excluded from both
 conformance suites. They remain available through `router/disruptive` and
 `router/all`, with isolation taints that prevent overlap with other tests.
@@ -459,7 +466,7 @@ conformance coverage, run the parallel and serial conformance suites instead.
 ### Run by Suite
 
 ```bash
-# All tests except the disruptive ones.  Note this suite still contains the four
+# All tests except the disruptive ones.  Note this suite still contains the 17
 # [Serial] tests, which the scheduler isolates; see Scheduling below.
 ./bin/router-tests-ext run-suite router/non-disruptive
 
@@ -547,6 +554,12 @@ conformance coverage, run the parallel and serial conformance suites instead.
   -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Update the namespaceOwnership of routeAdmission" \
   -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Set wildcardPolicy of routeAdmission to WildcardsAllowed" \
   -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Set wildcardPolicy of routeAdmission to WildcardsDisallowed" \
+
+# Run the three TLS cases by name.
+./bin/router-tests-ext run-test \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS The certs for the edge and reencrypt termination routes are removed when the routes are removed" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS Default haproxy router can skip invalid certificate routes" \
+  -n "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-TLS Route cannot be accessed if the backend cannot be matched by the default destination CA of router" \
   --max-concurrency=1
 ```
 
@@ -665,7 +678,7 @@ conformance coverage, run the parallel and serial conformance suites instead.
 Both lists select tests by their full names. If a test title changes, refresh
 the list with `list tests -o names`. The `[Serial]` and `[Disruptive]` cases
 are included on purpose; `--max-concurrency=1` keeps them apart, but the
-three disruptive cases still change platform routes, so run them only on a
+four disruptive cases still change platform routes, so run them only on a
 disposable cluster.
 
 ### Run a single test
