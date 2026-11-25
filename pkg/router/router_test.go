@@ -919,6 +919,7 @@ func TestConfigTemplate(t *testing.T) {
 				},
 			},
 		},
+
 		"Rewrite target with root path": {
 			mustCreateWithConfig{
 				mustCreateRoute: mustCreateRoute{
@@ -973,6 +974,44 @@ func TestConfigTemplate(t *testing.T) {
 					sectionName: insecureBackendName(h.namespace, "rewrite-single-quote"),
 					attribute:   "http-request",
 					value:       `replace-path '^/foo'\''/?(.*)$' '/\1'`,
+				},
+			},
+		},
+		"Rewrite target with regex metacharacter in path": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rewrite-literal-plus",
+					host: "rewrite-literal-plus.example.com",
+					path: "/bar+",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rewrite-target": "/foo",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "rewrite-literal-plus"),
+					attribute:   "http-request",
+					value:       `replace-path '^/bar\+(.*)$' '/foo\1'`,
+				},
+			},
+		},
+		"Rewrite target with dot in path": {
+			mustCreateWithConfig{
+				mustCreateRoute: mustCreateRoute{
+					name: "rewrite-literal-dot",
+					host: "rewrite-literal-dot.example.com",
+					path: "/api/v1.0",
+					time: start,
+					annotations: map[string]string{
+						"haproxy.router.openshift.io/rewrite-target": "/v2",
+					},
+				},
+				mustMatchConfig: mustMatchConfig{
+					section:     "backend",
+					sectionName: insecureBackendName(h.namespace, "rewrite-literal-dot"),
+					attribute:   "http-request",
+					value:       `replace-path '^/api/v1\.0(.*)$' '/v2\1'`,
 				},
 			},
 		},
