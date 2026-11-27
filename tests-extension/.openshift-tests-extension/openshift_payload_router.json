@@ -1,5 +1,150 @@
 [
   {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Cookies Enable/Disable haproxy cookies based sticky session for unsecure routes",
+    "labels": {
+      "OCP-11903": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/cookies.go:16",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/cookies.go:23"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Cookies Cookie name should not use openshift prefix",
+    "labels": {
+      "OCP-12566": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/cookies.go:16",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/cookies.go:108"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Cookies Can set cookie name for unsecure routes by annotation",
+    "labels": {
+      "OCP-15872": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/cookies.go:16",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/cookies.go:151"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Cookies router.openshift.io/cookie-same-site route annotation accepts None Lax or Strict attribute for edge routes",
+    "labels": {
+      "OCP-35547": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/cookies.go:16",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/cookies.go:193"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Cookies router.openshift.io/cookie-same-site route annotation accepts None Lax or Strict attribute for Reencrypt routes",
+    "labels": {
+      "OCP-35548": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/cookies.go:16",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/cookies.go:236"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
     "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Haproxy The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation",
     "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The backend health check interval of unsecure/edge/passthrough/reencrypt route can be set by annotation",
     "labels": {
@@ -810,7 +955,849 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers Configure Ingresscontroller to preserve existing header with forwardedHeaderPolicy set to Append",
+    "labels": {
+      "OCP-34231": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:27"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers Configure Ingresscontroller to replace any existing Forwarded header with forwardedHeaderPolicy set to Replace",
+    "labels": {
+      "OCP-34233": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:115"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers Configure Ingresscontroller to set the headers if they are not already set with forwardedHeaderPolicy set to Ifnone",
+    "labels": {
+      "OCP-34234": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:197"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers Forwarded header includes empty quoted proto-version parameter",
+    "labels": {
+      "OCP-57012": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:290"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers adding/deleting http headers to an edge route by a router owner",
+    "labels": {
+      "OCP-62528": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:303"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers adding/deleting http headers to a http route by a router owner",
+    "labels": {
+      "OCP-66560": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:492"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers supported max http headers, max length of a http header name, max length value of a http header",
+    "labels": {
+      "OCP-66566": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:618"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers negative test of adding/deleting http headers",
+    "labels": {
+      "OCP-66568": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:845"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers set different type of values for a http header name and its value",
+    "labels": {
+      "OCP-66569": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:977"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers adding/deleting http headers to a http route by an ingress-controller as a cluster administrator",
+    "labels": {
+      "OCP-66572": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:1104"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers adding/deleting http headers to a reen route by a router owner",
+    "labels": {
+      "OCP-66662": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:1234"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers adding/deleting http headers to an edge route by an ingress-controller as a cluster administrator",
+    "labels": {
+      "OCP-67009": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:1478"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers adding/deleting http headers to a reen route by an ingress-controller as a cluster administrator",
+    "labels": {
+      "OCP-67010": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:1671"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Headers http request with duplicated headers should not cause disruption to a router pod",
+    "labels": {
+      "OCP-77284": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/headers.go:20",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/headers.go:1921"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Logging Capture and log http cookies with specific prefixes via httpCaptureCookies option",
+    "labels": {
+      "OCP-34166": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/logging.go:15",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/logging.go:21"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Logging Capture and log http requests using UniqueID with custom logging format defined via httpHeader option",
+    "labels": {
+      "OCP-34188": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/logging.go:15",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/logging.go:105"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Logging The httpCaptureHeaders option strictly adheres to the maxlength parameter",
+    "labels": {
+      "OCP-34191": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/logging.go:15",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/logging.go:169"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Set namespaceOwnership of routeAdmission to InterNamespaceAllowed",
+    "labels": {
+      "OCP-27594": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-admission.go:13",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-admission.go:19"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Set namespaceOwnership of routeAdmission to Strict",
+    "labels": {
+      "OCP-27595": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-admission.go:13",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-admission.go:88"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Update the namespaceOwnership of routeAdmission",
+    "labels": {
+      "OCP-27596": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-admission.go:13",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-admission.go:140"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Set wildcardPolicy of routeAdmission to WildcardsAllowed",
+    "labels": {
+      "OCP-30190": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-admission.go:13",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-admission.go:207"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Admission Set wildcardPolicy of routeAdmission to WildcardsDisallowed",
+    "labels": {
+      "OCP-30191": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-admission.go:13",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-admission.go:265"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS The edge/reencrypt route supports HSTS but unsecure/passthrough route does not",
+    "labels": {
+      "OCP-15976": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:27"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Weight Sticky session could work normally after set weight for route",
+    "labels": {
+      "OCP-10889": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-weight.go:19",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-weight.go:25"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Weight Set backends weight for edge/passthrough/reencrypt/unsecure route",
+    "labels": {
+      "OCP-11608": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-weight.go:19",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-weight.go:94"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Weight Set multiple backends weight for route",
+    "labels": {
+      "OCP-12088": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-weight.go:19",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-weight.go:177"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Weight Endpoint will end up weight 1 when scaled weight per endpoint is less than 1",
+    "labels": {
+      "OCP-15902": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-weight.go:19",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-weight.go:258"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Weight Each endpoint gets weight/numberOfEndpoints portion of the requests",
+    "labels": {
+      "OCP-15910": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-weight.go:19",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-weight.go:316"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-Weight Alternate Backends and Weights for a route work well",
+    "labels": {
+      "OCP-67093": {}
+    },
+    "resources": {
+      "isolation": {
+        "taint": [
+          "parallel-running"
+        ],
+        "toleration": [
+          "parallel-running"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-weight.go:19",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-weight.go:423"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Route could NOT be updated after created",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route could NOT be updated after created",
     "labels": {
       "OCP-10024": {}
     },
@@ -839,7 +1826,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set balance leastconn for passthrough routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Set balance leastconn for passthrough routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Set balance leastconn for passthrough routes",
     "labels": {
       "OCP-10043": {}
     },
@@ -868,7 +1856,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Should use the same cookies for secure and insecure access when insecureEdgeTerminationPolicy set to allow for edge/reencrypt route",
     "labels": {
       "OCP-10207": {}
     },
@@ -897,7 +1886,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Service endpoint can be work well if the mapping pod ip is updated",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Service endpoint can be work well if the mapping pod ip is updated",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Service endpoint can be work well if the mapping pod ip is updated",
     "labels": {
       "OCP-10660": {}
     },
@@ -926,7 +1916,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Redirect for passthrough/edge/reencrypt route",
     "labels": {
       "OCP-11036": {}
     },
@@ -955,7 +1946,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge oc help information should contain option wildcard-policy",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge oc help information should contain option wildcard-policy",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge oc help information should contain option wildcard-policy",
     "labels": {
       "OCP-11067": {}
     },
@@ -984,7 +1976,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Enable/Disable haproxy cookies based sticky session for edge termination routes",
     "labels": {
       "OCP-11130": {}
     },
@@ -1013,7 +2006,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Limit the number of TCP connection per IP in specified time period",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Limit the number of TCP connection per IP in specified time period",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Limit the number of TCP connection per IP in specified time period",
     "labels": {
       "OCP-11619": {}
     },
@@ -1042,7 +2036,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for passthough route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Set timeout server for passthough route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for passthough route",
     "labels": {
       "OCP-11635": {}
     },
@@ -1071,7 +2066,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy hash based sticky session for tcp mode passthrough routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route haproxy hash based sticky session for tcp mode passthrough routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy hash based sticky session for tcp mode passthrough routes",
     "labels": {
       "OCP-11728": {}
     },
@@ -1100,7 +2096,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for http route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Set timeout server for http route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set timeout server for http route",
     "labels": {
       "OCP-11982": {}
     },
@@ -1129,7 +2126,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy config information should be clean when changing the service to another route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route haproxy config information should be clean when changing the service to another route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy config information should be clean when changing the service to another route",
     "labels": {
       "OCP-12091": {}
     },
@@ -1158,7 +2156,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router reencrypt route with no cert if a router is configured with a default wildcard cert",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route reencrypt route with no cert if a router is configured with a default wildcard cert",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router reencrypt route with no cert if a router is configured with a default wildcard cert",
     "labels": {
       "OCP-12506": {}
     },
@@ -1187,7 +2186,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for edge/unsecure termination",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route The path specified in route can work well for edge/unsecure termination",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for edge/unsecure termination",
     "labels": {
       "OCP-12562": {}
     },
@@ -1216,7 +2216,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for reencrypt terminated",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route The path specified in route can work well for reencrypt terminated",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The path specified in route can work well for reencrypt terminated",
     "labels": {
       "OCP-12564": {}
     },
@@ -1245,7 +2246,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The later route should be HostAlreadyClaimed when there is a same host exist",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route The later route should be HostAlreadyClaimed when there is a same host exist",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router The later route should be HostAlreadyClaimed when there is a same host exist",
     "labels": {
       "OCP-12652": {}
     },
@@ -1274,7 +2276,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check the cookie if using secure mode when insecureEdgeTerminationPolicy to Redirect for edge/reencrypt route",
     "labels": {
       "OCP-13753": {}
     },
@@ -1303,7 +2306,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Set insecureEdgeTerminationPolicy to Allow for reencrypt/edge route",
     "labels": {
       "OCP-13839": {}
     },
@@ -1332,7 +2336,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only the host in whitelist could access unsecure/edge/reencrypt/passthrough routes",
     "labels": {
       "OCP-14678": {}
     },
@@ -1361,7 +2366,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router router can do a case-insensitive match of a hostname for unsecure/edge/passthrough/reencrypt route",
     "labels": {
       "OCP-15028": {}
     },
@@ -1390,7 +2396,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge can set cookie name for edge/reen routes by annotation",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge can set cookie name for edge/reen routes by annotation",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge can set cookie name for edge/reen routes by annotation",
     "labels": {
       "OCP-15873": {}
     },
@@ -1419,7 +2426,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Check haproxy.config when overwriting 'timeout server' which was already specified",
     "labels": {
       "OCP-16732": {}
     },
@@ -1448,7 +2456,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy router support websocket via unsecure route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route haproxy router support websocket via unsecure route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router haproxy router support websocket via unsecure route",
     "labels": {
       "OCP-17145": {}
     },
@@ -1477,7 +2486,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits backend pod max concurrent connections for unsecure, edge, reen, passthrough route",
     "labels": {
       "OCP-18482": {}
     },
@@ -1506,7 +2516,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits multiple backend pods max concurrent connections",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge limits multiple backend pods max concurrent connections",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge limits multiple backend pods max concurrent connections",
     "labels": {
       "OCP-18490": {}
     },
@@ -1535,7 +2546,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Unsecure route with path and another tls route with same hostname can work at the same time",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Unsecure route with path and another tls route with same hostname can work at the same time",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Unsecure route with path and another tls route with same hostname can work at the same time",
     "labels": {
       "OCP-19804": {}
     },
@@ -1564,7 +2576,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Routes annotated with 'haproxy.router.openshift.io/rewrite-target=/path' will replace and rewrite http request with specified '/path'",
     "labels": {
       "OCP-34106": {}
     },
@@ -1593,7 +2606,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation gets applied alongside 'haproxy.router.openshift.io/timeout' for clear/edge/reencrypt routes",
     "labels": {
       "OCP-38671": {}
     },
@@ -1622,7 +2636,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge 'haproxy.router.openshift.io/timeout-tunnel' annotation takes precedence over 'haproxy.router.openshift.io/timeout' values for passthrough routes",
     "labels": {
       "OCP-38672": {}
     },
@@ -1651,7 +2666,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router route can be configured to whitelist more than 61 ips/CIDRs",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route route can be configured to whitelist more than 61 ips/CIDRs",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router route can be configured to whitelist more than 61 ips/CIDRs",
     "labels": {
       "OCP-42230": {}
     },
@@ -1680,7 +2696,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress controller continue to function normally with unexpected high timeout value",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route ingress controller continue to function normally with unexpected high timeout value",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress controller continue to function normally with unexpected high timeout value",
     "labels": {
       "OCP-45399": {}
     },
@@ -1709,7 +2726,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress canary route redirects http to https",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route ingress canary route redirects http to https",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router ingress canary route redirects http to https",
     "labels": {
       "OCP-45741": {}
     },
@@ -1738,7 +2756,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HTTPS redirect happens even if there is a more specific http-only",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route HTTPS redirect happens even if there is a more specific http-only",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router HTTPS redirect happens even if there is a more specific http-only",
     "labels": {
       "OCP-49802": {}
     },
@@ -1767,7 +2786,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ipv6 addresses are also acceptable for whitelisting",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Ipv6 addresses are also acceptable for whitelisting",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ipv6 addresses are also acceptable for whitelisting",
     "labels": {
       "OCP-63004": {}
     },
@@ -1796,7 +2816,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Only host in allowlist can access unsecure/edge/reencrypt/passthrough routes",
     "labels": {
       "OCP-77080": {}
     },
@@ -1825,7 +2846,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route gives allowlist precedence when whitelist and allowlist annotations are both present",
     "labels": {
       "OCP-77082": {}
     },
@@ -1854,7 +2876,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router NetworkEdge Route does not enable allowlist with than 61 CIDRs and if invalid IP annotation is given",
     "labels": {
       "OCP-77091": {}
     },
@@ -1875,6 +2898,238 @@
       "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
       "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
       "test/qe/route.go:2115"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Check whether required ENV variables are configured after enabling Dynamic Configuration Manager [Serial]",
+    "labels": {
+      "OCP-77862": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:23"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Dynamic Configuration Manager for plain HTTP route [Serial]",
+    "labels": {
+      "OCP-77892": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:74"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Enable ALPN for reencrypt routes when DCM is enabled [Serial]",
+    "labels": {
+      "OCP-77906": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:212"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Dynamic Configuration Manager for edge route [Serial]",
+    "labels": {
+      "OCP-77973": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:343"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Dynamic Configuration Manager for passthrough route [Serial]",
+    "labels": {
+      "OCP-77974": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:481"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Dynamic Configuration Manager for reencrypt route [Serial]",
+    "labels": {
+      "OCP-77975": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:619"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Traffic test for dynamic servers [Serial]",
+    "labels": {
+      "OCP-78239": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:758"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "externalConnectivity==\"Disconnected\""
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-DCM Map entries added in the end when DCM is enabled [Serial]",
+    "labels": {
+      "OCP-88370": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/dynamic_config_manager.go:17",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/dynamic_config_manager.go:826"
     ],
     "lifecycle": "informing",
     "environmentSelector": {
@@ -1943,7 +3198,182 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route status should updates accordingly when ingress routes cleaned up [Disruptive]",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS The includeSubDomainsPolicy parameter can configure subdomain policy to inherit the HSTS policy of parent domain [Serial]",
+    "labels": {
+      "OCP-43474": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:113"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS The includeSubDomainsPolicy and PreloadPolicy option can be configured to be permissive with NoOpinion flag [Serial]",
+    "labels": {
+      "OCP-43475": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:177"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS The PreloadPolicy option can be set to be enforced strictly to be present or absent in HSTS preload header checks [Serial]",
+    "labels": {
+      "OCP-43476": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:239"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS The Maxage HSTS policy strictly adheres to validation of route based on largestMaxAge and smallestMaxAge parameter [Serial]",
+    "labels": {
+      "OCP-43479": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:303"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS The HSTS domain policy can be configured with multiple domainPatterns options [Disruptive]",
+    "labels": {
+      "OCP-43480": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:363"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route-HSTS Global HSTS policy can be enforced strictly on a specific namespace using namespaceSelector for given domain pattern filtering [Serial]",
+    "labels": {
+      "OCP-43884": {}
+    },
+    "resources": {
+      "isolation": {
+        "conflict": [
+          "disruptive"
+        ],
+        "taint": [
+          "disruptive"
+        ]
+      }
+    },
+    "source": "openshift:payload:router",
+    "codeLocations": [
+      "test/qe/route-hsts.go:18",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:186",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:195",
+      "vendor/github.com/openshift/origin/test/extended/util/client.go:161",
+      "test/qe/route-hsts.go:454"
+    ],
+    "lifecycle": "informing",
+    "environmentSelector": {
+      "include": "apiGroups.exists(api, api==\"config.openshift.io\")",
+      "exclude": "(externalConnectivity==\"Disconnected\") || (topology==\"External\")"
+    }
+  },
+  {
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Route status should updates accordingly when ingress routes cleaned up [Disruptive]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route status should updates accordingly when ingress routes cleaned up [Disruptive]",
     "labels": {
       "OCP-53696": {}
     },
@@ -1972,7 +3402,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress should be in degraded status when canary route is not available [Disruptive]",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Ingress should be in degraded status when canary route is not available [Disruptive]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Ingress should be in degraded status when canary route is not available [Disruptive]",
     "labels": {
       "OCP-55895": {}
     },
@@ -2001,7 +3432,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Canary daemonset can schedule pods to both worker and infra nodes [Disruptive]",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Canary daemonset can schedule pods to both worker and infra nodes [Disruptive]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Canary daemonset can schedule pods to both worker and infra nodes [Disruptive]",
     "labels": {
       "OCP-56240": {}
     },
@@ -2030,7 +3462,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router Route spec path that have specail characters should not cause HaProxy error and ingress degraded [Serial]",
     "labels": {
       "OCP-85274": {}
     },
@@ -2059,7 +3492,8 @@
     }
   },
   {
-    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]",
+    "name": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Route UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]",
+    "originalName": "[sig-network-edge][Feature:Router][OTP][Level0] Network_Edge Component_Router UnmanagedRoutes metric should filter ingress by both name and namespace [Serial]",
     "labels": {
       "OCP-88075": {}
     },
