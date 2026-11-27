@@ -8,6 +8,8 @@
 // testdata/error-page2-404.http
 // testdata/error-page2-503.http
 // testdata/httpbin-deploy.yaml
+// testdata/httpbin-pod-withprivilege.json
+// testdata/httpbin-service_secure.json
 // testdata/ingress-with-class.yaml
 // testdata/ingresscontroller-IBMproxy.yaml
 // testdata/ingresscontroller-hn-PROXY.yaml
@@ -344,6 +346,151 @@ func httpbinDeployYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "httpbin-deploy.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _httpbinPodWithprivilegeJson = []byte(`{
+  "kind": "Pod",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "httpbin-pod",
+    "labels": {
+      "name": "httpbin-pod"
+    }
+  },
+  "spec": {
+    "containers": [
+      {
+        "name": "httpbin-http",
+        "image": "quay.io/openshifttest/httpbin@sha256:ffed23268de41390b8b9417c8835fd125f80d07b19dd9ba5b2273c0145e8f479",
+        "ports": [
+          {
+            "containerPort": 8080
+          }
+        ],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        }
+      },
+      {
+        "name": "httpbin-https",
+        "image": "quay.io/openshifttest/httpbin@sha256:b6239cf4c31274db9cb87a9f6216a36d9d6ded5694c71eac3c9b13c17c4f98c5",
+        "ports": [
+          {
+            "containerPort": 8443
+          }
+        ],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "src",
+            "mountPath": "/src"
+          }
+        ]
+      }
+    ],
+    "securityContext": {
+      "runAsNonRoot": true,
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      }
+    },
+    "initContainers": [
+      {
+        "name": "seed-src",
+        "image": "quay.io/openshifttest/httpbin@sha256:b6239cf4c31274db9cb87a9f6216a36d9d6ded5694c71eac3c9b13c17c4f98c5",
+        "command": [
+          "/bin/bash",
+          "-c",
+          "cp -R /src/. /tls/"
+        ],
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "src",
+            "mountPath": "/tls"
+          }
+        ]
+      }
+    ],
+    "volumes": [
+      {
+        "name": "src",
+        "emptyDir": {}
+      }
+    ]
+  }
+}
+`)
+
+func httpbinPodWithprivilegeJsonBytes() ([]byte, error) {
+	return _httpbinPodWithprivilegeJson, nil
+}
+
+func httpbinPodWithprivilegeJson() (*asset, error) {
+	bytes, err := httpbinPodWithprivilegeJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "httpbin-pod-withprivilege.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _httpbinService_secureJson = []byte(`{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "httpbin-svc-secure"
+    },
+    "spec": {
+        "ports": [
+            {
+                "name": "https",
+                "protocol": "TCP",
+                "port": 27443,
+                "targetPort": 8443
+            }
+        ],
+        "selector": {
+            "name": "httpbin-pod"
+        }
+    }
+}
+`)
+
+func httpbinService_secureJsonBytes() ([]byte, error) {
+	return _httpbinService_secureJson, nil
+}
+
+func httpbinService_secureJson() (*asset, error) {
+	bytes, err := httpbinService_secureJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "httpbin-service_secure.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1149,6 +1296,8 @@ var _bindata = map[string]func() (*asset, error){
 	"error-page2-404.http":                    errorPage2404Http,
 	"error-page2-503.http":                    errorPage2503Http,
 	"httpbin-deploy.yaml":                     httpbinDeployYaml,
+	"httpbin-pod-withprivilege.json":          httpbinPodWithprivilegeJson,
+	"httpbin-service_secure.json":             httpbinService_secureJson,
 	"ingress-with-class.yaml":                 ingressWithClassYaml,
 	"ingresscontroller-IBMproxy.yaml":         ingresscontrollerIbmproxyYaml,
 	"ingresscontroller-hn-PROXY.yaml":         ingresscontrollerHnProxyYaml,
@@ -1215,6 +1364,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"error-page2-404.http":                    {errorPage2404Http, map[string]*bintree{}},
 	"error-page2-503.http":                    {errorPage2503Http, map[string]*bintree{}},
 	"httpbin-deploy.yaml":                     {httpbinDeployYaml, map[string]*bintree{}},
+	"httpbin-pod-withprivilege.json":          {httpbinPodWithprivilegeJson, map[string]*bintree{}},
+	"httpbin-service_secure.json":             {httpbinService_secureJson, map[string]*bintree{}},
 	"ingress-with-class.yaml":                 {ingressWithClassYaml, map[string]*bintree{}},
 	"ingresscontroller-IBMproxy.yaml":         {ingresscontrollerIbmproxyYaml, map[string]*bintree{}},
 	"ingresscontroller-hn-PROXY.yaml":         {ingresscontrollerHnProxyYaml, map[string]*bintree{}},

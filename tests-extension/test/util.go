@@ -8,12 +8,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +34,8 @@ import (
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/util/retry"
+
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 )
 
@@ -118,6 +123,29 @@ func (websrvdeploy *WebServerDeployDescription) Delete(oc *exutil.CLI) error {
 	return oc.AsAdmin().WithoutNamespace().Run("delete").Args("-n", websrvdeploy.Namespace, "deployment", websrvdeploy.DeployName).Execute()
 }
 
+// Logf logs a message on a single line.
+//
+// The k8s e2e framework installs a klog sink that writes to Ginkgo's default
+// writer, which is os.Stdout, so this process's log output shares a stream with
+// the JSON test result that the OTE parent parses.  A continuation line of a
+// multi-line message can therefore begin with "{" and be decoded as that
+// result, which makes the parent report an empty result even though the test
+// passed.  Folding newlines into escapes keeps every log record on one line.
+func Logf(format string, args ...interface{}) {
+	message := fmt.Sprintf(format, args...)
+	e2e.Logf("%s", strings.NewReplacer("\r\n", `\n`, "\n", `\n`, "\r", `\r`).Replace(message))
+}
+
+// GetFixedLengthRandomString returns a random alphanumeric string of the requested length.
+func GetFixedLengthRandomString(length int) string {
+	const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	result := make([]byte, length)
+	for i := range result {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
+}
+
 func GetRandomString() string {
 	chars := "abcdefghijklmnopqrstuvwxyz0123456789"
 	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -133,16 +161,16 @@ func GetBaseDomain(oc *exutil.CLI) string {
 
 	basedomain, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("dns.config/cluster", "-o=jsonpath={.spec.baseDomain}").Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the base domain of the cluster: %v", basedomain)
+	Logf("the base domain of the cluster: %v", basedomain)
 	return basedomain
 }
 
 func GetSAToken(oc *exutil.CLI, sa, ns string) (string, error) {
-	e2e.Logf("Getting a token assgined to specific serviceaccount from %s namespace...", ns)
+	Logf("Getting a token assgined to specific serviceaccount from %s namespace...", ns)
 	token, err := oc.AsAdmin().WithoutNamespace().Run("create").Args("token", sa, "-n", ns).Output()
 	if err != nil {
 		if strings.Contains(token, "unknown command") {
-			e2e.Logf("oc create token is not supported by current client, use oc sa get-token instead")
+			Logf("oc create token is not supported by current client, use oc sa get-token instead")
 			token, err = oc.AsAdmin().WithoutNamespace().Run("sa").Args("get-token", sa, "-n", ns).Output()
 		} else {
 			return "", err
@@ -153,16 +181,16 @@ func GetSAToken(oc *exutil.CLI, sa, ns string) (string, error) {
 }
 
 func WaitForCustomIngressControllerAvailable(oc *exutil.CLI, icname string) error {
-	e2e.Logf("check ingresscontroller if available")
+	Logf("check ingresscontroller if available")
 	return wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
 		status, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("ingresscontroller", icname, "--namespace=openshift-ingress-operator", `-ojsonpath={.status.conditions[?(@.type=="Available")].status}`).Output()
-		e2e.Logf("the status of ingresscontroller is %v", status)
+		Logf("the status of ingresscontroller is %v", status)
 		if err != nil || status == "" {
-			e2e.Logf("failed to get ingresscontroller %s: %v, retrying...", icname, err)
+			Logf("failed to get ingresscontroller %s: %v, retrying...", icname, err)
 			return false, nil
 		}
 		if strings.Contains(status, "False") {
-			e2e.Logf("ingresscontroller %s conditions not available, retrying...", icname)
+			Logf("ingresscontroller %s conditions not available, retrying...", icname)
 			return false, nil
 		}
 		return true, nil
@@ -175,7 +203,7 @@ func EnsureCustomIngressControllerAvailable(oc *exutil.CLI, icName string) {
 	// print custom ingresscontroller description for debugging purpose if err
 	if err != nil {
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("describe").Args("-n", ns, "ingresscontroller", icName).Output()
-		e2e.Logf("The description of ingresscontroller %v is:\n%v", icName, output)
+		Logf("The description of ingresscontroller %v is:\n%v", icName, output)
 	}
 	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("max time reached but ingresscontroller %v is not available", icName))
 }
@@ -185,10 +213,17 @@ func EnsureRouteIsAdmittedByIngressController(oc *exutil.CLI, ns, routeName, icN
 	WaitForOutputEquals(oc, ns, "route/"+routeName, jsonPath, "True")
 }
 
+// EnsureRouteIsNotAdmittedByIngressController waits until the named router
+// reports the route as not admitted.
+func EnsureRouteIsNotAdmittedByIngressController(oc *exutil.CLI, ns, routeName, icName string) {
+	jsonPath := fmt.Sprintf(`{.status.ingress[?(@.routerName=="%s")].conditions[?(@.type=="Admitted")].status}`, icName)
+	WaitForOutputEquals(oc, ns, "route/"+routeName, jsonPath, "False")
+}
+
 func GetOnePodNameByLabel(oc *exutil.CLI, ns, label string) string {
 	podName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-l", label, "-o=jsonpath={.items[0].metadata.name}", "-n", ns).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the one pod with label %v is %v", label, podName)
+	Logf("the one pod with label %v is %v", label, podName)
 	return podName
 }
 
@@ -208,11 +243,11 @@ func GetOneNewRouterPodFromRollingUpdate(oc *exutil.CLI, icName string) string {
 		return false, nil
 	})
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but NewReplicaSet not found"))
-	e2e.Logf("the new ReplicaSet labels is %s", rsLabel)
+	Logf("the new ReplicaSet labels is %s", rsLabel)
 	err := WaitForPodWithLabelReady(oc, ns, rsLabel)
 	if err != nil {
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-n", ns).Output()
-		e2e.Logf("All current router pods are:\n%v", output)
+		Logf("All current router pods are:\n%v", output)
 	}
 	compat_otp.AssertWaitPollNoErr(err, "the new router pod failed to be ready within allowed time!")
 	return GetOnePodNameByLabel(oc, ns, rsLabel)
@@ -225,9 +260,9 @@ func EnsureRouterDeployGenerationIs(oc *exutil.CLI, icName, expectGeneration str
 
 	waitErr := wait.PollImmediate(3*time.Second, 30*time.Second, func() (bool, error) {
 		actualGeneration, _ = oc.AsAdmin().WithoutNamespace().Run("get").Args(deployName, "-n", ns, "-o=jsonpath={.metadata.generation}").Output()
-		e2e.Logf("Get the deployment generation is: %v", actualGeneration)
+		Logf("Get the deployment generation is: %v", actualGeneration)
 		if actualGeneration == expectGeneration {
-			e2e.Logf("The router deployment generation is updated to %v", actualGeneration)
+			Logf("The router deployment generation is updated to %v", actualGeneration)
 			return true, nil
 		}
 		return false, nil
@@ -238,17 +273,88 @@ func EnsureRouterDeployGenerationIs(oc *exutil.CLI, icName, expectGeneration str
 func WaitForPodWithLabelReady(oc *exutil.CLI, ns, label string) error {
 	return wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
 		status, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", ns, "-l", label, `-ojsonpath={.items[*].status.conditions[?(@.type=="Ready")].status}`).Output()
-		e2e.Logf("the Ready status of pod is %v", status)
+		Logf("the Ready status of pod is %v", status)
 		if err != nil || status == "" {
-			e2e.Logf("failed to get pod status: %v, retrying...", err)
+			Logf("failed to get pod status: %v, retrying...", err)
 			return false, nil
 		}
 		if strings.Contains(status, "False") {
-			e2e.Logf("the pod Ready status not met; wanted True but got %v, retrying...", status)
+			Logf("the pod Ready status not met; wanted True but got %v, retrying...", status)
 			return false, nil
 		}
 		return true, nil
 	})
+}
+
+// EnsureReadyPodsByLabel waits until exactly expected pods carry the label and
+// every one of them reports Ready, then returns their names in sorted order.
+//
+// WaitForPodWithLabelReady only requires that no pod reports a non-Ready
+// condition, which is satisfied as soon as one of the replicas is ready.  A
+// caller that indexes the resulting slice would then take a single pod for a
+// two-replica deployment.  Because the check and the listing happen in one
+// observation, the returned names cannot span a rolling change.
+func EnsureReadyPodsByLabel(oc *exutil.CLI, ns, label string, expected int) []string {
+	var pods []string
+	waitErr := wait.Poll(5*time.Second, 3*time.Minute, func() (bool, error) {
+		output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", ns, "pod", "-l", label,
+			`-o=jsonpath={range .items[*]}{.metadata.name}={.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}`).Output()
+		if err != nil {
+			Logf("failed to list pods with label %s, retrying: %v", label, err)
+			return false, nil
+		}
+		var ready []string
+		for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+			if line == "" {
+				continue
+			}
+			name, status, found := strings.Cut(line, "=")
+			if !found || status != "True" {
+				ready = nil
+				break
+			}
+			ready = append(ready, name)
+		}
+		if len(ready) != expected {
+			Logf("waiting for %d ready pods with label %s, found %d", expected, label, len(ready))
+			return false, nil
+		}
+		pods = ready
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("expected %d ready pods with label %s", expected, label))
+	sort.Strings(pods)
+	Logf("the ready pod list is %v", pods)
+	return pods
+}
+
+// WaitRouterLogsAppear waits until the router pod's access-log container emits
+// a line containing searchStr, and returns that line.
+func WaitRouterLogsAppear(oc *exutil.CLI, routerPod, searchStr string) string {
+	var result string
+	containers := strings.Fields(GetByJsonPath(oc, "openshift-ingress", "pod/"+routerPod, "{.spec.containers[*].name}"))
+	logArgs := []string{routerPod, "-n", "openshift-ingress"}
+	if slices.Contains(containers, "logs") {
+		logArgs = append(logArgs, "-c", "logs")
+	}
+
+	waitErr := wait.Poll(5*time.Second, 5*time.Minute, func() (bool, error) {
+		output, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args(logArgs...).Output()
+		if err != nil {
+			Logf("failed to read logs from router pod %s, retrying: %v", routerPod, err)
+			return false, nil
+		}
+		for _, line := range strings.Split(output, "\n") {
+			if strings.Contains(line, searchStr) {
+				result = line
+				Logf("found expected router log line: %s", line)
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("expected string %q is not found in router pod %s logs", searchStr, routerPod))
+	return result
 }
 
 func EnsurePodWithLabelReady(oc *exutil.CLI, ns, label string) {
@@ -256,9 +362,9 @@ func EnsurePodWithLabelReady(oc *exutil.CLI, ns, label string) {
 	// print pod status and logs for debugging purpose if err
 	if err != nil {
 		output, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", "-n", ns, "-l", label).Output()
-		e2e.Logf("All pods with label %v are:\n%v", label, output)
+		Logf("All pods with label %v are:\n%v", label, output)
 		logs, _ := oc.AsAdmin().WithoutNamespace().Run("logs").Args("-n", ns, "-l", label, "--tail=10").Output()
-		e2e.Logf("The logs of all labeled pods are:\n%v", logs)
+		Logf("The logs of all labeled pods are:\n%v", logs)
 	}
 	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("max time reached but the pods with label %v are not ready", label))
 }
@@ -267,17 +373,17 @@ func EnsurePodWithLabelReady(oc *exutil.CLI, ns, label string) {
 func WaitForResourceToDisappear(oc *exutil.CLI, ns, rsname string) error {
 	return wait.Poll(20*time.Second, 5*time.Minute, func() (bool, error) {
 		status, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(rsname, "-n", ns).Output()
-		e2e.Logf("check resource %v and got: %v", rsname, status)
+		Logf("check resource %v and got: %v", rsname, status)
 		primary := false
 		if err != nil {
 			if strings.Contains(status, "NotFound") {
-				e2e.Logf("the resource is disappeared!")
+				Logf("the resource is disappeared!")
 				primary = true
 			} else {
-				e2e.Logf("failed to get the resource: %v, retrying...", err)
+				Logf("failed to get the resource: %v, retrying...", err)
 			}
 		} else {
-			e2e.Logf("the resource is still there, retrying...")
+			Logf("the resource is still there, retrying...")
 		}
 		return primary, nil
 	})
@@ -348,7 +454,7 @@ func MirrorFixtureImages(oc *exutil.CLI, ns, file string) string {
 	err = ioutil.WriteFile(mirroredFile, []byte(rewritten), 0644)
 	o.Expect(err).NotTo(o.HaveOccurred(), "failed to write mirrored fixture %s", mirroredFile)
 	g.DeferCleanup(os.Remove, mirroredFile)
-	e2e.Logf("mirrored fixture %s to %s for namespace %s", file, mirroredFile, ns)
+	Logf("mirrored fixture %s to %s for namespace %s", file, mirroredFile, ns)
 	return mirroredFile
 }
 
@@ -376,13 +482,13 @@ func WaitForDefaultServiceAccountPullSecret(oc *exutil.CLI, ns string) {
 	err := wait.Poll(2*time.Second, 2*time.Minute, func() (bool, error) {
 		secrets, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("serviceaccount", "default", "-n", ns, "-o=jsonpath={.imagePullSecrets[*].name}").Output()
 		if err != nil {
-			e2e.Logf("failed to get the image pull secrets of the default service account in %s: %v, retrying...", ns, err)
+			Logf("failed to get the image pull secrets of the default service account in %s: %v, retrying...", ns, err)
 			return false, nil
 		}
 		for _, name := range strings.Fields(secrets) {
 			output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("secret", name, "-n", ns, "--ignore-not-found", "-o=name").Output()
 			if err != nil {
-				e2e.Logf("failed to get the image pull secret %s in %s: %v, retrying...", name, ns, err)
+				Logf("failed to get the image pull secret %s in %s: %v, retrying...", name, ns, err)
 				return false, nil
 			}
 			if strings.TrimSpace(output) != "" {
@@ -431,7 +537,7 @@ func internalRegistrySkipReason(ctx context.Context, registry dynamic.ResourceIn
 		if err != nil {
 			lastErr = err
 			if isTransientRegistryError(err) {
-				e2e.Logf("retrying integrated registry lookup after transient error: %v", err)
+				Logf("retrying integrated registry lookup after transient error: %v", err)
 				return false, nil
 			}
 			return false, err
@@ -487,7 +593,7 @@ func importImageStreamTag(oc *exutil.CLI, ns, name, tag, source string) {
 		).Output()
 		if err != nil {
 			lastOutput = output
-			e2e.Logf("waiting to import %s into imagestream %s/%s:%s: %v", source, ns, name, tag, err)
+			Logf("waiting to import %s into imagestream %s/%s:%s: %v", source, ns, name, tag, err)
 			return false, nil
 		}
 		return true, nil
@@ -527,6 +633,13 @@ func OperateResourceFromFile(oc *exutil.CLI, oper, ns, file string) {
 // PatchResourceAsAdmin patches a resource in the specified namespace with 'merge' type
 func PatchResourceAsAdmin(oc *exutil.CLI, ns, resource, patch string) {
 	PatchResourceAsAdminAnyType(oc, ns, resource, patch, "merge")
+}
+
+// PatchGlobalResourceAsAdmin patches a cluster-scoped resource as an administrator.
+func PatchGlobalResourceAsAdmin(oc *exutil.CLI, resource, patch string) {
+	patchOut, err := oc.AsAdmin().WithoutNamespace().Run("patch").Args(resource, "--patch="+patch, "--type=json").Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to patch global resource %s", resource)
+	Logf("The output from the patch is:- %q", patchOut)
 }
 
 // PatchResourceAsAdminAnyType patches a resource in the specified namespace with any type
@@ -572,9 +685,9 @@ func GetAnnotation(oc *exutil.CLI, ns, resource, resourceName string) string {
 func GetByJsonPath(oc *exutil.CLI, ns, resource, jsonPath string) string {
 	output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", ns, resource, "-o=jsonpath="+jsonPath).Output()
 	if err != nil {
-		e2e.Logf("the error is: %v", err.Error())
+		Logf("the error is: %v", err.Error())
 	}
-	e2e.Logf("the output filtered by jsonpath is: %v", output)
+	Logf("the output filtered by jsonpath is: %v", output)
 	return output
 }
 
@@ -588,7 +701,7 @@ func getByJsonPathWithContext(ctx context.Context, oc *exutil.CLI, ns, resource,
 func GetByLabelAndJsonPath(oc *exutil.CLI, ns, resource, label, jsonPath string) string {
 	output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", ns, resource, "-l", label, "-ojsonpath="+jsonPath).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the output filtered by label and jsonpath is: %v", output)
+	Logf("the output filtered by label and jsonpath is: %v", output)
 	return output
 }
 
@@ -596,7 +709,7 @@ func GetByLabelAndJsonPath(oc *exutil.CLI, ns, resource, label, jsonPath string)
 func GetOneRouterPodNameByIC(oc *exutil.CLI, icname string) string {
 	podName, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pods", "-l", "ingresscontroller.operator.openshift.io/deployment-ingresscontroller="+icname, "-o=jsonpath={.items[0].metadata.name}", "-n", "openshift-ingress").Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the result of router pod name: %v", podName)
+	Logf("the result of router pod name: %v", podName)
 	return podName
 }
 
@@ -607,19 +720,19 @@ func EnsureHaproxyBlockConfigContains(oc *exutil.CLI, routerPodName string, bloc
 		j          = 0
 	)
 
-	e2e.Logf("Polling and search haproxy config file")
+	Logf("Polling and search haproxy config file")
 	waitErr := wait.Poll(5*time.Second, 60*time.Second, func() (bool, error) {
 		haproxyCfg = GetBlockConfig(oc, routerPodName, blockCfgStart)
 		for i := j; i < len(searchList); i++ {
 			if strings.Contains(haproxyCfg, searchList[i]) {
-				e2e.Logf("Found the given string %v in haproxy.config", searchList[i])
+				Logf("Found the given string %v in haproxy.config", searchList[i])
 				j++
 				if j == len(searchList) {
-					e2e.Logf("All the given strings are found in haproxy.config")
+					Logf("All the given strings are found in haproxy.config")
 					return true, nil
 				}
 			} else {
-				e2e.Logf("The given string %v is still not found in haproxy.config, retrying...", searchList[i])
+				Logf("The given string %v is still not found in haproxy.config, retrying...", searchList[i])
 				return false, nil
 			}
 		}
@@ -627,7 +740,7 @@ func EnsureHaproxyBlockConfigContains(oc *exutil.CLI, routerPodName string, bloc
 	})
 
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but the given string was not found in haproxy.config"))
-	e2e.Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
+	Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
 	return haproxyCfg
 }
 
@@ -638,19 +751,19 @@ func EnsureHaproxyBlockConfigNotContains(oc *exutil.CLI, routerPodName string, b
 		j          = 0
 	)
 
-	e2e.Logf("Polling and search haproxy config file")
+	Logf("Polling and search haproxy config file")
 	waitErr := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
 		haproxyCfg = GetBlockConfig(oc, routerPodName, blockCfgStart)
 		for i := j; i < len(searchList); i++ {
 			if !strings.Contains(haproxyCfg, searchList[i]) {
-				e2e.Logf("Could not found the given string %v in haproxy.config as expected", searchList[i])
+				Logf("Could not found the given string %v in haproxy.config as expected", searchList[i])
 				j++
 				if j == len(searchList) {
-					e2e.Logf("Could not found all given strings in haproxy.config as expected")
+					Logf("Could not found all given strings in haproxy.config as expected")
 					return true, nil
 				}
 			} else {
-				e2e.Logf("The given string %v is still present in haproxy.config, retrying...", searchList[i])
+				Logf("The given string %v is still present in haproxy.config, retrying...", searchList[i])
 				return false, nil
 			}
 		}
@@ -658,14 +771,36 @@ func EnsureHaproxyBlockConfigNotContains(oc *exutil.CLI, routerPodName string, b
 	})
 
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("Reached max time allowed but given string is still present in haproxy.config"))
-	e2e.Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
+	Logf("The part of haproxy.config that matching \"%s\" is:\n%v", blockCfgStart, haproxyCfg)
 	return haproxyCfg
 }
 
-// GetBlockConfig gets block content of haproxy.conf.
+// GetBlockConfig gets block content of haproxy.conf.  A single exec request can
+// be rejected while the API server is briefly unavailable, so each attempt is
+// bounded and transient errors are retried before the test fails.
 func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
-	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerPodName, "--", "bash", "-c", "cat haproxy.config").Output()
-	o.Expect(err).NotTo(o.HaveOccurred(), "get the content of haproxy.config failed")
+	var (
+		output  string
+		lastErr error
+	)
+	waitErr := wait.Poll(2*time.Second, 45*time.Second, func() (bool, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		var stderr string
+		output, stderr, lastErr = runOcCommandWithContextOutputs(ctx, oc.AsAdmin().WithoutNamespace().Run("exec").Args(
+			"-n", "openshift-ingress", routerPodName, "--", "bash", "-c", "cat haproxy.config"))
+		if lastErr != nil {
+			if stderr != "" {
+				lastErr = fmt.Errorf("%w: %s", lastErr, stderr)
+			}
+			Logf("failed to read haproxy.config from router pod %s, retrying: %v", routerPodName, lastErr)
+			return false, nil
+		}
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
+		"failed to get the content of haproxy.config from router pod %s: %v", routerPodName, lastErr))
+
 	// Scope route block searches to the test namespace so that, for example,
 	// "route-edge" does not match "route-edge15873" from another test running
 	// in parallel. Global directives such as "bind :80 accept-proxy" must not
@@ -677,11 +812,22 @@ func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 	for _, line := range strings.Split(output, "\n") {
 		if strings.Contains(line, searchString) {
 			trimmed := strings.TrimSpace(line)
+			// Backend and listen blocks are route-specific. Frontend blocks are
+			// global router directives, so searches such as "frontend public"
+			// must remain reachable even though they do not contain a namespace.
 			isRouteBlock := strings.HasPrefix(trimmed, "backend ") ||
-				strings.HasPrefix(trimmed, "listen ") ||
-				strings.HasPrefix(trimmed, "frontend ")
+				strings.HasPrefix(trimmed, "listen ")
 			if flag == 0 && ns != "" && isRouteBlock && !strings.Contains(searchString, ns) && !strings.Contains(line, ns) {
-				continue
+				// A search for a namespace such as "be_http:<namespace>:<route>"
+				// must not be filtered out just because it is not the CLI project
+				// namespace. Only filter route-name searches that belong to another
+				// namespace.
+				blockName := strings.TrimSpace(strings.TrimPrefix(trimmed, "backend "))
+				blockName = strings.TrimSpace(strings.TrimPrefix(blockName, "listen "))
+				parts := strings.SplitN(blockName, ":", 3)
+				if len(parts) < 2 || parts[1] != searchString {
+					continue
+				}
 			}
 			result = result + line + "\n"
 			flag = 1
@@ -702,7 +848,7 @@ func GetBlockConfig(oc *exutil.CLI, routerPodName, searchString string) string {
 			break
 		}
 	}
-	e2e.Logf("The block configuration in haproxy that matching \"%s\" is:\n%v", searchString, result)
+	Logf("The block configuration in haproxy that matching \"%s\" is:\n%v", searchString, result)
 	return result
 }
 
@@ -717,16 +863,25 @@ func GetIngressctlDomain(oc *exutil.CLI, icname string) string {
 	var ingressctldomain string
 	ingressctldomain, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("ingresscontroller", icname, "--namespace=openshift-ingress-operator", "-o=jsonpath={.status.domain}").Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the domain for the ingresscontroller is : %v", ingressctldomain)
+	Logf("the domain for the ingresscontroller is : %v", ingressctldomain)
 	return ingressctldomain
 }
 
-// GetPodv4Address gets the ipv4 address of the given pod
+// GetPodIP returns every IP assigned to a pod. On a dual-stack cluster this
+// includes both families, in the order reported by the API server.
+func GetPodIP(oc *exutil.CLI, namespace, podName string) []string {
+	ips, err := oc.AsAdmin().WithoutNamespace().Run("get").Args(
+		"pod", podName, "-n", namespace, "-o=jsonpath={.status.podIPs[*].ip}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to get IPs of pod %s/%s", namespace, podName)
+	result := strings.Fields(ips)
+	Logf("The IPs of pod %s/%s are %v", namespace, podName, result)
+	return result
+}
+
+// GetPodv4Address returns the primary pod address for legacy callers.
+// Deprecated: use GetPodAddress and format curl destinations with CurlResolve.
 func GetPodv4Address(oc *exutil.CLI, podName, namespace string) string {
-	podIPv4, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", podName, "-n", namespace, "-o=jsonpath={.status.podIP}").Output()
-	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("IP of the %s pod in namespace %s is %q ", podName, namespace, podIPv4)
-	return podIPv4
+	return GetPodAddress(oc, podName, namespace)
 }
 
 // GetPodListByLabel obtains the pod name based on the particular label
@@ -735,7 +890,7 @@ func GetPodListByLabel(oc *exutil.CLI, namespace string, label string) []string 
 	podNameAll, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("-n", namespace, "pod", "-l", label, "-ojsonpath={.items..metadata.name}").Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
 	podList = strings.Split(podNameAll, " ")
-	e2e.Logf("The pod list is %v", podList)
+	Logf("The pod list is %v", podList)
 	return podList
 }
 
@@ -745,7 +900,7 @@ func EnsureClusterOperatorNormal(oc *exutil.CLI, coName string, healthyThreshold
 	printCount := 0
 	jsonPath := `{.status.conditions[?(@.type=="Available")].status}{.status.conditions[?(@.type=="Progressing")].status}{.status.conditions[?(@.type=="Degraded")].status}`
 
-	e2e.Logf("waiting for CO %v back to normal status......", coName)
+	Logf("waiting for CO %v back to normal status......", coName)
 	waitErr := wait.PollImmediate(5*time.Second, time.Duration(totalWaitTime)*time.Second, func() (bool, error) {
 		status := GetByJsonPath(oc, "default", "co/"+coName, jsonPath)
 		primary := false
@@ -753,15 +908,15 @@ func EnsureClusterOperatorNormal(oc *exutil.CLI, coName string, healthyThreshold
 		if strings.Compare(status, "TrueFalseFalse") == 0 {
 			count++
 			if count == healthyThreshold {
-				e2e.Logf("got %v successive good status (%v), the CO is stable!", count, status)
+				Logf("got %v successive good status (%v), the CO is stable!", count, status)
 				primary = true
 			} else {
-				e2e.Logf("got %v successive good status (%v), try again...", count, status)
+				Logf("got %v successive good status (%v), try again...", count, status)
 			}
 		} else {
 			count = 0
 			if printCount%10 == 1 {
-				e2e.Logf("CO status is still abnormal (%v), wait and try again...", status)
+				Logf("CO status is still abnormal (%v), wait and try again...", status)
 			}
 		}
 		return primary, nil
@@ -769,13 +924,45 @@ func EnsureClusterOperatorNormal(oc *exutil.CLI, coName string, healthyThreshold
 	// for debugging: print all messages in co status.conditions
 	if waitErr != nil {
 		output := GetByJsonPath(oc, "default", "co/"+coName, "{.status.conditions}")
-		e2e.Logf("The co %v is abnormal and here is status: %v", coName, output)
+		Logf("The co %v is abnormal and here is status: %v", coName, output)
 		if coName == "ingress" {
 			output, _ = oc.AsAdmin().WithoutNamespace().Run("describe").Args("-n", "openshift-ingress", "service", "router-default").Output()
-			e2e.Logf("The output of describe router-default service: %v", output)
+			Logf("The output of describe router-default service: %v", output)
 		}
 	}
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("reached max time allowed but CO %v is still abnoraml.", coName))
+}
+
+// CheckRouteCertificationInRouterPod waits for a route certificate file to be
+// present or absent in the router pod and returns the listing that matched.
+func CheckRouteCertificationInRouterPod(oc *exutil.CLI, ns, routeName, routerpod, certType, option string) string {
+	var certCfg, cmd string
+	var err error
+	certName := fmt.Sprintf("%s:%s.pem", ns, routeName)
+	switch {
+	case option == "--noCert" && certType == "cacerts":
+		cmd = "ls /var/lib/haproxy/router/cacerts/"
+	case option != "--noCert" && certType != "cacerts":
+		cmd = "ls --full-time /var/lib/haproxy/router/certs/" + certName
+	case option != "--noCert" && certType == "cacerts":
+		cmd = "ls --full-time /var/lib/haproxy/router/cacerts/" + certName
+	default:
+		cmd = "ls /var/lib/haproxy/router/certs/"
+	}
+
+	waitErr := wait.Poll(3*time.Second, 120*time.Second, func() (bool, error) {
+		certCfg, err = oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", "openshift-ingress", routerpod, "--", "bash", "-c", cmd).Output()
+		if err != nil {
+			Logf("failed to inspect route certificate %s, retrying: %v", certName, err)
+			return false, nil
+		}
+		if option == "--hasCert" {
+			return strings.Contains(certCfg, certName), nil
+		}
+		return !strings.Contains(certCfg, certName), nil
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("route certificate %s did not reach option %s", certName, option))
+	return certCfg
 }
 
 // ReadPodData searches the specific data from the given pod
@@ -783,7 +970,7 @@ func ReadPodData(oc *exutil.CLI, podname string, ns string, executeCmd string, s
 	cmd := fmt.Sprintf("%s | grep \"%s\"", executeCmd, searchString)
 	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args("-n", ns, podname, "--", "bash", "-c", cmd).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the matching part is: %s", output)
+	Logf("the matching part is: %s", output)
 	return output
 }
 
@@ -819,29 +1006,32 @@ func matchesHTTPRedirect(output, expectedLocation string) bool {
 // execution error occurs, and logs a verbose response on timeout.
 func waitForOutsideCurl(url, curlOptions, expected string, matches func(string) bool) string {
 	var output []byte
-	cmd := fmt.Sprintf(`curl --connect-timeout 10 -s %s %s 2>&1`, curlOptions, url)
-	e2e.Logf("the command is: %s", cmd)
+	// --max-time bounds a request that connects but never answers, and
+	// --suppress-connect-headers keeps a proxy's CONNECT reply out of the parsed
+	// output so the route's own response is what gets asserted.
+	cmd := fmt.Sprintf(`curl --suppress-connect-headers --connect-timeout 10 --max-time 15 -s %s %s 2>&1`, curlOptions, url)
+	Logf("the command is: %s", cmd)
 	waitErr := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
 		result, err := exec.Command("bash", "-c", cmd).Output()
-		e2e.Logf("the result is: %s", result)
+		Logf("the result is: %s", result)
 		output = result
 		if err != nil {
-			e2e.Logf("the error is: %v", err.Error())
+			Logf("the error is: %v", err.Error())
 			if strings.Contains(err.Error(), expected) {
-				e2e.Logf("the expected string is included in err: %v", err)
+				Logf("the expected string is included in err: %v", err)
 				return true, nil
 			} else {
 				// route timeout case, curl returns an execution error which is expected
 				if strings.Contains(err.Error(), expected) {
-					e2e.Logf("Execution Error expected: %v", err)
+					Logf("Execution Error expected: %v", err)
 					return true, nil
 				}
-				e2e.Logf("hit execution error: %v, retrying...", err)
+				Logf("hit execution error: %v, retrying...", err)
 				return false, nil
 			}
 		}
 		if !matches(string(result)) {
-			e2e.Logf("curl response did not match %q: %s, retrying...", expected, result)
+			Logf("curl response did not match %q: %s, retrying...", expected, result)
 			return false, nil
 		}
 		return true, nil
@@ -849,9 +1039,9 @@ func waitForOutsideCurl(url, curlOptions, expected string, matches func(string) 
 	// For debugging: print verbose result of curl if timeout
 	if waitErr != nil {
 		debug_cmd := fmt.Sprintf(`curl --connect-timeout 10 -s -v %s %s 2>&1`, curlOptions, url)
-		e2e.Logf("the debug command is: %s", debug_cmd)
+		Logf("the debug command is: %s", debug_cmd)
 		result, err := exec.Command("bash", "-c", debug_cmd).Output()
-		e2e.Logf("debug: the result of curl is %s and err is %v", result, err)
+		Logf("debug: the result of curl is %s and err is %v", result, err)
 	}
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached waiting for %q from %s", expected, url))
 	return string(output)
@@ -859,7 +1049,7 @@ func waitForOutsideCurl(url, curlOptions, expected string, matches func(string) 
 
 // WaitForCurl polls curl command
 func WaitForCurl(oc *exutil.CLI, podName, baseDomain string, routestring string, searchWord string, controllerIP string) {
-	e2e.Logf("Polling for curl command")
+	Logf("Polling for curl command")
 	var output string
 	var err error
 	waitErr := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
@@ -872,11 +1062,11 @@ func WaitForCurl(oc *exutil.CLI, podName, baseDomain string, routestring string,
 			output, err = oc.Run("exec").Args(podName, "--", "curl", "-v", "http://"+curlCmd2, "--connect-timeout", "10").Output()
 		}
 		if err != nil {
-			e2e.Logf("curl is not yet resolving, retrying...")
+			Logf("curl is not yet resolving, retrying...")
 			return false, nil
 		}
 		if !strings.Contains(output, searchWord) {
-			e2e.Logf("retrying...cannot find the searchWord '%s' in the output:- %v ", searchWord, output)
+			Logf("retrying...cannot find the searchWord '%s' in the output:- %v ", searchWord, output)
 			return false, nil
 		}
 		return true, nil
@@ -888,7 +1078,7 @@ func WaitForCurl(oc *exutil.CLI, podName, baseDomain string, routestring string,
 func GetRouteHost(oc *exutil.CLI, ns, routeName string) string {
 	host, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("route", routeName, "-n", ns, `-ojsonpath={.spec.host}`).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("the host of the route %v is %v.", routeName, host)
+	Logf("the host of the route %v is %v.", routeName, host)
 	return host
 }
 
@@ -896,7 +1086,7 @@ func GetRouteHost(oc *exutil.CLI, ns, routeName string) string {
 func GetRoutes(oc *exutil.CLI, ns string) string {
 	output, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("route", "-n", ns).Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	e2e.Logf("oc get route: %v", output)
+	Logf("oc get route: %v", output)
 	return output
 }
 
@@ -907,7 +1097,7 @@ func GetResourceName(oc *exutil.CLI, namespace, resourceName string) []string {
 		"-ojsonpath={.items..metadata.name}").Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
 	resourceList = strings.Split(resourceNames, " ")
-	e2e.Logf("The resource '%s' names are  %v ", resourceName, resourceList)
+	Logf("The resource '%s' names are  %v ", resourceName, resourceList)
 	return resourceList
 }
 
@@ -925,20 +1115,20 @@ func CheckProxy(oc *exutil.CLI) bool {
 
 // CheckRouteDetailsRemoved retrieves the status of the route after using RouteSelectors
 func CheckRouteDetailsRemoved(oc *exutil.CLI, namespace, routeName, ingresscontrollerName string) {
-	e2e.Logf("polling for route details")
+	Logf("polling for route details")
 	jsonPath := fmt.Sprintf(`{.status.ingress[?(@.routerName=="%s")]}`, ingresscontrollerName)
 	waitErr := wait.Poll(5*time.Second, 150*time.Second, func() (bool, error) {
 		status, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("route", "-n", namespace, routeName,
 			"-ojsonpath="+jsonPath).Output()
 		if err != nil {
-			e2e.Logf("there is some execution error and it is  %v, retrying...", err)
+			Logf("there is some execution error and it is  %v, retrying...", err)
 			return false, nil
 		}
 		if strings.Contains(status, "Admitted") {
-			e2e.Logf("the matched string is still in the logs, retrying...")
+			Logf("the matched string is still in the logs, retrying...")
 			return false, nil
 		}
-		e2e.Logf("The route status is cleared!")
+		Logf("The route status is cleared!")
 		return true, nil
 	})
 	o.Expect(waitErr).NotTo(o.HaveOccurred(), "The route %s yielded unexpected results", routeName)
@@ -948,6 +1138,9 @@ func CheckRouteDetailsRemoved(oc *exutil.CLI, namespace, routeName, ingresscontr
 // stderr separately. The child is stopped and reaped when the context expires.
 // Background() is used because the vendored CLI does not accept a context.
 func runOcCommandWithContextOutputs(ctx context.Context, cmd *exutil.CLI) (string, string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", "", err
+	}
 	process, stdout, stderr, err := cmd.Background()
 	if err != nil {
 		return "", "", err
@@ -969,7 +1162,7 @@ func runStartedProcessWithContextOutputs(ctx context.Context, process *exec.Cmd,
 	case <-ctx.Done():
 		if process.Process != nil {
 			if killErr := process.Process.Kill(); killErr != nil && !errors.Is(killErr, os.ErrProcessDone) {
-				e2e.Logf("failed to kill oc command: %v", killErr)
+				Logf("failed to kill oc command: %v", killErr)
 			}
 		}
 		<-done
@@ -1026,9 +1219,9 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 		matchedTimesList = append(matchedTimesList, 0)
 	}
 
-	e2e.Logf("Using client type: %v", clientType)
-	e2e.Logf("The cmdStr (used by External client) is '%v' and cmdList (used by Internal client) is %v", cmdStr, cmdList)
-	e2e.Logf("The expectOutputList is %v and initial matchedTimesList is %v", expectOutputList, matchedTimesList)
+	Logf("Using client type: %v", clientType)
+	Logf("The cmdStr (used by External client) is '%v' and cmdList (used by Internal client) is %v", cmdStr, cmdList)
+	Logf("The expectOutputList is %v and initial matchedTimesList is %v", expectOutputList, matchedTimesList)
 
 	// Bound the whole retry loop, including a single command that connects but
 	// never receives headers: --connect-timeout cannot stop such a request, and
@@ -1048,14 +1241,14 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 				if info != "" {
 					errText = info + "\n" + errText
 				}
-				e2e.Logf("The error is: %v", errText)
+				Logf("The error is: %v", errText)
 				searchInfo := regexp.MustCompile(expectOutputList[0]).FindStringSubmatch(errText)
 				if len(searchInfo) > 0 {
-					e2e.Logf("The expected string is included in err: %v", errText)
+					Logf("The expected string is included in err: %v", errText)
 					output = errText
 					return true, nil
 				}
-				e2e.Logf("Failed to execute cmd %v, retrying...", errText)
+				Logf("Failed to execute cmd %v, retrying...", errText)
 				return false, nil
 			}
 			output = info
@@ -1065,13 +1258,13 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 				return false, ctx.Err()
 			}
 			if err != nil {
-				e2e.Logf("The error is: %v", err.Error())
+				Logf("The error is: %v", err.Error())
 				searchInfo := regexp.MustCompile(expectOutputList[0]).FindStringSubmatch(err.Error())
 				if len(searchInfo) > 0 {
-					e2e.Logf("The expected string is included in err: %v", err)
+					Logf("The expected string is included in err: %v", err)
 					return true, nil
 				} else {
-					e2e.Logf("Failed to execute cmd and got err %v, retrying...", err.Error())
+					Logf("Failed to execute cmd and got err %v, retrying...", err.Error())
 					return false, nil
 				}
 			}
@@ -1079,7 +1272,7 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 		}
 
 		successCurlCount++
-		e2e.Logf("Executed cmd for %v times on the client and got output: %s", successCurlCount, output)
+		Logf("Executed cmd for %v times on the client and got output: %s", successCurlCount, output)
 
 		for i := 0; i < len(expectOutputList); i++ {
 			searchInfo := regexp.MustCompile(expectOutputList[i]).FindStringSubmatch(output)
@@ -1092,7 +1285,7 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 		}
 
 		if isMatch {
-			e2e.Logf("Successfully executed cmd for %v times on the client, expecting %v times", matchedCount, repeatTimes)
+			Logf("Successfully executed cmd for %v times on the client, expecting %v times", matchedCount, repeatTimes)
 			if matchedCount == repeatTimes {
 				return true, nil
 			} else {
@@ -1101,12 +1294,12 @@ func RepeatCmdOnClient(oc *exutil.CLI, cmd, expectOutput interface{}, duration i
 		} else {
 			// if after executed the cmd, but could not get a output in the expectOutput list, decrease the successfully executed times
 			successCurlCount--
-			e2e.Logf("Failed to find a match in the output, retrying...")
+			Logf("Failed to find a match in the output, retrying...")
 			return false, nil
 		}
 	})
 
-	e2e.Logf("The matchedTimesList is: %v", matchedTimesList)
+	Logf("The matchedTimesList is: %v", matchedTimesList)
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but can't execute the cmd successfully for the desired times"))
 
 	// return the last succecessful curl output and the succecessful curl times list for the expected list
@@ -1137,7 +1330,7 @@ func WaitForOutputContains(oc *exutil.CLI, ns, resourceName, jsonPath, expected 
 		if strings.Contains(output, expected) {
 			return true, nil
 		}
-		e2e.Logf("The output of jsonpath does NOT contain the expected string: %v, retrying...", expected)
+		Logf("The output of jsonpath does NOT contain the expected string: %v, retrying...", expected)
 		return false, nil
 	})
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but cannot find the expected string"))
@@ -1158,7 +1351,7 @@ func WaitForOutputEquals(oc *exutil.CLI, ns, resourceName, jsonPath, expected st
 		if output == expected {
 			return true, nil
 		}
-		e2e.Logf("The output of jsonpath does NOT equal the expected string: %v, retrying...", expected)
+		Logf("The output of jsonpath does NOT equal the expected string: %v, retrying...", expected)
 		return false, nil
 	})
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf("max time reached but cannot find the expected string"))
@@ -1186,7 +1379,7 @@ func WaitForOutputMatchRegexp(oc *exutil.CLI, ns, resourceName, jsonPath, regExp
 		return false, nil
 	})
 	if waitErr != nil {
-		e2e.Logf("waitForOutputMatchRegexp timed out waiting for %s %s to match %s", resourceName, jsonPath, regExpress)
+		Logf("waitForOutputMatchRegexp timed out waiting for %s %s to match %s", resourceName, jsonPath, regExpress)
 	}
 	return result
 }
@@ -1198,11 +1391,11 @@ func SearchInDescribeResource(oc *exutil.CLI, resource, resourceName, match stri
 	waitErr := wait.Poll(10*time.Second, 180*time.Second, func() (bool, error) {
 		output, err = oc.AsAdmin().WithoutNamespace().Run("describe").Args(resource, resourceName).Output()
 		if err != nil || output == "" {
-			e2e.Logf("failed to get describe output: %v, retrying...", err)
+			Logf("failed to get describe output: %v, retrying...", err)
 			return false, nil
 		}
 		if !strings.Contains(output, match) {
-			e2e.Logf("cannot find the matched string in the output, retrying...")
+			Logf("cannot find the matched string in the output, retrying...")
 			return false, nil
 		}
 		return true, nil
@@ -1223,7 +1416,7 @@ func CheckCookieFile(fileDir string, expectedString string) {
 	waitErr := wait.PollImmediate(2*time.Second, 30*time.Second, func() (bool, error) {
 		output, err := ioutil.ReadFile(fileDir)
 		if err != nil {
-			e2e.Logf("waiting for the cookie file %s: %v", fileDir, err)
+			Logf("waiting for the cookie file %s: %v", fileDir, err)
 			return false, nil
 		}
 		content = string(output)
@@ -1232,16 +1425,16 @@ func CheckCookieFile(fileDir string, expectedString string) {
 	if waitErr != nil && content == "" {
 		entries, err := ioutil.ReadDir(filepath.Dir(fileDir))
 		if err != nil {
-			e2e.Logf("the cookie directory %s cannot be read: %v", filepath.Dir(fileDir), err)
+			Logf("the cookie directory %s cannot be read: %v", filepath.Dir(fileDir), err)
 		} else {
 			names := make([]string, 0, len(entries))
 			for _, entry := range entries {
 				names = append(names, entry.Name())
 			}
-			e2e.Logf("the cookie directory %s contains: %v", filepath.Dir(fileDir), names)
+			Logf("the cookie directory %s contains: %v", filepath.Dir(fileDir), names)
 		}
 	}
-	e2e.Logf("the cookie file content is: %s", content)
+	Logf("the cookie file content is: %s", content)
 	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
 		"the cookie file %s never contained %q; curl reports a jar it cannot write only as a warning, "+
 			"so check the curl output above for \"failed to save cookies\"", fileDir, expectedString))
@@ -1261,11 +1454,11 @@ func WaitForCurlInPodContains(oc *exutil.CLI, ns, podName, curlCmd, expected str
 	waitErr := wait.PollImmediate(5*time.Second, 90*time.Second, func() (bool, error) {
 		output, lastErr = compat_otp.RemoteShPod(oc, ns, podName, "sh", "-c", curlCmd)
 		if lastErr != nil {
-			e2e.Logf("the curl command in pod %s failed: %v, retrying...", podName, lastErr)
+			Logf("the curl command in pod %s failed: %v, retrying...", podName, lastErr)
 			return false, nil
 		}
 		if !strings.Contains(output, expected) {
-			e2e.Logf("cannot find %q in the curl output, retrying...", expected)
+			Logf("cannot find %q in the curl output, retrying...", expected)
 			return false, nil
 		}
 		return true, nil
@@ -1303,7 +1496,7 @@ func GetPrometheusMetrics(oc *exutil.CLI, token, query string) (string, error) {
 		promURL = "https://prometheus-k8s.openshift-monitoring.svc:9091/api/v1/query"
 	)
 
-	e2e.Logf("Querying Prometheus for metric: %s", query)
+	Logf("Querying Prometheus for metric: %s", query)
 	output, err := oc.AsAdmin().WithoutNamespace().Run("exec").Args(
 		"-n", "openshift-monitoring",
 		"-c", "prometheus",
@@ -1321,9 +1514,9 @@ func GetPrometheusMetrics(oc *exutil.CLI, token, query string) (string, error) {
 	}
 
 	if len(output) > 10000 {
-		e2e.Logf("Prometheus query response (truncated): %s...", output[:10000])
+		Logf("Prometheus query response (truncated): %s...", output[:10000])
 	} else {
-		e2e.Logf("Prometheus query response: %s", output)
+		Logf("Prometheus query response: %s", output)
 	}
 
 	if !strings.Contains(output, `"status":"success"`) {
@@ -1337,24 +1530,24 @@ func ExactNodeDetails(oc *exutil.CLI) (int, string) {
 	linuxWorkerDetails, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "--selector=node-role.kubernetes.io/worker=,kubernetes.io/os=linux").Output()
 	o.Expect(err).NotTo(o.HaveOccurred())
 	nodeCount := int(strings.Count(linuxWorkerDetails, "Ready")) - (int(strings.Count(linuxWorkerDetails, "SchedulingDisabled")) + int(strings.Count(linuxWorkerDetails, "NotReady")))
-	e2e.Logf("Linux worker node details are:\n%v", linuxWorkerDetails)
-	e2e.Logf("Available linux worker node count is: %v", nodeCount)
+	Logf("Linux worker node details are:\n%v", linuxWorkerDetails)
+	Logf("Available linux worker node count is: %v", nodeCount)
 	// checking other type workers for debugging
 	nonLinuxWorker, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "--selector=node-role.kubernetes.io/worker=,kubernetes.io/os!=linux").Output()
 	if !strings.Contains(nonLinuxWorker, "No resources found") {
-		e2e.Logf("Found non linux worker nodes and details are:\n%v", nonLinuxWorker)
+		Logf("Found non linux worker nodes and details are:\n%v", nonLinuxWorker)
 	}
 	remoteWorker, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "--selector=node.openshift.io/remote-worker").Output()
 	if !strings.Contains(remoteWorker, "No resources found") {
-		e2e.Logf("Found remote worker nodes and details are:\n%v", remoteWorker)
+		Logf("Found remote worker nodes and details are:\n%v", remoteWorker)
 	}
 	outpostWorker, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "--selector=topology.ebs.csi.aws.com/outpost-id").Output()
 	if !strings.Contains(outpostWorker, "No resources found") {
-		e2e.Logf("Found outpost worker nodes and details are:\n%v", outpostWorker)
+		Logf("Found outpost worker nodes and details are:\n%v", outpostWorker)
 	}
 	localZoneWorker, _ := oc.AsAdmin().WithoutNamespace().Run("get").Args("nodes", "--selector=node-role.kubernetes.io/edge").Output()
 	if !strings.Contains(localZoneWorker, "No resources found") {
-		e2e.Logf("Found local zone worker nodes and details are:\n%v", localZoneWorker)
+		Logf("Found local zone worker nodes and details are:\n%v", localZoneWorker)
 	}
 	return nodeCount, linuxWorkerDetails
 }
@@ -1379,14 +1572,14 @@ func ParseToJSON(oc *exutil.CLI, parameters []string) string {
 	err := wait.Poll(3*time.Second, 15*time.Second, func() (bool, error) {
 		output, err := oc.AsAdmin().Run("process").Args(parameters...).OutputToFile(GetRandomString() + "-temp-resource.json")
 		if err != nil {
-			e2e.Logf("the err:%v, and try next round", err)
+			Logf("the err:%v, and try next round", err)
 			return false, nil
 		}
 		jsonCfg = output
 		return true, nil
 	})
 	compat_otp.AssertWaitPollNoErr(err, fmt.Sprintf("fail to process %v", parameters))
-	e2e.Logf("the file of resource is %s", jsonCfg)
+	Logf("the file of resource is %s", jsonCfg)
 	return jsonCfg
 }
 
@@ -1512,6 +1705,103 @@ func PollReadPodData(oc *exutil.CLI, ns, podName, command, searchString string) 
 	return output
 }
 
+// EnsureHaproxyBlockConfigNotMatchRegexp waits until HAProxy config matches none of the regular expressions.
+func EnsureHaproxyBlockConfigNotMatchRegexp(oc *exutil.CLI, routerPod, blockStart string, patterns []string) string {
+	var config string
+	err := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
+		config = GetBlockConfig(oc, routerPod, blockStart)
+		for _, pattern := range patterns {
+			matched, err := regexp.MatchString(pattern, config)
+			if err != nil {
+				return false, err
+			}
+			if matched {
+				Logf("unexpected HAProxy configuration pattern %q is still present, retrying...", pattern)
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	compat_otp.AssertWaitPollNoErr(err, "timed out waiting for HAProxy configuration to remove unexpected patterns")
+	return config
+}
+
+// CheckDcmBackendConfig verifies that a DCM backend contains the expected
+// static server and dynamic-cookie configuration.
+func CheckDcmBackendConfig(oc *exutil.CLI, routerPod, backend string) {
+	backendCfg := GetBlockConfig(oc, routerPod, backend)
+	o.Expect(backendCfg).Should(o.And(
+		o.MatchRegexp(`server pod:.+`),
+		o.MatchRegexp(`dynamic-cookie-key [0-9a-zA-Z]+`)))
+
+	// Passthrough backends do not receive a dynamic cookie.
+	if !strings.Contains(backend, "be_tcp") {
+		o.Expect(backendCfg).To(o.MatchRegexp(`cookie.+dynamic`))
+	}
+}
+
+// CheckDcmUpEndpoints runs a HAProxy state command and verifies that the
+// expected number of backend endpoints are up.
+func CheckDcmUpEndpoints(oc *exutil.CLI, routerPod, stateCmd string, replicas int) string {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	currentStates, waitErr := waitForDCMEndpoints(ctx, 2*time.Second, replicas, func(ctx context.Context) (string, error) {
+		return runOcExecCommand(ctx, oc, []string{
+			"-n", "openshift-ingress", routerPod, "--", "bash", "-c", stateCmd,
+		})
+	})
+	compat_otp.AssertWaitPollNoErr(waitErr, fmt.Sprintf(
+		"expected %d UP DCM endpoints, last observed state: %s", replicas, currentStates))
+	return currentStates
+}
+
+// CheckRouterReloadedLogs verifies whether DCM handled an endpoint change
+// without an unnecessary full router reload and returns the current reload count.
+func CheckRouterReloadedLogs(oc *exutil.CLI, routerPod string, initialReloads int, initialStates, currentStates string) int {
+	newStaticEndpoint := isNewStaticEndpointAdded(initialStates, currentStates)
+	log, err := oc.AsAdmin().WithoutNamespace().Run("logs").Args("-n", "openshift-ingress", routerPod).Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read router logs")
+	currentReloads := strings.Count(log, `"msg"="router reloaded" "logger"="template" "output"=`)
+	if newStaticEndpoint {
+		o.Expect(currentReloads).To(o.Equal(initialReloads))
+	} else {
+		o.Expect(currentReloads - initialReloads).To(o.BeNumerically("<=", 1))
+	}
+	return currentReloads
+}
+
+// isNewStaticEndpointAdded reports whether a non-dynamic endpoint appeared.
+func isNewStaticEndpointAdded(initialStates, currentStates string) bool {
+	upEndpointRegexp := regexp.MustCompile(`([0-9.\[\]:a-zA-Z]+ UP)`)
+	initialUpEndpoints := ""
+	for _, entry := range strings.Split(initialStates, "\n") {
+		if match := upEndpointRegexp.FindStringSubmatch(entry); len(match) > 1 {
+			initialUpEndpoints += match[1] + " "
+		}
+	}
+	for _, entry := range strings.Split(currentStates, "\n") {
+		match := upEndpointRegexp.FindStringSubmatch(entry)
+		if len(match) <= 1 || strings.Contains(entry, "dynamic-pod") {
+			continue
+		}
+		if !strings.Contains(initialUpEndpoints, match[1]) {
+			Logf("new static endpoint %s was added to the backend", match[1])
+			return true
+		}
+	}
+	Logf("no new static endpoint was added to the backend")
+	return false
+}
+
+// CheckDcmServersAccessible repeats a request until every pod in podList has
+// answered at least once. Duration is measured in seconds.
+func CheckDcmServersAccessible(oc *exutil.CLI, curlCmd, podList []string, durationSeconds, repeatTimes int) {
+	_, result := RepeatCmdOnClient(oc, curlCmd, podList, durationSeconds, repeatTimes)
+	for _, count := range result {
+		o.Expect(count).To(o.BeNumerically(">", 0))
+	}
+}
+
 // EnsureHaproxyBlockConfigMatchRegexp waits until HAProxy config contains each regular expression.
 func EnsureHaproxyBlockConfigMatchRegexp(oc *exutil.CLI, routerPod, blockStart string, patterns []string) string {
 	var config string
@@ -1581,10 +1871,10 @@ func OpenSSLSignCSR(extensions, serverCSR, caCert, caKey, serverCert string) {
 	o.Expect(err).NotTo(o.HaveOccurred(), "failed to create temporary certificate extensions file")
 	defer func() {
 		if closeErr := extensionFile.Close(); closeErr != nil && !errors.Is(closeErr, os.ErrClosed) {
-			e2e.Logf("failed to close temporary certificate extensions file: %v", closeErr)
+			Logf("failed to close temporary certificate extensions file: %v", closeErr)
 		}
 		if removeErr := os.Remove(extensionFile.Name()); removeErr != nil && !os.IsNotExist(removeErr) {
-			e2e.Logf("failed to remove temporary certificate extensions file: %v", removeErr)
+			Logf("failed to remove temporary certificate extensions file: %v", removeErr)
 		}
 	}()
 	_, err = extensionFile.WriteString(extensions)
@@ -1592,4 +1882,205 @@ func OpenSSLSignCSR(extensions, serverCSR, caCert, caKey, serverCert string) {
 	o.Expect(extensionFile.Close()).NotTo(o.HaveOccurred(), "failed to close temporary certificate extensions file")
 	_, err = exec.Command("openssl", "x509", "-req", "-extfile", extensionFile.Name(), "-days", "30", "-in", serverCSR, "-CA", caCert, "-CAcreateserial", "-CAkey", caKey, "-out", serverCert).Output()
 	o.Expect(err).NotTo(o.HaveOccurred(), "failed to sign a test certificate")
+}
+
+// DCMServerStateCommand builds a state query that propagates a socket failure
+// before filtering. sed, unlike grep, also succeeds when there are no rows.
+func DCMServerStateCommand(backend string) string {
+	return fmt.Sprintf(`set -o pipefail; states=$(printf '%%s\n' %q | socat stdio /var/lib/haproxy/run/haproxy.sock) || exit $?; printf '%%s\n' "$states" | sed '1d; /^#/d' | cut -d ' ' -f2-6 | sed -e 's/0$/STOP/' -e 's/1$/STARTING/' -e 's/2$/UP/' -e 's/3$/SOFTSTOP/'`, "show servers state "+backend)
+}
+
+// waitForDCMEndpoints retries transient query failures within the same deadline
+// that bounds each command, retaining the last successful state for diagnostics.
+func waitForDCMEndpoints(ctx context.Context, interval time.Duration, replicas int, query func(context.Context) (string, error)) (string, error) {
+	var currentStates string
+	err := wait.PollUntilContextCancel(ctx, interval, true, func(ctx context.Context) (bool, error) {
+		states, err := query(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			Logf("failed to inspect DCM endpoint state, retrying: %v", err)
+			return false, nil
+		}
+		currentStates = states
+		if strings.Count(states, "UP") != replicas {
+			Logf("waiting for %d UP DCM endpoints, current state: %s", replicas, states)
+			return false, nil
+		}
+		return true, nil
+	})
+	return currentStates, err
+}
+
+// NewGlobalHSTSPolicySetter returns a setter for test-owned HSTS policies and
+// registers cleanup that removes only those policies. Unrelated policies stay
+// active throughout the spec, including policies added by other clients.
+func NewGlobalHSTSPolicySetter(oc *exutil.CLI) func(...configv1.RequiredHSTSPolicy) {
+	client := oc.AdminConfigClient().ConfigV1().Ingresses()
+	var owned []configv1.RequiredHSTSPolicy
+	set := func(policies ...configv1.RequiredHSTSPolicy) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		updated, err := updateGlobalHSTSPolicies(ctx, client, owned, policies)
+		o.Expect(err).NotTo(o.HaveOccurred(), "failed to reconcile test-owned global HSTS policies")
+		owned = updated
+	}
+	g.DeferCleanup(func() {
+		if len(owned) != 0 {
+			set()
+		}
+	})
+	return set
+}
+
+// updateGlobalHSTSPolicies retries concurrent API updates without restoring a
+// stale snapshot over another client's policies. The returned entries include
+// API defaults so subsequent updates compare against the actual saved state.
+func updateGlobalHSTSPolicies(ctx context.Context, client configclientv1.IngressInterface, owned, desired []configv1.RequiredHSTSPolicy) ([]configv1.RequiredHSTSPolicy, error) {
+	var updated []configv1.RequiredHSTSPolicy
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		ingress, err := client.Get(ctx, "cluster", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		policies, err := replaceOwnedHSTSPolicies(ingress.Spec.RequiredHSTSPolicies, owned, desired)
+		if err != nil {
+			return err
+		}
+		ingress.Spec.RequiredHSTSPolicies = policies
+		saved, err := client.Update(ctx, ingress, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+		updated = copyHSTSPolicies(saved.Spec.RequiredHSTSPolicies[len(policies)-len(desired):])
+		return nil
+	})
+	return updated, err
+}
+
+// replaceOwnedHSTSPolicies replaces exact test-owned entries, refusing to
+// overwrite policies that another client changed or created for the same domain.
+func replaceOwnedHSTSPolicies(current, owned, desired []configv1.RequiredHSTSPolicy) ([]configv1.RequiredHSTSPolicy, error) {
+	remaining := copyHSTSPolicies(current)
+	for _, policy := range owned {
+		found := false
+		for i := range remaining {
+			if reflect.DeepEqual(remaining[i], policy) {
+				remaining = append(remaining[:i], remaining[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("test-owned HSTS policy for %v was changed or removed by another client", policy.DomainPatterns)
+		}
+	}
+	for _, policy := range desired {
+		for _, existing := range remaining {
+			for _, domain := range existing.DomainPatterns {
+				for _, desiredDomain := range policy.DomainPatterns {
+					if domain == desiredDomain {
+						return nil, fmt.Errorf("refusing to overwrite an unrelated HSTS policy for %s", domain)
+					}
+				}
+			}
+		}
+	}
+	return append(remaining, copyHSTSPolicies(desired)...), nil
+}
+
+// copyHSTSPolicies copies nested selectors, ages, and domain slices as well as
+// the containing slice so callers cannot mutate the ownership snapshot.
+func copyHSTSPolicies(policies []configv1.RequiredHSTSPolicy) []configv1.RequiredHSTSPolicy {
+	if len(policies) == 0 {
+		return nil
+	}
+	result := make([]configv1.RequiredHSTSPolicy, len(policies))
+	for i := range policies {
+		policies[i].DeepCopyInto(&result[i])
+	}
+	return result
+}
+
+// HTTPStatusOKPattern matches a complete HTTP 200 status line, not a header or
+// body containing the digits 200. It accepts HTTP/1.x and HTTP/2 curl output.
+const HTTPStatusOKPattern = `(?m)^HTTP/[0-9.]+[ \t]+200(?:[ \t][^\r\n]*)?\r?$`
+
+// GetPodAddress returns the pod's primary IP, which can be IPv4 or IPv6.
+func GetPodAddress(oc *exutil.CLI, podName, namespace string) string {
+	address, err := oc.AsAdmin().WithoutNamespace().Run("get").Args("pod", podName, "-n", namespace, "-o=jsonpath={.status.podIP}").Output()
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to read the primary IP of pod %s/%s", namespace, podName)
+	address = strings.TrimSpace(address)
+	o.Expect(net.ParseIP(address)).NotTo(o.BeNil(), "pod %s/%s has no valid primary IP: %q", namespace, podName, address)
+	return address
+}
+
+// CurlResolve formats a curl --resolve entry, bracketing an IPv6 address.
+func CurlResolve(host string, port int, address string) string {
+	if strings.Contains(address, ":") && !strings.HasPrefix(address, "[") {
+		address = "[" + address + "]"
+	}
+	return fmt.Sprintf("%s:%d:%s", host, port, address)
+}
+
+// WaitForOutsideCurlStatus waits for the actual response status before callers
+// inspect its headers. An error page with the expected digits elsewhere is not
+// evidence that the route is reachable.
+func WaitForOutsideCurlStatus(url, curlOptions string, status int) string {
+	return waitForOutsideCurl(url, curlOptions, fmt.Sprintf("HTTP status %d", status), func(output string) bool {
+		return matchesHTTPStatus(output, status)
+	})
+}
+
+// matchesHTTPStatus parses the response status rather than matching arbitrary
+// substrings in headers or the body.
+func matchesHTTPStatus(output string, status int) bool {
+	response, err := readFinalHTTPResponse(output)
+	return err == nil && response.StatusCode == status
+}
+
+// readFinalHTTPResponse parses the last response in a curl transcript, skipping
+// proxy CONNECT replies and interim responses. curl abbreviates negotiated
+// HTTP/2 and HTTP/3 versions, whereas the standard parser needs major.minor.
+func readFinalHTTPResponse(output string) (*http.Response, error) {
+	output = strings.ReplaceAll(output, "HTTP/2 ", "HTTP/2.0 ")
+	output = strings.ReplaceAll(output, "HTTP/3 ", "HTTP/3.0 ")
+	reader := bufio.NewReader(strings.NewReader(output))
+	for {
+		response, err := http.ReadResponse(reader, &http.Request{Method: http.MethodHead})
+		if err != nil {
+			return nil, err
+		}
+		if err := response.Body.Close(); err != nil {
+			return nil, err
+		}
+		// A proxy's successful CONNECT is not the route's response.
+		if response.StatusCode < 200 || strings.EqualFold(response.Status, "200 Connection established") {
+			continue
+		}
+		return response, nil
+	}
+}
+
+// HTTPResponseHeaders returns the headers of the final response, so assertions
+// look at parsed header values rather than matching raw curl output.
+func HTTPResponseHeaders(output string) http.Header {
+	response, err := readFinalHTTPResponse(output)
+	o.Expect(err).NotTo(o.HaveOccurred(), "failed to parse final HTTP response headers")
+	return response.Header
+}
+
+// EnableDynamicConfigManager enables DCM on a custom controller and verifies
+// the reconciled router pod uses the requested dynamic configuration.
+func EnableDynamicConfigManager(oc *exutil.CLI, ingctrl IngressControllerDescription) {
+	PatchResourceAsAdmin(oc, ingctrl.Namespace, "ingresscontroller/"+ingctrl.Name,
+		`{"spec":{"unsupportedConfigOverrides":{"dynamicConfigManager":"true","maxDynamicServers":"1"}}}`)
+	WaitForOutputEquals(oc, "openshift-ingress", "deployment/router-"+ingctrl.Name,
+		`{.spec.template.spec.containers[?(@.name=="router")].env[?(@.name=="ROUTER_HAPROXY_CONFIG_MANAGER")].value}`, "true")
+	pod := GetOneNewRouterPodFromRollingUpdate(oc, ingctrl.Name)
+	env := ReadRouterPodEnv(oc, pod, "ROUTER")
+	for _, expected := range []string{"ROUTER_HAPROXY_CONFIG_MANAGER=true", "ROUTER_MAX_DYNAMIC_SERVERS=1", "ROUTER_BLUEPRINT_ROUTE_POOL_SIZE=0"} {
+		o.Expect(env).To(o.ContainSubstring(expected), "DCM controller %s is missing %s", ingctrl.Name, expected)
+	}
 }
